@@ -1,0 +1,143 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@100;200;300;400;500;600;700;800;900&display=swap");
+
+* {
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+  transition: all 0.3s;
+}
+
+// mixin
+@import "sf-mixin";
+// Variables
+@import "sf-variable";
+// body reset content
+@import "sf-predefine";
+
+// Fonts
+@import "sf-font";
+// Color
+@import "sf-color";
+// Padding
+@import "sf-padding";
+// Margin
+@import "sf-margin";
+// Gap
+@import "sf-gap";
+// Width
+@import "sf-width";
+// Border
+@import "sf-border";
+// Component
+@import "sf-component";
+// Button
+@import "sf-button";
+// Sidebar
+@import "sf-sidebar";
+// Tab
+@import "sf-tabs";
+// Modal
+@import "sf-modal";
+// Table
+@import "sf-table";
+// DataTable
+@import "sf-dataTable";
+// From
+@import "sf-form";
+// Select
+@import "sf-select";
+// Preloader
+@import "sf-preloader";
+// Image preview & Upload
+@import "sf-imagePreviewUpload";
+// Dropdown
+@import "sf-dropdown";
+// Authentication pages
+@import "sf-authentication";
+// header
+@import "sf-header";
+// Payment
+@import "sf-payment";
+// project
+@import "sf-project";
+// Calendar
+@import "sf-calendar";
+
+/* Main content */
+.zMainContent {
+  position: relative;
+  left: toRem(250);
+  width: calc(100% - toRem(250));
+  transition: all 0.5s ease;
+  @media screen and (max-width: 1023px) {
+    left: 0;
+    width: 100%;
+  }
+  .main-header {
+    position: relative;
+    padding: toRem(21) toRem(30);
+    background-color: $white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 1;
+    @media screen and (max-width: 575px) {
+      padding: toRem(10);
+    }
+  }
+}
+// Mobile Menu
+.mobileMenu {
+  display: none;
+  @media screen and (max-width: 1023px) {
+    display: block;
+  }
+}
+
+/* Date icon */
+.date-icon {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: 7.5px;
+    right: 20px;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    background-image: url(../images/icon/calendar-datePicker.svg);
+    background-repeat: no-repeat;
+  }
+}
+
+/* Direction rtl */
+.direction-rtl {
+  direction: rtl;
+  .zSidebar {
+    top: 0;
+    left: auto;
+    right: 0;
+    height: 100%;
+    width: toRem(250);
+    background-color: $body-bg;
+    // padding: toRem(23) 0 toRem(30);
+    z-index: 1001;
+    transition: all 0.5s ease;
+    border-right: toRem(1) solid $black;
+    padding-left: toRem(40);
+    @media screen and (max-width: 1023px) {
+      right: calc(-1 * toRem(250));
+    }
+  }
+  .zMainContent {
+    position: relative;
+    left: auto;
+    right: toRem(250);
+    width: calc(100% - toRem(250));
+    transition: all 0.5s ease;
+    @media screen and (max-width: 1023px) {
+      right: 0;
+      width: 100%;
+    }
+  }
+}

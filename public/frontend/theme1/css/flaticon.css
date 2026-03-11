@@ -1,0 +1,57 @@
+	/*
+  	Flaticon icon font: Flaticon
+  	Creation date: 11/07/2019 11:50
+  	*/
+
+@font-face {
+  font-family: "Flaticon";
+  src: url("../fonts/Flaticon.eot");
+  src: url("../fonts/Flaticon.eot?#iefix") format("embedded-opentype"),
+       url("../fonts/Flaticon.woff2") format("woff2"),
+       url("../fonts/Flaticon.woff") format("woff"),
+       url("../fonts/Flaticon.ttf") format("truetype"),
+       url("../fonts/Flaticon.svg#Flaticon") format("svg");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@media screen and (-webkit-min-device-pixel-ratio:0) {
+  @font-face {
+    font-family: "Flaticon";
+    src: url("../fonts/Flaticon.svg#Flaticon") format("svg");
+  }
+}
+
+[class^="flaticon-"]:before, [class*=" flaticon-"]:before,
+[class^="flaticon-"]:after, [class*=" flaticon-"]:after {   
+  font-family: Flaticon;
+  font-style: normal;
+}
+
+.flaticon-libra:before { content: "\f100"; }
+.flaticon-auction:before { content: "\f101"; }
+.flaticon-law:before { content: "\f102"; }
+.flaticon-courthouse:before { content: "\f103"; }
+.flaticon-thief:before { content: "\f104"; }
+.flaticon-parents:before { content: "\f105"; }
+.flaticon-wounded:before { content: "\f106"; }
+.flaticon-briefcase:before { content: "\f107"; }
+.flaticon-burglar:before { content: "\f108"; }
+.flaticon-alarm-clock:before { content: "\f109"; }
+.flaticon-right-quote:before { content: "\f10a"; }
+.flaticon-left-quote:before { content: "\f10b"; }
+.flaticon-right-quotation-sign:before { content: "\f10c"; }
+.flaticon-right-quotes-symbol:before { content: "\f10d"; }
+.flaticon-left-quote-1:before { content: "\f10e"; }
+.flaticon-left-quotes-sign:before { content: "\f10f"; }
+.flaticon-diploma:before { content: "\f110"; }
+.flaticon-happy:before { content: "\f111"; }
+.flaticon-sad:before { content: "\f112"; }
+.flaticon-sad-1:before { content: "\f113"; }
+.flaticon-call:before { content: "\f114"; }
+.flaticon-call-1:before { content: "\f115"; }
+.flaticon-law-1:before { content: "\f116"; }
+.flaticon-plain:before { content: "\f117"; }
+.flaticon-gun:before { content: "\f118"; }
+.flaticon-balance:before { content: "\f119"; }
+.flaticon-shield:before { content: "\f11a"; }
