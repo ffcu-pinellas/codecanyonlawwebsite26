@@ -5,8 +5,8 @@ param (
 )
 
 # Set the current directory to where the script is
-$PSScriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
-Set-Location $PSScriptRoot
+$CurrentScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Definition
+Set-Location $CurrentScriptDir
 
 Write-Host "----------------------------------------------------" -ForegroundColor Cyan
 Write-Host "Starting Bibric Law Website Deployment Process" -ForegroundColor Cyan
@@ -38,7 +38,8 @@ Write-Host "[3/4] Committing changes..." -ForegroundColor White
 git commit -m "$Message"
 
 # 4. Push
-Write-Host "[4/4] Pushing to GitHub Main Branch..." -ForegroundColor Green
+Write-Host "[4/4] Ensuring branch is named 'main' and pushing..." -ForegroundColor Green
+git branch -M main
 git push origin main
 
 Write-Host "----------------------------------------------------" -ForegroundColor Cyan
