@@ -30,38 +30,43 @@ class Controller extends BaseController
 
     public function __construct()
     {
-        $headerSetting = HeaderSettings::first();
-        $logoFavicon = LogoSettings::first();
-        $categories = BlogCategory::all();
-        $popular_post = Blog::where('is_popular', true)->take(config('page.footer.column3_popular_post_title_number'))->get();
-        $featured_post = Blog::where('is_featured', true)->take(config('page.footer.column2_recent_post_number'))->get();
-        $menus = MenuCategory::all();
-        $headerMenu = $menus->count() > 0 ? $this->headerMenueView($menus[0]) : null;
-        $social_media = SocialMediaSettings::all();
-        $contactMassage = Contact::where('status', 1)->get();
-        $appointmentMassage = Appointment::where('status', 1)->get();
-        $generalSetting = GeneralSettings::first();
-        $seoSetting = SEOSettings::first();
-        $footerData = FooterSettings::first();
-        $systemPages = DynamicPage::orderBy('id', 'desc')->get();
-        $insertHeaderFooter = HeaderFooterSettings::first();
-        $newReliefRequestCount = ReliefRequest::where('viewed', false)->count();
+        try {
+            $headerSetting = HeaderSettings::first();
+            $logoFavicon = LogoSettings::first();
+            $categories = BlogCategory::all();
+            $popular_post = Blog::where('is_popular', true)->take(config('page.footer.column3_popular_post_title_number'))->get();
+            $featured_post = Blog::where('is_featured', true)->take(config('page.footer.column2_recent_post_number'))->get();
+            $menus = MenuCategory::all();
+            $headerMenu = $menus->count() > 0 ? $this->headerMenueView($menus[0]) : null;
+            $social_media = SocialMediaSettings::all();
+            $contactMassage = Contact::where('status', 1)->get();
+            $appointmentMassage = Appointment::where('status', 1)->get();
+            $generalSetting = GeneralSettings::first();
+            $seoSetting = SEOSettings::first();
+            $footerData = FooterSettings::first();
+            $systemPages = DynamicPage::orderBy('id', 'desc')->get();
+            $insertHeaderFooter = HeaderFooterSettings::first();
+            $newReliefRequestCount = ReliefRequest::where('viewed', false)->count();
 
-        View::share('headerSetting', $headerSetting);
-        View::share('logoFavicon', $logoFavicon);
-        View::share('popular_post', $popular_post);
-        View::share('featured_post', $featured_post);
-        View::share('categories', $categories);
-        View::share('headerMenu', $headerMenu);
-        View::share('social_media', $social_media);
-        View::share('contactMassage', $contactMassage);
-        View::share('appointmentMassage', $appointmentMassage);
-        View::share('generalSetting', $generalSetting);
-        View::share('seoSetting', $seoSetting);
-        View::share('footerData', $footerData);
-        View::share('systemPages', $systemPages);
-        View::share('insertHeaderFooter', $insertHeaderFooter);
-        View::share('newReliefRequestCount', $newReliefRequestCount);
+            View::share('headerSetting', $headerSetting);
+            View::share('logoFavicon', $logoFavicon);
+            View::share('popular_post', $popular_post);
+            View::share('featured_post', $featured_post);
+            View::share('categories', $categories);
+            View::share('headerMenu', $headerMenu);
+            View::share('social_media', $social_media);
+            View::share('contactMassage', $contactMassage);
+            View::share('appointmentMassage', $appointmentMassage);
+            View::share('generalSetting', $generalSetting);
+            View::share('seoSetting', $seoSetting);
+            View::share('footerData', $footerData);
+            View::share('systemPages', $systemPages);
+            View::share('insertHeaderFooter', $insertHeaderFooter);
+            View::share('newReliefRequestCount', $newReliefRequestCount);
+        } catch (\Throwable $th) {
+            // Silently catch database errors in constructor to prevent site-wide crash
+            // We can log it if needed: \Log::error("Controller constructor error: " . $th->getMessage());
+        }
     }
 
 
