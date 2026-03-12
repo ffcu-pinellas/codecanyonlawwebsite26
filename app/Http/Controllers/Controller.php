@@ -30,43 +30,46 @@ class Controller extends BaseController
 
     public function __construct()
     {
-        try {
-            $headerSetting = HeaderSettings::first();
-            $logoFavicon = LogoSettings::first();
-            $categories = BlogCategory::all();
-            $popular_post = Blog::where('is_popular', true)->take(config('page.footer.column3_popular_post_title_number'))->get();
-            $featured_post = Blog::where('is_featured', true)->take(config('page.footer.column2_recent_post_number'))->get();
-            $menus = MenuCategory::all();
-            $headerMenu = $menus->count() > 0 ? $this->headerMenueView($menus[0]) : null;
-            $social_media = SocialMediaSettings::all();
-            $contactMassage = Contact::where('status', 1)->get();
-            $appointmentMassage = Appointment::where('status', 1)->get();
-            $generalSetting = GeneralSettings::first();
-            $seoSetting = SEOSettings::first();
-            $footerData = FooterSettings::first();
-            $systemPages = DynamicPage::orderBy('id', 'desc')->get();
-            $insertHeaderFooter = HeaderFooterSettings::first();
-            $newReliefRequestCount = ReliefRequest::where('viewed', false)->count();
+        // 1. Load basic settings (less likely to fail but wrapped just in case)
+        $headerSetting = null; $logoFavicon = null; $categories = []; $popular_post = []; 
+        $featured_post = []; $menus = []; $headerMenu = null; $social_media = []; 
+        $contactMassage = []; $appointmentMassage = []; $generalSetting = null; 
+        $seoSetting = null; $footerData = null; $systemPages = []; $insertHeaderFooter = null;
+        $newReliefRequestCount = 0;
 
-            View::share('headerSetting', $headerSetting);
-            View::share('logoFavicon', $logoFavicon);
-            View::share('popular_post', $popular_post);
-            View::share('featured_post', $featured_post);
-            View::share('categories', $categories);
-            View::share('headerMenu', $headerMenu);
-            View::share('social_media', $social_media);
-            View::share('contactMassage', $contactMassage);
-            View::share('appointmentMassage', $appointmentMassage);
-            View::share('generalSetting', $generalSetting);
-            View::share('seoSetting', $seoSetting);
-            View::share('footerData', $footerData);
-            View::share('systemPages', $systemPages);
-            View::share('insertHeaderFooter', $insertHeaderFooter);
-            View::share('newReliefRequestCount', $newReliefRequestCount);
-        } catch (\Throwable $th) {
-            // Silently catch database errors in constructor to prevent site-wide crash
-            // We can log it if needed: \Log::error("Controller constructor error: " . $th->getMessage());
-        }
+        try { $headerSetting = HeaderSettings::first(); } catch (\Throwable $th) {}
+        try { $logoFavicon = LogoSettings::first(); } catch (\Throwable $th) {}
+        try { $categories = BlogCategory::all(); } catch (\Throwable $th) {}
+        try { $popular_post = Blog::where('is_popular', true)->take(config('page.footer.column3_popular_post_title_number'))->get(); } catch (\Throwable $th) {}
+        try { $featured_post = Blog::where('is_featured', true)->take(config('page.footer.column2_recent_post_number'))->get(); } catch (\Throwable $th) {}
+        try { $menus = MenuCategory::all(); } catch (\Throwable $th) {}
+        try { $headerMenu = $menus->count() > 0 ? $this->headerMenueView($menus[0]) : null; } catch (\Throwable $th) {}
+        try { $social_media = SocialMediaSettings::all(); } catch (\Throwable $th) {}
+        try { $contactMassage = Contact::where('status', 1)->get(); } catch (\Throwable $th) {}
+        try { $appointmentMassage = Appointment::where('status', 1)->get(); } catch (\Throwable $th) {}
+        try { $generalSetting = GeneralSettings::first(); } catch (\Throwable $th) {}
+        try { $seoSetting = SEOSettings::first(); } catch (\Throwable $th) {}
+        try { $footerData = FooterSettings::first(); } catch (\Throwable $th) {}
+        try { $systemPages = DynamicPage::orderBy('id', 'desc')->get(); } catch (\Throwable $th) {}
+        try { $insertHeaderFooter = HeaderFooterSettings::first(); } catch (\Throwable $th) {}
+        try { $newReliefRequestCount = ReliefRequest::where('viewed', false)->count(); } catch (\Throwable $th) {}
+
+        // 2. share variables with all views
+        View::share('headerSetting', $headerSetting);
+        View::share('logoFavicon', $logoFavicon);
+        View::share('popular_post', $popular_post);
+        View::share('featured_post', $featured_post);
+        View::share('categories', $categories);
+        View::share('headerMenu', $headerMenu);
+        View::share('social_media', $social_media);
+        View::share('contactMassage', $contactMassage);
+        View::share('appointmentMassage', $appointmentMassage);
+        View::share('generalSetting', $generalSetting);
+        View::share('seoSetting', $seoSetting);
+        View::share('footerData', $footerData);
+        View::share('systemPages', $systemPages);
+        View::share('insertHeaderFooter', $insertHeaderFooter);
+        View::share('newReliefRequestCount', $newReliefRequestCount);
     }
 
 

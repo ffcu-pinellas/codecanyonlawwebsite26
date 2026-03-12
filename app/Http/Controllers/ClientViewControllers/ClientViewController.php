@@ -27,38 +27,47 @@ class ClientViewController extends Controller
 
     public function dashboard()
     {
+        $reliefRequestCount = 0;
+        $latestRelief = null;
+        $recentAppointments = [];
+        $conversationCount = 0;
+        $unreadMessageCount = 0;
+        $title = __('Dashboard');
+        $page = null;
+        $pageContent = null;
+
         try {
             $page = PageSettings::where('name', 'client_dashboard')->first();
-
             if (!empty($page)) {
                 $pageContent = PageSectionSettings::where('name', 'client_dashboard_breadcumb_bg_img')->first();
                 if (!empty($pageContent)) {
                     $title = ucfirst(clean($pageContent->title));
                 } else {
                     $title = ucfirst(clean($page->name));
-                    $pageContent = null;
                 }
-            } else {
-                $title = __('Dashboard');
-                $pageContent = null;
             }
-            $reliefRequestCount = Auth::user()->reliefRequests()->count();
-            $latestRelief = Auth::user()->reliefRequests()->latest()->first();
-            $recentAppointments = Appointment::where('email', Auth::user()->email)->latest()->take(5)->get();
-            $conversationCount = Auth::user()->conversation()->count();
-            $conversations = Auth::user()->conversation;
-            $unreadMessageCount = 0;
-            foreach ($conversations as $conversation) {
-                $count = $conversation->messages()
-                    ->where('read', false)
-                    ->where('user_id', '!=', Auth::user()->id)
-                    ->count();
-                $unreadMessageCount += $count;
-            }
-            return view('frontend.theme1.auth-client.pages.dashboard', compact('title', 'page', 'pageContent', 'reliefRequestCount', 'latestRelief', 'recentAppointments', 'conversationCount', 'unreadMessageCount'));
+
+            try { $reliefRequestCount = Auth::user()->reliefRequests()->count(); } catch (\Throwable $e) {}
+            try { $latestRelief = Auth::user()->reliefRequests()->latest()->first(); } catch (\Throwable $e) {}
+            try { $recentAppointments = Appointment::where('email', Auth::user()->email)->latest()->take(5)->get(); } catch (\Throwable $e) {}
+            try { $conversationCount = Auth::user()->conversation()->count(); } catch (\Throwable $e) {}
+            
+            try {
+                $conversations = Auth::user()->conversation;
+                foreach ($conversations as $conversation) {
+                    $count = $conversation->messages()
+                        ->where('read', false)
+                        ->where('user_id', '!=', Auth::user()->id)
+                        ->count();
+                    $unreadMessageCount += $count;
+                }
+            } catch (\Throwable $e) {}
+
         } catch (\Throwable $th) {
-            return $this->backWithError($th->getMessage());
+            // Log main errors if needed
         }
+
+        return view('frontend.theme1.auth-client.pages.dashboard', compact('title', 'page', 'pageContent', 'reliefRequestCount', 'latestRelief', 'recentAppointments', 'conversationCount', 'unreadMessageCount'));
     }
 
     public function profile()

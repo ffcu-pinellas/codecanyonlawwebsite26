@@ -57,13 +57,15 @@ class AdminController extends Controller
             $data['appointmentMlist'] = $appointmentMlist;
 
             $title = 'My Dashboard';
-            $AttorneyCount = Attorney::count();
-            $ServiceCount = Service::count();
-            $BlogCount = Blog::count();
-            $AppointmentCount = Appointment::count();
-            return view('backend.pages.dashboard', compact('title', 'AttorneyCount', 'ServiceCount', 'BlogCount', 'AppointmentCount', 'data'));
+            $AttorneyCount = 0; try { $AttorneyCount = Attorney::count(); } catch (\Throwable $e) {}
+            $ServiceCount = 0; try { $ServiceCount = Service::count(); } catch (\Throwable $e) {}
+            $BlogCount = 0; try { $BlogCount = Blog::count(); } catch (\Throwable $e) {}
+            $AppointmentCount = 0; try { $AppointmentCount = Appointment::count(); } catch (\Throwable $e) {}
+            $reliefRequestCount = 0; try { $reliefRequestCount = ReliefRequest::count(); } catch (\Throwable $e) {}
+
+            return view('backend.pages.dashboard', compact('title', 'AttorneyCount', 'ServiceCount', 'BlogCount', 'AppointmentCount', 'data', 'reliefRequestCount'));
         } catch (\Throwable $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            return view('backend.pages.dashboard', ['error' => $e->getMessage(), 'title' => 'Dashboard (Limited Mode)', 'data' => ['appointmentMlist' => []]]);
         }
     }
 
@@ -256,13 +258,14 @@ class AdminController extends Controller
     //=============== Get Financial Relief Requests ===============//
     public function getReliefRequests()
     {
+        $hardships = [];
+        $title = 'Financial Relief Requests';
         try {
-            $title = 'Financial Relief Requests';
             $hardships = ReliefRequest::all();
-            return view('backend.pages.relief-requests.index', compact('hardships', 'title'));
         } catch (\Throwable $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            // Log if needed
         }
+        return view('backend.pages.relief-requests.index', compact('hardships', 'title'));
     }
 
     public function viewReliefRequest(ReliefRequest $hardship)
