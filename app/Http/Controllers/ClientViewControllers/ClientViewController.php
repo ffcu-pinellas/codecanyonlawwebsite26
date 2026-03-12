@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\ClientViewControllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Appointment;
 use App\Models\Attorney;
 use App\Models\Conversation;
 use App\Models\ReliefRequest;
