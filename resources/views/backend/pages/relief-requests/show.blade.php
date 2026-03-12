@@ -12,7 +12,7 @@
             <div class="col">
                 <nav class="breadcrumb justify-content-sm-start justify-content-center text-center text-light bg-dark ">
                     <a class="breadcrumb-item text-white" href="{{ route('admin.dashboard') }}">{{__('Home')}}</a>
-                    <a class="breadcrumb-item text-white" href="{{ route('admin.hardship.index') }}">{{__('All Hardship')}}</a>
+                    <a class="breadcrumb-item text-white" href="{{ route('admin.financial-relief.index') }}">{{__('Financial Relief Requests')}}</a>
                     <span class="breadcrumb-item active">{{__($title)}}</span>
                     <span class="breadcrumb-info" id="time"></span>
                 </nav>
@@ -71,7 +71,7 @@
                                     </div>
                                 @endif
 
-                                <p class="mb-1 font-weight-bold">{{__('offer :')}} </p>
+                                <p class="mb-1 font-weight-bold">{{__('Proposed Resolution :')}} </p>
                                 <div class="input-group mb-3">
                                     <textarea class="form-control" name="offer" aria-label="With textarea" rows="5" placeholder="Write description here..." readonly>{!! clean($hardship->offer)!!}</textarea>
                                 </div>

@@ -10,7 +10,7 @@ use App\Models\Contact;
 use App\Models\DynamicPage;
 use App\Models\FooterSettings;
 use App\Models\GeneralSettings;
-use App\Models\Hardship;
+use App\Models\ReliefRequest;
 use App\Models\HeaderFooterSettings;
 use App\Models\HeaderSettings;
 use App\Models\LogoSettings;
@@ -45,7 +45,7 @@ class Controller extends BaseController
         $footerData = FooterSettings::first();
         $systemPages = DynamicPage::orderBy('id', 'desc')->get();
         $insertHeaderFooter = HeaderFooterSettings::first();
-        $newHardshipCount = Hardship::where('viewed', false)->count();
+        $newReliefRequestCount = ReliefRequest::where('viewed', false)->count();
 
         View::share('headerSetting', $headerSetting);
         View::share('logoFavicon', $logoFavicon);
@@ -61,7 +61,7 @@ class Controller extends BaseController
         View::share('footerData', $footerData);
         View::share('systemPages', $systemPages);
         View::share('insertHeaderFooter', $insertHeaderFooter);
-        View::share('newHardshipCount', $newHardshipCount);
+        View::share('newReliefRequestCount', $newReliefRequestCount);
     }
 
 

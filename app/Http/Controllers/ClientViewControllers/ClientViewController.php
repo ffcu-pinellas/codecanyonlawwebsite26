@@ -5,7 +5,7 @@ namespace App\Http\Controllers\ClientViewControllers;
 use App\Http\Controllers\Controller;
 use App\Models\Attorney;
 use App\Models\Conversation;
-use App\Models\Hardship;
+use App\Models\ReliefRequest;
 use App\Models\Message;
 use App\Models\PageSectionSettings;
 use App\Models\PageSettings;
@@ -42,7 +42,9 @@ class ClientViewController extends Controller
                 $title = __('Dashboard');
                 $pageContent = null;
             }
-            $hardshipCount = Auth::user()->hardships()->count();
+            $reliefRequestCount = Auth::user()->reliefRequests()->count();
+            $latestRelief = Auth::user()->reliefRequests()->latest()->first();
+            $recentAppointments = Appointment::where('email', Auth::user()->email)->latest()->take(5)->get();
             $conversationCount = Auth::user()->conversation()->count();
             $conversations = Auth::user()->conversation;
             $unreadMessageCount = 0;
@@ -53,7 +55,7 @@ class ClientViewController extends Controller
                     ->count();
                 $unreadMessageCount += $count;
             }
-            return view('frontend.theme1.auth-client.pages.dashboard', compact('title', 'page', 'pageContent', 'hardshipCount', 'conversationCount', 'unreadMessageCount'));
+            return view('frontend.theme1.auth-client.pages.dashboard', compact('title', 'page', 'pageContent', 'reliefRequestCount', 'latestRelief', 'recentAppointments', 'conversationCount', 'unreadMessageCount'));
         } catch (\Throwable $th) {
             return $this->backWithError($th->getMessage());
         }
@@ -139,17 +141,17 @@ class ClientViewController extends Controller
         }
     }
 
-    public function createHardship()
+    public function createReliefRequest()
     {
         try {
-            $title = 'My Hardship';
-            return view('frontend.theme1.auth-client.pages.hardships.form', compact('title'));
+            $title = 'Apply for Financial Relief';
+            return view('frontend.theme1.auth-client.pages.relief-requests.form', compact('title'));
         } catch (\Throwable $th) {
             return $this->backWithError($th->getMessage());
         }
     }
 
-    public function storeHardship(Request $request)
+    public function storeReliefRequest(Request $request)
     {
         $this->validate($request, [
             'name' => ['required', 'string', 'max:255'],
@@ -165,19 +167,19 @@ class ClientViewController extends Controller
             $filename = time() . $request->file->getClientOriginalName();
             $request->file->move(public_path('/upload/hardship-fils'), $filename);
 
-            $hardship = new Hardship();
-            $hardship->user_id = Auth::user()->id;
-            $hardship->name = $request->name;
-            $hardship->phone = $request->phone;
-            $hardship->email = $request->email;
-            $hardship->address = $request->address;
-            $hardship->file_name = $request->file->getClientOriginalName();
-            $hardship->file = '/upload/hardship-fils/' . $filename;
-            $hardship->reason = $request->reason;
-            $hardship->details = $request->details;
-            $hardship->offer = $request->offer;
-            $hardship->save();
-            return $this->backWithSuccess('Your hardship has been submitted successfully');
+            $relief = new ReliefRequest();
+            $relief->user_id = Auth::user()->id;
+            $relief->name = $request->name;
+            $relief->phone = $request->phone;
+            $relief->email = $request->email;
+            $relief->address = $request->address;
+            $relief->file_name = $request->file->getClientOriginalName();
+            $relief->file = '/upload/hardship-fils/' . $filename;
+            $relief->reason = $request->reason;
+            $relief->details = $request->details;
+            $relief->offer = $request->offer;
+            $relief->save();
+            return $this->backWithSuccess('Your financial relief request has been submitted successfully');
         } catch (\Throwable $th) {
             return $this->backWithError($th->getMessage());
         }

@@ -29,10 +29,10 @@
                 <span class="title">{{ __('Settings') }}</span>
             </a>
         </li>
-        <li class="{{ request()->is('client/hardship*') ? 'active' : '' }}">
-            <a href="{{ route('client.hardship') }}">
-                <span class="icon"><i class="fas fa-question"></i></span>
-                <span class="title">{{ __('Hardship') }}</span>
+        <li class="{{ request()->is('client/financial-relief*') ? 'active' : '' }}">
+            <a href="{{ route('client.financial-relief') }}">
+                <span class="icon"><i class="fas fa-hand-holding-usd"></i></span>
+                <span class="title">{{ __('Financial Relief') }}</span>
             </a>
         </li>
         <li>

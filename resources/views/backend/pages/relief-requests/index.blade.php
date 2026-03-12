@@ -57,7 +57,7 @@
                                         <td>{{ substr(clean($value->reason),0,60).'....' }}</td>
                                         <td>
                                             <div class="d-flex">
-                                                <a href="{{ route('admin.hardship.view',$value->id) }}">
+                                                <a href="{{ route('admin.financial-relief.view',$value->id) }}">
                                                     <button type="button" class="btn btn-sm btn btn-success m-1 blogCategoryEditBtn" data-id="{{ $value->id }}">{{ __('View') }}</button>
                                                 </a>
 
@@ -65,7 +65,7 @@
                                                     <button type="button" class="btn btn-sm btn btn-danger m-1">{{__('Delete')}}</button>
 
 
-                                                    <form action="{{ route('admin.hardship.destroy', $value->id) }}" method="post" class="deleteForm">
+                                                    <form action="{{ route('admin.financial-relief.destroy', $value->id) }}" method="post" class="deleteForm">
                                                         @csrf
                                                         @method('delete')
                                                         <input type="hidden" name="_method" value="delete">

@@ -9,7 +9,7 @@
 @section('content')
     <div class="container">
         <div class="row mt-5">
-        <form action="{{ route('client.hardship') }}" method="post" enctype="multipart/form-data" class="w-75 mx-auto">
+        <form action="{{ route('client.financial-relief') }}" method="post" enctype="multipart/form-data" class="w-75 mx-auto">
             @csrf
             <p class="mb-1 font-weight-bold"><label for="name">{{ __('Name') }}:</label> </p>
             <div class="input-group input-group-lg mb-3">
@@ -56,7 +56,7 @@
                 @endif
             </div>
 
-            <p class="mb-1 font-weight-bold"><label for="reason">{{ __('Reason for Hardship') }}:</label> </p>
+            <p class="mb-1 font-weight-bold"><label for="reason">{{ __('Primary Reason for Requesting Relief') }}:</label> </p>
             <div class="input-group input-group-lg mb-3">
                 <input type="text" name="reason" id="reason" value="{{old('reason')}}" class="form-control rounded"
                        aria-label="Large" aria-describedby="inputGroup-sizing-sm">
@@ -66,7 +66,7 @@
                 @endif
             </div>
 
-            <p class="mb-1 font-weight-bold"><label for="details">{{ __('Additional Details Related to Your Hardship (Optional)') }}:</label> </p>
+            <p class="mb-1 font-weight-bold"><label for="details">{{ __('Additional Details Related to Your Request (Optional)') }}:</label> </p>
             <div class="form-group mb-3">
                 <textarea name="details" id="details" class="form-control rounded" rows="5">{{ old('details') }}</textarea>
                 <br>
@@ -75,7 +75,7 @@
                 @endif
             </div>
 
-            <p class="mb-1 font-weight-bold"><label for="offer">{{ __('Your Offer') }}:</label> </p>
+            <p class="mb-1 font-weight-bold"><label for="offer">{{ __('Proposed Resolution / Your Offer') }}:</label> </p>
             <div class="form-group mb-3">
                 <textarea name="offer" id="offer" class="form-control rounded" rows="5">{{ old('offer') }}</textarea>
                 <br>

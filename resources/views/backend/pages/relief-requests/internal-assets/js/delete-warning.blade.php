@@ -7,7 +7,7 @@
         function deleteslider(){
             swal({
                 title: "{{__('Are you sure?')}}",
-                text: "{{__('Once you delete, You can not recover this hardship and related files.')}}",
+                text: "{{__('Once you delete, You can not recover this request and related files.')}}",
                 icon: "warning",
                 dangerMode: true,
                 buttons: {

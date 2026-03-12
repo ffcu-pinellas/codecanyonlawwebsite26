@@ -96,9 +96,9 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client']
     Route::post('/profile', [ClientViewController::class, 'profileUpdate'])->name('profile-update');
     Route::post('/profile-info', [ClientViewController::class, 'profileInfoUpdate'])->name('profile-info');
     Route::post('/password-update', [UpdateUserPassword::class, 'updateAdminPassword'])->name('password-update');
-    // hardship
-    Route::get('/hardship', [ClientViewController::class, 'createHardship'])->name('hardship');
-    Route::post('/hardship', [ClientViewController::class, 'storeHardship']);
+    // financial relief
+    Route::get('/financial-relief', [ClientViewController::class, 'createReliefRequest'])->name('financial-relief');
+    Route::post('/financial-relief', [ClientViewController::class, 'storeReliefRequest']);
     // chat
     Route::prefix('conversation')->as('conversation.')->group(function (){
         Route::get('/', [ClientViewController::class, 'getConversation'])->name('index');
@@ -163,11 +163,11 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         Route::delete('/appointment/{id}', [AdminController::class, 'destroyAppointment'])->name('appointment.destroy');
     });
 
-    // Get Hardship
-    Route::prefix('hardship')->as('hardship.')->group(function (){
-        Route::get('/', [AdminController::class, 'getHardship'])->name('index');
-        Route::get('/{hardship}', [AdminController::class, 'viewHardship'])->name('view');
-        Route::delete('/{hardship}', [AdminController::class, 'destroyHardship'])->name('destroy');
+    // Get Financial Relief
+    Route::prefix('financial-relief')->as('financial-relief.')->group(function (){
+        Route::get('/', [AdminController::class, 'getReliefRequests'])->name('index');
+        Route::get('/{relief}', [AdminController::class, 'viewReliefRequest'])->name('view');
+        Route::delete('/{relief}', [AdminController::class, 'destroyReliefRequest'])->name('destroy');
     });
 
     // app settings

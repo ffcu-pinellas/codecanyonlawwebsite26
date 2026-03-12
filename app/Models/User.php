@@ -72,9 +72,9 @@ class User extends Authenticatable
         return $this->hasOne(Attorney::class, 'user_id', 'id');
     }
 
-    public function hardships()
+    public function reliefRequests()
     {
-        return $this->hasMany(Hardship::class, 'user_id','id');
+        return $this->hasMany(ReliefRequest::class, 'user_id','id');
     }
 
     public function conversation()

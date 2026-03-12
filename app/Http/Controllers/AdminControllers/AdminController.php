@@ -9,7 +9,7 @@ use App\Models\Blog;
 use App\Models\Contact;
 use App\Models\Conversation;
 use App\Models\Designation;
-use App\Models\Hardship;
+use App\Models\ReliefRequest;
 use App\Models\Message;
 use App\Models\Service;
 use App\Models\User;
@@ -253,30 +253,30 @@ class AdminController extends Controller
         }
     }
 
-    //=============== Get Appointments ===============//
-    public function getHardship()
+    //=============== Get Financial Relief Requests ===============//
+    public function getReliefRequests()
     {
         try {
-            $title = 'Hardships';
-            $hardships = Hardship::all();
-            return view('backend.pages.hardships.index', compact('hardships', 'title'));
+            $title = 'Financial Relief Requests';
+            $hardships = ReliefRequest::all();
+            return view('backend.pages.relief-requests.index', compact('hardships', 'title'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
-    public function viewHardship(Hardship $hardship)
+    public function viewReliefRequest(ReliefRequest $hardship)
     {
         try {
-            $title = 'Hardship';
+            $title = 'Financial Relief Request';
             $hardship->update(['viewed' => true]);
-            return view('backend.pages.hardships.show', compact('hardship', 'title'));
+            return view('backend.pages.relief-requests.show', compact('hardship', 'title'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
-    public function destroyHardship(Hardship $hardship)
+    public function destroyReliefRequest(ReliefRequest $hardship)
     {
         //return $this->backWithWarning('Create, update and delete is not allowed to demo version');
         try {
@@ -286,7 +286,7 @@ class AdminController extends Controller
                 }
             }
             $hardship->delete();
-            return $this->backWithSuccess('Hardship deleted successfully.');
+            return $this->backWithSuccess('Request deleted successfully.');
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

@@ -297,12 +297,12 @@
                     </li>
                 @endcan
 
-                <!-- NAV ITEM Hardship  -->
-                <li class="nav-item {{ request()->is('admin/hardship*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.hardship.index') }}" class="nav-link">
-                        <i class="material-icons">perm_contact_calendar</i>
-                        <span class="link-text">{{ __('Hardship') }}</span>
-                        <span class="badge badge-md">{{ $newHardshipCount }}</span>
+                <!-- NAV ITEM Financial Relief  -->
+                <li class="nav-item {{ request()->is('admin/financial-relief*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.financial-relief.index') }}" class="nav-link">
+                        <i class="fas fa-hand-holding-usd"></i>
+                        <span class="link-text">{{ __('Financial Relief') }}</span>
+                        <span class="badge badge-md">{{ $newReliefRequestCount }}</span>
                     </a>
                 </li>
 
