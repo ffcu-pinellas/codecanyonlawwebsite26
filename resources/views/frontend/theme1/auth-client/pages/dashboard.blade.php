@@ -77,41 +77,41 @@
 @section('content')
 <div class="container-fluid py-4">
     <!-- Welcome Header -->
-    <div class="dashboard-header d-flex justify-content-between align-items-center">
-        <div>
-            <h2 class="mb-1 text-white">Welcome back, {{ Auth::user()->name }}</h2>
-            <p class="mb-0 opacity-75">Your legal and financial portal is up to date.</p>
+    <div class="dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-center text-center text-md-left">
+        <div class="mb-3 mb-md-0">
+            <h2 class="mb-1 text-white" style="font-size: 1.5rem;">Welcome back, {{ Auth::user()->name }}</h2>
+            <p class="mb-0 opacity-75 small">Your legal and financial portal is up to date.</p>
         </div>
-        <div class="text-right d-none d-md-block">
+        <div class="d-none d-md-block">
             <h5 class="mb-0 text-white">{{ date('l, F jS') }}</h5>
             <small class="opacity-75">Standard Time</small>
         </div>
     </div>
 
     <!-- Stats Grid -->
-    <div class="row mb-4">
-        <div class="col-md-4 mb-3">
-            <div class="stat-card">
-                <div class="stat-icon icon-relief"><i class="fas fa-hand-holding-usd"></i></div>
-                <h6 class="text-muted text-uppercase small font-weight-bold">Assistance Requests</h6>
-                <h3 class="font-weight-bold mb-0">{{ $reliefRequestCount }}</h3>
-                <small class="text-success"><i class="fas fa-check-circle"></i> Active Matters</small>
+    <div class="row mb-2 mb-md-4">
+        <div class="col-6 col-md-4 mb-3 px-2 px-md-3">
+            <div class="stat-card p-3">
+                <div class="stat-icon icon-relief mb-2" style="width: 40px; height: 40px; font-size: 1.2rem;"><i class="fas fa-hand-holding-usd"></i></div>
+                <h6 class="text-muted text-uppercase font-weight-bold" style="font-size: 0.65rem;">Assistance</h6>
+                <h3 class="font-weight-bold mb-0" style="font-size: 1.5rem;">{{ $reliefRequestCount }}</h3>
+                <small class="text-success d-none d-sm-block mt-1"><i class="fas fa-check-circle"></i> Active</small>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="stat-card">
-                <div class="stat-icon icon-msg"><i class="fas fa-envelope-open-text"></i></div>
-                <h6 class="text-muted text-uppercase small font-weight-bold">Unread Messages</h6>
-                <h3 class="font-weight-bold mb-0">{{ $unreadMessageCount }}</h3>
-                <small class="text-primary"><i class="fas fa-clock"></i> New Updates</small>
+        <div class="col-6 col-md-4 mb-3 px-2 px-md-3">
+            <div class="stat-card p-3">
+                <div class="stat-icon icon-msg mb-2" style="width: 40px; height: 40px; font-size: 1.2rem;"><i class="fas fa-envelope-open-text"></i></div>
+                <h6 class="text-muted text-uppercase font-weight-bold" style="font-size: 0.65rem;">Messages</h6>
+                <h3 class="font-weight-bold mb-0" style="font-size: 1.5rem;">{{ $unreadMessageCount }}</h3>
+                <small class="text-primary d-none d-sm-block mt-1"><i class="fas fa-clock"></i> New</small>
             </div>
         </div>
-        <div class="col-md-4 mb-3">
-            <div class="stat-card">
-                <div class="stat-icon icon-appt"><i class="fas fa-calendar-check"></i></div>
-                <h6 class="text-muted text-uppercase small font-weight-bold">Total Conversations</h6>
-                <h3 class="font-weight-bold mb-0">{{ $conversationCount }}</h3>
-                <small class="text-dark"><i class="fas fa-user-tie"></i> Legal Team</small>
+        <div class="col-12 col-md-4 mb-3 px-2 px-md-3">
+            <div class="stat-card p-3">
+                <div class="stat-icon icon-appt mb-2" style="width: 40px; height: 40px; font-size: 1.2rem;"><i class="fas fa-calendar-check"></i></div>
+                <h6 class="text-muted text-uppercase font-weight-bold" style="font-size: 0.65rem;">Total Matters</h6>
+                <h3 class="font-weight-bold mb-0" style="font-size: 1.5rem;">{{ $conversationCount }}</h3>
+                <small class="text-dark d-none d-sm-block mt-1"><i class="fas fa-user-tie"></i> Team</small>
             </div>
         </div>
     </div>

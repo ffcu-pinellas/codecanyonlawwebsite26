@@ -3653,11 +3653,47 @@ width: 64px;
     Client dashboard responsive css
 =====*****=====*****=====*****=====*****/
 @media (max-width: 991px) {
-    .client-navigation{
+    .client-navigation {
         width: 60px;
     }
-    .main{
+    .main {
         width: calc(100% - 60px);
+        left: 60px;
+    }
+}
+
+@media (max-width: 767px) {
+    .client-dashboard-area {
+        position: relative;
+    }
+    .client-navigation {
+        position: absolute;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        transform: translateX(-100%);
+        width: 260px;
+        height: 100%;
+        background: #0b1d37;
+        box-shadow: 10px 0 15px rgba(0,0,0,0.1);
+    }
+    .client-navigation.active {
+        transform: translateX(0);
+        width: 260px;
+    }
+    .main {
+        width: 100%;
+        left: 0;
+        padding: 0;
+    }
+    .main.active {
+        width: 100%;
+    }
+    .top-bar-wrapper {
+        padding: 10px;
+    }
+    .client-dashboard-section {
+        padding: 20px 0;
     }
 }
 /*-- user profile start --*/
