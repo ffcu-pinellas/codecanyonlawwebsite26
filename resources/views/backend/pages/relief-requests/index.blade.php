@@ -61,7 +61,7 @@
                                                     <button type="button" class="btn btn-sm btn btn-success m-1 blogCategoryEditBtn" data-id="{{ $value->id }}">{{ __('View') }}</button>
                                                 </a>
 
-                                                <a href="javascript:void(0)" title="{{__('Delete')}}" class="hardshipDestroyBtn">
+                                                <a href="javascript:void(0)" title="{{__('Delete')}}" class="assistanceDestroyBtn">
                                                     <button type="button" class="btn btn-sm btn btn-danger m-1">{{__('Delete')}}</button>
 
 

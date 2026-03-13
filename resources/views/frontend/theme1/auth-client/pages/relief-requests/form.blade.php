@@ -56,7 +56,7 @@
                 @endif
             </div>
 
-            <p class="mb-1 font-weight-bold"><label for="reason">{{ __('Primary Reason for Requesting Relief') }}:</label> </p>
+            <p class="mb-1 font-weight-bold"><label for="reason">{{ __('Primary Reason for Requesting Assistance') }}:</label> </p>
             <div class="input-group input-group-lg mb-3">
                 <input type="text" name="reason" id="reason" value="{{old('reason')}}" class="form-control rounded"
                        aria-label="Large" aria-describedby="inputGroup-sizing-sm">

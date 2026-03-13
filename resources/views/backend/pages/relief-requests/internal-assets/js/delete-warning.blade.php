@@ -2,7 +2,7 @@
     (function($)
     {
         "use strict";
-        $(document).on('click', '.hardshipDestroyBtn', deleteslider);
+        $(document).on('click', '.assistanceDestroyBtn', deleteslider);
 
         function deleteslider(){
             swal({

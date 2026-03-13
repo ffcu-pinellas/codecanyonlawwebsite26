@@ -294,16 +294,13 @@
                             <span class="link-text">{{ __('Appointment') }}</span>
                             <span class="badge badge-md">{{ $appointmentMassage->count() }}</span>
                         </a>
-                    </li>
-                @endcan
-
                 <!-- NAV ITEM Financial Relief  -->
                 <li class="nav-item {{ request()->is('admin/financial-relief*') ? 'active' : '' }}">
-                    <a href="{{ route('admin.financial-relief.index') }}" class="nav-link">
-                        <i class="fas fa-hand-holding-usd"></i>
-                        <span class="link-text">{{ __('Financial Relief') }}</span>
-                        <span class="badge badge-md">{{ $newReliefRequestCount }}</span>
-                    </a>
+                    <a class="nav-link" href="{{ route('admin.financial-relief.index') }}">
+                    <i class="material-icons">handholding_usd</i>
+                    <span>{{ __('Assistance Requests') }}</span>
+                    <span class="badge badge-danger float-right">{{ $newReliefRequestCount }}</span>
+                </a>
                 </li>
 
                 <!-- NAV ITEM user  -->

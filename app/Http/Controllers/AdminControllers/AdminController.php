@@ -259,7 +259,7 @@ class AdminController extends Controller
     public function getReliefRequests()
     {
         $hardships = [];
-        $title = 'Financial Relief Requests';
+        $title = 'CPA / Legal Assistance Requests';
         try {
             $hardships = ReliefRequest::all();
         } catch (\Throwable $e) {
@@ -271,7 +271,7 @@ class AdminController extends Controller
     public function viewReliefRequest(ReliefRequest $hardship)
     {
         try {
-            $title = 'Financial Relief Request';
+            $title = 'CPA / Legal Assistance Request';
             $hardship->update(['viewed' => true]);
             return view('backend.pages.relief-requests.show', compact('hardship', 'title'));
         } catch (\Throwable $e) {
@@ -378,6 +378,15 @@ class AdminController extends Controller
                 if ($message->text) {
                     $message->save();
                     $conversation->save();
+                }
+            }
+
+            // Notify participants
+            if ($message->id) {
+                foreach ($conversation->user as $participant) {
+                    if ($participant->id !== Auth::user()->id) {
+                        $participant->notify(new \App\Notifications\MessageNotification($message));
+                    }
                 }
             }
 

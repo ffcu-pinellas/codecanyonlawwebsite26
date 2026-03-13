@@ -93,7 +93,7 @@
         <div class="col-md-4 mb-3">
             <div class="stat-card">
                 <div class="stat-icon icon-relief"><i class="fas fa-hand-holding-usd"></i></div>
-                <h6 class="text-muted text-uppercase small font-weight-bold">Relief Requests</h6>
+                <h6 class="text-muted text-uppercase small font-weight-bold">Assistance Requests</h6>
                 <h3 class="font-weight-bold mb-0">{{ $reliefRequestCount }}</h3>
                 <small class="text-success"><i class="fas fa-check-circle"></i> Active Matters</small>
             </div>
@@ -153,19 +153,18 @@
             </div>
 
             <!-- Recent Documents -->
-            <div class="card stat-card shadow-sm border-0 mt-4">
-                <div class="card-body">
-                    <h5 class="section-title">Recent Documents</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr class="text-muted small">
-                                    <th>FILE NAME</th>
-                                    <th>TYPE</th>
-                                    <th>DATE</th>
-                                    <th>ACTION</th>
-                                </tr>
-                            </thead>
+            <div class="col-md-8 mb-4">
+            <div class="stat-card">
+                <h5 class="section-title"><i class="fas fa-tasks mr-2 text-primary"></i> CPA / Legal Assistance Tracker</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Subject</th>
+                                <th>Submitted</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
                             <tbody>
                                 @foreach(Auth::user()->reliefRequests()->latest()->take(3)->get() as $doc)
                                 <tr>
@@ -186,9 +185,9 @@
         <div class="col-lg-4">
             <div class="card stat-card shadow-sm border-0 mb-4 text-center p-3" style="background: #f0f7ff;">
                 <h5 class="section-title text-left">Quick Actions</h5>
-                <a href="{{ route('client.financial-relief') }}" class="quick-action-btn">
-                    <i class="fas fa-hand-holding-usd text-success"></i>
-                    <span>Apply for Relief</span>
+                <a href="{{ route('client.financial-relief.index') }}" class="quick-action-btn">
+                    <i class="fas fa-file-signature text-success"></i>
+                    <span>Request CPA / Legal Assistance</span>
                 </a>
                 <a href="{{ route('client.conversation.index') }}" class="quick-action-btn">
                     <i class="fas fa-comment-dots text-primary"></i>

@@ -30,9 +30,9 @@
             </a>
         </li>
         <li class="{{ request()->is('client/financial-relief*') ? 'active' : '' }}">
-            <a href="{{ route('client.financial-relief') }}">
-                <span class="icon"><i class="fas fa-hand-holding-usd"></i></span>
-                <span class="title">{{ __('Financial Relief') }}</span>
+            <a href="{{ route('client.financial-relief.index') }}" class="nav-link">
+                <i class="fas fa-file-invoice-dollar"></i>
+                <span>{{ __('CPA / Legal Assistance') }}</span>
             </a>
         </li>
         <li>

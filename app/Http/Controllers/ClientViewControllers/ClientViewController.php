@@ -154,7 +154,7 @@ class ClientViewController extends Controller
     public function createReliefRequest()
     {
         try {
-            $title = 'Apply for Financial Relief';
+            $title = 'Request CPA / Legal Assistance';
             return view('frontend.theme1.auth-client.pages.relief-requests.form', compact('title'));
         } catch (\Throwable $th) {
             return $this->backWithError($th->getMessage());
@@ -189,7 +189,7 @@ class ClientViewController extends Controller
             $relief->details = $request->details;
             $relief->offer = $request->offer;
             $relief->save();
-            return $this->backWithSuccess('Your financial relief request has been submitted successfully');
+            return $this->backWithSuccess('Your assistance request has been submitted successfully');
         } catch (\Throwable $th) {
             return $this->backWithError($th->getMessage());
         }
@@ -337,6 +337,15 @@ class ClientViewController extends Controller
                 if ($message->text) {
                     $message->save();
                     $conversation->save();
+                }
+            }
+
+            // Notify participants
+            if ($message->id) {
+                foreach ($conversation->user as $participant) {
+                    if ($participant->id !== Auth::user()->id) {
+                        $participant->notify(new \App\Notifications\MessageNotification($message));
+                    }
                 }
             }
 
