@@ -26,7 +26,7 @@
     <!-- Inner Section End -->
 
         <!-- Start About Section-->
-        <section class="client-dashboard-section">
+        <section class="client-dashboard-section pt-5">
             <div class="container">
                 <div class="col-lg-12">
                     <div class="client-dashboard-area style-2">

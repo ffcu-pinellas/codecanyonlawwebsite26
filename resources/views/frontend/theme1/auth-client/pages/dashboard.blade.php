@@ -19,7 +19,7 @@
         transition: transform 0.3s ease, box-shadow 0.3s ease;
         border: none;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        height: 100%;
+        margin-bottom: 25px;
     }
     .stat-card:hover {
         transform: translateY(-5px);
@@ -153,7 +153,7 @@
             </div>
 
             <!-- CPA / Legal Assistance Tracker -->
-            <div class="card stat-card shadow-sm border-0 mb-4">
+            <div class="card stat-card shadow-sm border-0">
                 <div class="card-body">
                     <h5 class="section-title mb-4"><i class="fas fa-tasks mr-2 text-primary"></i> CPA / Legal Assistance Tracker</h5>
                     <div class="table-responsive">
@@ -172,26 +172,26 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <i class="far fa-file-pdf text-danger fa-lg mr-3"></i>
-                                            <span class="font-weight-medium">{{ $doc->file_name }}</span>
+                                            <span class="font-weight-medium text-dark">{{ $doc->file_name ?? 'Service Request' }}</span>
                                         </div>
                                     </td>
                                     <td>{{ $doc->created_at->format('M d, Y') }}</td>
                                     <td>
                                         @if($doc->viewed)
-                                            <span class="badge badge-pill badge-soft-success" style="background: #e8f5e9; color: #2e7d32; font-size: 0.7rem;">Reviewed</span>
+                                            <span class="badge badge-pill badge-soft-success" style="background: #e8f5e9; color: #2e7d32; padding: 5px 12px;">Reviewed</span>
                                         @else
-                                            <span class="badge badge-pill badge-soft-warning" style="background: #fff3e0; color: #ef6c00; font-size: 0.7rem;">Processing</span>
+                                            <span class="badge badge-pill badge-soft-warning" style="background: #fff3e0; color: #ef6c00; padding: 5px 12px;">Processing</span>
                                         @endif
                                     </td>
                                     <td>
-                                        <a href="{{ asset($doc->file) }}" target="_blank" class="btn btn-outline-info btn-sm">
+                                        <a href="{{ asset($doc->file) }}" target="_blank" class="btn btn-outline-primary btn-sm btn-rounded">
                                             <i class="fas fa-eye"></i>
                                         </a>
                                     </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="4" class="text-center py-4 text-muted small">No documents synced yet.</td>
+                                    <td colspan="4" class="text-center py-4 text-muted small">No active assistance documents found yet.</td>
                                 </tr>
                                 @endforelse
                             </tbody>
