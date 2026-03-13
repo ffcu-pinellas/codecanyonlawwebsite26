@@ -3755,3 +3755,35 @@ width: 64px;
     cursor: pointer;
 }
 /*-- user profile end --*/
+
+/* Mobile Sidebar Enhancements */
+.sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+}
+.sidebar-overlay.active {
+    display: block;
+}
+
+.mobile-close-btn {
+    display: none;
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    color: #fff;
+    font-size: 1.5rem;
+    cursor: pointer;
+    z-index: 1001;
+}
+
+@media (max-width: 767px) {
+    .mobile-close-btn {
+        display: block;
+    }
+}

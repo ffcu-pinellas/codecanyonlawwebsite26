@@ -1,4 +1,5 @@
 <div class="client-navigation px-0 rounded">
+    <div class="mobile-close-btn" id="mobileCloseSidebar"><i class="fas fa-times"></i></div>
     <ul>
         <li class="{{ request()->is('client/dashboard*') ? 'active' : '' }}">
             <a href="{{ route('client.dashboard') }}">

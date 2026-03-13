@@ -7,6 +7,7 @@
 @include('frontend.theme1.auth-client.layouts.pre-loader')
 
 <!-- Start Page Wrapper  -->
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="page-wrapper">
     @include('frontend.theme1.auth-client.menus.header-menu')
 
