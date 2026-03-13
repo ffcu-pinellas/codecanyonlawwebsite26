@@ -51,7 +51,7 @@ class MessageNotification extends Notification
                     ->line('You have received a new secure message from ' . $senderName . '.')
                     ->line('Message Preview: "' . substr($this->message->text, 0, 100) . (strlen($this->message->text) > 100 ? '...' : '') . '"')
                     ->action('View Message', route('login'))
-                    ->line('Thank you for using our legal/CPA portal!');
+                    ->line('Thank you for using our Secured Messaging System.');
     }
 
     /**
