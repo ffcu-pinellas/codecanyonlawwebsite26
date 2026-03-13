@@ -185,7 +185,7 @@
         <div class="col-lg-4">
             <div class="card stat-card shadow-sm border-0 mb-4 text-center p-3" style="background: #f0f7ff;">
                 <h5 class="section-title text-left">Quick Actions</h5>
-                <a href="{{ route('client.financial-relief.index') }}" class="quick-action-btn">
+                <a href="{{ route('client.financial-relief') }}" class="quick-action-btn">
                     <i class="fas fa-file-signature text-success"></i>
                     <span>Request CPA / Legal Assistance</span>
                 </a>
