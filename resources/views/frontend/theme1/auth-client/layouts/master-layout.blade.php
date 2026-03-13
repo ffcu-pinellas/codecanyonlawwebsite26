@@ -11,7 +11,7 @@
     @include('frontend.theme1.auth-client.menus.header-menu')
 
     <!-- Inner Section Start -->
-    @if(!request()->is('client/dashboard*'))
+    @if(!request()->is('client/*'))
         <section class="inner-area" style="@if(!empty($pageContent->bg_img))background-image: url({{asset($pageContent->bg_img)}});@else background-image: url({{asset('frontend/theme1/images/bg/2.jpg')}}); @endif">
             <div class="container">
                 <div class="row">

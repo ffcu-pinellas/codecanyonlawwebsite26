@@ -1,5 +1,5 @@
 <!-- Header Section Start -->
-<header class="header clearfix transparent-dark">
+<header class="header clearfix {{ request()->is('client/*') ? 'bg-dark navbar-dark position-relative' : 'transparent-dark' }}" style="{{ request()->is('client/*') ? 'background: #0b1d37;' : '' }}">
 
     <div class="top-bar">
         <div class="container">
