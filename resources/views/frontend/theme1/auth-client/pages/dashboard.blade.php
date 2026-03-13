@@ -152,28 +152,48 @@
                 </div>
             </div>
 
-            <!-- Recent Documents -->
-            <div class="col-md-8 mb-4">
-            <div class="stat-card">
-                <h5 class="section-title"><i class="fas fa-tasks mr-2 text-primary"></i> CPA / Legal Assistance Tracker</h5>
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>Subject</th>
-                                <th>Submitted</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                            <tbody>
-                                @foreach(Auth::user()->reliefRequests()->latest()->take(3)->get() as $doc)
+            <!-- CPA / Legal Assistance Tracker -->
+            <div class="card stat-card shadow-sm border-0 mb-4">
+                <div class="card-body">
+                    <h5 class="section-title mb-4"><i class="fas fa-tasks mr-2 text-primary"></i> CPA / Legal Assistance Tracker</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="thead-light">
                                 <tr>
-                                    <td><i class="far fa-file-pdf text-danger mr-2"></i> {{ $doc->file_name }}</td>
-                                    <td>Financial Proof</td>
-                                    <td>{{ $doc->created_at->format('M d') }}</td>
-                                    <td><a href="{{ asset($doc->file) }}" target="_blank" class="btn btn-light btn-sm"><i class="fas fa-download"></i></a></td>
+                                    <th>Subject</th>
+                                    <th>Submitted</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
                                 </tr>
-                                @endforeach
+                            </thead>
+                            <tbody>
+                                @forelse(Auth::user()->reliefRequests()->latest()->take(5)->get() as $doc)
+                                <tr>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <i class="far fa-file-pdf text-danger fa-lg mr-3"></i>
+                                            <span class="font-weight-medium">{{ $doc->file_name }}</span>
+                                        </div>
+                                    </td>
+                                    <td>{{ $doc->created_at->format('M d, Y') }}</td>
+                                    <td>
+                                        @if($doc->viewed)
+                                            <span class="badge badge-pill badge-soft-success" style="background: #e8f5e9; color: #2e7d32; font-size: 0.7rem;">Reviewed</span>
+                                        @else
+                                            <span class="badge badge-pill badge-soft-warning" style="background: #fff3e0; color: #ef6c00; font-size: 0.7rem;">Processing</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <a href="{{ asset($doc->file) }}" target="_blank" class="btn btn-outline-info btn-sm">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                @empty
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted small">No documents synced yet.</td>
+                                </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
