@@ -294,6 +294,9 @@
                             <span class="link-text">{{ __('Appointment') }}</span>
                             <span class="badge badge-md">{{ $appointmentMassage->count() }}</span>
                         </a>
+                    </li>
+                @endcan
+
                 <!-- NAV ITEM Financial Relief  -->
                 <li class="nav-item {{ request()->is('admin/financial-relief*') ? 'active' : '' }}">
                     <a class="nav-link" href="{{ route('admin.financial-relief.index') }}">
