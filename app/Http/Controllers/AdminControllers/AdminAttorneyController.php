@@ -183,7 +183,7 @@ class AdminAttorneyController extends Controller
             $validate = [
                 'designation_id' => ['required'],
                 'name' => ['required', 'string', 'max:255'],
-                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email_address'],
+                'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
                 'phone' => ['required', 'string', 'max:20', 'regex:/^([0-9\s\-\+\(\)]*)$/'],
                 'address' => ['required', 'string'],
                 'password' => ['confirmed']

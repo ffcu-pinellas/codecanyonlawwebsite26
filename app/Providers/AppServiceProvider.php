@@ -24,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        try {
             if (env('DB_USERNAME') !=null) {
                 if (Schema::hasTable('general_settings')) {
                     $generalSettings = \App\Models\GeneralSettings::first();
@@ -32,6 +33,8 @@ class AppServiceProvider extends ServiceProvider
                     }
                 }
             }
-
+        } catch (\Throwable $th) {
+            // Silence DB exceptions during CLI/testing boots
+        }
     }
 }

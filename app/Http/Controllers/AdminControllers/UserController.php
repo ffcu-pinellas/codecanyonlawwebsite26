@@ -177,7 +177,7 @@ class UserController extends Controller
     public function userIndexSave(Request $request)
     {
         try {
-            User::where(['id' => $request->id])->assignRole($request->role);
+            User::findOrFail($request->id)->syncRoles($request->role);
 
             return $this->backWithSuccess(__('User update successfully.'));
         } catch (\Throwable $e) {
@@ -190,7 +190,7 @@ class UserController extends Controller
         try {
             return view('backend.pages.users.client.index', [
                 'title' => 'All Clients',
-                'clients'=> User::role('admin')->get()
+                'clients'=> User::role('client')->get()
             ]);
         }catch (\Throwable $e){
             return redirect()->back()->with('error', $e->getMessage());

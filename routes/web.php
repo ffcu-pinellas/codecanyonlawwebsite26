@@ -82,7 +82,9 @@ Route::get('/attorney/{id}', [GuestViewController::class, 'viewAttorney'])->name
 // Dynamic Pages
 Route::get('pages/{slug}', [GuestViewController::class, 'dynamicPage'])->name('pages');
 // download file
-Route::get('/download-chatting-file/{message}', [GuestViewController::class, 'downloadMessageFile'])->name('download.chatting-file');
+Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+    Route::get('/download-chatting-file/{message}', [GuestViewController::class, 'downloadMessageFile'])->name('download.chatting-file');
+});
 
 
 //Route::middleware(['auth:sanctum', 'verified'])->get('/dashboard', function () {
@@ -111,7 +113,7 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client']
 
 
 
-Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctum','verified']], function () {
+Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctum','verified', 'admin']], function () {
     // dashboard route
     Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
     // profile routs

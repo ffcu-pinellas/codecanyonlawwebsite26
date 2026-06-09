@@ -17,10 +17,10 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        if (!Auth::user()->hasRole('client')){
-            return $next($request);
-        }else {
+        if (Auth::user() && !Auth::user()->hasRole('client')){
             return $next($request);
         }
+        
+        abort(403, 'Unauthorized action.');
     }
 }

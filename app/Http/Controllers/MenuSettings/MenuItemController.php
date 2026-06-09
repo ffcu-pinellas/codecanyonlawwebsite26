@@ -62,7 +62,7 @@ class MenuItemController extends Controller
                                     ->get();
                                 if (count($cItems) > 0) {
                                     foreach ($cItems as $ckey => $cChild) {
-                                        $dItems = Menu::where(['parent_id' => $cItems->id, 'category_id' => $category->id])
+                                        $dItems = Menu::where(['parent_id' => $cChild->id, 'category_id' => $category->id])
                                             ->select('id', 'href', 'icon', 'text', 'target', 'title')
                                             ->orderBy('position', 'ASC')
                                             ->get();

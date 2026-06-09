@@ -97,16 +97,11 @@ class ClientViewController extends Controller
                 'photo' => ['nullable', 'mimes:jpg,jpeg,png', 'max:1024'],
                 'phone' => ['required', 'string', 'max:20', 'regex:/^([0-9\s\-\+\(\)]*)$/'],
                 'address' => ['required', 'string'],
+                'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
             ])->validateWithBag('updateProfileInformation');
 
             if (isset($input['photo'])) {
                 $user->updateProfilePhoto($input['photo']);
-            }
-
-            if ($input['email'] != null) {
-                Validator::make($input, [
-                    'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user->id)],
-                ]);
             }
 
             if (
@@ -168,13 +163,13 @@ class ClientViewController extends Controller
             'phone' => ['required', 'string', 'max:20', 'regex:/^([0-9\s\-\+\(\)]*)$/'],
             'email' => ['required', 'string', 'email', 'max:255'],
             'address' => ['required', 'string', 'max:255'],
-            'file' => ['required'],
+            'file' => ['required', 'file', 'mimes:pdf,docx,doc,jpeg,png,jpg', 'max:10240'],
             'reason' => ['required', 'string'],
             'offer' => ['required', 'string'],
         ]);
 
         try {
-            $filename = time() . $request->file->getClientOriginalName();
+            $filename = time() . '_' . uniqid() . '.' . $request->file->getClientOriginalExtension();
             $request->file->move(public_path('/upload/hardship-fils'), $filename);
 
             $relief = new ReliefRequest();
@@ -327,8 +322,11 @@ class ClientViewController extends Controller
             $message->user_id = Auth::user()->id;
             $message->text = $request->text;
             if ($request->hasFile('file')) {
+                $request->validate([
+                    'file' => ['file', 'mimes:pdf,docx,doc,jpeg,png,jpg,txt', 'max:20480']
+                ]);
                 $message->file_name = $request->file->getClientOriginalName();
-                $fileName = time() . $request->file->getClientOriginalName();
+                $fileName = time() . '_' . uniqid() . '.' . $request->file->getClientOriginalExtension();
                 $request->file->move(public_path('/upload/message-files'), $fileName);
                 $message->file = '/upload/message-files/' . $fileName;
                 $message->save();

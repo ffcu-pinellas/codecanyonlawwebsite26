@@ -570,12 +570,12 @@ class GuestViewController extends Controller
                     $teamMembers = Attorney::where('status', true)->paginate((int)$pageContent->number_of_content);
                 }else{
                     $title = ucfirst($page->name);
-                    $teamMembers = Attorney::where('status', true)->all();
+                    $teamMembers = Attorney::where('status', true)->get();
                     $pageContent = null;
                 }
             }else{
                 $title = __('Our Team');
-                $teamMembers = Attorney::where('status', true)->all();
+                $teamMembers = Attorney::where('status', true)->get();
                 $pageContent = null;
             }
             return view('frontend.theme1.pages.teams.all_teams', compact('title','teamMembers', 'pageContent','page'));
@@ -659,11 +659,16 @@ class GuestViewController extends Controller
     public function downloadMessageFile(Message $message)
     {
         try {
+            $user = Auth::user();
+            if (!$user || !$message->conversation || !$message->conversation->user()->where('users.id', $user->id)->exists()) {
+                abort(403, 'Unauthorized access to file attachment.');
+            }
+
             $file = public_path($message->file);
             if (file_exists($file)){
                 return response()->download($file, $message->file_name);
             }else{
-                return $this->backWithError($message->file_name,' file is not exist....');
+                return $this->backWithError($message->file_name,' file does not exist....');
             }
         }catch (\Throwable $th){
             return $this->backWithError($th->getMessage());

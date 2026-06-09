@@ -276,9 +276,11 @@ class AdminBlogController extends Controller
             if ($request->hasFile('bg_image')) {
 
                 // delete existing image
-                $file = '/upload/blogs/bg-images/' . $blog->bg_image;
-                if (file_exists(public_path($file))) {
-                    unlink(public_path($file));
+                if (!empty($blog->bg_image)) {
+                    $file = 'upload/blogs/bg-images/' . $blog->bg_image;
+                    if (file_exists(public_path($file))) {
+                        unlink(public_path($file));
+                    }
                 }
 
                 $images = $request->bg_image;
@@ -305,9 +307,11 @@ class AdminBlogController extends Controller
 
             if ($request->hasFile('feature_img')) {
                 // delete existing image
-                $file = '/upload/blogs/features/' . $blog->feature_img;
-                if (file_exists(public_path($file))) {
-                    unlink(public_path($file));
+                if (!empty($blog->feature_img)) {
+                    $file = 'upload/blogs/features/' . $blog->feature_img;
+                    if (file_exists(public_path($file))) {
+                        unlink(public_path($file));
+                    }
                 }
                 $fimages = $request->feature_img;
                 foreach ($fimages as $fimg){
@@ -339,7 +343,7 @@ class AdminBlogController extends Controller
 
             DB::commit();
 
-            return $this->backWithSuccess('Blog has been created successfully');
+            return $this->backWithSuccess('Blog has been updated successfully');
         }catch (\Exception $th) {
             DB::rollBack();
             return redirect()->back()->with('error', $th->getMessage());
@@ -358,14 +362,18 @@ class AdminBlogController extends Controller
         try{
             $blog = Blog::findOrfail($id);
 
-            $file = '/upload/blogs/bg-images/' . $blog->bg_image;
-            if (file_exists(public_path($file))) {
-                unlink(public_path($file));
+            if (!empty($blog->bg_image)) {
+                $file = 'upload/blogs/bg-images/' . $blog->bg_image;
+                if (file_exists(public_path($file))) {
+                    unlink(public_path($file));
+                }
             }
 
-            $file = '/upload/blogs/features/' . $blog->feature_img;
-            if (file_exists(public_path($file))) {
-                unlink(public_path($file));
+            if (!empty($blog->feature_img)) {
+                $file = 'upload/blogs/features/' . $blog->feature_img;
+                if (file_exists(public_path($file))) {
+                    unlink(public_path($file));
+                }
             }
 
             $blog->delete();
