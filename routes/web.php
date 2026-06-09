@@ -354,5 +354,6 @@ Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff'])-
     Route::post('/request-payout', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'requestPayout'])->name('request-payout');
     Route::post('/reimbursement/request', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'requestReimbursement'])->name('reimbursement.request');
     Route::get('/ledger/proof/{entry}', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'downloadLedgerProof'])->name('ledger.proof');
+    Route::get('/direct-deposit-form', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'generateDirectDepositForm'])->name('direct-deposit-form.download');
 });
 

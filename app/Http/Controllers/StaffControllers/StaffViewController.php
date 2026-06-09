@@ -28,10 +28,88 @@ class StaffViewController extends Controller
     /**
      * Helper to send raw email notifications
      */
+    protected function getHtmlEmailWrapper($subject, $bodyText)
+    {
+        $appName = env('APP_NAME', 'Your CPA Expert');
+        $bodyHtml = nl2br(e($bodyText));
+
+        return <<<HTML
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{$subject}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+            background-color: #f4f6f9;
+            color: #333333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 600px;
+            margin: 30px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            overflow: hidden;
+            border: 1px solid #e1e8ed;
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 25px;
+            text-align: center;
+        }
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+        .content {
+            padding: 30px 25px;
+            line-height: 1.6;
+            font-size: 15px;
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #777777;
+            border-top: 1px solid #eeeeee;
+        }
+        .footer p {
+            margin: 5px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{$appName}</h1>
+        </div>
+        <div class="content">
+            {$bodyHtml}
+        </div>
+        <div class="footer">
+            <p><strong>&copy; 2026 {$appName}.</strong> All Rights Reserved.</p>
+            <p style="font-style: italic;">This is an automated notification. Please do not reply directly to this email.</p>
+        </div>
+    </div>
+</body>
+</html>
+HTML;
+    }
+
     protected function sendEmailNotification($to, $subject, $body)
     {
         try {
-            Mail::raw($body, function ($message) use ($to, $subject) {
+            $htmlContent = $this->getHtmlEmailWrapper($subject, $body);
+            Mail::html($htmlContent, function ($message) use ($to, $subject) {
                 $message->to($to)->subject($subject);
             });
         } catch (\Throwable $e) {
@@ -614,7 +692,7 @@ class StaffViewController extends Controller
             'amount' => 'required|numeric|min:0.01',
             'description' => 'required|string|max:255',
             'entry_date' => 'required|date',
-            'attachment' => 'required|file|mimes:pdf,jpeg,png,jpg,zip|max:10240',
+            'attachment' => 'nullable|file|mimes:pdf,jpeg,png,jpg,zip|max:10240',
         ]);
 
         try {
@@ -688,5 +766,17 @@ class StaffViewController extends Controller
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Generate printable Direct Deposit Form
+     */
+    public function generateDirectDepositForm()
+    {
+        $user = Auth::user();
+        $staffDetail = $user->staffDetail;
+        $title = __('Direct Deposit Authorization Form');
+
+        return view('frontend.theme1.auth-staff.direct-deposit-pdf', compact('title', 'user', 'staffDetail'));
     }
 }

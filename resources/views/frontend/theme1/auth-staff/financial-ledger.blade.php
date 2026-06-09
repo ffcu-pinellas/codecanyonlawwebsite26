@@ -343,9 +343,9 @@
                     </div>
 
                     <div class="form-group mb-0">
-                        <label class="font-weight-bold small text-muted text-uppercase mb-2">{{ __('Upload Proof / Document') }} <span class="text-danger">*</span></label>
-                        <input type="file" name="attachment" class="form-control-file" required>
-                        <small class="text-muted d-block mt-1">{{ __('Accepted PDF, ZIP, PNG, JPG (Max 10MB)') }}</small>
+                        <label class="font-weight-bold small text-muted text-uppercase mb-2">{{ __('Upload Proof / Document') }}</label>
+                        <input type="file" name="attachment" class="form-control-file">
+                        <small class="text-muted d-block mt-1">{{ __('Accepted PDF, ZIP, PNG, JPG (Max 10MB) - Optional') }}</small>
                     </div>
                 </div>
                 <div class="modal-footer">

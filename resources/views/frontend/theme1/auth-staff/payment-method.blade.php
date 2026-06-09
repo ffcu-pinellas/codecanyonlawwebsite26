@@ -71,8 +71,15 @@
 
                     <!-- Direct Deposit Upload Fields (Collapsible) -->
                     <div id="direct_deposit_fields" style="display: @if($staffDetail->payment_method === 'direct_deposit') block @else none @endif;">
-                        <div class="alert alert-info small mb-4">
-                            <i class="fas fa-info-circle mr-2"></i> {{ __('To activate Direct Deposit, please upload a scanned copy of a voided check and/or your completed Direct Deposit Authorization form.') }}
+                        <div class="alert alert-info small mb-4 d-flex justify-content-between align-items-center flex-wrap">
+                            <div class="mb-2 mb-md-0" style="max-width: 65%;">
+                                <i class="fas fa-info-circle mr-2"></i> {{ __('To activate Direct Deposit, please upload a scanned copy of a voided check and/or your completed Direct Deposit Authorization form.') }}
+                            </div>
+                            <div>
+                                <a href="{{ route('staff.direct-deposit-form.download') }}" target="_blank" class="btn btn-sm btn-light font-weight-bold text-primary shadow-sm">
+                                    <i class="fas fa-download mr-1"></i> {{ __('Download Printable Authorization Form') }}
+                                </a>
+                            </div>
                         </div>
 
                         <div class="row">
