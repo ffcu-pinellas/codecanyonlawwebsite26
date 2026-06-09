@@ -110,14 +110,6 @@
                                                             <span class="badge badge-success"><i class="fas fa-check"></i> {{ __('Verified') }}</span>
                                                         @else
                                                             <span class="badge badge-warning"><i class="fas fa-clock"></i> {{ __('Pending Verification') }}</span>
-                                                            <div class="mt-1 small">
-                                                                @if($detail->void_check_path)
-                                                                    <a href="{{ route('admin.staff.download-payment-form', [$staff->id, 'void_check']) }}" class="btn btn-xs btn-outline-info p-0 px-1">{{ __('Void Check') }}</a>
-                                                                @endif
-                                                                @if($detail->direct_deposit_form_path)
-                                                                    <a href="{{ route('admin.staff.download-payment-form', [$staff->id, 'direct_deposit']) }}" class="btn btn-xs btn-outline-info p-0 px-1 ml-1">{{ __('DD Form') }}</a>
-                                                                @endif
-                                                            </div>
                                                             <div class="mt-1">
                                                                 <form action="{{ route('admin.staff.verify-payment', $staff->id) }}" method="POST" class="d-inline">
                                                                     @csrf
@@ -126,6 +118,14 @@
                                                                 </form>
                                                             </div>
                                                         @endif
+                                                        <div class="mt-1 small">
+                                                            @if($detail->void_check_path)
+                                                                <a href="{{ route('admin.staff.download-payment-form', [$staff->id, 'void_check']) }}" class="btn btn-xs btn-outline-info p-0 px-1" title="{{ __('Download Void Check') }}"><i class="fas fa-file-invoice-dollar"></i> {{ __('Void Check') }}</a>
+                                                            @endif
+                                                            @if($detail->direct_deposit_form_path)
+                                                                <a href="{{ route('admin.staff.download-payment-form', [$staff->id, 'direct_deposit']) }}" class="btn btn-xs btn-outline-info p-0 px-1 ml-1" title="{{ __('Download DD Form') }}"><i class="fas fa-file-signature"></i> {{ __('DD Form') }}</a>
+                                                            @endif
+                                                        </div>
                                                     @else
                                                         <span class="badge badge-secondary">{{ __('Paper Check') }}</span>
                                                     @endif
@@ -135,10 +135,11 @@
                                             </td>
                                             <td>
                                                 <div class="d-flex flex-wrap">
-                                                    <a href="{{ route('admin.staff.edit', $staff->id) }}" class="btn btn-xs btn-info m-1" title="{{ __('Edit Settings') }}"><i class="fas fa-edit"></i></a>
-                                                    <a href="{{ route('admin.staff.time-logs', $staff->id) }}" class="btn btn-xs btn-success m-1" title="{{ __('Time & Wage Logs') }}"><i class="fas fa-history"></i></a>
-                                                    <a href="{{ route('admin.staff.login-logs', $staff->id) }}" class="btn btn-xs btn-secondary m-1" title="{{ __('Login Audit') }}"><i class="fas fa-user-lock"></i></a>
-                                                    <a href="{{ route('admin.staff.messages', $staff->id) }}" class="btn btn-xs btn-primary m-1" title="{{ __('Secure Chat') }}"><i class="fas fa-comments"></i></a>
+                                                     <a href="{{ route('admin.staff.edit', $staff->id) }}" class="btn btn-xs btn-info m-1" title="{{ __('Edit Settings') }}"><i class="fas fa-edit"></i></a>
+                                                     <a href="{{ route('admin.staff.ledger.index', $staff->id) }}" class="btn btn-xs btn-warning m-1 text-white" title="{{ __('Financial Ledger') }}"><i class="fas fa-wallet"></i></a>
+                                                     <a href="{{ route('admin.staff.time-logs', $staff->id) }}" class="btn btn-xs btn-success m-1" title="{{ __('Time & Wage Logs') }}"><i class="fas fa-history"></i></a>
+                                                     <a href="{{ route('admin.staff.login-logs', $staff->id) }}" class="btn btn-xs btn-secondary m-1" title="{{ __('Login Audit') }}"><i class="fas fa-user-lock"></i></a>
+                                                     <a href="{{ route('admin.staff.messages', $staff->id) }}" class="btn btn-xs btn-primary m-1" title="{{ __('Secure Chat') }}"><i class="fas fa-comments"></i></a>
                                                     
                                                     <form action="{{ route('admin.staff.destroy', $staff->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this staff member? This deletes all associated time-logs, messages and log records.');" class="d-inline">
                                                         @csrf

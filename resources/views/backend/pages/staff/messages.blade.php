@@ -98,13 +98,13 @@
                         @forelse($messages as $msg)
                             @if($msg->sender_id === Auth::id())
                                 <!-- Sent by Admin -->
-                                <div class="chat-bubble chat-bubble-sent align-self-end">
+                                <div class="chat-bubble chat-bubble-sent align-self-end" data-msg-id="{{ $msg->id }}">
                                     <div class="chat-text">{{ $msg->message }}</div>
                                     <span class="chat-time">{{ $msg->created_at->format('M d, h:i A') }}</span>
                                 </div>
                             @else
                                 <!-- Received from Staff -->
-                                <div class="chat-bubble chat-bubble-received align-self-start">
+                                <div class="chat-bubble chat-bubble-received align-self-start" data-msg-id="{{ $msg->id }}">
                                     <div class="chat-text">{{ $msg->message }}</div>
                                     <span class="chat-time" style="color: #a5b4fc;">{{ $msg->created_at->format('M d, h:i A') }}</span>
                                 </div>
@@ -146,6 +146,59 @@
             container.scrollTop = container.scrollHeight;
         }
 
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function getLastMessageId() {
+            let lastId = 0;
+            $('.chat-bubble').each(function() {
+                let id = parseInt($(this).attr('data-msg-id'));
+                if (id > lastId) lastId = id;
+            });
+            return lastId;
+        }
+
+        function pollMessages() {
+            let lastId = getLastMessageId();
+            $.ajax({
+                url: '{{ route("admin.staff.messages.poll", $staff->id) }}',
+                method: 'GET',
+                data: { last_id: lastId },
+                success: function(response) {
+                    if (response.success && response.messages.length > 0) {
+                        $('#chat-empty-state').remove();
+                        let newBubbles = false;
+                        response.messages.forEach(function(msg) {
+                            if ($(`[data-msg-id="${msg.id}"]`).length === 0) {
+                                let bubbleClass = msg.is_sent ? 'chat-bubble-sent align-self-end' : 'chat-bubble-received align-self-start';
+                                let timeStyle = msg.is_sent ? '' : 'style="color: #a5b4fc;"';
+                                let bubble = `
+                                    <div class="chat-bubble ${bubbleClass}" data-msg-id="${msg.id}">
+                                        <div class="chat-text">${escapeHtml(msg.message)}</div>
+                                        <span class="chat-time" ${timeStyle}>${msg.created_at}</span>
+                                    </div>
+                                `;
+                                $('#chat-messages-container').append(bubble);
+                                newBubbles = true;
+                            }
+                        });
+                        if (newBubbles && container) {
+                            container.scrollTop = container.scrollHeight;
+                        }
+                    }
+                }
+            });
+        }
+
+        // Poll every 3 seconds
+        setInterval(pollMessages, 3000);
+
         // jQuery AJAX message sending
         $('#admin-chat-form').on('submit', function(e) {
             e.preventDefault();
@@ -163,15 +216,19 @@
                     if (response.success) {
                         $('#chat-empty-state').remove();
 
-                        var bubble = `
-                            <div class="chat-bubble chat-bubble-sent align-self-end">
-                                <div class="chat-text">${response.message}</div>
-                                <span class="chat-time">${response.created_at}</span>
-                            </div>
-                        `;
-                        $('#chat-messages-container').append(bubble);
+                        if ($(`[data-msg-id="${response.id}"]`).length === 0) {
+                            var bubble = `
+                                <div class="chat-bubble chat-bubble-sent align-self-end" data-msg-id="${response.id}">
+                                    <div class="chat-text">${escapeHtml(response.message)}</div>
+                                    <span class="chat-time">${response.created_at}</span>
+                                </div>
+                            `;
+                            $('#chat-messages-container').append(bubble);
+                        }
                         textarea.val('');
-                        $('#chat-messages-container').scrollTop($('#chat-messages-container')[0].scrollHeight);
+                        if (container) {
+                            container.scrollTop = container.scrollHeight;
+                        }
                     }
                 }
             });

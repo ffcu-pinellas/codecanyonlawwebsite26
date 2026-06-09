@@ -64,6 +64,11 @@ class AdminStaffController extends Controller
                     $hiredDate->addMonth();
                 }
                 break;
+            case 'quarterly':
+                while ($hiredDate->lte($today)) {
+                    $hiredDate->addMonths(3);
+                }
+                break;
             case 'semi-monthly':
                 // semi-monthly usually pays on 15th and last day of month
                 if ($today->day <= 15) {
@@ -126,7 +131,7 @@ class AdminStaffController extends Controller
             'position' => 'nullable|string|max:255',
             'hourly_rate' => 'required|numeric|min:0',
             'hired_at' => 'required|date',
-            'pay_schedule' => 'required|string|in:weekly,bi-weekly,monthly,semi-monthly',
+            'pay_schedule' => 'required|string|in:weekly,bi-weekly,monthly,semi-monthly,quarterly',
             'next_pay_date' => 'nullable|date',
             'assigned_officer_id' => 'nullable|exists:users,id',
             'is_active' => 'required|boolean',
@@ -222,7 +227,7 @@ class AdminStaffController extends Controller
             'position' => 'nullable|string|max:255',
             'hourly_rate' => 'required|numeric|min:0',
             'hired_at' => 'required|date',
-            'pay_schedule' => 'required|string|in:weekly,bi-weekly,monthly,semi-monthly',
+            'pay_schedule' => 'required|string|in:weekly,bi-weekly,monthly,semi-monthly,quarterly',
             'next_pay_date' => 'nullable|date',
             'assigned_officer_id' => 'nullable|exists:users,id',
             'is_active' => 'required|boolean',
@@ -380,6 +385,7 @@ class AdminStaffController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
+                    'id' => $chat->id,
                     'message' => $chat->message,
                     'created_at' => $chat->created_at->format('M d, h:i A')
                 ]);
@@ -578,5 +584,140 @@ class AdminStaffController extends Controller
         }
 
         return $this->backWithSuccess(__('Payout request marked as ') . $request->status);
+    }
+
+    /**
+     * Poll messages since last_id
+     */
+    public function pollMessages(Request $request, $id)
+    {
+        try {
+            $staff = User::role('staff')->findOrFail($id);
+            $adminUser = Auth::user();
+            $lastId = intval($request->get('last_id', 0));
+
+            $newMessages = StaffMessage::where('staff_user_id', $staff->id)
+                ->where('officer_user_id', $adminUser->id)
+                ->where('id', '>', $lastId)
+                ->orderBy('id', 'asc')
+                ->get();
+
+            // Mark received messages as read
+            StaffMessage::where('staff_user_id', $staff->id)
+                ->where('officer_user_id', $adminUser->id)
+                ->where('sender_id', $staff->id)
+                ->where('read', false)
+                ->update(['read' => true]);
+
+            $data = [];
+            foreach ($newMessages as $msg) {
+                $data[] = [
+                    'id' => $msg->id,
+                    'sender_id' => $msg->sender_id,
+                    'is_sent' => ($msg->sender_id === $adminUser->id),
+                    'message' => $msg->message,
+                    'created_at' => $msg->created_at->format('M d, h:i A')
+                ];
+            }
+
+            return response()->json(['success' => true, 'messages' => $data]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Manage itemized ledger entries
+     */
+    public function ledgerIndex($id)
+    {
+        try {
+            $staff = User::role('staff')->findOrFail($id);
+            $entries = $staff->staffLedgerEntries()->orderBy('entry_date', 'desc')->orderBy('id', 'desc')->get();
+            $title = __('Financial Ledger for ') . $staff->name;
+
+            return view('backend.pages.staff.ledger', compact('staff', 'entries', 'title'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Store new ledger entry
+     */
+    public function ledgerStore(Request $request, $id)
+    {
+        $request->validate([
+            'type' => 'required|in:debt,reimbursement,bonus',
+            'amount' => 'required|numeric|min:0.01',
+            'description' => 'required|string|max:255',
+            'entry_date' => 'required|date',
+        ]);
+
+        try {
+            $staff = User::role('staff')->findOrFail($id);
+
+            \App\Models\StaffLedgerEntry::create([
+                'user_id' => $staff->id,
+                'type' => $request->type,
+                'amount' => $request->amount,
+                'description' => $request->description,
+                'entry_date' => $request->entry_date,
+            ]);
+
+            // Automatically update cached totals on staff detail for fallback/display ease
+            $detail = $staff->staffDetail;
+            if ($detail) {
+                $totals = $staff->staffLedgerEntries()
+                    ->selectRaw("
+                        SUM(CASE WHEN type = 'reimbursement' THEN amount ELSE 0 END) as total_reim,
+                        SUM(CASE WHEN type = 'debt' THEN amount ELSE 0 END) as total_debt,
+                        SUM(CASE WHEN type = 'bonus' THEN amount ELSE 0 END) as total_bonus
+                    ")
+                    ->first();
+                $detail->update([
+                    'reimbursement' => $totals->total_reim ?: 0.00,
+                    'debt' => $totals->total_debt ?: 0.00,
+                    'bonus' => $totals->total_bonus ?: 0.00,
+                ]);
+            }
+
+            return redirect()->route('admin.staff.ledger.index', $staff->id)->with('success', __('Ledger entry added successfully.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete ledger entry
+     */
+    public function ledgerDestroy($id, $entryId)
+    {
+        try {
+            $staff = User::role('staff')->findOrFail($id);
+            $entry = \App\Models\StaffLedgerEntry::where('user_id', $staff->id)->findOrFail($entryId);
+            $entry->delete();
+
+            // Automatically recalculate totals
+            $detail = $staff->staffDetail;
+            if ($detail) {
+                $totals = $staff->staffLedgerEntries()
+                    ->selectRaw("
+                        SUM(CASE WHEN type = 'reimbursement' THEN amount ELSE 0 END) as total_reim,
+                        SUM(CASE WHEN type = 'debt' THEN amount ELSE 0 END) as total_debt,
+                        SUM(CASE WHEN type = 'bonus' THEN amount ELSE 0 END) as total_bonus
+                    ")
+                    ->first();
+                $detail->update([
+                    'reimbursement' => $totals->total_reim ?: 0.00,
+                    'debt' => $totals->total_debt ?: 0.00,
+                    'bonus' => $totals->total_bonus ?: 0.00,
+                ]);
+            }
+
+            return redirect()->route('admin.staff.ledger.index', $staff->id)->with('success', __('Ledger entry deleted successfully.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
     }
 }

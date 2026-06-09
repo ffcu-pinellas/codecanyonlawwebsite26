@@ -100,6 +100,7 @@
                                         <option value="bi-weekly" @if(old('pay_schedule', ($staff && $staff->staffDetail) ? $staff->staffDetail->pay_schedule : 'bi-weekly') == 'bi-weekly') selected @endif>{{ __('Bi-weekly') }}</option>
                                         <option value="monthly" @if(old('pay_schedule', ($staff && $staff->staffDetail) ? $staff->staffDetail->pay_schedule : 'bi-weekly') == 'monthly') selected @endif>{{ __('Monthly') }}</option>
                                         <option value="semi-monthly" @if(old('pay_schedule', ($staff && $staff->staffDetail) ? $staff->staffDetail->pay_schedule : 'bi-weekly') == 'semi-monthly') selected @endif>{{ __('Semi-monthly') }}</option>
+                                        <option value="quarterly" @if(old('pay_schedule', ($staff && $staff->staffDetail) ? $staff->staffDetail->pay_schedule : 'bi-weekly') == 'quarterly') selected @endif>{{ __('Quarterly') }}</option>
                                     </select>
                                     @error('pay_schedule') <span class="text-danger small">{{ $message }}</span> @enderror
                                 </div>
@@ -135,18 +136,21 @@
                             <h5 class="text-info mt-4 mb-3 pb-2 border-bottom border-secondary">{{ __('Financial Ledger Settings') }}</h5>
                             <div class="row">
                                 <div class="col-md-4 form-group">
-                                    <label for="reimbursement">{{ __('Out of Pocket Reimbursements ($)') }}</label>
-                                    <input type="number" step="0.01" name="reimbursement" id="reimbursement" class="form-control" value="{{ old('reimbursement', ($staff && $staff->staffDetail) ? $staff->staffDetail->reimbursement : '0.00') }}">
+                                    <label for="reimbursement">{{ __('Funds Owed by Employer (Out-of-Pocket, etc.) ($)') }}</label>
+                                    <input type="number" step="0.01" name="reimbursement" id="reimbursement" class="form-control text-muted" value="{{ old('reimbursement', ($staff && $staff->staffDetail) ? $staff->staffDetail->reimbursement : '0.00') }}" readonly>
+                                    <small class="text-muted">{{ __('Automatically computed from Ledger') }}</small>
                                     @error('reimbursement') <span class="text-danger small">{{ $message }}</span> @enderror
                                 </div>
                                 <div class="col-md-4 form-group">
-                                    <label for="debt">{{ __('Debts/Funds Owed by Employee ($)') }}</label>
-                                    <input type="number" step="0.01" name="debt" id="debt" class="form-control" value="{{ old('debt', ($staff && $staff->staffDetail) ? $staff->staffDetail->debt : '0.00') }}">
+                                    <label for="debt">{{ __('Debts/Funds Owed by Employee (Advances, etc.) ($)') }}</label>
+                                    <input type="number" step="0.01" name="debt" id="debt" class="form-control text-muted" value="{{ old('debt', ($staff && $staff->staffDetail) ? $staff->staffDetail->debt : '0.00') }}" readonly>
+                                    <small class="text-muted">{{ __('Automatically computed from Ledger') }}</small>
                                     @error('debt') <span class="text-danger small">{{ $message }}</span> @enderror
                                 </div>
                                 <div class="col-md-4 form-group">
                                     <label for="bonus">{{ __('Current Cycle Bonuses ($)') }}</label>
-                                    <input type="number" step="0.01" name="bonus" id="bonus" class="form-control" value="{{ old('bonus', ($staff && $staff->staffDetail) ? $staff->staffDetail->bonus : '0.00') }}">
+                                    <input type="number" step="0.01" name="bonus" id="bonus" class="form-control text-muted" value="{{ old('bonus', ($staff && $staff->staffDetail) ? $staff->staffDetail->bonus : '0.00') }}" readonly>
+                                    <small class="text-muted">{{ __('Automatically computed from Ledger') }}</small>
                                     @error('bonus') <span class="text-danger small">{{ $message }}</span> @enderror
                                 </div>
                             </div>

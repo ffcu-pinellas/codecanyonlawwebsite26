@@ -5,22 +5,22 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class StaffLoginLog extends Model
+class StaffLedgerEntry extends Model
 {
     use HasFactory;
 
-    protected $table = 'staff_login_logs';
+    protected $table = 'staff_ledger_entries';
 
     protected $fillable = [
         'user_id',
-        'logged_in_at',
-        'ip_address',
-        'location',
-        'user_agent',
+        'type', // debt, reimbursement, bonus
+        'amount',
+        'description',
+        'entry_date',
     ];
 
     protected $casts = [
-        'logged_in_at' => 'datetime',
+        'entry_date' => 'date',
     ];
 
     public function user()

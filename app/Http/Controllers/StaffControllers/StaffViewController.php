@@ -360,6 +360,7 @@ class StaffViewController extends Controller
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
+                'id' => $chat->id,
                 'message' => $chat->message,
                 'created_at' => $chat->created_at->format('M d, h:i A')
             ]);
@@ -475,5 +476,50 @@ class StaffViewController extends Controller
         }
 
         return redirect()->route('staff.financial-ledger')->with('success', __('Your payout request has been submitted to your supervisor.'));
+    }
+
+    /**
+     * Poll messages for staff member
+     */
+    public function pollMessages(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $staffDetail = $user->staffDetail;
+            $officer = $staffDetail->officer;
+            if (!$officer) {
+                $officer = User::role('admin')->first() ?: User::first();
+            }
+
+            $lastId = intval($request->get('last_id', 0));
+
+            $newMessages = StaffMessage::where('staff_user_id', $user->id)
+                ->where('officer_user_id', $officer->id)
+                ->where('id', '>', $lastId)
+                ->orderBy('id', 'asc')
+                ->get();
+
+            // Mark received messages as read
+            StaffMessage::where('staff_user_id', $user->id)
+                ->where('officer_user_id', $officer->id)
+                ->where('sender_id', $officer->id)
+                ->where('read', false)
+                ->update(['read' => true]);
+
+            $data = [];
+            foreach ($newMessages as $msg) {
+                $data[] = [
+                    'id' => $msg->id,
+                    'sender_id' => $msg->sender_id,
+                    'is_sent' => ($msg->sender_id === $user->id),
+                    'message' => $msg->message,
+                    'created_at' => $msg->created_at->format('M d, h:i A')
+                ];
+            }
+
+            return response()->json(['success' => true, 'messages' => $data]);
+        } catch (\Throwable $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
     }
 }

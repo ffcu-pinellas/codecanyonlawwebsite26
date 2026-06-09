@@ -1,36 +1,56 @@
 (function ($){
-    "use stripe";
-    document.querySelector('#clientDashboardMenuBtn').addEventListener('click', toggleMenu);
+    "use strict";
     
+    const toggleBtn = document.querySelector('#clientDashboardMenuBtn');
+    const closeBtn = document.querySelector('#mobileCloseSidebar');
+    const overlay = document.querySelector('#sidebarOverlay');
+    const logoutBtn = document.querySelector('#logOut');
+
     const closeSidebar = () => {
-        document.querySelector('.toggle').classList.remove('active');
-        document.querySelector('.client-navigation').classList.remove('active');
-        document.querySelector('.main').classList.remove('active');
-        document.querySelector('#sidebarOverlay').classList.remove('active');
+        const toggleEl = document.querySelector('.toggle');
+        if (toggleEl) toggleEl.classList.remove('active');
+        
+        const navEl = document.querySelector('.client-navigation');
+        if (navEl) navEl.classList.remove('active');
+        
+        const mainEl = document.querySelector('.main');
+        if (mainEl) mainEl.classList.remove('active');
+        
+        if (overlay) overlay.classList.remove('active');
     };
 
-    function toggleMenu(){
-        let toggleBtn = document.querySelector('.toggle');
-        let navigation = document.querySelector('.client-navigation');
-        let main = document.querySelector('.main');
-        let overlay = document.querySelector('#sidebarOverlay');
+    const toggleMenu = () => {
+        const toggleEl = document.querySelector('.toggle');
+        const navEl = document.querySelector('.client-navigation');
+        const mainEl = document.querySelector('.main');
         
-        toggleBtn.classList.toggle('active');
-        navigation.classList.toggle('active');
-        main.classList.toggle('active');
-        overlay.classList.toggle('active');
+        if (toggleEl) toggleEl.classList.toggle('active');
+        if (navEl) navEl.classList.toggle('active');
+        if (mainEl) mainEl.classList.toggle('active');
+        if (overlay) overlay.classList.toggle('active');
+    };
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener('click', toggleMenu);
+    }
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeSidebar);
+    }
+    if (overlay) {
+        overlay.addEventListener('click', closeSidebar);
     }
 
-    // Mobile specific close events
-    const overlay = document.querySelector('#sidebarOverlay');
-    const closeBtn = document.querySelector('#mobileCloseSidebar');
-    
-    if(overlay) overlay.addEventListener('click', closeSidebar);
-    if(closeBtn) closeBtn.addEventListener('click', closeSidebar);
-
-    document.querySelector('#logOut').addEventListener('click', logout);
-    function logout(e){
-      e.preventDefault();
-      document.querySelector('#logOut').querySelector('#logOutForm').submit();
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const form = logoutBtn.querySelector('#logOutForm');
+            if (form) {
+                form.submit();
+            } else {
+                const globalForm = document.getElementById('logOutForm');
+                if (globalForm) globalForm.submit();
+            }
+        });
     }
-})(jQuery)
+})(jQuery);
+

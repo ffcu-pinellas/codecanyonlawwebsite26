@@ -58,11 +58,11 @@
                             </div>
                             <div class="user-avatar d-flex align-items-center">
                                 <span class="mr-3 font-weight-bold text-dark d-none d-sm-inline">{{ Auth::user()->name }}</span>
-                                @if (Laravel\Jetstream\Jetstream::managesProfilePhotos())
-                                    <img class="rounded-circle py-1 img-thumbnail" width="55px" src="{{ Storage::url(Auth::user()?->profile_photo_path) }}"
+                                @if (Laravel\Jetstream\Jetstream::managesProfilePhotos() && Auth::user()?->profile_photo_path)
+                                    <img class="rounded-circle py-1 img-thumbnail" width="55px" src="{{ Storage::url(Auth::user()->profile_photo_path) }}"
                                          alt="{{ Auth::user()->name }}"/>
                                 @else
-                                    <img src="{{ Auth::user()->gender == 'male' ? asset('backend/assets/img/profile/male.jpg'):(Auth::user()->gender == 'female' ? asset('backend/assets/img/profile/female.jpg'):asset('backend/assets/img/profile/other.png'))  }}"
+                                    <img src="{{ Auth::user()?->gender == 'male' ? asset('backend/assets/img/profile/male.jpg'):(Auth::user()?->gender == 'female' ? asset('backend/assets/img/profile/female.jpg'):asset('backend/assets/img/profile/other.png'))  }}"
                                         class="rounded-circle py-1 img-thumbnail" width="55px">
                                 @endif
                             </div>

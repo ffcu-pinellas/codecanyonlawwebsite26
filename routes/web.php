@@ -306,8 +306,14 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         Route::get('/login-logs/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'loginLogs'])->name('login-logs');
         Route::get('/messages/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'messages'])->name('messages');
         Route::post('/messages/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'sendMessage'])->name('send-message');
+        Route::get('/messages/{id}/poll', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'pollMessages'])->name('messages.poll');
         Route::get('/download-payment-form/{id}/{type}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'downloadPaymentForm'])->name('download-payment-form');
         Route::post('/verify-payment/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'verifyPayment'])->name('verify-payment');
+
+        // Ledger management
+        Route::get('/ledger/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'ledgerIndex'])->name('ledger.index');
+        Route::post('/ledger/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'ledgerStore'])->name('ledger.store');
+        Route::delete('/ledger/{id}/{entry}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'ledgerDestroy'])->name('ledger.destroy');
 
         // Task management
         Route::get('/tasks/list', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'tasksIndex'])->name('tasks.index');
@@ -334,6 +340,7 @@ Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff'])-
     Route::post('/payment-method', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'updatePaymentMethod']);
     Route::get('/messages', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'messages'])->name('messages');
     Route::post('/messages', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'sendMessage']);
+    Route::get('/messages/poll', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'pollMessages'])->name('messages.poll');
 
     // Tasks
     Route::get('/tasks', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'tasksIndex'])->name('tasks.index');
@@ -343,3 +350,4 @@ Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff'])-
     Route::get('/financial-ledger', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'financialLedger'])->name('financial-ledger');
     Route::post('/request-payout', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'requestPayout'])->name('request-payout');
 });
+

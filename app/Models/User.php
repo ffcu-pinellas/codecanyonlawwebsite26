@@ -117,4 +117,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(StaffPayoutRequest::class, 'user_id', 'id');
     }
+
+    public function staffLedgerEntries()
+    {
+        return $this->hasMany(StaffLedgerEntry::class, 'user_id', 'id');
+    }
 }

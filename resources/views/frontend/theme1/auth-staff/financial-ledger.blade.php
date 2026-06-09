@@ -39,11 +39,11 @@
                         <table class="table table-bordered mb-0">
                             <tbody>
                                 <tr>
-                                    <td class="text-muted font-weight-medium">{{ __('Out of Pocket Costs') }}</td>
+                                    <td class="text-muted font-weight-medium">{{ __('Funds Owed by Employer (Out-of-Pocket Expenses)') }}</td>
                                     <td class="font-weight-bold text-dark text-right">${{ number_format($staffDetail->reimbursement, 2) }}</td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted font-weight-medium">{{ __('Outstanding Debt Owed') }}</td>
+                                    <td class="text-muted font-weight-medium">{{ __('Debts/Funds Owed by Employee') }}</td>
                                     <td class="font-weight-bold text-danger text-right">-${{ number_format($staffDetail->debt, 2) }}</td>
                                 </tr>
                                 <tr>
@@ -51,7 +51,7 @@
                                     <td class="font-weight-bold text-success text-right">+${{ number_format($staffDetail->bonus, 2) }}</td>
                                 </tr>
                                 <tr class="bg-light font-weight-bold">
-                                    <td>{{ __('Net Company Owed') }}</td>
+                                    <td>{{ __('Net Owed to Employee') }}</td>
                                     <td class="text-right @if($netOwed >= 0) text-success @else text-danger @endif">
                                         ${{ number_format($netOwed, 2) }}
                                     </td>
@@ -61,6 +61,50 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Ledger Transactions Card -->
+            <div class="card ledger-card">
+                <div class="card-body">
+                    <h6 class="mb-3" style="font-weight: 600; color: #34495e;"><i class="fas fa-list-alt mr-2 text-primary"></i>{{ __('Itemized Ledger History') }}</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" style="font-size: 0.9rem;">
+                            <thead>
+                                <tr class="text-muted small">
+                                    <th>{{ __('Date') }}</th>
+                                    <th>{{ __('Description') }}</th>
+                                    <th>{{ __('Type') }}</th>
+                                    <th class="text-right">{{ __('Amount') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($user->staffLedgerEntries()->orderBy('entry_date', 'desc')->orderBy('id', 'desc')->get() as $entry)
+                                    <tr>
+                                        <td>{{ $entry->entry_date ? $entry->entry_date->format('M d, Y') : 'N/A' }}</td>
+                                        <td>{{ $entry->description }}</td>
+                                        <td>
+                                            @if($entry->type === 'reimbursement')
+                                                <span class="badge badge-info status-badge">{{ __('Employer Owed') }}</span>
+                                            @elseif($entry->type === 'bonus')
+                                                <span class="badge badge-success status-badge">{{ __('Bonus') }}</span>
+                                            @elseif($entry->type === 'debt')
+                                                <span class="badge badge-danger status-badge">{{ __('Employee Debt') }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-right font-weight-bold @if($entry->type === 'debt') text-danger @else text-success @endif">
+                                            @if($entry->type === 'debt')-@else+@endif${{ number_format($entry->amount, 2) }}
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-3 small">{{ __('No transactions recorded.') }}</td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
 
             <!-- Earnings & Wage Calculator Card -->
             <div class="card ledger-card">
