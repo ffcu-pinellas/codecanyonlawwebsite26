@@ -76,15 +76,6 @@
             </div>
         </div>
 
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-        @endif
-
         <div class="row">
             <div class="col-lg-10 mx-auto">
                 <div class="card card-dark bg-dark chat-card">
@@ -119,7 +110,7 @@
                                 </div>
                             @endif
                         @empty
-                            <div class="my-auto text-center text-muted py-5">
+                            <div class="my-auto text-center text-muted py-5" id="chat-empty-state">
                                 <i class="far fa-comments fa-3x mb-3 text-white-50"></i>
                                 <p class="mb-0">{{ __('No messages exchanged yet.') }}</p>
                                 <small>{{ __('Type a message below to start chatting with ') . $staff->name }}</small>
@@ -129,7 +120,7 @@
 
                     <!-- Chat Footer -->
                     <div class="chat-footer">
-                        <form action="{{ route('admin.staff.send-message', $staff->id) }}" method="POST">
+                        <form action="{{ route('admin.staff.send-message', $staff->id) }}" method="POST" id="admin-chat-form">
                             @csrf
                             <div class="input-group">
                                 <textarea class="form-control bg-dark text-white border-secondary" name="message" rows="2" placeholder="{{ __('Type your message here to send to ') . $staff->name }}..." required style="resize: none;"></textarea>
@@ -154,6 +145,37 @@
         if (container) {
             container.scrollTop = container.scrollHeight;
         }
+
+        // jQuery AJAX message sending
+        $('#admin-chat-form').on('submit', function(e) {
+            e.preventDefault();
+            var form = $(this);
+            var url = form.attr('action');
+            var textarea = form.find('textarea[name="message"]');
+            var message = textarea.val().trim();
+            if (message === '') return;
+
+            $.ajax({
+                url: url,
+                method: 'POST',
+                data: form.serialize(),
+                success: function(response) {
+                    if (response.success) {
+                        $('#chat-empty-state').remove();
+
+                        var bubble = `
+                            <div class="chat-bubble chat-bubble-sent align-self-end">
+                                <div class="chat-text">${response.message}</div>
+                                <span class="chat-time">${response.created_at}</span>
+                            </div>
+                        `;
+                        $('#chat-messages-container').append(bubble);
+                        textarea.val('');
+                        $('#chat-messages-container').scrollTop($('#chat-messages-container')[0].scrollHeight);
+                    }
+                }
+            });
+        });
     });
 </script>
 @endsection

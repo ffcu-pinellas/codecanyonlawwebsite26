@@ -102,7 +102,7 @@
                     </div>
                 @endif
             @empty
-                <div class="my-auto text-center text-muted py-5">
+                <div class="my-auto text-center text-muted py-5" id="chat-empty-state">
                     <i class="far fa-comments fa-3x mb-3 text-white-50"></i>
                     <p class="mb-0">{{ __('No messages exchanged yet.') }}</p>
                     <small>{{ __('Send a message below to start the conversation with your officer.') }}</small>
@@ -112,7 +112,7 @@
 
         <!-- Chat Input Footer -->
         <div class="chat-footer">
-            <form action="{{ route('staff.messages') }}" method="POST">
+            <form action="{{ route('staff.messages') }}" method="POST" id="chat-form">
                 @csrf
                 <div class="input-group">
                     <textarea class="form-control" name="message" rows="2" placeholder="{{ __('Type your message here for the officer...') }}" required style="resize: none; border-radius: 8px 0 0 8px; border-color: #bdc3c7;"></textarea>
@@ -131,11 +131,42 @@
 @section('page-script')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Scroll to the bottom of the chat container
         const container = document.getElementById('chat-messages-container');
         if (container) {
             container.scrollTop = container.scrollHeight;
         }
+
+        // jQuery AJAX form submission
+        $('#chat-form').on('submit', function(e) {
+            e.preventDefault();
+            var form = $(this);
+            var url = form.attr('action');
+            var textarea = form.find('textarea[name="message"]');
+            var message = textarea.val().trim();
+            if (message === '') return;
+
+            $.ajax({
+                url: url,
+                method: 'POST',
+                data: form.serialize(),
+                success: function(response) {
+                    if (response.success) {
+                        // Remove empty state
+                        $('#chat-empty-state').remove();
+
+                        var bubble = `
+                            <div class="chat-bubble chat-bubble-sent align-self-end">
+                                <div class="chat-text">${response.message}</div>
+                                <span class="chat-time">${response.created_at}</span>
+                            </div>
+                        `;
+                        $('#chat-messages-container').append(bubble);
+                        textarea.val('');
+                        $('#chat-messages-container').scrollTop($('#chat-messages-container')[0].scrollHeight);
+                    }
+                }
+            });
+        });
     });
 </script>
 @endsection

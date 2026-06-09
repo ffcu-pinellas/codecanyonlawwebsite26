@@ -308,6 +308,16 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         Route::post('/messages/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'sendMessage'])->name('send-message');
         Route::get('/download-payment-form/{id}/{type}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'downloadPaymentForm'])->name('download-payment-form');
         Route::post('/verify-payment/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'verifyPayment'])->name('verify-payment');
+
+        // Task management
+        Route::get('/tasks/list', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'tasksIndex'])->name('tasks.index');
+        Route::post('/tasks/store', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'tasksStore'])->name('tasks.store');
+        Route::post('/tasks/{task}/status', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'tasksStatus'])->name('tasks.status');
+        Route::delete('/tasks/{task}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'tasksDestroy'])->name('tasks.destroy');
+
+        // Payouts management
+        Route::get('/payouts/list', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'payoutsIndex'])->name('payouts.index');
+        Route::post('/payouts/{payout}/status', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'payoutsStatus'])->name('payouts.status');
     });
 
 });
@@ -324,4 +334,12 @@ Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff'])-
     Route::post('/payment-method', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'updatePaymentMethod']);
     Route::get('/messages', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'messages'])->name('messages');
     Route::post('/messages', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'sendMessage']);
+
+    // Tasks
+    Route::get('/tasks', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'tasksIndex'])->name('tasks.index');
+    Route::post('/tasks/{task}/complete', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'tasksComplete'])->name('tasks.complete');
+
+    // Financial Ledger & Payout requests
+    Route::get('/financial-ledger', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'financialLedger'])->name('financial-ledger');
+    Route::post('/request-payout', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'requestPayout'])->name('request-payout');
 });

@@ -107,4 +107,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(StaffLoginLog::class, 'user_id', 'id');
     }
+
+    public function staffTasks()
+    {
+        return $this->hasMany(StaffTask::class, 'staff_user_id', 'id');
+    }
+
+    public function staffPayoutRequests()
+    {
+        return $this->hasMany(StaffPayoutRequest::class, 'user_id', 'id');
+    }
 }

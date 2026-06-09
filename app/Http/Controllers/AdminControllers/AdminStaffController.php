@@ -7,9 +7,14 @@ use App\Models\StaffDetail;
 use App\Models\StaffLoginLog;
 use App\Models\StaffMessage;
 use App\Models\StaffTimeLog;
+use App\Models\StaffTask;
+use App\Models\StaffPayoutRequest;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Spatie\Permission\Models\Role;
 
@@ -19,6 +24,61 @@ class AdminStaffController extends Controller
     {
         $this->middleware(['auth', 'role:admin']);
         parent::__construct();
+    }
+
+    /**
+     * Helper to send raw email notifications
+     */
+    protected function sendEmailNotification($to, $subject, $body)
+    {
+        try {
+            Mail::raw($body, function ($message) use ($to, $subject) {
+                $message->to($to)->subject($subject);
+            });
+        } catch (\Throwable $e) {
+            // Silent fallback if email is not configured
+        }
+    }
+
+    /**
+     * Calculate next payday automatically based on schedule
+     */
+    protected function calculateNextPayDate($hiredAt, $paySchedule)
+    {
+        $hiredDate = Carbon::parse($hiredAt);
+        $today = Carbon::today();
+        
+        switch ($paySchedule) {
+            case 'weekly':
+                while ($hiredDate->lte($today)) {
+                    $hiredDate->addWeek();
+                }
+                break;
+            case 'bi-weekly':
+                while ($hiredDate->lte($today)) {
+                    $hiredDate->addWeeks(2);
+                }
+                break;
+            case 'monthly':
+                while ($hiredDate->lte($today)) {
+                    $hiredDate->addMonth();
+                }
+                break;
+            case 'semi-monthly':
+                // semi-monthly usually pays on 15th and last day of month
+                if ($today->day <= 15) {
+                    $hiredDate = Carbon::create($today->year, $today->month, 15);
+                } else {
+                    $hiredDate = Carbon::create($today->year, $today->month, 1)->endOfMonth();
+                }
+                if ($hiredDate->lte($today)) {
+                    $hiredDate = $today->day <= 15 
+                        ? Carbon::create($today->year, $today->month, 1)->endOfMonth() 
+                        : Carbon::create($today->year, $today->month, 15)->addMonth();
+                }
+                break;
+        }
+        return $hiredDate;
     }
 
     /**
@@ -43,7 +103,7 @@ class AdminStaffController extends Controller
     {
         try {
             $title = __('Add Staff Member');
-            $officers = User::role('admin')->get(); // Admins act as assigned officers
+            $officers = User::role('admin')->get();
             $staff = null;
 
             return view('backend.pages.staff.form', compact('title', 'officers', 'staff'));
@@ -66,6 +126,7 @@ class AdminStaffController extends Controller
             'position' => 'nullable|string|max:255',
             'hourly_rate' => 'required|numeric|min:0',
             'hired_at' => 'required|date',
+            'pay_schedule' => 'required|string|in:weekly,bi-weekly,monthly,semi-monthly',
             'next_pay_date' => 'nullable|date',
             'assigned_officer_id' => 'nullable|exists:users,id',
             'is_active' => 'required|boolean',
@@ -90,6 +151,12 @@ class AdminStaffController extends Controller
             // Generate unique Staff ID
             $staffId = 'STF-' . str_pad($user->id, 5, '0', STR_PAD_LEFT);
 
+            // Compute payday if left blank
+            $nextPayDate = $request->next_pay_date;
+            if (empty($nextPayDate)) {
+                $nextPayDate = $this->calculateNextPayDate($request->hired_at, $request->pay_schedule);
+            }
+
             // Create staff details
             StaffDetail::create([
                 'user_id' => $user->id,
@@ -97,7 +164,8 @@ class AdminStaffController extends Controller
                 'position' => $request->position,
                 'hourly_rate' => $request->hourly_rate,
                 'hired_at' => $request->hired_at,
-                'next_pay_date' => $request->next_pay_date,
+                'pay_schedule' => $request->pay_schedule,
+                'next_pay_date' => $nextPayDate,
                 'assigned_officer_id' => $request->assigned_officer_id,
                 'is_active' => $request->is_active,
                 'bonus' => $request->bonus ?: 0.00,
@@ -119,7 +187,6 @@ class AdminStaffController extends Controller
         try {
             $staff = User::role('staff')->findOrFail($id);
             
-            // Ensure details exist
             if (!$staff->staffDetail) {
                 StaffDetail::create([
                     'user_id' => $staff->id,
@@ -155,6 +222,7 @@ class AdminStaffController extends Controller
             'position' => 'nullable|string|max:255',
             'hourly_rate' => 'required|numeric|min:0',
             'hired_at' => 'required|date',
+            'pay_schedule' => 'required|string|in:weekly,bi-weekly,monthly,semi-monthly',
             'next_pay_date' => 'nullable|date',
             'assigned_officer_id' => 'nullable|exists:users,id',
             'is_active' => 'required|boolean',
@@ -178,12 +246,19 @@ class AdminStaffController extends Controller
 
             $staff->update($userData);
 
+            // Compute payday if schedule changed or next_pay_date is blank
+            $nextPayDate = $request->next_pay_date;
+            if (empty($nextPayDate)) {
+                $nextPayDate = $this->calculateNextPayDate($request->hired_at, $request->pay_schedule);
+            }
+
             // Update Staff Detail
             $staff->staffDetail->update([
                 'position' => $request->position,
                 'hourly_rate' => $request->hourly_rate,
                 'hired_at' => $request->hired_at,
-                'next_pay_date' => $request->next_pay_date,
+                'pay_schedule' => $request->pay_schedule,
+                'next_pay_date' => $nextPayDate,
                 'assigned_officer_id' => $request->assigned_officer_id,
                 'is_active' => $request->is_active,
                 'bonus' => $request->bonus ?: 0.00,
@@ -204,7 +279,7 @@ class AdminStaffController extends Controller
     {
         try {
             $staff = User::role('staff')->findOrFail($id);
-            $staff->delete(); // Cascades deletes to details, login logs, time logs, and messages due to foreign key constraints
+            $staff->delete();
 
             return redirect()->route('admin.staff.index')->with('success', __('Staff member deleted successfully.'));
         } catch (\Throwable $e) {
@@ -258,7 +333,6 @@ class AdminStaffController extends Controller
                 ->orderBy('created_at', 'asc')
                 ->get();
 
-            // Mark incoming messages as read
             StaffMessage::where('staff_user_id', $staff->id)
                 ->where('officer_user_id', $adminUser->id)
                 ->where('sender_id', $staff->id)
@@ -286,13 +360,30 @@ class AdminStaffController extends Controller
             $staff = User::role('staff')->findOrFail($id);
             $adminUser = Auth::user();
 
-            StaffMessage::create([
+            $chat = StaffMessage::create([
                 'staff_user_id' => $staff->id,
                 'officer_user_id' => $adminUser->id,
                 'sender_id' => $adminUser->id,
                 'message' => $request->message,
                 'read' => false,
             ]);
+
+            // Email Alert to Staff
+            if ($staff && $staff->email) {
+                $this->sendEmailNotification(
+                    $staff->email, 
+                    __('New Message from Admin/Officer'),
+                    __('Your officer ') . $adminUser->name . __(' sent a message: ') . "\n\n" . $request->message
+                );
+            }
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $chat->message,
+                    'created_at' => $chat->created_at->format('M d, h:i A')
+                ]);
+            }
 
             return $this->backWithSuccess(__('Message sent successfully.'));
         } catch (\Throwable $e) {
@@ -353,10 +444,139 @@ class AdminStaffController extends Controller
                 'payment_verified' => $request->payment_verified,
             ]);
 
+            // Notify Staff via Email
+            if ($staff && $staff->email) {
+                $statusStr = $request->payment_verified ? __('APPROVED') : __('REJECTED');
+                $this->sendEmailNotification(
+                    $staff->email,
+                    __('Payment Verification Status Changed'),
+                    __('Your uploaded payment preferences documents have been ') . $statusStr . __(' by the administrator.')
+                );
+            }
+
             $statusStr = $request->payment_verified ? __('verified') : __('unverified');
             return $this->backWithSuccess(__('Staff payment details marked as ') . $statusStr);
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * List all tasks and assign tasks
+     */
+    public function tasksIndex()
+    {
+        $tasks = StaffTask::with('user')->orderBy('created_at', 'desc')->get();
+        $staffUsers = User::role('staff')->get();
+        $title = __('Corporate Tasks');
+
+        return view('backend.pages.staff.tasks', compact('tasks', 'staffUsers', 'title'));
+    }
+
+    /**
+     * Store new task and alert staff via email
+     */
+    public function tasksStore(Request $request)
+    {
+        $request->validate([
+            'staff_user_id' => 'required|exists:users,id',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'due_date' => 'nullable|date',
+        ]);
+
+        $task = StaffTask::create([
+            'staff_user_id' => $request->staff_user_id,
+            'title' => $request->title,
+            'description' => $request->description,
+            'due_date' => $request->due_date,
+            'status' => 'pending',
+        ]);
+
+        // Email Alert to Staff
+        $staff = User::findOrFail($request->staff_user_id);
+        if ($staff && $staff->email) {
+            $this->sendEmailNotification(
+                $staff->email,
+                __('New Corporate Task Assigned: ') . $request->title,
+                __('You have been assigned a new task: "') . $request->title . "\"\n" .
+                __('Description: ') . $request->description . "\n" .
+                __('Due Date: ') . ($request->due_date ? Carbon::parse($request->due_date)->format('M d, Y') : __('No deadline'))
+            );
+        }
+
+        return $this->backWithSuccess(__('Task created and staff notified via email.'));
+    }
+
+    /**
+     * Update task status (e.g. Approve completion)
+     */
+    public function tasksStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,in_progress,completed,approved',
+        ]);
+
+        $task = StaffTask::findOrFail($id);
+        $task->update(['status' => $request->status]);
+
+        // Email Alert to Staff
+        $staff = $task->user;
+        if ($staff && $staff->email) {
+            $this->sendEmailNotification(
+                $staff->email,
+                __('Task Status Update: ') . $task->title,
+                __('Your assigned task "') . $task->title . __('" status has been updated to: ') . strtoupper($request->status)
+            );
+        }
+
+        return $this->backWithSuccess(__('Task status updated to ') . $request->status);
+    }
+
+    /**
+     * Delete corporate task
+     */
+    public function tasksDestroy($id)
+    {
+        $task = StaffTask::findOrFail($id);
+        $task->delete();
+
+        return $this->backWithSuccess(__('Task deleted successfully.'));
+    }
+
+    /**
+     * List Payout Requests
+     */
+    public function payoutsIndex()
+    {
+        $payoutRequests = StaffPayoutRequest::with('user')->orderBy('created_at', 'desc')->get();
+        $title = __('Staff Payout Requests');
+
+        return view('backend.pages.staff.payouts', compact('payoutRequests', 'title'));
+    }
+
+    /**
+     * Update payout request status (Approve / Mark paid)
+     */
+    public function payoutsStatus(Request $request, $id)
+    {
+        $request->validate([
+            'status' => 'required|in:pending,approved,paid',
+        ]);
+
+        $payout = StaffPayoutRequest::findOrFail($id);
+        $payout->update(['status' => $request->status]);
+
+        // Email Alert to Staff
+        $staff = $payout->user;
+        if ($staff && $staff->email) {
+            $this->sendEmailNotification(
+                $staff->email,
+                __('Payout Request Update - Status: ') . strtoupper($request->status),
+                __('Your request for a payout of $') . number_format($payout->amount, 2) . __(' has been marked as: ') . strtoupper($request->status)
+            );
+        }
+
+        return $this->backWithSuccess(__('Payout request marked as ') . $request->status);
     }
 }

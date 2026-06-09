@@ -24,6 +24,7 @@ class StaffDetail extends Model
         'reimbursement',
         'assigned_officer_id',
         'payment_method',
+        'pay_schedule',
         'void_check_path',
         'direct_deposit_form_path',
         'payment_verified',

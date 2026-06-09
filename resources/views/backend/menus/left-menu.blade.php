@@ -326,6 +326,14 @@
                             <li><a href="{{ route('admin.staff.index') }}" class="nav-link"> <i
                                          class="material-icons">chevron_right</i> <span
                                          class="link-text">{{ __('Staff Directory') }}</span></a></li>
+
+                            <li><a href="{{ route('admin.staff.tasks.index') }}" class="nav-link"> <i
+                                         class="material-icons">chevron_right</i> <span
+                                         class="link-text">{{ __('Corporate Tasks') }}</span></a></li>
+
+                            <li><a href="{{ route('admin.staff.payouts.index') }}" class="nav-link"> <i
+                                         class="material-icons">chevron_right</i> <span
+                                         class="link-text">{{ __('Payout Requests') }}</span></a></li>
                         </ul>
                     </li>
 

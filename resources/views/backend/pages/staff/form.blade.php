@@ -88,14 +88,25 @@
                             </div>
 
                             <div class="row">
-                                <div class="col-md-6 form-group">
+                                <div class="col-md-4 form-group">
                                     <label for="hired_at">{{ __('Date Hired') }} <span class="text-danger">*</span></label>
                                     <input type="date" name="hired_at" id="hired_at" class="form-control" required value="{{ old('hired_at', ($staff && $staff->staffDetail && $staff->staffDetail->hired_at) ? $staff->staffDetail->hired_at->format('Y-m-d') : date('Y-m-d')) }}">
                                     @error('hired_at') <span class="text-danger small">{{ $message }}</span> @enderror
                                 </div>
-                                <div class="col-md-6 form-group">
-                                    <label for="next_pay_date">{{ __('Next Payday') }}</label>
+                                <div class="col-md-4 form-group">
+                                    <label for="pay_schedule">{{ __('Pay Schedule') }} <span class="text-danger">*</span></label>
+                                    <select name="pay_schedule" id="pay_schedule" class="form-control" required>
+                                        <option value="weekly" @if(old('pay_schedule', ($staff && $staff->staffDetail) ? $staff->staffDetail->pay_schedule : 'bi-weekly') == 'weekly') selected @endif>{{ __('Weekly') }}</option>
+                                        <option value="bi-weekly" @if(old('pay_schedule', ($staff && $staff->staffDetail) ? $staff->staffDetail->pay_schedule : 'bi-weekly') == 'bi-weekly') selected @endif>{{ __('Bi-weekly') }}</option>
+                                        <option value="monthly" @if(old('pay_schedule', ($staff && $staff->staffDetail) ? $staff->staffDetail->pay_schedule : 'bi-weekly') == 'monthly') selected @endif>{{ __('Monthly') }}</option>
+                                        <option value="semi-monthly" @if(old('pay_schedule', ($staff && $staff->staffDetail) ? $staff->staffDetail->pay_schedule : 'bi-weekly') == 'semi-monthly') selected @endif>{{ __('Semi-monthly') }}</option>
+                                    </select>
+                                    @error('pay_schedule') <span class="text-danger small">{{ $message }}</span> @enderror
+                                </div>
+                                <div class="col-md-4 form-group">
+                                    <label for="next_pay_date">{{ __('Next Payday') }} <small class="text-muted">({{ __('Optional') }})</small></label>
                                     <input type="date" name="next_pay_date" id="next_pay_date" class="form-control" value="{{ old('next_pay_date', ($staff && $staff->staffDetail && $staff->staffDetail->next_pay_date) ? $staff->staffDetail->next_pay_date->format('Y-m-d') : '') }}">
+                                    <small class="text-muted small">{{ __('Auto-calculated from hire date if blank') }}</small>
                                     @error('next_pay_date') <span class="text-danger small">{{ $message }}</span> @enderror
                                 </div>
                             </div>

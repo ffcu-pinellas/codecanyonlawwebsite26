@@ -2,6 +2,24 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 @include('frontend.theme1.auth-client.layouts.head')
+<style>
+    .client-dashboard-section {
+        margin-top: 130px !important;
+        position: relative;
+        z-index: 10;
+    }
+    .client-navigation {
+        background-color: #1a252f !important;
+        z-index: 1050 !important;
+    }
+    .client-navigation ul li.active a {
+        background-color: #34495e !important;
+        color: #fff !important;
+    }
+    .top-bar-wrapper {
+        z-index: 5 !important;
+    }
+</style>
 <body id="body">
 
 @include('frontend.theme1.auth-client.layouts.pre-loader')

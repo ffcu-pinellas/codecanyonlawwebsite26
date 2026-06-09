@@ -27,16 +27,20 @@
                     <div class="card-body">
                         <div class="row mb-4">
                             <div class="col-md-4 text-center border-right border-secondary">
-                                <span class="text-muted small text-uppercase font-weight-bold d-block">{{ __('Total Shifts') }}</span>
-                                <h3 class="text-white font-weight-bold">{{ $timeLogs->count() }}</h3>
+                                <span class="text-muted small text-uppercase font-weight-bold d-block">{{ __('Total Completed Shifts') }}</span>
+                                <h3 class="text-white font-weight-bold">{{ $timeLogs->whereNotNull('clocked_out_at')->count() }}</h3>
                             </div>
                             <div class="col-md-4 text-center border-right border-secondary">
                                 <span class="text-muted small text-uppercase font-weight-bold d-block">{{ __('Total Hours Logged') }}</span>
-                                <h3 class="text-white font-weight-bold">{{ round($timeLogs->sum('duration_seconds') / 3600, 2) }} hrs</h3>
+                                <h3 class="text-white font-weight-bold" id="total-hours-container">
+                                    {{ round($timeLogs->whereNotNull('clocked_out_at')->sum('duration_seconds') / 3600, 2) }} hrs
+                                </h3>
                             </div>
                             <div class="col-md-4 text-center">
                                 <span class="text-muted small text-uppercase font-weight-bold d-block">{{ __('Total Wages Earned') }}</span>
-                                <h3 class="text-success font-weight-bold">${{ number_format($timeLogs->sum('earned_amount'), 2) }}</h3>
+                                <h3 class="text-success font-weight-bold" id="total-wages-container">
+                                    ${{ number_format($timeLogs->whereNotNull('clocked_out_at')->sum('earned_amount'), 2) }}
+                                </h3>
                             </div>
                         </div>
 
@@ -57,10 +61,28 @@
                                         <tr>
                                             <td>{{ $loop->index + 1 }}</td>
                                             <td>{{ $log->clocked_in_at->format('M d, Y - h:i:s A') }}</td>
-                                            <td>{{ $log->clocked_out_at ? $log->clocked_out_at->format('M d, Y - h:i:s A') : __('Active Session') }}</td>
-                                            <td>{{ $log->clocked_out_at ? round($log->duration_seconds / 3600, 2) . ' hrs' : 'Ticking...' }}</td>
+                                            <td>
+                                                @if($log->clocked_out_at)
+                                                    {{ $log->clocked_out_at->format('M d, Y - h:i:s A') }}
+                                                @else
+                                                    <span class="badge badge-success"><i class="fas fa-spinner fa-spin mr-1"></i>{{ __('Active Session') }}</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($log->clocked_out_at)
+                                                    {{ round($log->duration_seconds / 3600, 2) }} hrs
+                                                @else
+                                                    <span class="ticking-duration text-warning font-weight-bold" data-start="{{ $log->clocked_in_at->toIso8601String() }}">00:00:00</span>
+                                                @endif
+                                            </td>
                                             <td>${{ number_format($log->hourly_rate_at_time, 2) }}/hr</td>
-                                            <td class="text-right text-success font-weight-bold">${{ number_format($log->earned_amount, 2) }}</td>
+                                            <td class="text-right text-success font-weight-bold">
+                                                @if($log->clocked_out_at)
+                                                    ${{ number_format($log->earned_amount, 2) }}
+                                                @else
+                                                    <span class="ticking-wage" data-start="{{ $log->clocked_in_at->toIso8601String() }}" data-rate="{{ $log->hourly_rate_at_time }}">$0.00</span>
+                                                @endif
+                                            </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
@@ -71,4 +93,59 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('page-script')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const durationElements = document.querySelectorAll('.ticking-duration');
+        const wageElements = document.querySelectorAll('.ticking-wage');
+        const totalHoursEl = document.getElementById('total-hours-container');
+        const totalWagesEl = document.getElementById('total-wages-container');
+
+        if (durationElements.length > 0) {
+            const staticHours = parseFloat('{{ round($timeLogs->whereNotNull('clocked_out_at')->sum('duration_seconds') / 3600, 2) }}');
+            const staticWages = parseFloat('{{ $timeLogs->whereNotNull('clocked_out_at')->sum('earned_amount') }}');
+
+            setInterval(() => {
+                let sessionWagesSum = 0;
+                let sessionHoursSum = 0;
+
+                durationElements.forEach((el, index) => {
+                    const startTime = new Date(el.getAttribute('data-start'));
+                    const now = new Date();
+                    const diffMs = now - startTime;
+
+                    if (diffMs > 0) {
+                        const diffSecs = Math.floor(diffMs / 1000);
+                        const hours = Math.floor(diffSecs / 3600);
+                        const minutes = Math.floor((diffSecs % 3600) / 60);
+                        const seconds = diffSecs % 60;
+
+                        el.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+
+                        // Calculate ticking wages
+                        const wageEl = wageElements[index];
+                        if (wageEl) {
+                            const rate = parseFloat(wageEl.getAttribute('data-rate'));
+                            const earned = (diffSecs / 3600) * rate;
+                            wageEl.textContent = `$${earned.toFixed(2)}`;
+                            
+                            sessionWagesSum += earned;
+                            sessionHoursSum += (diffSecs / 3600);
+                        }
+                    }
+                });
+
+                // Update grand totals in real time!
+                if (totalHoursEl) {
+                    totalHoursEl.textContent = `${(staticHours + sessionHoursSum).toFixed(2)} hrs`;
+                }
+                if (totalWagesEl) {
+                    totalWagesEl.textContent = `$${(staticWages + sessionWagesSum).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                }
+            }, 1000);
+        }
+    });
+</script>
 @endsection

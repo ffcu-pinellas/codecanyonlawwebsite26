@@ -7,6 +7,30 @@
                 <span class="title">{{ __('Dashboard') }}</span>
             </a>
         </li>
+        <li class="{{ request()->is('staff/tasks*') ? 'active' : '' }}">
+            <a href="{{ route('staff.tasks.index') }}">
+                <span class="icon"><i class="fas fa-tasks"></i></span>
+                <span class="title">{{ __('Assigned Tasks') }}
+                    @php
+                        $pendingTasksCount = 0;
+                        if (Auth::check()) {
+                            $pendingTasksCount = \App\Models\StaffTask::where('staff_user_id', Auth::id())
+                                ->whereIn('status', ['pending', 'in_progress'])
+                                ->count();
+                        }
+                    @endphp
+                    @if ($pendingTasksCount > 0)
+                        <span class="badge badge-warning ml-1">{{ $pendingTasksCount }}</span>
+                    @endif
+                </span>
+            </a>
+        </li>
+        <li class="{{ request()->is('staff/financial-ledger*') ? 'active' : '' }}">
+            <a href="{{ route('staff.financial-ledger') }}">
+                <span class="icon"><i class="fas fa-wallet"></i></span>
+                <span class="title">{{ __('Financial Ledger') }}</span>
+            </a>
+        </li>
         <li class="{{ request()->is('staff/payment-method*') ? 'active' : '' }}">
             <a href="{{ route('staff.payment-method') }}">
                 <span class="icon"><i class="fas fa-credit-card"></i></span>

@@ -7,20 +7,36 @@ use App\Models\StaffDetail;
 use App\Models\StaffTimeLog;
 use App\Models\StaffLoginLog;
 use App\Models\StaffMessage;
+use App\Models\StaffTask;
+use App\Models\StaffPayoutRequest;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class StaffViewController extends Controller
 {
     public function __construct()
     {
-        // Require auth for all methods except login page and login post
         $this->middleware('auth')->except(['showLoginForm', 'login']);
         parent::__construct();
+    }
+
+    /**
+     * Helper to send raw email notifications
+     */
+    protected function sendEmailNotification($to, $subject, $body)
+    {
+        try {
+            Mail::raw($body, function ($message) use ($to, $subject) {
+                $message->to($to)->subject($subject);
+            });
+        } catch (\Throwable $e) {
+            // Silent fallback if email servers are not configured
+        }
     }
 
     /**
@@ -53,7 +69,6 @@ class StaffViewController extends Controller
         if (Auth::attempt($credentials, $request->filled('remember'))) {
             $user = Auth::user();
 
-            // Check if user is staff
             if (!$user->hasRole('staff')) {
                 Auth::logout();
                 return redirect()->back()
@@ -61,7 +76,6 @@ class StaffViewController extends Controller
                     ->withErrors(['email' => __('This login portal is only for staff members.')]);
             }
 
-            // Check if active
             $staffDetail = $user->staffDetail;
             if (!$staffDetail || !$staffDetail->is_active) {
                 Auth::logout();
@@ -70,11 +84,29 @@ class StaffViewController extends Controller
                     ->withErrors(['email' => __('Your staff account is inactive. Please contact your administrator.')]);
             }
 
-            // Log login event
+            // IP Geolocation Location resolver
+            $location = 'Unknown';
+            try {
+                $ip = $request->ip();
+                if ($ip !== '127.0.0.1' && $ip !== '::1') {
+                    $ctx = stream_context_create(['http' => ['timeout' => 2]]);
+                    $res = @file_get_contents("http://ip-api.com/json/{$ip}?fields=status,country,regionName,city", false, $ctx);
+                    if ($res) {
+                        $geo = json_decode($res, true);
+                        if ($geo && $geo['status'] === 'success') {
+                            $location = ($geo['city'] ?? '') . ', ' . ($geo['regionName'] ?? '') . ', ' . ($geo['country'] ?? '');
+                        }
+                    }
+                } else {
+                    $location = 'Local Host';
+                }
+            } catch (\Throwable $e) {}
+
             StaffLoginLog::create([
                 'user_id' => $user->id,
                 'logged_in_at' => now(),
                 'ip_address' => $request->ip(),
+                'location' => $location,
                 'user_agent' => $request->userAgent(),
             ]);
 
@@ -95,9 +127,7 @@ class StaffViewController extends Controller
         $user = Auth::user();
         $staffDetail = $user->staffDetail;
 
-        // Ensure staff detail exists
         if (!$staffDetail) {
-            // Auto create detail if somehow missing
             $staffDetail = StaffDetail::create([
                 'user_id' => $user->id,
                 'staff_id' => 'STF-' . str_pad($user->id, 5, '0', STR_PAD_LEFT),
@@ -106,18 +136,13 @@ class StaffViewController extends Controller
             ]);
         }
 
-        // Check active clock-in log
         $activeLog = $user->staffTimeLogs()->whereNull('clocked_out_at')->first();
-
-        // Calculate wage metrics
         $timeLogs = $user->staffTimeLogs()->whereNotNull('clocked_out_at')->orderBy('clocked_in_at', 'desc')->get();
+        
         $totalDurationSeconds = $timeLogs->sum('duration_seconds');
         $totalEarned = $timeLogs->sum('earned_amount');
-
-        // Total hours worked formatting
         $totalHoursWorked = round($totalDurationSeconds / 3600, 2);
 
-        // Fallback assigned officer
         $officer = $staffDetail->officer;
         if (!$officer) {
             $officer = User::role('admin')->first() ?: User::first();
@@ -150,19 +175,27 @@ class StaffViewController extends Controller
             return redirect()->route('staff.login')->with('error', __('Account is inactive.'));
         }
 
-        // Check if already clocked in
         $activeLog = $user->staffTimeLogs()->whereNull('clocked_out_at')->first();
         if ($activeLog) {
             return $this->backWithError(__('You are already clocked in.'));
         }
 
-        // Create log
         StaffTimeLog::create([
             'user_id' => $user->id,
             'clocked_in_at' => now(),
             'hourly_rate_at_time' => $staffDetail->hourly_rate,
             'earned_amount' => 0.00,
         ]);
+
+        // Send email to Officer/Admin
+        $officer = $staffDetail->officer ?: (User::role('admin')->first() ?: User::first());
+        if ($officer && $officer->email) {
+            $this->sendEmailNotification(
+                $officer->email, 
+                __('Staff Clocked In Alert - ') . $user->name,
+                __('Employee ') . $user->name . __(' clocked in on ') . now()->format('Y-m-d H:i:s')
+            );
+        }
 
         return $this->backWithSuccess(__('Clocked in successfully.'));
     }
@@ -175,7 +208,6 @@ class StaffViewController extends Controller
         $user = Auth::user();
         $staffDetail = $user->staffDetail;
 
-        // Find active log
         $activeLog = $user->staffTimeLogs()->whereNull('clocked_out_at')->first();
         if (!$activeLog) {
             return $this->backWithError(__('You are not clocked in.'));
@@ -191,6 +223,16 @@ class StaffViewController extends Controller
             'duration_seconds' => $durationSeconds,
             'earned_amount' => $earnedAmount,
         ]);
+
+        // Send email to Officer/Admin
+        $officer = $staffDetail->officer ?: (User::role('admin')->first() ?: User::first());
+        if ($officer && $officer->email) {
+            $this->sendEmailNotification(
+                $officer->email, 
+                __('Staff Clocked Out Alert - ') . $user->name,
+                __('Employee ') . $user->name . __(' clocked out on ') . now()->format('Y-m-d H:i:s') . __('. Duration: ') . round($durationSeconds / 60, 1) . __(' minutes.')
+            );
+        }
 
         return $this->backWithSuccess(__('Clocked out successfully. Worked for ' . round($durationSeconds / 60, 1) . ' minutes. Earned $' . number_format($earnedAmount, 2)));
     }
@@ -225,7 +267,6 @@ class StaffViewController extends Controller
             'payment_method' => $request->payment_method,
         ];
 
-        // If direct deposit documents are uploaded, we reset payment_verified status to false
         $docUploaded = false;
 
         if ($request->hasFile('void_check')) {
@@ -271,7 +312,6 @@ class StaffViewController extends Controller
             ->orderBy('created_at', 'asc')
             ->get();
 
-        // Mark messages from officer to staff as read
         StaffMessage::where('staff_user_id', $user->id)
             ->where('officer_user_id', $officer->id)
             ->where('sender_id', $officer->id)
@@ -300,7 +340,7 @@ class StaffViewController extends Controller
             $officer = User::role('admin')->first() ?: User::first();
         }
 
-        StaffMessage::create([
+        $chat = StaffMessage::create([
             'staff_user_id' => $user->id,
             'officer_user_id' => $officer->id,
             'sender_id' => $user->id,
@@ -308,6 +348,132 @@ class StaffViewController extends Controller
             'read' => false,
         ]);
 
+        // Send email to Officer
+        if ($officer && $officer->email) {
+            $this->sendEmailNotification(
+                $officer->email, 
+                __('New Staff Message from ') . $user->name,
+                __('Employee ') . $user->name . __(' sent a message: ') . "\n\n" . $request->message
+            );
+        }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $chat->message,
+                'created_at' => $chat->created_at->format('M d, h:i A')
+            ]);
+        }
+
         return $this->backWithSuccess(__('Message sent.'));
+    }
+
+    /**
+     * Staff Tasks Index
+     */
+    public function tasksIndex()
+    {
+        $user = Auth::user();
+        $tasks = $user->staffTasks()->orderBy('created_at', 'desc')->get();
+        $title = __('Task Management');
+
+        return view('frontend.theme1.auth-staff.tasks', compact('title', 'user', 'tasks'));
+    }
+
+    /**
+     * Complete Task Submission
+     */
+    public function tasksComplete(Request $request, $id)
+    {
+        $task = StaffTask::where('staff_user_id', Auth::id())->findOrFail($id);
+
+        $request->validate([
+            'completion_notes' => 'required|string',
+            'attachment' => 'nullable|file|mimes:pdf,docx,doc,jpeg,png,jpg,zip|max:10240',
+        ]);
+
+        $updateData = [
+            'completion_notes' => $request->completion_notes,
+            'status' => 'completed',
+        ];
+
+        if ($request->hasFile('attachment')) {
+            $filename = 'task_submission_' . $task->id . '_' . time() . '.' . $request->attachment->getClientOriginalExtension();
+            $request->attachment->move(public_path('upload/staff-tasks'), $filename);
+            $updateData['attachment_path'] = 'upload/staff-tasks/' . $filename;
+        }
+
+        $task->update($updateData);
+
+        // Notify Assigned Officer via Email
+        $officer = Auth::user()->staffDetail->officer ?: (User::role('admin')->first() ?: User::first());
+        if ($officer && $officer->email) {
+            $this->sendEmailNotification(
+                $officer->email,
+                __('Task Completed Alert: ') . $task->title,
+                __('Employee ') . Auth::user()->name . __(' has marked the task "') . $task->title . __('" as completed. Notes: ') . "\n" . $request->completion_notes
+            );
+        }
+
+        return $this->backWithSuccess(__('Task submitted for verification successfully.'));
+    }
+
+    /**
+     * Standalone Financial Ledger View & Payout Requests
+     */
+    public function financialLedger()
+    {
+        $user = Auth::user();
+        $staffDetail = $user->staffDetail;
+        $payoutRequests = $user->staffPayoutRequests()->orderBy('created_at', 'desc')->get();
+        $timeLogs = $user->staffTimeLogs()->whereNotNull('clocked_out_at')->orderBy('clocked_in_at', 'desc')->get();
+
+        $totalEarned = $timeLogs->sum('earned_amount');
+        $netOwed = $staffDetail->reimbursement + $staffDetail->bonus - $staffDetail->debt;
+        $claimableAmount = $totalEarned + $netOwed;
+
+        $title = __('Financial Ledger');
+
+        return view('frontend.theme1.auth-staff.financial-ledger', compact(
+            'title',
+            'user',
+            'staffDetail',
+            'payoutRequests',
+            'claimableAmount',
+            'totalEarned',
+            'netOwed'
+        ));
+    }
+
+    /**
+     * Submit payout request
+     */
+    public function requestPayout(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:1',
+            'notes' => 'nullable|string|max:500',
+        ]);
+
+        $user = Auth::user();
+        
+        StaffPayoutRequest::create([
+            'user_id' => $user->id,
+            'amount' => $request->amount,
+            'notes' => $request->notes,
+            'status' => 'pending',
+        ]);
+
+        // Email Alert to Officer/Admin
+        $officer = $user->staffDetail->officer ?: (User::role('admin')->first() ?: User::first());
+        if ($officer && $officer->email) {
+            $this->sendEmailNotification(
+                $officer->email,
+                __('Payout Request Submitted - ') . $user->name,
+                __('Employee ') . $user->name . __(' has requested a payout of $') . number_format($request->amount, 2) . "\nNotes: " . $request->notes
+            );
+        }
+
+        return redirect()->route('staff.financial-ledger')->with('success', __('Your payout request has been submitted to your supervisor.'));
     }
 }

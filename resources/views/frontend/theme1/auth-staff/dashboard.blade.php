@@ -43,42 +43,23 @@
         font-family: 'Montserrat', sans-serif;
         font-weight: 700;
         color: #2c3e50;
-        font-size: 2rem;
+        font-size: 2.2rem;
         letter-spacing: 1px;
     }
     .ticking-timer {
         font-family: 'Montserrat', sans-serif;
         font-weight: 700;
         color: #e74c3c;
-        font-size: 2.2rem;
-        text-shadow: 0 2px 4px rgba(231, 76, 60, 0.1);
-    }
-    .wage-indicator {
         font-size: 2.5rem;
-        font-weight: 800;
-        color: #27ae60;
-        font-family: 'Montserrat', sans-serif;
-        letter-spacing: -1px;
-    }
-    .ledger-table th {
-        font-weight: 600;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-        letter-spacing: 0.5px;
-        color: #7f8c8d;
-        border-top: none;
-    }
-    .ledger-table td {
-        font-size: 0.9rem;
-        vertical-align: middle;
+        text-shadow: 0 2px 4px rgba(231, 76, 60, 0.1);
     }
     .btn-clock-in {
         background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
         border: none;
         color: white;
         font-weight: 700;
-        padding: 15px 30px;
-        font-size: 1.1rem;
+        padding: 15px 40px;
+        font-size: 1.2rem;
         border-radius: 12px;
         box-shadow: 0 5px 15px rgba(17, 153, 142, 0.3);
         transition: all 0.2s;
@@ -93,8 +74,8 @@
         border: none;
         color: white;
         font-weight: 700;
-        padding: 15px 30px;
-        font-size: 1.1rem;
+        padding: 15px 40px;
+        font-size: 1.2rem;
         border-radius: 12px;
         box-shadow: 0 5px 15px rgba(203, 45, 62, 0.3);
         transition: all 0.2s;
@@ -103,29 +84,6 @@
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(203, 45, 62, 0.4);
         color: white;
-    }
-    .quick-link-btn {
-        background: #f8f9fa;
-        border: 1px solid #eaeded;
-        border-radius: 12px;
-        padding: 16px;
-        display: flex;
-        align-items: center;
-        margin-bottom: 15px;
-        transition: all 0.2s;
-        color: #2c3e50;
-        text-decoration: none;
-    }
-    .quick-link-btn:hover {
-        background: #fff;
-        border-color: #3498db;
-        transform: translateX(4px);
-        color: #3498db;
-        text-decoration: none;
-    }
-    .quick-link-btn i {
-        font-size: 1.5rem;
-        margin-right: 15px;
     }
 </style>
 @endsection
@@ -162,10 +120,9 @@
         </div>
     </div>
 
-    <div class="row">
-        <!-- Left Column: Clock in / Out & Time tracker -->
-        <div class="col-lg-7">
-            <!-- Time Tracker card -->
+    <div class="row justify-content-center">
+        <!-- Time Tracker card -->
+        <div class="col-lg-9">
             <div class="card dashboard-card time-tracker-card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
@@ -173,7 +130,7 @@
                         <div class="text-muted small font-weight-bold" id="current-date-display">{{ date('l, M d, Y') }}</div>
                     </div>
 
-                    <div class="text-center py-4">
+                    <div class="text-center py-5">
                         @if($activeLog)
                             <p class="text-muted mb-1 small text-uppercase font-weight-bold">{{ __('Current Session Duration') }}</p>
                             <div class="ticking-timer mb-2" id="session-timer">00:00:00</div>
@@ -199,115 +156,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Wage Ledger Card -->
-            <div class="card dashboard-card">
-                <div class="card-body">
-                    <h5 class="mb-4" style="font-weight: 700; color: #2c3e50;"><i class="fas fa-dollar-sign mr-2 text-success"></i>{{ __('Earnings & Wage Calculator') }}</h5>
-                    
-                    <div class="row mb-4 bg-light p-3 rounded">
-                        <div class="col-sm-6 text-center border-right">
-                            <span class="text-muted small text-uppercase font-weight-bold d-block">{{ __('Estimated Wages') }}</span>
-                            <div class="wage-indicator" id="live-wages-display">${{ number_format($totalEarned, 2) }}</div>
-                            <small class="text-muted">{{ __('Total shifts accumulated') }}</small>
-                        </div>
-                        <div class="col-sm-6 text-center">
-                            <span class="text-muted small text-uppercase font-weight-bold d-block">{{ __('Hourly Rate') }}</span>
-                            <div class="wage-indicator text-primary">${{ number_format($staffDetail->hourly_rate, 2) }}<span style="font-size: 1rem; font-weight: 500;">/hr</span></div>
-                            <small class="text-muted">{{ __('Next Payday:') }} <strong>{{ $staffDetail->next_pay_date ? $staffDetail->next_pay_date->format('M d, Y') : __('Not Scheduled') }}</strong></small>
-                        </div>
-                    </div>
-
-                    <h6 class="mb-3" style="font-weight: 600; color: #34495e;">{{ __('Recent Shift Logs') }}</h6>
-                    <div class="table-responsive">
-                        <table class="table table-hover ledger-table mb-0">
-                            <thead>
-                                <tr>
-                                    <th>{{ __('Date') }}</th>
-                                    <th>{{ __('Duration') }}</th>
-                                    <th>{{ __('Rate') }}</th>
-                                    <th class="text-right">{{ __('Wages') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($timeLogs->take(5) as $log)
-                                    <tr>
-                                        <td>{{ $log->clocked_in_at->format('M d, Y') }}</td>
-                                        <td>{{ round($log->duration_seconds / 3600, 2) }} hrs</td>
-                                        <td>${{ number_format($log->hourly_rate_at_time, 2) }}/hr</td>
-                                        <td class="text-right text-success font-weight-bold">${{ number_format($log->earned_amount, 2) }}</td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="4" class="text-center text-muted py-3 small">{{ __('No completed shifts recorded yet.') }}</td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right Column: Reimbursement ledger & Quick utilities -->
-        <div class="col-lg-5">
-            <!-- Reimbursement / Debts card -->
-            <div class="card dashboard-card">
-                <div class="card-body">
-                    <h5 class="mb-4" style="font-weight: 700; color: #2c3e50;"><i class="fas fa-wallet mr-2 text-info"></i>{{ __('Reimbursement Ledger') }}</h5>
-                    <div class="table-responsive">
-                        <table class="table table-bordered mb-0">
-                            <tbody>
-                                <tr>
-                                    <td class="text-muted font-weight-medium">{{ __('Out of Pocket Costs') }}</td>
-                                    <td class="font-weight-bold text-dark text-right">${{ number_format($staffDetail->reimbursement, 2) }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted font-weight-medium">{{ __('Outstanding Debt Owed') }}</td>
-                                    <td class="font-weight-bold text-danger text-right">-${{ number_format($staffDetail->debt, 2) }}</td>
-                                </tr>
-                                <tr>
-                                    <td class="text-muted font-weight-medium">{{ __('Corporate Bonuses') }}</td>
-                                    <td class="font-weight-bold text-success text-right">+${{ number_format($staffDetail->bonus, 2) }}</td>
-                                </tr>
-                                <tr class="bg-light font-weight-bold">
-                                    <td>{{ __('Net Company Owed') }}</td>
-                                    <td class="text-right @if(($staffDetail->reimbursement + $staffDetail->bonus - $staffDetail->debt) >= 0) text-success @else text-danger @endif">
-                                        ${{ number_format($staffDetail->reimbursement + $staffDetail->bonus - $staffDetail->debt, 2) }}
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Quick utilities card -->
-            <div class="card dashboard-card p-3">
-                <h5 class="mb-3 pl-2" style="font-weight: 700; color: #2c3e50;"><i class="fas fa-rocket mr-2 text-warning"></i>{{ __('Quick Operations') }}</h5>
-                
-                <a href="{{ route('staff.payment-method') }}" class="quick-link-btn">
-                    <i class="fas fa-file-invoice text-info"></i>
-                    <div>
-                        <strong class="d-block">{{ __('Setup Direct Deposit') }}</strong>
-                        <span class="text-muted small">
-                            @if($staffDetail->payment_verified)
-                                <span class="text-success"><i class="fas fa-check-circle"></i> Verified ({{ ucfirst($staffDetail->payment_method) }})</span>
-                            @else
-                                <span class="text-warning"><i class="fas fa-clock"></i> Verification Pending</span>
-                            @endif
-                        </span>
-                    </div>
-                </a>
-
-                <a href="{{ route('staff.messages') }}" class="quick-link-btn">
-                    <i class="fas fa-comments text-success"></i>
-                    <div>
-                        <strong class="d-block">{{ __('Assigned Officer Chat') }}</strong>
-                        <span class="text-muted small">{{ __('Chat with ') }} <strong>{{ $officer->name }}</strong></span>
-                    </div>
-                </a>
-            </div>
         </div>
     </div>
 </div>
@@ -316,7 +164,7 @@
 @section('page-script')
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // 1. Local Live Clock (when clocked out)
+        // Local Live Clock
         const clockElement = document.getElementById('digital-clock');
         if (clockElement) {
             setInterval(() => {
@@ -326,20 +174,16 @@
                 const seconds = String(now.getSeconds()).padStart(2, '0');
                 const ampm = hours >= 12 ? 'PM' : 'AM';
                 hours = hours % 12;
-                hours = hours ? hours : 12; // the hour '0' should be '12'
+                hours = hours ? hours : 12;
                 const hoursStr = String(hours).padStart(2, '0');
                 clockElement.textContent = `${hoursStr}:${minutes}:${seconds} ${ampm}`;
             }, 1000);
         }
 
-        // 2. Clock-in Ticking Timer & Live Wage Accumulator
+        // Ticking stopwatch
         @if($activeLog)
             const clockedInTime = new Date('{{ $activeLog->clocked_in_at->toIso8601String() }}');
-            const hourlyRate = parseFloat('{{ $staffDetail->hourly_rate }}');
-            const previousEarnings = parseFloat('{{ $totalEarned }}');
-
             const timerElement = document.getElementById('session-timer');
-            const wagesElement = document.getElementById('live-wages-display');
 
             setInterval(() => {
                 const now = new Date();
@@ -357,12 +201,6 @@
                     const secondsStr = String(seconds).padStart(2, '0');
 
                     timerElement.textContent = `${hoursStr}:${minutesStr}:${secondsStr}`;
-
-                    // Earnings calculation: (seconds / 3600) * hourlyRate
-                    const currentShiftEarned = (diffSecs / 3600) * hourlyRate;
-                    const cumulativeEarned = previousEarnings + currentShiftEarned;
-                    
-                    wagesElement.textContent = `$${cumulativeEarned.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                 }
             }, 1000);
         @endif
