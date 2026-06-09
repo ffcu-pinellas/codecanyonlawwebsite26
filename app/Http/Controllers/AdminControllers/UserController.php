@@ -139,31 +139,49 @@ class UserController extends Controller
         try {
             if ($request->ajax()) {
                 $user = User::where(['id' => $request->id])->first();
+                if (!$user) {
+                    return response()->json(['error' => __('User not found')], 404);
+                }
                 $roles = Role::all();
+                $userRoleName = $user->roles->isNotEmpty() ? $user->roles->pluck('name')[0] : '';
 
                 $data = '
-                    <p>' . __('Name: ') . $user->name . '</p>
-                    <p>' . __('Email: ') . $user->email . '</p>
-                    <p>' . __('Phone: ') . $user->phone . '</p>
-                    <p>' . __('Address: ') . $user->address . '</p>
                     <div class="form-group">
-                        <label for="">' . __('Role') . '</label>   
-                        <select name="role" class="form-control" required>
-                        <option value="">' . __('Select') . '</option>
-                        ';
-                foreach ($roles as $role) {
-                    $data .= '<option ' . ($role->name == $user->roles->pluck('name')[0] ? 'selected' : '') . ' value="' . $role->name . '">' . $role->name . '</option>';
-                }
-
-                $data .= '</select>
-                <input type="hidden" name="id" value="' . $user->id . '">
-                
+                        <label for="modal_name">' . __('Full Name') . ' <span class="text-danger">*</span></label>
+                        <input type="text" name="name" id="modal_name" class="form-control" value="' . e($user->name) . '" required>
                     </div>
+                    <div class="form-group">
+                        <label for="modal_email">' . __('Email Address') . ' <span class="text-danger">*</span></label>
+                        <input type="email" name="email" id="modal_email" class="form-control" value="' . e($user->email) . '" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal_phone">' . __('Phone Number') . '</label>
+                        <input type="text" name="phone" id="modal_phone" class="form-control" value="' . e($user->phone) . '">
+                    </div>
+                    <div class="form-group">
+                        <label for="modal_address">' . __('Residential Address') . '</label>
+                        <input type="text" name="address" id="modal_address" class="form-control" value="' . e($user->address) . '">
+                    </div>
+                    <div class="form-group">
+                        <label for="modal_role">' . __('Role') . ' <span class="text-danger">*</span></label>
+                        <select name="role" id="modal_role" class="form-control" required>
+                            <option value="">' . __('Select') . '</option>';
+                foreach ($roles as $role) {
+                    $selected = ($role->name === $userRoleName) ? 'selected' : '';
+                    $data .= '<option ' . $selected . ' value="' . e($role->name) . '">' . e($role->name) . '</option>';
+                }
+                $data .= '
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="modal_password">' . __('Password') . ' <small class="text-muted">(' . __('Leave blank to keep current') . ')</small></label>
+                        <input type="password" name="password" id="modal_password" class="form-control" placeholder="' . __('Enter new password') . '">
+                    </div>
+                    <input type="hidden" name="id" value="' . $user->id . '">
                 ';
 
                 return response()->json(['data' => $data]);
             }
-
 
             return view('backend.pages.users.index', [
                 'title' => 'All Users',
@@ -176,10 +194,51 @@ class UserController extends Controller
 
     public function userIndexSave(Request $request)
     {
-        try {
-            User::findOrFail($request->id)->syncRoles($request->role);
+        $request->validate([
+            'id' => 'required|exists:users,id',
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $request->id,
+            'phone' => 'nullable|string|max:50',
+            'address' => 'nullable|string|max:255',
+            'role' => 'required|exists:roles,name',
+            'password' => 'nullable|string|min:8',
+        ]);
 
-            return $this->backWithSuccess(__('User update successfully.'));
+        try {
+            $user = User::findOrFail($request->id);
+            
+            $userData = [
+                'name' => $request->name,
+                'email' => $request->email,
+                'phone' => $request->phone ?: '',
+                'address' => $request->address ?: '',
+            ];
+
+            if ($request->filled('password')) {
+                $userData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+            }
+
+            $user->update($userData);
+            $user->syncRoles($request->role);
+
+            return $this->backWithSuccess(__('User details updated successfully.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function userDestroy($id)
+    {
+        try {
+            $user = User::findOrFail($id);
+            
+            if ($user->id === auth()->id()) {
+                return $this->backWithError(__('You cannot delete your own account.'));
+            }
+
+            $user->delete();
+
+            return $this->backWithSuccess(__('User deleted successfully.'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

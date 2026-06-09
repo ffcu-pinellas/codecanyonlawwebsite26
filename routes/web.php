@@ -148,7 +148,8 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         });
 
         Route::get('/', [UserController::class, 'userIndex'])->name('index');
-        Route::get('/save', [UserController::class, 'userIndexSave'])->name('save');
+        Route::post('/save', [UserController::class, 'userIndexSave'])->name('save');
+        Route::delete('/destroy/{id}', [UserController::class, 'userDestroy'])->name('destroy');
     });
 
     // Chating

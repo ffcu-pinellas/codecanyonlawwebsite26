@@ -53,9 +53,18 @@
                                             <td>{{ $user->phone }}</td>
                                             <td>{{ $user->address }}</td>
                                             <td>
-                                                <button type="button" data-toggle="modal" data-target="#usermodal"
-                                                        class="btn btn-sm btn btn-success m-1 user_btn"
-                                                        data-id="{{ $user->id }}">{{ __('view') }}</button>
+                                                <div class="d-flex flex-wrap align-items-center">
+                                                    <button type="button" data-toggle="modal" data-target="#usermodal"
+                                                            class="btn btn-xs btn-success m-1 user_btn"
+                                                            data-id="{{ $user->id }}">{{ __('view') }}</button>
+                                                    @if($user->id !== auth()->id())
+                                                        <form action="{{ route('admin.user.destroy', $user->id) }}" method="POST" onsubmit="return confirm('{{ __('Are you sure you want to delete this user? This action cannot be undone.') }}');" class="d-inline">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-xs btn-danger m-1" title="{{ __('Delete') }}"><i class="fas fa-trash"></i></button>
+                                                        </form>
+                                                    @endif
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -78,16 +87,23 @@
                  <span aria-hidden="true">&times;</span>
              </button>
          </div>
-         <form method="patch" action="{{ route('admin.user.save') }}">
-             @csrf
-             <div class="modal-body" id="user_html">
-
-             </div>
-             <div class="modal-footer">
-                 <button type="button" class="btn btn-secondary" data-dismiss="modal">{{__('Close')}}</button>
-                 <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
-             </div>
-         </form>
+          <form method="POST" action="{{ route('admin.user.save') }}" id="userEditForm">
+              @csrf
+              <div class="modal-body" id="user_html">
+ 
+              </div>
+              <div class="modal-footer d-flex justify-content-between">
+                  <button type="button" class="btn btn-danger" onclick="if(confirm('{{ __('Are you sure you want to delete this user? This action cannot be undone.') }}')) { document.getElementById('deleteUserForm').submit(); }">{{ __('Delete User') }}</button>
+                  <div>
+                      <button type="button" class="btn btn-secondary" data-dismiss="modal">{{__('Close')}}</button>
+                      <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
+                  </div>
+              </div>
+          </form>
+          <form id="deleteUserForm" method="POST" action="" style="display: none;">
+              @csrf
+              @method('DELETE')
+          </form>
      </div>
  </div>
 </div>
