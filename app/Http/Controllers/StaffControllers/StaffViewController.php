@@ -137,9 +137,14 @@ class StaffViewController extends Controller
         $staffDetail = $user->staffDetail;
 
         if (!$staffDetail) {
+            do {
+                $randomNum = rand(100000, 999999);
+                $staffId = 'STF-' . $randomNum;
+            } while (StaffDetail::where('staff_id', $staffId)->exists());
+
             $staffDetail = StaffDetail::create([
                 'user_id' => $user->id,
-                'staff_id' => 'STF-' . str_pad($user->id, 5, '0', STR_PAD_LEFT),
+                'staff_id' => $staffId,
                 'is_active' => true,
                 'hired_at' => now(),
             ]);

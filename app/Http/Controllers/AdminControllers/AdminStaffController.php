@@ -154,7 +154,10 @@ class AdminStaffController extends Controller
             $user->assignRole('staff');
 
             // Generate unique Staff ID
-            $staffId = 'STF-' . str_pad($user->id, 5, '0', STR_PAD_LEFT);
+            do {
+                $randomNum = rand(100000, 999999);
+                $staffId = 'STF-' . $randomNum;
+            } while (StaffDetail::where('staff_id', $staffId)->exists());
 
             // Compute payday if left blank
             $nextPayDate = $request->next_pay_date;
@@ -193,9 +196,14 @@ class AdminStaffController extends Controller
             $staff = User::role('staff')->findOrFail($id);
             
             if (!$staff->staffDetail) {
+                do {
+                    $randomNum = rand(100000, 999999);
+                    $staffId = 'STF-' . $randomNum;
+                } while (StaffDetail::where('staff_id', $staffId)->exists());
+
                 StaffDetail::create([
                     'user_id' => $staff->id,
-                    'staff_id' => 'STF-' . str_pad($staff->id, 5, '0', STR_PAD_LEFT),
+                    'staff_id' => $staffId,
                     'hired_at' => now(),
                     'is_active' => true,
                 ]);
