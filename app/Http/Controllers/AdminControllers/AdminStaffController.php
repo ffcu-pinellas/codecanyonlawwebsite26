@@ -31,7 +31,8 @@ class AdminStaffController extends Controller
      */
     protected function getHtmlEmailWrapper($subject, $bodyText)
     {
-        $appName = env('APP_NAME', 'Your CPA Expert');
+        $generalSettings = \App\Models\GeneralSettings::first();
+        $appName = $generalSettings && $generalSettings->site_name ? $generalSettings->site_name : env('APP_NAME', 'Your CPA Expert');
         $bodyHtml = nl2br(e($bodyText));
 
         return <<<HTML

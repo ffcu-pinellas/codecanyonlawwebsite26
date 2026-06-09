@@ -1,3 +1,45 @@
+@php
+    $generalSettings = \App\Models\GeneralSettings::first();
+    $companyName = $generalSettings && $generalSettings->site_name ? $generalSettings->site_name : env('APP_NAME', 'Your CPA Expert');
+
+    $contactPage = \App\Models\PageSettings::where('name', 'contact')->first();
+    $contactInfo = $contactPage ? $contactPage->sections()->where('name', 'contact_info')->first() : null;
+    $emailInfo = $contactPage ? $contactPage->sections()->where('name', 'email')->first() : null;
+
+    // Address
+    $companyAddress = env('COMPANY_ADDRESS');
+    if (!$companyAddress && $contactInfo) {
+        $addressParts = array_filter([$contactInfo->line_one, $contactInfo->line_two]);
+        if (!empty($addressParts)) {
+            $companyAddress = implode(', ', $addressParts);
+        }
+    }
+    if (!$companyAddress) {
+        $companyAddress = '123 Professional Way, Financial District';
+    }
+
+    // Phone
+    $companyPhone = env('COMPANY_PHONE');
+    if (!$companyPhone && $contactInfo && $contactInfo->line_two && preg_match('/[0-9]/', $contactInfo->line_two)) {
+        $companyPhone = $contactInfo->line_two;
+    }
+    if (!$companyPhone) {
+        $companyPhone = '(555) 123-4567';
+    }
+
+    // Email
+    $companyEmail = env('COMPANY_EMAIL');
+    if (!$companyEmail && $emailInfo && $emailInfo->line_one) {
+        $companyEmail = $emailInfo->line_one;
+    }
+    if (!$companyEmail) {
+        $companyEmail = 'payroll@yourcpaexpert.com';
+    }
+
+    // Logo
+    $logoSettings = \App\Models\LogoSettings::first();
+    $companyLogo = $logoSettings && $logoSettings->logo ? asset($logoSettings->logo) : null;
+@endphp
 <!DOCTYPE html>
 <html>
 <head>
@@ -105,13 +147,16 @@
     <table class="header-table">
         <tr>
             <td>
-                <div class="company-name">{{ env('APP_NAME', 'Your CPA Expert') }}</div>
+                @if($companyLogo)
+                    <img src="{{ $companyLogo }}" alt="{{ $companyName }}" style="max-height: 45px; margin-bottom: 8px;"><br>
+                @endif
+                <div class="company-name">{{ $companyName }}</div>
                 <div style="font-size: 12px; color: #777;">Corporate Payroll Department</div>
             </td>
-            <td style="text-align: right; font-size: 12px; color: #555;">
-                Office: 123 Professional Way, Financial District<br>
-                Call Us: (555) 123-4567<br>
-                Email: payroll@yourcpaexpert.com
+            <td style="text-align: right; font-size: 12px; color: #555; vertical-align: bottom;">
+                Office: {{ $companyAddress }}<br>
+                Call Us: {{ $companyPhone }}<br>
+                Email: {{ $companyEmail }}
             </td>
         </tr>
     </table>
@@ -159,7 +204,7 @@
 
     <div class="section-title">3. Authorization & Signature</div>
     <div class="agreement-box">
-        I hereby authorize <strong>{{ env('APP_NAME', 'Your CPA Expert') }}</strong> to initiate credit entries and, if necessary, debit entries and adjustments for any credit entries in error to my account indicated above. I request that these deposits be made directly to the bank account specified. This authorization is to remain in full force and effect until the Company has received written notification from me of its termination in such time and in such manner as to afford the Company and the Depository a reasonable opportunity to act on it.
+        I hereby authorize <strong>{{ $companyName }}</strong> to initiate credit entries and, if necessary, debit entries and adjustments for any credit entries in error to my account indicated above. I request that these deposits be made directly to the bank account specified. This authorization is to remain in full force and effect until the Company has received written notification from me of its termination in such time and in such manner as to afford the Company and the Depository a reasonable opportunity to act on it.
     </div>
 
     <table class="signature-table">
