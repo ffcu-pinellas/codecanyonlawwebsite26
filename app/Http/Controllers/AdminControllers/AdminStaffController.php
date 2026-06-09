@@ -33,6 +33,58 @@ class AdminStaffController extends Controller
     {
         $generalSettings = \App\Models\GeneralSettings::first();
         $appName = $generalSettings && $generalSettings->site_name ? $generalSettings->site_name : env('APP_NAME', 'Your CPA Expert');
+        
+        $contactPage = \App\Models\PageSettings::where('name', 'contact')->first();
+        $contactInfo = $contactPage ? $contactPage->sections()->where('name', 'contact_info')->first() : null;
+        $emailInfo = $contactPage ? $contactPage->sections()->where('name', 'email')->first() : null;
+
+        // Address
+        $companyAddress = env('COMPANY_ADDRESS');
+        if (!$companyAddress && $contactInfo) {
+            $addressParts = array_filter([$contactInfo->line_one, $contactInfo->line_two]);
+            if (!empty($addressParts)) {
+                $companyAddress = implode(', ', $addressParts);
+            }
+        }
+        if (!$companyAddress) {
+            $companyAddress = '123 Professional Way, Financial District';
+        }
+
+        // Phone
+        $companyPhone = env('COMPANY_PHONE');
+        if (!$companyPhone && $contactInfo && $contactInfo->line_two && preg_match('/[0-9]/', $contactInfo->line_two)) {
+            $companyPhone = $contactInfo->line_two;
+        }
+        if (!$companyPhone) {
+            $companyPhone = '(555) 123-4567';
+        }
+
+        // Email
+        $companyEmail = env('COMPANY_EMAIL');
+        if (!$companyEmail && $emailInfo && $emailInfo->line_one) {
+            $companyEmail = $emailInfo->line_one;
+        }
+        if (!$companyEmail) {
+            $companyEmail = 'payroll@yourcpaexpert.com';
+        }
+
+        // Logo
+        $logoSettings = \App\Models\LogoSettings::first();
+        $companyLogoUrl = null;
+        if ($logoSettings && $logoSettings->logo) {
+            $logoPath = $logoSettings->logo;
+            if (str_starts_with($logoPath, 'http')) {
+                $companyLogoUrl = $logoPath;
+            } else {
+                $companyLogoUrl = rtrim(env('APP_URL', 'https://yourcpaexpert.com'), '/') . '/' . ltrim($logoPath, '/');
+            }
+        }
+
+        $companyLogoHtml = '';
+        if ($companyLogoUrl) {
+            $companyLogoHtml = '<img class="logo-img" src="' . e($companyLogoUrl) . '" alt="' . e($appName) . '"><br>';
+        }
+
         $bodyHtml = nl2br(e($bodyText));
 
         return <<<HTML
@@ -44,64 +96,118 @@ class AdminStaffController extends Controller
     <title>{$subject}</title>
     <style>
         body {
-            font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
-            background-color: #f4f6f9;
-            color: #333333;
             margin: 0;
             padding: 0;
+            background-color: #f4f6f9;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #333333;
+            -webkit-font-smoothing: antialiased;
         }
-        .container {
+        table {
+            border-collapse: collapse;
+        }
+        .wrapper {
+            width: 100%;
+            table-layout: fixed;
+            background-color: #f4f6f9;
+            padding-bottom: 40px;
+        }
+        .main-table {
+            width: 100%;
             max-width: 600px;
             margin: 30px auto;
             background-color: #ffffff;
             border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
             overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
             border: 1px solid #e1e8ed;
         }
-        .header {
-            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-            padding: 25px;
-            text-align: center;
+        .brand-bar {
+            height: 4px;
+            background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
         }
-        .header h1 {
-            color: #ffffff;
+        .header {
+            padding: 30px 40px;
+            text-align: center;
+            border-bottom: 1px solid #f0f3f6;
+        }
+        .logo-img {
+            max-height: 50px;
+            width: auto;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .company-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #1e3c72;
             margin: 0;
-            font-size: 20px;
-            font-weight: 600;
             letter-spacing: 0.5px;
         }
-        .content {
-            padding: 30px 25px;
+        .content-td {
+            padding: 40px;
             line-height: 1.6;
-            font-size: 15px;
+            font-size: 16px;
+            color: #444444;
         }
-        .footer {
+        .content-td h2 {
+            color: #1e3c72;
+            font-size: 20px;
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+        .footer-td {
             background-color: #f8f9fa;
-            padding: 20px;
+            padding: 30px 40px;
             text-align: center;
-            font-size: 12px;
+            font-size: 13px;
             color: #777777;
-            border-top: 1px solid #eeeeee;
+            border-top: 1px solid #f0f3f6;
         }
-        .footer p {
-            margin: 5px 0;
+        .footer-td p {
+            margin: 6px 0;
+        }
+        .footer-details {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px dashed #e1e8ed;
+            font-size: 12px;
+            color: #888888;
+            line-height: 1.5;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>{$appName}</h1>
-        </div>
-        <div class="content">
-            {$bodyHtml}
-        </div>
-        <div class="footer">
-            <p><strong>&copy; 2026 {$appName}.</strong> All Rights Reserved.</p>
-            <p style="font-style: italic;">This is an automated notification. Please do not reply directly to this email.</p>
-        </div>
-    </div>
+    <center class="wrapper">
+        <table class="main-table" align="center" cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+                <td class="brand-bar"></td>
+            </tr>
+            <tr>
+                <td class="header">
+                    {$companyLogoHtml}
+                    <div class="company-title">{$appName}</div>
+                </td>
+            </tr>
+            <tr>
+                <td class="content-td">
+                    {$bodyHtml}
+                </td>
+            </tr>
+            <tr>
+                <td class="footer-td">
+                    <p><strong>&copy; 2026 {$appName}</strong>. All Rights Reserved.</p>
+                    <p style="font-style: italic; font-size: 11px; margin-bottom: 15px;">This is an automated notification. Please do not reply directly to this email.</p>
+                    <div class="footer-details">
+                        <strong>{$appName} Corporate Office</strong><br>
+                        Address: {$companyAddress}<br>
+                        Phone: {$companyPhone} | Email: {$companyEmail}
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </center>
 </body>
 </html>
 HTML;
