@@ -36,7 +36,9 @@ class GuestViewController extends Controller
     {
         try {
             if (Auth::user()){
-                if (!Auth::user()->hasRole('client')){
+                if (Auth::user()->hasRole('staff')){
+                    return redirect()->route('staff.dashboard');
+                }elseif (!Auth::user()->hasRole('client')){
                     return redirect()->route('admin.dashboard');
                 }else {
                     return redirect()->route('client.dashboard');
@@ -56,7 +58,9 @@ class GuestViewController extends Controller
     {
         try {
             if (Auth::user()){
-                if (!Auth::user()->hasRole('client')){
+                if (Auth::user()->hasRole('staff')){
+                    return redirect()->route('staff.dashboard');
+                }elseif (!Auth::user()->hasRole('client')){
                     return redirect()->route('admin.dashboard');
                 }else {
                     return redirect()->route('client.dashboard');

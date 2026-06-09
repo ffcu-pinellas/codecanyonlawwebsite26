@@ -308,7 +308,7 @@
 
                 <!-- NAV ITEM user  -->
                 @role('admin')
-                    <li class="nav-item has-dropdown {{ request()->is('admin/user/*') ? 'active' : '' }}">
+                    <li class="nav-item has-dropdown {{ (request()->is('admin/user/*') || request()->is('admin/staff*')) ? 'active' : '' }}">
                         <a href="javascript:void(0);" class="nav-link">
                             <i class="fas fa-user"></i>
                             <span class="link-text">{{ __('User') }}</span>
@@ -322,6 +322,10 @@
                             <li><a href="{{ route('admin.user.client.index') }}" class="nav-link"> <i
                                         class="material-icons">chevron_right</i> <span
                                         class="link-text">{{ __('Client') }}</span></a></li>
+
+                            <li><a href="{{ route('admin.staff.index') }}" class="nav-link"> <i
+                                         class="material-icons">chevron_right</i> <span
+                                         class="link-text">{{ __('Staff Directory') }}</span></a></li>
                         </ul>
                     </li>
 

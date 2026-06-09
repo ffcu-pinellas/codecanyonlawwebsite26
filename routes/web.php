@@ -294,4 +294,34 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         Route::get('/destroy-page/{slug?}', [DynamicPageController::class, 'pageDestroy'])->name('destroy-page');
     });
 
+    // Admin Staff Management
+    Route::prefix('staff')->as('staff.')->middleware(['role:admin'])->group(function () {
+        Route::get('/', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'create'])->name('create');
+        Route::post('/store', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'edit'])->name('edit');
+        Route::post('/update/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'update'])->name('update');
+        Route::delete('/destroy/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'destroy'])->name('destroy');
+        Route::get('/time-logs/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'timeLogs'])->name('time-logs');
+        Route::get('/login-logs/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'loginLogs'])->name('login-logs');
+        Route::get('/messages/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'messages'])->name('messages');
+        Route::post('/messages/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'sendMessage'])->name('send-message');
+        Route::get('/download-payment-form/{id}/{type}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'downloadPaymentForm'])->name('download-payment-form');
+        Route::post('/verify-payment/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'verifyPayment'])->name('verify-payment');
+    });
+
+});
+
+// Staff Public/Auth/Dashboard Routes
+Route::get('/staff/login', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'showLoginForm'])->name('staff.login');
+Route::post('/staff/login', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'login']);
+
+Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff'])->as('staff.')->group(function () {
+    Route::get('/dashboard', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'dashboard'])->name('dashboard');
+    Route::post('/clock-in', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'clockIn'])->name('clock-in');
+    Route::post('/clock-out', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'clockOut'])->name('clock-out');
+    Route::get('/payment-method', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'paymentMethod'])->name('payment-method');
+    Route::post('/payment-method', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'updatePaymentMethod']);
+    Route::get('/messages', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'messages'])->name('messages');
+    Route::post('/messages', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'sendMessage']);
 });

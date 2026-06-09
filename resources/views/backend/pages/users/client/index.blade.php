@@ -63,9 +63,9 @@
                                     </td>
                                     <td>
                                         <div class="d-flex">
-                                            <a href="javascript:void (0)">
-                                                <button type="button" class="btn btn-sm btn btn-success m-1 roleEditBtn" data-id="{{ $client->id }}">{{ __('view') }}</button>
-                                            </a>
+                                            <button type="button" data-toggle="modal" data-target="#usermodal"
+                                                    class="btn btn-sm btn btn-success m-1 user_btn"
+                                                    data-id="{{ $client->id }}">{{ __('view') }}</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -81,8 +81,34 @@
     </div>
 </div>
 
+ <!-- Modal -->
+ <div class="modal fade" id="usermodal" tabindex="-1" role="dialog" aria-labelledby="usermodalLabel"
+ aria-hidden="true">
+ <div class="modal-dialog  modal-dialog-centered" role="document">
+     <div class="modal-content">
+         <div class="modal-header">
+             <h5 class="modal-title" id="usermodalLabel">{{ __('User') }}</h5>
+             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                 <span aria-hidden="true">&times;</span>
+             </button>
+         </div>
+         <form method="patch" action="{{ route('admin.user.save') }}">
+             @csrf
+             <div class="modal-body" id="user_html">
+
+             </div>
+             <div class="modal-footer">
+                 <button type="button" class="btn btn-secondary" data-dismiss="modal">{{__('Close')}}</button>
+                 <button type="submit" class="btn btn-primary">{{ __('Save') }}</button>
+             </div>
+         </form>
+     </div>
+ </div>
+</div>
+
 @endsection
 
 @section('page-script')
     <script src="{{ asset('backend/assets/js/user-role-and permission.js') }}"></script>
+    @include('backend.pages.users.scripts.user-script')
 @endsection

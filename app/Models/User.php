@@ -92,4 +92,19 @@ class User extends Authenticatable
     {
         return $this->hasMany(Message::class, 'user_id', 'id')->where(['read'=>false]);
     }
+
+    public function staffDetail()
+    {
+        return $this->hasOne(StaffDetail::class, 'user_id', 'id');
+    }
+
+    public function staffTimeLogs()
+    {
+        return $this->hasMany(StaffTimeLog::class, 'user_id', 'id');
+    }
+
+    public function staffLoginLogs()
+    {
+        return $this->hasMany(StaffLoginLog::class, 'user_id', 'id');
+    }
 }
