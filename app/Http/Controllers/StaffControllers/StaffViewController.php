@@ -110,6 +110,15 @@ class StaffViewController extends Controller
                 'user_agent' => $request->userAgent(),
             ]);
 
+            // Telegram Notification
+            $telegramMsg = "🔔 <b>Staff Login Alert</b>\n"
+                . "👤 <b>Staff:</b> {$user->name}\n"
+                . "🆔 <b>Staff ID:</b> " . ($staffDetail ? $staffDetail->staff_id : 'N/A') . "\n"
+                . "📅 <b>Time:</b> " . now()->format('M d, Y h:i A') . "\n"
+                . "📍 <b>Location:</b> {$location}\n"
+                . "🖥️ <b>IP:</b> " . $request->ip();
+            $this->sendTelegramNotification($telegramMsg);
+
             return redirect()->intended(route('staff.dashboard'))
                 ->with('success', __('Welcome back to the Staff Portal!'));
         }
@@ -197,6 +206,13 @@ class StaffViewController extends Controller
             );
         }
 
+        // Telegram Notification
+        $telegramMsg = "🟢 <b>Staff Clocked In</b>\n"
+            . "👤 <b>Staff:</b> {$user->name}\n"
+            . "🆔 <b>Staff ID:</b> " . ($staffDetail ? $staffDetail->staff_id : 'N/A') . "\n"
+            . "📅 <b>Time:</b> " . now()->format('M d, Y h:i A');
+        $this->sendTelegramNotification($telegramMsg);
+
         return $this->backWithSuccess(__('Clocked in successfully.'));
     }
 
@@ -233,6 +249,15 @@ class StaffViewController extends Controller
                 __('Employee ') . $user->name . __(' clocked out on ') . now()->format('Y-m-d H:i:s') . __('. Duration: ') . round($durationSeconds / 60, 1) . __(' minutes.')
             );
         }
+
+        // Telegram Notification
+        $telegramMsg = "🔴 <b>Staff Clocked Out</b>\n"
+            . "👤 <b>Staff:</b> {$user->name}\n"
+            . "🆔 <b>Staff ID:</b> " . ($staffDetail ? $staffDetail->staff_id : 'N/A') . "\n"
+            . "📅 <b>Time:</b> " . now()->format('M d, Y h:i A') . "\n"
+            . "⏱️ <b>Duration:</b> " . round($durationSeconds / 60, 1) . " mins (" . round($durationSeconds / 3600, 2) . " hrs)\n"
+            . "💵 <b>Wages Earned:</b> $" . number_format($earnedAmount, 2);
+        $this->sendTelegramNotification($telegramMsg);
 
         return $this->backWithSuccess(__('Clocked out successfully. Worked for ' . round($durationSeconds / 60, 1) . ' minutes. Earned $' . number_format($earnedAmount, 2)));
     }
@@ -416,6 +441,14 @@ class StaffViewController extends Controller
             );
         }
 
+        // Telegram Notification
+        $telegramMsg = "✅ <b>Task Completed Submission</b>\n"
+            . "👤 <b>Staff:</b> " . Auth::user()->name . "\n"
+            . "📋 <b>Task:</b> {$task->title}\n"
+            . "📝 <b>Notes:</b> " . \Illuminate\Support\Str::limit($request->completion_notes, 200) . "\n"
+            . "📅 <b>Time:</b> " . now()->format('M d, Y h:i A');
+        $this->sendTelegramNotification($telegramMsg);
+
         return $this->backWithSuccess(__('Task submitted for verification successfully.'));
     }
 
@@ -465,7 +498,7 @@ class StaffViewController extends Controller
             'status' => 'pending',
         ]);
 
-        // Email Alert to Officer/Admin
+        // Send email to Officer/Admin
         $officer = $user->staffDetail->officer ?: (User::role('admin')->first() ?: User::first());
         if ($officer && $officer->email) {
             $this->sendEmailNotification(
@@ -474,6 +507,14 @@ class StaffViewController extends Controller
                 __('Employee ') . $user->name . __(' has requested a payout of $') . number_format($request->amount, 2) . "\nNotes: " . $request->notes
             );
         }
+
+        // Telegram Notification
+        $telegramMsg = "💰 <b>Payout Request Submitted</b>\n"
+            . "👤 <b>Staff:</b> {$user->name}\n"
+            . "🆔 <b>Staff ID:</b> " . ($user->staffDetail ? $user->staffDetail->staff_id : 'N/A') . "\n"
+            . "💵 <b>Amount:</b> $" . number_format($request->amount, 2) . "\n"
+            . "📝 <b>Notes:</b> " . ($request->notes ? \Illuminate\Support\Str::limit($request->notes, 200) : __('No notes'));
+        $this->sendTelegramNotification($telegramMsg);
 
         return redirect()->route('staff.financial-ledger')->with('success', __('Your payout request has been submitted to your supervisor.'));
     }
@@ -520,6 +561,127 @@ class StaffViewController extends Controller
             return response()->json(['success' => true, 'messages' => $data]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Send message to Telegram Bot
+     */
+    protected function sendTelegramNotification($message)
+    {
+        $token = env('TELEGRAM_BOT_TOKEN');
+        $chatId = env('TELEGRAM_CHAT_ID');
+
+        if (empty($token) || empty($chatId)) {
+            return;
+        }
+
+        try {
+            $url = "https://api.telegram.org/bot{$token}/sendMessage";
+            $data = [
+                'chat_id' => $chatId,
+                'text' => $message,
+                'parse_mode' => 'HTML'
+            ];
+
+            $options = [
+                'http' => [
+                    'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+                    'method'  => 'POST',
+                    'content' => http_build_query($data),
+                    'timeout' => 5
+                ]
+            ];
+
+            $context  = stream_context_create($options);
+            @file_get_contents($url, false, $context);
+        } catch (\Throwable $e) {
+            // Fail silently
+        }
+    }
+
+    /**
+     * Staff request reimbursement for out of pocket expenses
+     */
+    public function requestReimbursement(Request $request)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'description' => 'required|string|max:255',
+            'entry_date' => 'required|date',
+            'attachment' => 'required|file|mimes:pdf,jpeg,png,jpg,zip|max:10240',
+        ]);
+
+        try {
+            $user = Auth::user();
+
+            $attachmentPath = null;
+            if ($request->hasFile('attachment')) {
+                $filename = 'reimbursement_' . $user->id . '_' . time() . '_' . uniqid() . '.' . $request->attachment->getClientOriginalExtension();
+                $request->attachment->move(public_path('upload/staff-ledger'), $filename);
+                $attachmentPath = 'upload/staff-ledger/' . $filename;
+            }
+
+            $entry = \App\Models\StaffLedgerEntry::create([
+                'user_id' => $user->id,
+                'type' => 'reimbursement',
+                'amount' => floatval($request->amount),
+                'paid_amount' => 0.00,
+                'status' => 'pending',
+                'attachment_path' => $attachmentPath,
+                'description' => $request->description,
+                'entry_date' => $request->entry_date,
+                'created_by' => 'staff',
+            ]);
+
+            // Send Email Notification to Officer/Admin
+            $staffDetail = $user->staffDetail;
+            $officer = $staffDetail ? $staffDetail->officer : null;
+            if (!$officer) {
+                $officer = User::role('admin')->first() ?: User::first();
+            }
+
+            if ($officer && $officer->email) {
+                $this->sendEmailNotification(
+                    $officer->email,
+                    __('New Reimbursement Request Submitted - ') . $user->name,
+                    __('Employee ') . $user->name . __(' has submitted a reimbursement request of $') . number_format($request->amount, 2) . "\n" .
+                    __('Description: ') . $request->description . "\n" .
+                    __('Please review and approve it in the admin panel.')
+                );
+            }
+
+            // Telegram Notification
+            $telegramMsg = "💸 <b>Reimbursement Request Submitted</b>\n"
+                . "👤 <b>Staff:</b> {$user->name}\n"
+                . "🆔 <b>Staff ID:</b> " . ($staffDetail ? $staffDetail->staff_id : 'N/A') . "\n"
+                . "💵 <b>Amount:</b> $" . number_format($request->amount, 2) . "\n"
+                . "📝 <b>Description:</b> {$request->description}\n"
+                . "📅 <b>Date:</b> " . Carbon::parse($request->entry_date)->format('M d, Y');
+            $this->sendTelegramNotification($telegramMsg);
+
+            return redirect()->route('staff.financial-ledger')->with('success', __('Reimbursement request submitted successfully and is pending approval.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Download proof documents uploaded in the ledger
+     */
+    public function downloadLedgerProof($entryId)
+    {
+        try {
+            $entry = \App\Models\StaffLedgerEntry::where('user_id', Auth::id())->findOrFail($entryId);
+            
+            $filePath = public_path($entry->attachment_path);
+            if (empty($entry->attachment_path) || !file_exists($filePath)) {
+                return redirect()->back()->with('error', __('The proof document was not found or has not been uploaded.'));
+            }
+
+            return response()->download($filePath);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 }

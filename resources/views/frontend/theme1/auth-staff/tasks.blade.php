@@ -77,8 +77,10 @@
         </div>
     </div>
 </div>
+@endsection
 
 <!-- Modals rendered outside list-group to prevent stacking/backdrop z-index bugs -->
+@section('modal')
 @foreach($tasks as $task)
     <!-- Preview Modal -->
     <div class="modal fade" id="previewModal-{{ $task->id }}" tabindex="-1" role="dialog" aria-labelledby="previewModalLabel-{{ $task->id }}" aria-hidden="true">
@@ -165,5 +167,21 @@
         </div>
     @endif
 @endforeach
+@endsection
 
+@section('page-script')
+<script>
+    // Make sure we can trigger modal from preview modal correctly without locking backdrop
+    $(document).ready(function() {
+        $('body').on('click', '[data-toggle="modal"][data-target^="#completeModal-"]', function() {
+            var target = $(this).data('target');
+            // Hide any open modals first
+            $('.modal.show').modal('hide');
+            // Give backdrop time to disappear
+            setTimeout(function() {
+                $(target).modal('show');
+            }, 300);
+        });
+    });
+</script>
 @endsection

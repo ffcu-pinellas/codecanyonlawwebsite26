@@ -15,8 +15,12 @@ class StaffLedgerEntry extends Model
         'user_id',
         'type', // debt, reimbursement, bonus
         'amount',
+        'paid_amount',
+        'status', // pending, approved, paid, partially_paid
+        'attachment_path',
         'description',
         'entry_date',
+        'created_by', // admin, staff
     ];
 
     protected $casts = [

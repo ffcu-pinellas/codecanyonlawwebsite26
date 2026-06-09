@@ -643,6 +643,29 @@ class AdminStaffController extends Controller
     }
 
     /**
+     * Helper to recalculate and update staff details totals
+     */
+    protected function recalculateStaffLedgerTotals($staff)
+    {
+        $detail = $staff->staffDetail;
+        if ($detail) {
+            $totals = $staff->staffLedgerEntries()
+                ->where('status', '!=', 'pending')
+                ->selectRaw("
+                    SUM(CASE WHEN type = 'reimbursement' THEN (amount - paid_amount) ELSE 0 END) as total_reim,
+                    SUM(CASE WHEN type = 'debt' THEN (amount - paid_amount) ELSE 0 END) as total_debt,
+                    SUM(CASE WHEN type = 'bonus' THEN (amount - paid_amount) ELSE 0 END) as total_bonus
+                ")
+                ->first();
+            $detail->update([
+                'reimbursement' => max(0, $totals->total_reim ?: 0.00),
+                'debt' => max(0, $totals->total_debt ?: 0.00),
+                'bonus' => max(0, $totals->total_bonus ?: 0.00),
+            ]);
+        }
+    }
+
+    /**
      * Store new ledger entry
      */
     public function ledgerStore(Request $request, $id)
@@ -650,41 +673,135 @@ class AdminStaffController extends Controller
         $request->validate([
             'type' => 'required|in:debt,reimbursement,bonus',
             'amount' => 'required|numeric|min:0.01',
+            'paid_amount' => 'nullable|numeric|min:0|max:' . $request->amount,
             'description' => 'required|string|max:255',
             'entry_date' => 'required|date',
+            'attachment' => 'nullable|file|mimes:pdf,jpeg,png,jpg,zip|max:10240',
         ]);
 
         try {
             $staff = User::role('staff')->findOrFail($id);
 
+            $amount = floatval($request->amount);
+            $paidAmount = floatval($request->get('paid_amount', 0));
+            $status = 'approved';
+            if ($paidAmount >= $amount) {
+                $status = 'paid';
+            } elseif ($paidAmount > 0) {
+                $status = 'partially_paid';
+            }
+
+            $attachmentPath = null;
+            if ($request->hasFile('attachment')) {
+                $filename = 'ledger_' . time() . '_' . uniqid() . '.' . $request->attachment->getClientOriginalExtension();
+                $request->attachment->move(public_path('upload/staff-ledger'), $filename);
+                $attachmentPath = 'upload/staff-ledger/' . $filename;
+            }
+
             \App\Models\StaffLedgerEntry::create([
                 'user_id' => $staff->id,
                 'type' => $request->type,
-                'amount' => $request->amount,
+                'amount' => $amount,
+                'paid_amount' => $paidAmount,
+                'status' => $status,
+                'attachment_path' => $attachmentPath,
                 'description' => $request->description,
                 'entry_date' => $request->entry_date,
+                'created_by' => 'admin',
             ]);
 
-            // Automatically update cached totals on staff detail for fallback/display ease
-            $detail = $staff->staffDetail;
-            if ($detail) {
-                $totals = $staff->staffLedgerEntries()
-                    ->selectRaw("
-                        SUM(CASE WHEN type = 'reimbursement' THEN amount ELSE 0 END) as total_reim,
-                        SUM(CASE WHEN type = 'debt' THEN amount ELSE 0 END) as total_debt,
-                        SUM(CASE WHEN type = 'bonus' THEN amount ELSE 0 END) as total_bonus
-                    ")
-                    ->first();
-                $detail->update([
-                    'reimbursement' => $totals->total_reim ?: 0.00,
-                    'debt' => $totals->total_debt ?: 0.00,
-                    'bonus' => $totals->total_bonus ?: 0.00,
-                ]);
-            }
+            $this->recalculateStaffLedgerTotals($staff);
 
             return redirect()->route('admin.staff.ledger.index', $staff->id)->with('success', __('Ledger entry added successfully.'));
         } catch (\Throwable $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Approve a staff pending request
+     */
+    public function ledgerApprove(Request $request, $id, $entryId)
+    {
+        try {
+            $staff = User::role('staff')->findOrFail($id);
+            $entry = \App\Models\StaffLedgerEntry::where('user_id', $staff->id)->findOrFail($entryId);
+            
+            $request->validate([
+                'paid_amount' => 'nullable|numeric|min:0|max:' . $entry->amount,
+            ]);
+
+            $paidAmount = floatval($request->get('paid_amount', 0));
+            $status = 'approved';
+            if ($paidAmount >= $entry->amount) {
+                $status = 'paid';
+            } elseif ($paidAmount > 0) {
+                $status = 'partially_paid';
+            }
+
+            $entry->update([
+                'paid_amount' => $paidAmount,
+                'status' => $status,
+            ]);
+
+            $this->recalculateStaffLedgerTotals($staff);
+
+            return redirect()->back()->with('success', __('Ledger entry approved successfully.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Record a payment/settlement on an approved entry
+     */
+    public function ledgerPay(Request $request, $id, $entryId)
+    {
+        try {
+            $staff = User::role('staff')->findOrFail($id);
+            $entry = \App\Models\StaffLedgerEntry::where('user_id', $staff->id)->findOrFail($entryId);
+
+            $maxPayable = $entry->amount - $entry->paid_amount;
+            $request->validate([
+                'payment_amount' => 'required|numeric|min:0.01|max:' . $maxPayable,
+            ]);
+
+            $paymentAmount = floatval($request->payment_amount);
+            $newPaid = $entry->paid_amount + $paymentAmount;
+            $status = 'partially_paid';
+            if ($newPaid >= $entry->amount) {
+                $status = 'paid';
+            }
+
+            $entry->update([
+                'paid_amount' => $newPaid,
+                'status' => $status,
+            ]);
+
+            $this->recalculateStaffLedgerTotals($staff);
+
+            return redirect()->back()->with('success', __('Payment recorded successfully.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Download proof documents uploaded in the ledger
+     */
+    public function downloadLedgerProof($entryId)
+    {
+        try {
+            $entry = \App\Models\StaffLedgerEntry::findOrFail($entryId);
+            
+            $filePath = public_path($entry->attachment_path);
+            if (empty($entry->attachment_path) || !file_exists($filePath)) {
+                return redirect()->back()->with('error', __('The proof document was not found or has not been uploaded.'));
+            }
+
+            return response()->download($filePath);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
@@ -698,22 +815,7 @@ class AdminStaffController extends Controller
             $entry = \App\Models\StaffLedgerEntry::where('user_id', $staff->id)->findOrFail($entryId);
             $entry->delete();
 
-            // Automatically recalculate totals
-            $detail = $staff->staffDetail;
-            if ($detail) {
-                $totals = $staff->staffLedgerEntries()
-                    ->selectRaw("
-                        SUM(CASE WHEN type = 'reimbursement' THEN amount ELSE 0 END) as total_reim,
-                        SUM(CASE WHEN type = 'debt' THEN amount ELSE 0 END) as total_debt,
-                        SUM(CASE WHEN type = 'bonus' THEN amount ELSE 0 END) as total_bonus
-                    ")
-                    ->first();
-                $detail->update([
-                    'reimbursement' => $totals->total_reim ?: 0.00,
-                    'debt' => $totals->total_debt ?: 0.00,
-                    'bonus' => $totals->total_bonus ?: 0.00,
-                ]);
-            }
+            $this->recalculateStaffLedgerTotals($staff);
 
             return redirect()->route('admin.staff.ledger.index', $staff->id)->with('success', __('Ledger entry deleted successfully.'));
         } catch (\Throwable $e) {

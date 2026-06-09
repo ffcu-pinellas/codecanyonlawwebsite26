@@ -27,6 +27,33 @@
 @endsection
 
 @section('content')
+@php
+    $ledgerTotals = $user->staffLedgerEntries()
+        ->where('status', '!=', 'pending')
+        ->selectRaw("
+            SUM(CASE WHEN type = 'reimbursement' THEN amount ELSE 0 END) as orig_reim,
+            SUM(CASE WHEN type = 'reimbursement' THEN paid_amount ELSE 0 END) as paid_reim,
+            SUM(CASE WHEN type = 'debt' THEN amount ELSE 0 END) as orig_debt,
+            SUM(CASE WHEN type = 'debt' THEN paid_amount ELSE 0 END) as paid_debt,
+            SUM(CASE WHEN type = 'bonus' THEN amount ELSE 0 END) as orig_bonus,
+            SUM(CASE WHEN type = 'bonus' THEN paid_amount ELSE 0 END) as paid_bonus
+        ")
+        ->first();
+
+    $origReim = $ledgerTotals->orig_reim ?: 0.00;
+    $paidReim = $ledgerTotals->paid_reim ?: 0.00;
+    $remReim = max(0, $origReim - $paidReim);
+
+    $origDebt = $ledgerTotals->orig_debt ?: 0.00;
+    $paidDebt = $ledgerTotals->paid_debt ?: 0.00;
+    $remDebt = max(0, $origDebt - $paidDebt);
+
+    $origBonus = $ledgerTotals->orig_bonus ?: 0.00;
+    $paidBonus = $ledgerTotals->paid_bonus ?: 0.00;
+    $remBonus = max(0, $origBonus - $paidBonus);
+
+    $netRemaining = $remReim + $remBonus - $remDebt;
+@endphp
 <div class="container-fluid py-4">
     <div class="row">
         <!-- Main Ledger Details -->
@@ -34,26 +61,45 @@
             <!-- Reimbursement Ledger Card -->
             <div class="card ledger-card">
                 <div class="card-body">
-                    <h5 class="mb-4" style="font-weight: 700; color: #2c3e50;"><i class="fas fa-wallet mr-2 text-info"></i>{{ __('Reimbursement Ledger') }}</h5>
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0" style="font-weight: 700; color: #2c3e50;"><i class="fas fa-wallet mr-2 text-info"></i>{{ __('Reimbursement Ledger') }}</h5>
+                        <button type="button" class="btn btn-outline-info btn-sm" data-toggle="modal" data-target="#requestReimbursementModal">
+                            <i class="fas fa-plus mr-1"></i> {{ __('Request Reimbursement') }}
+                        </button>
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-bordered mb-0">
+                            <thead>
+                                <tr class="bg-light small font-weight-bold text-dark">
+                                    <th>{{ __('Sub-Ledger Category') }}</th>
+                                    <th class="text-right">{{ __('Original') }}</th>
+                                    <th class="text-right">{{ __('Paid') }}</th>
+                                    <th class="text-right">{{ __('Remaining') }}</th>
+                                </tr>
+                            </thead>
                             <tbody>
                                 <tr>
-                                    <td class="text-muted font-weight-medium">{{ __('Funds Owed by Employer (Out-of-Pocket Expenses)') }}</td>
-                                    <td class="font-weight-bold text-dark text-right">${{ number_format($staffDetail->reimbursement, 2) }}</td>
+                                    <td class="text-muted font-weight-medium">{{ __('Funds Owed by Employer (Out-of-Pocket)') }}</td>
+                                    <td class="font-weight-bold text-dark text-right">${{ number_format($origReim, 2) }}</td>
+                                    <td class="font-weight-bold text-success text-right">${{ number_format($paidReim, 2) }}</td>
+                                    <td class="font-weight-bold text-info text-right">${{ number_format($remReim, 2) }}</td>
                                 </tr>
                                 <tr>
                                     <td class="text-muted font-weight-medium">{{ __('Debts/Funds Owed by Employee') }}</td>
-                                    <td class="font-weight-bold text-danger text-right">-${{ number_format($staffDetail->debt, 2) }}</td>
+                                    <td class="font-weight-bold text-dark text-right">${{ number_format($origDebt, 2) }}</td>
+                                    <td class="font-weight-bold text-success text-right">${{ number_format($paidDebt, 2) }}</td>
+                                    <td class="font-weight-bold text-danger text-right">${{ number_format($remDebt, 2) }}</td>
                                 </tr>
                                 <tr>
                                     <td class="text-muted font-weight-medium">{{ __('Corporate Bonuses') }}</td>
-                                    <td class="font-weight-bold text-success text-right">+${{ number_format($staffDetail->bonus, 2) }}</td>
+                                    <td class="font-weight-bold text-dark text-right">${{ number_format($origBonus, 2) }}</td>
+                                    <td class="font-weight-bold text-success text-right">${{ number_format($paidBonus, 2) }}</td>
+                                    <td class="font-weight-bold text-success text-right">${{ number_format($remBonus, 2) }}</td>
                                 </tr>
                                 <tr class="bg-light font-weight-bold">
-                                    <td>{{ __('Net Owed to Employee') }}</td>
-                                    <td class="text-right @if($netOwed >= 0) text-success @else text-danger @endif">
-                                        ${{ number_format($netOwed, 2) }}
+                                    <td colspan="3">{{ __('Net Remaining Balance Owed alongside next paycheck/payday') }}</td>
+                                    <td class="text-right @if($netRemaining >= 0) text-success @else text-danger @endif">
+                                        ${{ number_format($netRemaining, 2) }}
                                     </td>
                                 </tr>
                             </tbody>
@@ -73,7 +119,11 @@
                                     <th>{{ __('Date') }}</th>
                                     <th>{{ __('Description') }}</th>
                                     <th>{{ __('Type') }}</th>
-                                    <th class="text-right">{{ __('Amount') }}</th>
+                                    <th>{{ __('Status') }}</th>
+                                    <th class="text-right">{{ __('Original') }}</th>
+                                    <th class="text-right">{{ __('Paid') }}</th>
+                                    <th class="text-right">{{ __('Remaining') }}</th>
+                                    <th class="text-center">{{ __('Proof') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -90,13 +140,39 @@
                                                 <span class="badge badge-danger status-badge">{{ __('Employee Debt') }}</span>
                                             @endif
                                         </td>
-                                        <td class="text-right font-weight-bold @if($entry->type === 'debt') text-danger @else text-success @endif">
-                                            @if($entry->type === 'debt')-@else+@endif${{ number_format($entry->amount, 2) }}
+                                        <td>
+                                            @if($entry->status === 'pending')
+                                                <span class="badge badge-warning status-badge">{{ __('Pending') }}</span>
+                                            @elseif($entry->status === 'approved')
+                                                <span class="badge badge-info status-badge">{{ __('Approved') }}</span>
+                                            @elseif($entry->status === 'partially_paid')
+                                                <span class="badge badge-primary status-badge">{{ __('Partially Paid') }}</span>
+                                            @elseif($entry->status === 'paid')
+                                                <span class="badge badge-success status-badge">{{ __('Paid') }}</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-right font-weight-bold text-dark">
+                                            ${{ number_format($entry->amount, 2) }}
+                                        </td>
+                                        <td class="text-right font-weight-bold text-success">
+                                            ${{ number_format($entry->paid_amount, 2) }}
+                                        </td>
+                                        <td class="text-right font-weight-bold @if($entry->type === 'debt') text-danger @else text-info @endif">
+                                            ${{ number_format(max(0, $entry->amount - $entry->paid_amount), 2) }}
+                                        </td>
+                                        <td class="text-center">
+                                            @if($entry->attachment_path)
+                                                <a href="{{ route('staff.ledger.proof', $entry->id) }}" target="_blank" class="btn btn-xs btn-outline-info" title="{{ __('Download Proof') }}">
+                                                    <i class="fas fa-file-download"></i>
+                                                </a>
+                                            @else
+                                                <span class="text-muted small">-</span>
+                                            @endif
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="4" class="text-center text-muted py-3 small">{{ __('No transactions recorded.') }}</td>
+                                        <td colspan="8" class="text-center text-muted py-3 small">{{ __('No transactions recorded.') }}</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -236,3 +312,49 @@
     </div>
 </div>
 @endsection
+
+@section('modal')
+<!-- Reimbursement Request Modal -->
+<div class="modal fade" id="requestReimbursementModal" tabindex="-1" role="dialog" aria-labelledby="reimbursementModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title font-weight-bold text-dark" id="reimbursementModalLabel">{{ __('New Reimbursement Request') }}</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="{{ route('staff.reimbursement.request') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body text-left">
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold small text-muted text-uppercase mb-2">{{ __('Reimbursement Description') }} <span class="text-danger">*</span></label>
+                        <input type="text" name="description" class="form-control" placeholder="{{ __('e.g. Fuel expenses for travel to client site') }}" required>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold small text-muted text-uppercase mb-2">{{ __('Amount ($)') }} <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" min="0.01" name="amount" class="form-control" placeholder="0.00" required>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold small text-muted text-uppercase mb-2">{{ __('Transaction Date') }} <span class="text-danger">*</span></label>
+                        <input type="date" name="entry_date" class="form-control" value="{{ date('Y-m-d') }}" required>
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label class="font-weight-bold small text-muted text-uppercase mb-2">{{ __('Upload Proof / Document') }} <span class="text-danger">*</span></label>
+                        <input type="file" name="attachment" class="form-control-file" required>
+                        <small class="text-muted d-block mt-1">{{ __('Accepted PDF, ZIP, PNG, JPG (Max 10MB)') }}</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Submit Request') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection
+

@@ -5,8 +5,6 @@
 <style>
     .client-dashboard-section {
         margin-top: 130px !important;
-        position: relative;
-        z-index: 10;
     }
     .client-navigation {
         background-color: #1a252f !important;
@@ -18,6 +16,11 @@
     }
     .top-bar-wrapper {
         z-index: 5 !important;
+    }
+    @media (min-width: 768px) {
+        .sidebar-overlay, .sidebar-overlay.active {
+            display: none !important;
+        }
     }
 </style>
 <body id="body">
@@ -101,5 +104,6 @@
 @include('frontend.theme1.auth-client.layouts.script')
 @include('backend.layouts.toster-script')
 {!! $insertHeaderFooter?$insertHeaderFooter->footer:'' !!}
+@yield('modal')
 </body>
 </html>

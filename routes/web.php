@@ -313,7 +313,10 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         // Ledger management
         Route::get('/ledger/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'ledgerIndex'])->name('ledger.index');
         Route::post('/ledger/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'ledgerStore'])->name('ledger.store');
+        Route::post('/ledger/{id}/{entry}/approve', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'ledgerApprove'])->name('ledger.approve');
+        Route::post('/ledger/{id}/{entry}/pay', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'ledgerPay'])->name('ledger.pay');
         Route::delete('/ledger/{id}/{entry}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'ledgerDestroy'])->name('ledger.destroy');
+        Route::get('/ledger/proof/{entry}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'downloadLedgerProof'])->name('ledger.proof');
 
         // Task management
         Route::get('/tasks/list', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'tasksIndex'])->name('tasks.index');
@@ -349,5 +352,7 @@ Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff'])-
     // Financial Ledger & Payout requests
     Route::get('/financial-ledger', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'financialLedger'])->name('financial-ledger');
     Route::post('/request-payout', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'requestPayout'])->name('request-payout');
+    Route::post('/reimbursement/request', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'requestReimbursement'])->name('reimbursement.request');
+    Route::get('/ledger/proof/{entry}', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'downloadLedgerProof'])->name('ledger.proof');
 });
 
