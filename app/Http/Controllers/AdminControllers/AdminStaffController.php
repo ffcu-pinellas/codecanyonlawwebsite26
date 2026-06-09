@@ -80,8 +80,8 @@ class AdminStaffController extends Controller
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
-                'phone' => $request->phone,
-                'address' => $request->address,
+                'phone' => $request->phone ?: '',
+                'address' => $request->address ?: '',
             ]);
 
             // Assign role
@@ -168,8 +168,8 @@ class AdminStaffController extends Controller
             $userData = [
                 'name' => $request->name,
                 'email' => $request->email,
-                'phone' => $request->phone,
-                'address' => $request->address,
+                'phone' => $request->phone ?: '',
+                'address' => $request->address ?: '',
             ];
 
             if ($request->filled('password')) {
