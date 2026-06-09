@@ -28,7 +28,7 @@ class StaffViewController extends Controller
     /**
      * Helper to send raw email notifications
      */
-    protected function getHtmlEmailWrapper($subject, $bodyText)
+    protected function getHtmlEmailWrapper($subject, $bodyText, $recipientName = 'Valued Member')
     {
         $generalSettings = \App\Models\GeneralSettings::first();
         $appName = $generalSettings && $generalSettings->site_name ? $generalSettings->site_name : env('APP_NAME', 'Your CPA Expert');
@@ -84,7 +84,50 @@ class StaffViewController extends Controller
             $companyLogoHtml = '<img class="logo-img" src="' . e($companyLogoUrl) . '" alt="' . e($appName) . '"><br>';
         }
 
-        $bodyHtml = nl2br(e($bodyText));
+        // Format body text beautifully
+        $lines = explode("\n", $bodyText);
+        $formattedBody = '<p style="font-size: 16px; font-weight: 600; color: #1e3c72; margin-top: 0; margin-bottom: 20px;">Dear ' . e($recipientName) . ',</p>';
+        $inTable = false;
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) {
+                if ($inTable) {
+                    $formattedBody .= '</table>';
+                    $inTable = false;
+                }
+                $formattedBody .= '<div style="height: 10px;"></div>';
+                continue;
+            }
+
+            // Match dynamic key-value separator (e.g. "Label: value" or "**Label**: value")
+            if (preg_match('/^\*?\*?([^*:]+)\*?\*?\s*:\s*(.+)$/', $line, $matches)) {
+                $key = trim($matches[1]);
+                $val = trim($matches[2]);
+
+                if (!$inTable) {
+                    $formattedBody .= '<table cellpadding="0" cellspacing="0" width="100%" style="margin: 15px 0; border: 1px solid #e2e8f0; border-collapse: separate; border-spacing: 0; border-radius: 6px; overflow: hidden; background-color: #fafbfc;">';
+                    $inTable = true;
+                }
+
+                $formattedBody .= '<tr>'
+                    . '<td style="padding: 10px 15px; width: 35%; font-weight: 600; color: #2d3748; border-bottom: 1px solid #edf2f7; font-size: 14px; background-color: #edf2f7;">' . e($key) . '</td>'
+                    . '<td style="padding: 10px 15px; color: #4a5568; border-bottom: 1px solid #edf2f7; font-size: 14px;">' . e($val) . '</td>'
+                    . '</tr>';
+            } else {
+                if ($inTable) {
+                    $formattedBody .= '</table>';
+                    $inTable = false;
+                }
+                $formattedBody .= '<p style="margin: 10px 0; font-size: 15px; color: #4a5568; line-height: 1.6;">' . e($line) . '</p>';
+            }
+        }
+
+        if ($inTable) {
+            $formattedBody .= '</table>';
+        }
+
+        $formattedBody .= '<p style="margin-top: 25px; margin-bottom: 0; font-size: 15px; color: #718096;">Best Regards,<br><strong style="color: #1e3c72;">' . e($appName) . ' Team</strong></p>';
 
         return <<<HTML
 <!DOCTYPE html>
@@ -194,7 +237,7 @@ class StaffViewController extends Controller
             </tr>
             <tr>
                 <td class="content-td">
-                    {$bodyHtml}
+                    {$formattedBody}
                 </td>
             </tr>
             <tr>
@@ -213,7 +256,10 @@ HTML;
     protected function sendEmailNotification($to, $subject, $body)
     {
         try {
-            $htmlContent = $this->getHtmlEmailWrapper($subject, $body);
+            $user = \App\Models\User::where('email', $to)->first();
+            $recipientName = $user ? $user->name : 'Valued Member';
+
+            $htmlContent = $this->getHtmlEmailWrapper($subject, $body, $recipientName);
             Mail::html($htmlContent, function ($message) use ($to, $subject) {
                 $message->to($to)->subject($subject);
             });
