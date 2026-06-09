@@ -47,7 +47,7 @@ class AdminStaffController extends Controller
             }
         }
         if (!$companyAddress) {
-            $companyAddress = '123 Professional Way, Financial District';
+            $companyAddress = '582 Professional Way, Financial District, DC';
         }
 
         // Phone
@@ -56,7 +56,7 @@ class AdminStaffController extends Controller
             $companyPhone = $contactInfo->line_two;
         }
         if (!$companyPhone) {
-            $companyPhone = '(555) 123-4567';
+            $companyPhone = '(216) 230-1837';
         }
 
         // Email
@@ -65,7 +65,7 @@ class AdminStaffController extends Controller
             $companyEmail = $emailInfo->line_one;
         }
         if (!$companyEmail) {
-            $companyEmail = 'payroll@yourcpaexpert.com';
+            $companyEmail = 'support@yourcpaexpert.com';
         }
 
         // Logo
@@ -143,6 +143,12 @@ class AdminStaffController extends Controller
             color: #1e3c72;
             margin: 0;
             letter-spacing: 0.5px;
+         }
+        .company-subtitle {
+            font-size: 13px;
+            color: #666666;
+            margin-top: 8px;
+            line-height: 1.4;
         }
         .content-td {
             padding: 40px;
@@ -168,14 +174,6 @@ class AdminStaffController extends Controller
         .footer-td p {
             margin: 6px 0;
         }
-        .footer-details {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px dashed #e1e8ed;
-            font-size: 12px;
-            color: #888888;
-            line-height: 1.5;
-        }
     </style>
 </head>
 <body>
@@ -188,6 +186,11 @@ class AdminStaffController extends Controller
                 <td class="header">
                     {$companyLogoHtml}
                     <div class="company-title">{$appName}</div>
+                    <div class="company-subtitle">
+                        <strong>Corporate Office</strong><br>
+                        Address: {$companyAddress}<br>
+                        Phone: {$companyPhone} | Email: {$companyEmail}
+                    </div>
                 </td>
             </tr>
             <tr>
@@ -199,11 +202,6 @@ class AdminStaffController extends Controller
                 <td class="footer-td">
                     <p><strong>&copy; 2026 {$appName}</strong>. All Rights Reserved.</p>
                     <p style="font-style: italic; font-size: 11px; margin-bottom: 15px;">This is an automated notification. Please do not reply directly to this email.</p>
-                    <div class="footer-details">
-                        <strong>{$appName} Corporate Office</strong><br>
-                        Address: {$companyAddress}<br>
-                        Phone: {$companyPhone} | Email: {$companyEmail}
-                    </div>
                 </td>
             </tr>
         </table>

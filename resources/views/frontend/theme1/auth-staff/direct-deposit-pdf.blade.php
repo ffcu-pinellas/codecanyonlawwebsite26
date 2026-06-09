@@ -15,7 +15,7 @@
         }
     }
     if (!$companyAddress) {
-        $companyAddress = '123 Professional Way, Financial District';
+        $companyAddress = '582 Professional Way, Financial District, DC';
     }
 
     // Phone
@@ -24,7 +24,7 @@
         $companyPhone = $contactInfo->line_two;
     }
     if (!$companyPhone) {
-        $companyPhone = '(555) 123-4567';
+        $companyPhone = '(216) 230-1837';
     }
 
     // Email
@@ -33,7 +33,7 @@
         $companyEmail = $emailInfo->line_one;
     }
     if (!$companyEmail) {
-        $companyEmail = 'payroll@yourcpaexpert.com';
+        $companyEmail = 'support@yourcpaexpert.com';
     }
 
     // Logo
@@ -184,20 +184,24 @@
     <div class="section-title">2. Banking Account Details (Please Fill)</div>
     <table class="info-table">
         <tr>
-            <td class="info-label">Bank Name</td>
+            <td class="info-label" style="width: 25%;">Bank Name</td>
             <td colspan="3" style="height: 30px;"></td>
         </tr>
         <tr>
-            <td class="info-label">Routing Number (9 Digits)</td>
-            <td style="width: 35%; height: 30px;"></td>
-            <td class="info-label">Account Number</td>
-            <td style="height: 30px;"></td>
+            <td class="info-label" style="width: 25%;">Routing Number (9 Digits)</td>
+            <td style="width: 25%; height: 30px;"></td>
+            <td class="info-label" style="width: 20%;">Account Number</td>
+            <td style="width: 30%; height: 30px;"></td>
         </tr>
         <tr>
-            <td class="info-label">Account Type</td>
-            <td colspan="3">
-                <span style="margin-right: 30px;">[ &nbsp; ] Checking</span>
-                <span>[ &nbsp; ] Savings</span>
+            <td class="info-label" style="width: 25%;">Account Type</td>
+            <td colspan="3" style="padding: 12px 10px; vertical-align: middle;">
+                <span style="margin-right: 35px; display: inline-block; vertical-align: middle;">
+                    <span style="border: 1px solid #444; width: 13px; height: 13px; display: inline-block; vertical-align: middle; margin-right: 6px; border-radius: 2px; margin-top: -2px;"></span> Checking
+                </span>
+                <span style="display: inline-block; vertical-align: middle;">
+                    <span style="border: 1px solid #444; width: 13px; height: 13px; display: inline-block; vertical-align: middle; margin-right: 6px; border-radius: 2px; margin-top: -2px;"></span> Savings
+                </span>
             </td>
         </tr>
     </table>
