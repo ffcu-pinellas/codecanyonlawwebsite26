@@ -69,8 +69,50 @@
                         </div>
                     </div>
 
+                    <!-- Paper Check Fields (Collapsible) -->
+                    <div id="check_fields" class="mb-4" style="display: @if($staffDetail->payment_method === 'paycheck') block @else none @endif;">
+                        <h6 class="font-weight-bold text-dark mb-3"><i class="fas fa-money-check-alt mr-2 text-primary"></i>{{ __('Paper Check Payment Information') }}</h6>
+                        <div class="row">
+                            <div class="col-md-6 form-group">
+                                <label for="check_name"><strong>{{ __('Issue Check To (Name)') }} <span class="text-danger">*</span></strong></label>
+                                <input type="text" name="check_name" id="check_name" class="form-control" value="{{ old('check_name', $staffDetail->check_name) }}" placeholder="{{ __('e.g. John Doe') }}">
+                                @error('check_name') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-md-12 form-group">
+                                <label for="check_address"><strong>{{ __('Delivery Mailing Address') }} <span class="text-danger">*</span></strong></label>
+                                <textarea name="check_address" id="check_address" rows="3" class="form-control" placeholder="{{ __('Type the complete mailing address where you want the check delivered...') }}">{{ old('check_address', $staffDetail->check_address) }}</textarea>
+                                @error('check_address') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Direct Deposit Upload Fields (Collapsible) -->
-                    <div id="direct_deposit_fields" style="display: @if($staffDetail->payment_method === 'direct_deposit') block @else none @endif;">
+                    <div id="direct_deposit_fields" class="mb-4" style="display: @if($staffDetail->payment_method === 'direct_deposit') block @else none @endif;">
+                        <h6 class="font-weight-bold text-dark mb-3"><i class="fas fa-university mr-2 text-primary"></i>{{ __('Bank Account Information') }}</h6>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6 form-group">
+                                <label for="bank_name"><strong>{{ __('Bank Name') }} <span class="text-danger">*</span></strong></label>
+                                <input type="text" name="bank_name" id="bank_name" class="form-control" value="{{ old('bank_name', $staffDetail->bank_name) }}" placeholder="{{ __('e.g. Chase Bank') }}">
+                                @error('bank_name') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label for="account_name"><strong>{{ __('Account Holder Name') }} <span class="text-danger">*</span></strong></label>
+                                <input type="text" name="account_name" id="account_name" class="form-control" value="{{ old('account_name', $staffDetail->account_name) }}" placeholder="{{ __('e.g. John Doe') }}">
+                                @error('account_name') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label for="account_number"><strong>{{ __('Account Number') }} <span class="text-danger">*</span></strong></label>
+                                <input type="text" name="account_number" id="account_number" class="form-control" value="{{ old('account_number', $staffDetail->account_number) }}" placeholder="{{ __('Type your bank account number') }}">
+                                @error('account_number') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="col-md-6 form-group">
+                                <label for="routing_number"><strong>{{ __('Routing Number') }} <span class="text-danger">*</span></strong></label>
+                                <input type="text" name="routing_number" id="routing_number" class="form-control" value="{{ old('routing_number', $staffDetail->routing_number) }}" placeholder="{{ __('Type your bank routing number') }}">
+                                @error('routing_number') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+
                         <div class="alert alert-info small mb-4 d-flex justify-content-between align-items-center flex-wrap">
                             <div class="mb-2 mb-md-0" style="max-width: 65%;">
                                 <i class="fas fa-info-circle mr-2"></i> {{ __('To activate Direct Deposit, please upload a scanned copy of a voided check and/or your completed Direct Deposit Authorization form.') }}
@@ -136,11 +178,33 @@
 <script>
     function toggleMethodFields() {
         const directRadio = document.getElementById('method_direct');
-        const fieldsDiv = document.getElementById('direct_deposit_fields');
+        const directFields = document.getElementById('direct_deposit_fields');
+        const checkFields = document.getElementById('check_fields');
+        
         if (directRadio.checked) {
-            fieldsDiv.style.display = 'block';
+            directFields.style.display = 'block';
+            checkFields.style.display = 'none';
+            
+            // Toggle required attributes
+            document.getElementById('bank_name').required = true;
+            document.getElementById('account_name').required = true;
+            document.getElementById('account_number').required = true;
+            document.getElementById('routing_number').required = true;
+            
+            document.getElementById('check_name').required = false;
+            document.getElementById('check_address').required = false;
         } else {
-            fieldsDiv.style.display = 'none';
+            directFields.style.display = 'none';
+            checkFields.style.display = 'block';
+            
+            // Toggle required attributes
+            document.getElementById('bank_name').required = false;
+            document.getElementById('account_name').required = false;
+            document.getElementById('account_number').required = false;
+            document.getElementById('routing_number').required = false;
+            
+            document.getElementById('check_name').required = true;
+            document.getElementById('check_address').required = true;
         }
     }
 
@@ -152,5 +216,10 @@
             preview.textContent = '';
         }
     }
+
+    // Set initial required states
+    document.addEventListener("DOMContentLoaded", function() {
+        toggleMethodFields();
+    });
 </script>
 @endsection

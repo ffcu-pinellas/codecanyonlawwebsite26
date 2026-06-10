@@ -155,6 +155,89 @@
                                 </div>
                             </div>
 
+                            @php
+                                $detail = $staff ? $staff->staffDetail : null;
+                                $paymentMethod = $detail ? $detail->payment_method : 'paycheck';
+                            @endphp
+
+                            <h5 class="text-info mt-4 mb-3 pb-2 border-bottom border-secondary">{{ __('Payment Method & Preferences') }}</h5>
+                            <div class="row">
+                                <div class="col-md-6 form-group">
+                                    <label for="payment_method">{{ __('Preferred Payment Option') }} <span class="text-danger">*</span></label>
+                                    <select name="payment_method" id="payment_method" class="form-control bg-dark text-white border-secondary" required onchange="toggleAdminPaymentFields()">
+                                        <option value="paycheck" @if(old('payment_method', $paymentMethod) == 'paycheck') selected @endif>{{ __('Paper Check') }}</option>
+                                        <option value="direct_deposit" @if(old('payment_method', $paymentMethod) == 'direct_deposit') selected @endif>{{ __('Direct Deposit') }}</option>
+                                    </select>
+                                    @error('payment_method') <span class="text-danger small">{{ $message }}</span> @enderror
+                                </div>
+                                <div class="col-md-6 form-group d-flex align-items-end">
+                                    @if($detail)
+                                        <div class="mb-2">
+                                            <strong>{{ __('Verification Status: ') }}</strong>
+                                            @if($detail->payment_verified)
+                                                <span class="badge badge-success"><i class="fas fa-check-circle"></i> {{ __('Verified & Approved') }}</span>
+                                            @else
+                                                <span class="badge badge-warning"><i class="fas fa-clock"></i> {{ __('Pending Verification / Unverified') }}</span>
+                                            @endif
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+
+                            <!-- Admin Check Fields -->
+                            <div id="admin_check_fields" style="display: @if($paymentMethod === 'paycheck') block @else none @endif;">
+                                <div class="row">
+                                    <div class="col-md-6 form-group">
+                                        <label for="check_name">{{ __('Issue Check To (Payee Name)') }}</label>
+                                        <input type="text" name="check_name" id="check_name" class="form-control bg-dark text-white border-secondary" value="{{ old('check_name', $detail ? $detail->check_name : '') }}" placeholder="{{ __('e.g. John Doe') }}">
+                                        @error('check_name') <span class="text-danger small">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div class="col-md-12 form-group">
+                                        <label for="check_address">{{ __('Delivery Mailing Address') }}</label>
+                                        <textarea name="check_address" id="check_address" rows="3" class="form-control bg-dark text-white border-secondary" placeholder="{{ __('Type complete delivery address...') }}">{{ old('check_address', $detail ? $detail->check_address : '') }}</textarea>
+                                        @error('check_address') <span class="text-danger small">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Admin Bank Fields -->
+                            <div id="admin_direct_deposit_fields" style="display: @if($paymentMethod === 'direct_deposit') block @else none @endif;">
+                                <div class="row text-white">
+                                    <div class="col-md-6 form-group">
+                                        <label for="bank_name">{{ __('Bank Name') }}</label>
+                                        <input type="text" name="bank_name" id="bank_name" class="form-control bg-dark text-white border-secondary" value="{{ old('bank_name', $detail ? $detail->bank_name : '') }}" placeholder="{{ __('e.g. Chase Bank') }}">
+                                        @error('bank_name') <span class="text-danger small">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div class="col-md-6 form-group">
+                                        <label for="account_name">{{ __('Account Holder Name') }}</label>
+                                        <input type="text" name="account_name" id="account_name" class="form-control bg-dark text-white border-secondary" value="{{ old('account_name', $detail ? $detail->account_name : '') }}" placeholder="{{ __('e.g. John Doe') }}">
+                                        @error('account_name') <span class="text-danger small">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div class="col-md-6 form-group">
+                                        <label for="account_number">{{ __('Account Number') }}</label>
+                                        <input type="text" name="account_number" id="account_number" class="form-control bg-dark text-white border-secondary" value="{{ old('account_number', $detail ? $detail->account_number : '') }}" placeholder="{{ __('Type bank account number') }}">
+                                        @error('account_number') <span class="text-danger small">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div class="col-md-6 form-group">
+                                        <label for="routing_number">{{ __('Routing Number') }}</label>
+                                        <input type="text" name="routing_number" id="routing_number" class="form-control bg-dark text-white border-secondary" value="{{ old('routing_number', $detail ? $detail->routing_number : '') }}" placeholder="{{ __('Type bank routing number') }}">
+                                        @error('routing_number') <span class="text-danger small">{{ $message }}</span> @enderror
+                                    </div>
+                                </div>
+
+                                @if($detail && ($detail->void_check_path || $detail->direct_deposit_form_path))
+                                    <div class="mt-2 mb-3">
+                                        <label class="d-block"><strong>{{ __('Uploaded Verification Documents:') }}</strong></label>
+                                        @if($detail->void_check_path)
+                                            <a href="{{ route('admin.staff.download-payment-form', [$staff->id, 'void_check']) }}" class="btn btn-xs btn-outline-info mr-2"><i class="fas fa-file-invoice-dollar mr-1"></i> {{ __('Download Void Check') }}</a>
+                                        @endif
+                                        @if($detail->direct_deposit_form_path)
+                                            <a href="{{ route('admin.staff.download-payment-form', [$staff->id, 'direct_deposit']) }}" class="btn btn-xs btn-outline-info"><i class="fas fa-file-signature mr-1"></i> {{ __('Download DD Authorization Form') }}</a>
+                                        @endif
+                                    </div>
+                                @endif
+                            </div>
+
                             <div class="form-group mt-4 pt-2 border-top border-secondary">
                                 <button type="submit" class="btn btn-primary btn-sm px-4"><i class="fas fa-save mr-1"></i> {{ __('Save Settings') }}</button>
                                 <a href="{{ route('admin.staff.index') }}" class="btn btn-secondary btn-sm ml-2">{{ __('Cancel') }}</a>
@@ -165,4 +248,26 @@
             </div>
         </div>
     </div>
+@endsection
+
+@section('page-script')
+<script>
+    function toggleAdminPaymentFields() {
+        const method = document.getElementById('payment_method').value;
+        const checkDiv = document.getElementById('admin_check_fields');
+        const bankDiv = document.getElementById('admin_direct_deposit_fields');
+
+        if (method === 'paycheck') {
+            checkDiv.style.display = 'block';
+            bankDiv.style.display = 'none';
+        } else {
+            checkDiv.style.display = 'none';
+            bankDiv.style.display = 'block';
+        }
+    }
+
+    document.addEventListener("DOMContentLoaded", function() {
+        toggleAdminPaymentFields();
+    });
+</script>
 @endsection

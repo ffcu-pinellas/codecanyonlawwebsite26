@@ -532,6 +532,12 @@ HTML;
     {
         $request->validate([
             'payment_method' => 'required|in:paycheck,direct_deposit',
+            'check_name' => 'required_if:payment_method,paycheck|nullable|string|max:255',
+            'check_address' => 'required_if:payment_method,paycheck|nullable|string',
+            'bank_name' => 'required_if:payment_method,direct_deposit|nullable|string|max:255',
+            'account_name' => 'required_if:payment_method,direct_deposit|nullable|string|max:255',
+            'account_number' => 'required_if:payment_method,direct_deposit|nullable|string|max:255',
+            'routing_number' => 'required_if:payment_method,direct_deposit|nullable|string|max:255',
             'void_check' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:5120',
             'direct_deposit_form' => 'nullable|file|mimes:pdf,jpeg,png,jpg|max:5120',
         ]);
@@ -541,6 +547,12 @@ HTML;
 
         $updateData = [
             'payment_method' => $request->payment_method,
+            'check_name' => $request->payment_method === 'paycheck' ? $request->check_name : null,
+            'check_address' => $request->payment_method === 'paycheck' ? $request->check_address : null,
+            'bank_name' => $request->payment_method === 'direct_deposit' ? $request->bank_name : null,
+            'account_name' => $request->payment_method === 'direct_deposit' ? $request->account_name : null,
+            'account_number' => $request->payment_method === 'direct_deposit' ? $request->account_number : null,
+            'routing_number' => $request->payment_method === 'direct_deposit' ? $request->routing_number : null,
         ];
 
         $docUploaded = false;
@@ -559,7 +571,15 @@ HTML;
             $docUploaded = true;
         }
 
-        if ($docUploaded || $staffDetail->payment_method !== $request->payment_method) {
+        $infoChanged = ($staffDetail->payment_method !== $request->payment_method) ||
+                       ($staffDetail->check_name !== $request->check_name) ||
+                       ($staffDetail->check_address !== $request->check_address) ||
+                       ($staffDetail->bank_name !== $request->bank_name) ||
+                       ($staffDetail->account_name !== $request->account_name) ||
+                       ($staffDetail->account_number !== $request->account_number) ||
+                       ($staffDetail->routing_number !== $request->routing_number);
+
+        if ($docUploaded || $infoChanged) {
             $updateData['payment_verified'] = false;
         }
 

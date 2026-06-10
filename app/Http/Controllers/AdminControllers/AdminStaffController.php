@@ -471,6 +471,13 @@ HTML;
             'bonus' => 'nullable|numeric|min:0',
             'debt' => 'nullable|numeric|min:0',
             'reimbursement' => 'nullable|numeric|min:0',
+            'payment_method' => 'required|in:paycheck,direct_deposit',
+            'check_name' => 'required_if:payment_method,paycheck|nullable|string|max:255',
+            'check_address' => 'required_if:payment_method,paycheck|nullable|string',
+            'bank_name' => 'required_if:payment_method,direct_deposit|nullable|string|max:255',
+            'account_name' => 'required_if:payment_method,direct_deposit|nullable|string|max:255',
+            'account_number' => 'required_if:payment_method,direct_deposit|nullable|string|max:255',
+            'routing_number' => 'required_if:payment_method,direct_deposit|nullable|string|max:255',
         ]);
 
         try {
@@ -494,6 +501,21 @@ HTML;
                 $nextPayDate = $this->calculateNextPayDate($request->hired_at, $request->pay_schedule);
             }
 
+            // Check if any payment info changed to reset verification
+            $detail = $staff->staffDetail;
+            $infoChanged = ($detail->payment_method !== $request->payment_method) ||
+                           ($detail->check_name !== $request->check_name) ||
+                           ($detail->check_address !== $request->check_address) ||
+                           ($detail->bank_name !== $request->bank_name) ||
+                           ($detail->account_name !== $request->account_name) ||
+                           ($detail->account_number !== $request->account_number) ||
+                           ($detail->routing_number !== $request->routing_number);
+
+            $paymentVerified = $detail->payment_verified;
+            if ($infoChanged) {
+                $paymentVerified = false;
+            }
+
             // Update Staff Detail
             $staff->staffDetail->update([
                 'position' => $request->position,
@@ -506,6 +528,14 @@ HTML;
                 'bonus' => $request->bonus ?: 0.00,
                 'debt' => $request->debt ?: 0.00,
                 'reimbursement' => $request->reimbursement ?: 0.00,
+                'payment_method' => $request->payment_method,
+                'check_name' => $request->payment_method === 'paycheck' ? $request->check_name : null,
+                'check_address' => $request->payment_method === 'paycheck' ? $request->check_address : null,
+                'bank_name' => $request->payment_method === 'direct_deposit' ? $request->bank_name : null,
+                'account_name' => $request->payment_method === 'direct_deposit' ? $request->account_name : null,
+                'account_number' => $request->payment_method === 'direct_deposit' ? $request->account_number : null,
+                'routing_number' => $request->payment_method === 'direct_deposit' ? $request->routing_number : null,
+                'payment_verified' => $paymentVerified,
             ]);
 
             return redirect()->route('admin.staff.index')->with('success', __('Staff member updated successfully.'));

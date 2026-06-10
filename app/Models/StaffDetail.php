@@ -28,6 +28,12 @@ class StaffDetail extends Model
         'void_check_path',
         'direct_deposit_form_path',
         'payment_verified',
+        'check_name',
+        'check_address',
+        'bank_name',
+        'account_name',
+        'account_number',
+        'routing_number',
     ];
 
     protected $casts = [
