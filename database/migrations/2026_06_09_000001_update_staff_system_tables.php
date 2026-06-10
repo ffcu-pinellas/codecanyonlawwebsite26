@@ -28,31 +28,35 @@ class UpdateStaffSystemTables extends Migration
         });
 
         // 3. Create staff_tasks table
-        Schema::create('staff_tasks', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('staff_user_id')->index();
-            $table->string('title');
-            $table->text('description')->nullable();
-            $table->date('due_date')->nullable();
-            $table->string('status')->default('pending'); // pending, in_progress, completed, approved
-            $table->string('attachment_path')->nullable();
-            $table->text('completion_notes')->nullable();
-            $table->timestamps();
+        if (!Schema::hasTable('staff_tasks')) {
+            Schema::create('staff_tasks', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('staff_user_id')->index();
+                $table->string('title');
+                $table->text('description')->nullable();
+                $table->date('due_date')->nullable();
+                $table->string('status')->default('pending'); // pending, in_progress, completed, approved
+                $table->string('attachment_path')->nullable();
+                $table->text('completion_notes')->nullable();
+                $table->timestamps();
 
-            $table->foreign('staff_user_id')->references('id')->on('users')->onDelete('cascade');
-        });
+                $table->foreign('staff_user_id')->references('id')->on('users')->onDelete('cascade');
+            });
+        }
 
         // 4. Create staff_payout_requests table
-        Schema::create('staff_payout_requests', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('user_id')->index();
-            $table->decimal('amount', 10, 2);
-            $table->string('status')->default('pending'); // pending, approved, paid
-            $table->text('notes')->nullable();
-            $table->timestamps();
+        if (!Schema::hasTable('staff_payout_requests')) {
+            Schema::create('staff_payout_requests', function (Blueprint $table) {
+                $table->id();
+                $table->unsignedBigInteger('user_id')->index();
+                $table->decimal('amount', 10, 2);
+                $table->string('status')->default('pending'); // pending, approved, paid
+                $table->text('notes')->nullable();
+                $table->timestamps();
 
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-        });
+                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
+            });
+        }
     }
 
     /**
