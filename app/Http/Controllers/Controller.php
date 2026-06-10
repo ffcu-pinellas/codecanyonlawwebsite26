@@ -101,6 +101,26 @@ class Controller extends BaseController
         return back()->with($notification);
     }
 
+    protected function sendSlackNotification($message)
+    {
+        $webhookUrl = env('SLACK_WEBHOOK_URL');
+        if (empty($webhookUrl)) {
+            return;
+        }
+
+        try {
+            $ch = curl_init($webhookUrl);
+            $payload = json_encode(['text' => $message]);
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $payload);
+            curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type:application/json']);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_exec($ch);
+            curl_close($ch);
+        } catch (\Throwable $e) {
+            // Fail silently
+        }
+    }
+
     public function headerMenueView($headerMenu)
     {
         $row1 = [];

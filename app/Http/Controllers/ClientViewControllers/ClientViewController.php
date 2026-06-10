@@ -352,4 +352,156 @@ class ClientViewController extends Controller
             return $this->backWithError($th->getMessage());
         }
     }
+
+    public function casesIndex()
+    {
+        try {
+            $title = __('My Cases');
+            $cases = Auth::user()->clientCases()->with(['attorney'])->orderBy('created_at', 'desc')->get();
+
+            return view('frontend.theme1.auth-client.pages.cases.index', compact('title', 'cases'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    public function caseDetails($id)
+    {
+        try {
+            $case = ClientCase::with(['attorney', 'documents.uploader'])->findOrFail($id);
+
+            if ($case->client_id !== Auth::id()) {
+                abort(403, 'Unauthorized access.');
+            }
+
+            $title = __('Case Details: #') . $case->case_number;
+            return view('frontend.theme1.auth-client.pages.cases.details', compact('title', 'case'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    public function uploadCaseDocument(Request $request, $id)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'file' => 'required|file|mimes:pdf,png,jpg,jpeg,doc,docx,xlsx|max:20480',
+        ]);
+
+        try {
+            $case = ClientCase::findOrFail($id);
+
+            if ($case->client_id !== Auth::id()) {
+                abort(403, 'Unauthorized access.');
+            }
+
+            $fileName = time() . '_' . uniqid() . '.' . $request->file->getClientOriginalExtension();
+            
+            $uploadPath = public_path('upload/case-documents');
+            if (!File::exists($uploadPath)) {
+                File::makeDirectory($uploadPath, 0755, true);
+            }
+            
+            $request->file->move($uploadPath, $fileName);
+
+            CaseDocument::create([
+                'case_id' => $case->id,
+                'user_id' => Auth::id(),
+                'title' => $request->title,
+                'file_path' => '/upload/case-documents/' . $fileName,
+                'file_type' => $request->file->getClientOriginalExtension(),
+                'file_size' => $request->file->getSize(),
+                'is_client_uploaded' => true,
+            ]);
+
+            \App\Models\ActivityLog::log('Client Document Uploaded', 'Client ' . Auth::user()->name . ' uploaded "' . $request->title . '" for case ' . $case->case_number);
+            $this->sendSlackNotification('📁 New Document Uploaded to Vault by Client ' . Auth::user()->name . ' for Case: ' . $case->case_number);
+
+            return redirect()->back()->with('success', __('Document uploaded to secure vault successfully.'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    public function previewDocument($id)
+    {
+        try {
+            $document = CaseDocument::findOrFail($id);
+            $case = $document->clientCase;
+
+            if ($case->client_id !== Auth::id()) {
+                abort(403, 'Unauthorized access.');
+            }
+
+            $filePath = public_path($document->file_path);
+            if (!File::exists($filePath)) {
+                abort(404, 'File not found on server.');
+            }
+
+            return response()->file($filePath);
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    public function downloadDocument($id)
+    {
+        try {
+            $document = CaseDocument::findOrFail($id);
+            $case = $document->clientCase;
+
+            if ($case->client_id !== Auth::id()) {
+                abort(403, 'Unauthorized access.');
+            }
+
+            $filePath = public_path($document->file_path);
+            if (!File::exists($filePath)) {
+                abort(404, 'File not found on server.');
+            }
+
+            return response()->download($filePath);
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    public function invoicesIndex()
+    {
+        try {
+            $title = __('My Invoices');
+            $invoices = Auth::user()->invoices()->with(['clientCase'])->orderBy('created_at', 'desc')->get();
+
+            return view('frontend.theme1.auth-client.pages.invoices.index', compact('title', 'invoices'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    public function invoiceShow($id)
+    {
+        try {
+            $invoice = Invoice::with(['clientCase.attorney'])->findOrFail($id);
+
+            if ($invoice->client_id !== Auth::id()) {
+                abort(403, 'Unauthorized access.');
+            }
+
+            $title = __('Invoice #') . $invoice->invoice_number;
+            $companySettings = \App\Models\GeneralSettings::first();
+            $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+
+            // Find contact details for invoice header
+            $contactPage = \App\Models\PageSettings::where('name', 'contact')->first();
+            $contactInfo = $contactPage ? $contactPage->sections()->where('name', 'contact_info')->first() : null;
+            $emailInfo = $contactPage ? $contactPage->sections()->where('name', 'email')->first() : null;
+
+            $companyAddress = env('COMPANY_ADDRESS') ?: ($contactInfo ? implode(', ', array_filter([$contactInfo->line_one, $contactInfo->line_two])) : '582 Professional Way, Financial District, DC');
+            $companyPhone = env('COMPANY_PHONE') ?: ($contactInfo && $contactInfo->line_two && preg_match('/[0-9]/', $contactInfo->line_two) ? $contactInfo->line_two : '(216) 230-1837');
+            $companyEmail = env('COMPANY_EMAIL') ?: ($emailInfo ? $emailInfo->line_one : 'support@yourcpaexpert.com');
+
+            return view('frontend.theme1.auth-client.pages.invoices.details', compact('title', 'invoice', 'companyName', 'companyAddress', 'companyPhone', 'companyEmail'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
 }

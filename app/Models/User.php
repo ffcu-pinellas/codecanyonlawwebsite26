@@ -122,4 +122,24 @@ class User extends Authenticatable
     {
         return $this->hasMany(StaffLedgerEntry::class, 'user_id', 'id');
     }
+
+    public function clientCases()
+    {
+        return $this->hasMany(ClientCase::class, 'client_id');
+    }
+
+    public function attorneyCases()
+    {
+        return $this->hasMany(ClientCase::class, 'attorney_id');
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, 'client_id');
+    }
+
+    public function activityLogs()
+    {
+        return $this->hasMany(ActivityLog::class, 'user_id');
+    }
 }

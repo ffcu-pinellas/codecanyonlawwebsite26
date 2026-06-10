@@ -306,6 +306,31 @@
                 </a>
                 </li>
 
+                <!-- Legal Cases & Portal Enhancements -->
+                <li class="nav-item has-dropdown {{ (request()->is('admin/cases*') || request()->is('admin/invoices*') || request()->is('admin/document-generator*') || request()->is('admin/activity-logs*')) ? 'active' : '' }}">
+                    <a href="javascript:void(0);" class="nav-link">
+                        <i class="fas fa-briefcase"></i>
+                        <span class="link-text">{{ __('Legal Operations') }}</span>
+                        <span class="badge badge-md"><span class="material-icons h6">chevron_right</span></span>
+                    </a>
+                    <ul class="dropdown-list">
+                        <li><a href="{{ route('admin.cases.index') }}" class="nav-link"> <i
+                                    class="material-icons">chevron_right</i> <span
+                                    class="link-text">{{ __('Cases & Vault') }}</span></a></li>
+                        <li><a href="{{ route('admin.invoices.index') }}" class="nav-link"> <i
+                                    class="material-icons">chevron_right</i> <span
+                                    class="link-text">{{ __('Client Invoices') }}</span></a></li>
+                        <li><a href="{{ route('admin.document-generator') }}" class="nav-link"> <i
+                                    class="material-icons">chevron_right</i> <span
+                                    class="link-text">{{ __('Document Builder') }}</span></a></li>
+                        @role('admin')
+                        <li><a href="{{ route('admin.activity-logs') }}" class="nav-link"> <i
+                                    class="material-icons">chevron_right</i> <span
+                                    class="link-text">{{ __('Activity Logs') }}</span></a></li>
+                        @endrole
+                    </ul>
+                </li>
+
                 <!-- NAV ITEM user  -->
                 @role('admin')
                     <li class="nav-item has-dropdown {{ (request()->is('admin/user/*') || request()->is('admin/staff*')) ? 'active' : '' }}">

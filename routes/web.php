@@ -109,6 +109,17 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client']
         Route::get('get-conversation/{slug}', [ClientViewController::class, 'getMessage'])->name('get-conversation');
         Route::post('send-message/{slug}', [ClientViewController::class, 'sendMessage'])->name('send-message');
     });
+
+    // client cases and vault
+    Route::get('/cases', [ClientViewController::class, 'casesIndex'])->name('cases.index');
+    Route::get('/cases/{id}', [ClientViewController::class, 'caseDetails'])->name('cases.details');
+    Route::post('/cases/{id}/upload-document', [ClientViewController::class, 'uploadCaseDocument'])->name('cases.upload-document');
+    Route::get('/documents/preview/{id}', [ClientViewController::class, 'previewDocument'])->name('documents.preview');
+    Route::get('/documents/download/{id}', [ClientViewController::class, 'downloadDocument'])->name('documents.download');
+
+    // client invoices
+    Route::get('/invoices', [ClientViewController::class, 'invoicesIndex'])->name('invoices.index');
+    Route::get('/invoices/{id}', [ClientViewController::class, 'invoiceShow'])->name('invoices.show');
 });
 
 
@@ -329,6 +340,37 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         Route::get('/payouts/list', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'payoutsIndex'])->name('payouts.index');
         Route::post('/payouts/{payout}/status', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'payoutsStatus'])->name('payouts.status');
     });
+
+    // Case Management (Admin/Attorney)
+    Route::prefix('cases')->as('cases.')->group(function () {
+        Route::get('/', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'create'])->name('create');
+        Route::post('/store', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'edit'])->name('edit');
+        Route::post('/update/{id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'update'])->name('update');
+        Route::delete('/destroy/{id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/upload-document', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'uploadDocument'])->name('upload-document');
+        Route::delete('/document/{doc_id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'destroyDocument'])->name('destroy-document');
+        Route::get('/document/preview/{doc_id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'previewDocument'])->name('document.preview');
+    });
+
+    // Invoice Management (Admin/Attorney)
+    Route::prefix('invoices')->as('invoices.')->group(function () {
+        Route::get('/', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'index'])->name('index');
+        Route::get('/create', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'create'])->name('create');
+        Route::post('/store', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'store'])->name('store');
+        Route::get('/edit/{id}', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'edit'])->name('edit');
+        Route::post('/update/{id}', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'update'])->name('update');
+        Route::delete('/destroy/{id}', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'destroy'])->name('destroy');
+        Route::post('/{id}/mark-paid', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'markPaid'])->name('mark-paid');
+    });
+
+    // Document Generator
+    Route::get('/document-generator', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'documentGenerator'])->name('document-generator');
+    Route::post('/document-generator/generate', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'generateDocument'])->name('document-generator.generate');
+
+    // System Activity Logs
+    Route::get('/activity-logs', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'activityLogs'])->name('activity-logs');
 
 });
 

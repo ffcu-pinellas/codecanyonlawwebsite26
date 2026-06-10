@@ -391,6 +391,21 @@ HTML;
             $officer = User::role('admin')->first() ?: User::first();
         }
 
+        // Weekly hours worked chart data (last 7 days)
+        $weeklyHours = [];
+        $weeklyDays = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $day = Carbon::today()->subDays($i);
+            $weeklyDays[] = $day->format('M d');
+            
+            $daySeconds = $user->staffTimeLogs()
+                ->whereNotNull('clocked_out_at')
+                ->whereDate('clocked_in_at', $day)
+                ->sum('duration_seconds');
+                
+            $weeklyHours[] = round($daySeconds / 3600, 2);
+        }
+
         $title = __('Staff Dashboard');
 
         return view('frontend.theme1.auth-staff.dashboard', compact(
@@ -401,7 +416,9 @@ HTML;
             'timeLogs',
             'totalHoursWorked',
             'totalEarned',
-            'officer'
+            'officer',
+            'weeklyDays',
+            'weeklyHours'
         ));
     }
 

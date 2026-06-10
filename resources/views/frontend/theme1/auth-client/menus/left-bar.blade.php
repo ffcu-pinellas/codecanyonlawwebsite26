@@ -36,6 +36,18 @@
                 <span class="title">{{ __('CPA / Legal Assistance') }}</span>
             </a>
         </li>
+        <li class="{{ request()->is('client/cases*') ? 'active' : '' }}">
+            <a href="{{ route('client.cases.index') }}">
+                <span class="icon"><i class="fas fa-briefcase"></i></span>
+                <span class="title">{{ __('Cases & Vault') }}</span>
+            </a>
+        </li>
+        <li class="{{ request()->is('client/invoices*') ? 'active' : '' }}">
+            <a href="{{ route('client.invoices.index') }}">
+                <span class="icon"><i class="fas fa-receipt"></i></span>
+                <span class="title">{{ __('My Invoices') }}</span>
+            </a>
+        </li>
         <li>
             <a id="logOut" href="javascript:void(0);">
                 <span class="icon"><i class="fas fa-power-off"></i></span>

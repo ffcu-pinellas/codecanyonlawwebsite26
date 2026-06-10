@@ -120,40 +120,69 @@
         </div>
     </div>
 
-    <div class="row justify-content-center">
+    <div class="row">
         <!-- Time Tracker card -->
-        <div class="col-lg-9">
-            <div class="card dashboard-card time-tracker-card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
-                        <h5 class="mb-0" style="font-weight: 700; color: #2c3e50;"><i class="fas fa-business-time mr-2 text-primary"></i>{{ __('Time Attendance') }}</h5>
-                        <div class="text-muted small font-weight-bold" id="current-date-display">{{ date('l, M d, Y') }}</div>
+        <div class="col-lg-6 mb-4">
+            <div class="card dashboard-card time-tracker-card h-100">
+                <div class="card-body d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
+                            <h5 class="mb-0 font-weight-bold" style="color: #2c3e50;"><i class="fas fa-business-time mr-2 text-primary"></i>{{ __('Time Attendance') }}</h5>
+                            <div class="text-muted small font-weight-bold" id="current-date-display">{{ date('l, M d, Y') }}</div>
+                        </div>
+
+                        <div class="text-center py-4">
+                            @if($activeLog)
+                                <p class="text-muted mb-1 small text-uppercase font-weight-bold">{{ __('Current Session Duration') }}</p>
+                                <div class="ticking-timer mb-2" id="session-timer">00:00:00</div>
+                                <p class="text-muted small mb-4">
+                                    <i class="fas fa-sign-in-alt mr-1 text-success"></i> Clocked in at: {{ $activeLog->clocked_in_at->format('h:i:s A') }}
+                                </p>
+                                <form action="{{ route('staff.clock-out') }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn btn-clock-out btn-lg px-5">
+                                        <i class="fas fa-sign-out-alt mr-2"></i> {{ __('Clock Out') }}
+                                    </button>
+                                </form>
+                            @else
+                                <p class="text-muted mb-1 small text-uppercase font-weight-bold">{{ __('Current Time') }}</p>
+                                <div class="digital-clock mb-4" id="digital-clock">00:00:00 AM</div>
+                                <form action="{{ route('staff.clock-in') }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="btn btn-clock-in btn-lg px-5">
+                                        <i class="fas fa-sign-in-alt mr-2"></i> {{ __('Clock In Now') }}
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
                     </div>
 
-                    <div class="text-center py-5">
-                        @if($activeLog)
-                            <p class="text-muted mb-1 small text-uppercase font-weight-bold">{{ __('Current Session Duration') }}</p>
-                            <div class="ticking-timer mb-2" id="session-timer">00:00:00</div>
-                            <p class="text-muted small mb-4">
-                                <i class="fas fa-sign-in-alt mr-1 text-success"></i> Clocked in at: {{ $activeLog->clocked_in_at->format('h:i:s A') }}
-                            </p>
-                            <form action="{{ route('staff.clock-out') }}" method="POST">
-                                @csrf
-                                <button type="submit" class="btn btn-clock-out btn-lg px-5">
-                                    <i class="fas fa-sign-out-alt mr-2"></i> {{ __('Clock Out') }}
-                                </button>
-                            </form>
-                        @else
-                            <p class="text-muted mb-1 small text-uppercase font-weight-bold">{{ __('Current Time') }}</p>
-                            <div class="digital-clock mb-4" id="digital-clock">00:00:00 AM</div>
-                            <form action="{{ route('staff.clock-in') }}" method="POST">
-                                @csrf
-                                <button type="submit" class="btn btn-clock-in btn-lg px-5">
-                                    <i class="fas fa-sign-in-alt mr-2"></i> {{ __('Clock In Now') }}
-                                </button>
-                            </form>
-                        @endif
+                    <div class="border-top pt-3 mt-4">
+                        <div class="row text-center">
+                            <div class="col-4 border-right">
+                                <h6 class="text-muted small text-uppercase font-weight-bold mb-1" style="font-size: 0.65rem;">{{ __('Hourly Rate') }}</h6>
+                                <h5 class="font-weight-bold text-dark mb-0">${{ number_format($staffDetail->hourly_rate, 2) }}/hr</h5>
+                            </div>
+                            <div class="col-4 border-right">
+                                <h6 class="text-muted small text-uppercase font-weight-bold mb-1" style="font-size: 0.65rem;">{{ __('Hours worked') }}</h6>
+                                <h5 class="font-weight-bold text-dark mb-0">{{ $totalHoursWorked }}h</h5>
+                            </div>
+                            <div class="col-4">
+                                <h6 class="text-muted small text-uppercase font-weight-bold mb-1" style="font-size: 0.65rem;">{{ __('Total Earned') }}</h6>
+                                <h5 class="font-weight-bold text-success mb-0">${{ number_format($totalEarned, 2) }}</h5>
+                            </div>
+                        </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Weekly Performance Chart -->
+        <div class="col-lg-6 mb-4">
+            <div class="card dashboard-card h-100">
+                <div class="card-body">
+                    <h5 class="mb-4 font-weight-bold" style="color: #2c3e50;"><i class="fas fa-chart-bar mr-2 text-info"></i>{{ __('Hours Worked (Last 7 Days)') }}</h5>
+                    <div id="weekly-hours-chart" style="min-height: 250px;"></div>
                 </div>
             </div>
         </div>
@@ -162,6 +191,7 @@
 @endsection
 
 @section('page-script')
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Local Live Clock
@@ -204,6 +234,72 @@
                 }
             }, 1000);
         @endif
+
+        // ApexCharts rendering
+        const options = {
+            series: [{
+                name: 'Hours Worked',
+                data: @json($weeklyHours)
+            }],
+            chart: {
+                type: 'area',
+                height: 250,
+                toolbar: {
+                    show: false
+                },
+                zoom: {
+                    enabled: false
+                }
+            },
+            dataLabels: {
+                enabled: false
+            },
+            stroke: {
+                curve: 'smooth',
+                width: 3,
+                colors: ['#2c5364']
+            },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.45,
+                    opacityTo: 0.05,
+                    stops: [0, 100]
+                }
+            },
+            colors: ['#2c5364'],
+            xaxis: {
+                categories: @json($weeklyDays),
+                labels: {
+                    style: {
+                        colors: '#9aa0ac',
+                        fontSize: '11px',
+                        fontFamily: 'Montserrat, sans-serif'
+                    }
+                }
+            },
+            yaxis: {
+                labels: {
+                    style: {
+                        colors: '#9aa0ac',
+                        fontSize: '11px',
+                        fontFamily: 'Montserrat, sans-serif'
+                    }
+                }
+            },
+            tooltip: {
+                theme: 'dark',
+                y: {
+                    formatter: function(val) {
+                        return val + " hours";
+                    }
+                }
+            }
+        };
+
+        const chart = new ApexCharts(document.querySelector("#weekly-hours-chart"), options);
+        chart.render();
     });
 </script>
 @endsection
