@@ -3,7 +3,7 @@
 @section('content')
     <div class="card card-light p-0 my-sm-4 my-0 bg-dark">
         <div class="box-account">
-            <img class="box-account-logo" src="{{ asset($logoFavicon?$logoFavicon->logo:'') }}"/>
+            <img class="box-account-logo" src="{{ asset($logoFavicon?$logoFavicon->logo:'') }}" style="max-height: 60px; max-width: 100%; object-fit: contain;"/>
             <p class="box-account-title text-white"> {{ __('Forgot your password? No problem. Just let us know your email address and we will email you a password reset link that will allow you to choose a new one.') }} </p>
             @if (session('status'))
                 <div class="text-sm text-success font-weight-bold">
