@@ -13,7 +13,9 @@ class RenameHardshipsToReliefRequests extends Migration
      */
     public function up()
     {
-        Schema::rename('hardships', 'relief_requests');
+        if (Schema::hasTable('hardships') && !Schema::hasTable('relief_requests')) {
+            Schema::rename('hardships', 'relief_requests');
+        }
     }
 
     /**
@@ -23,6 +25,8 @@ class RenameHardshipsToReliefRequests extends Migration
      */
     public function down()
     {
-        Schema::rename('relief_requests', 'hardships');
+        if (Schema::hasTable('relief_requests') && !Schema::hasTable('hardships')) {
+            Schema::rename('relief_requests', 'hardships');
+        }
     }
 }
