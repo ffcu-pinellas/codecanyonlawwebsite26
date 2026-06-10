@@ -93,6 +93,13 @@
 
                                                     <a href="{{ route('admin.invoices.edit', $invoice->id) }}" class="btn btn-xs btn-info m-1" title="{{ __('Edit Invoice') }}"><i class="fas fa-edit"></i></a>
                                                     
+                                                    <form action="{{ route('admin.invoices.send-email', $invoice->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to send this invoice statement to the client\'s email address?') }}')">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-xs btn-primary m-1" title="{{ __('Email Statement to Client') }}">
+                                                            <i class="fas fa-paper-plane"></i>
+                                                        </button>
+                                                    </form>
+                                                    
                                                     @if(Auth::user()->hasRole('admin'))
                                                         <form action="{{ route('admin.invoices.destroy', $invoice->id) }}" method="POST" onsubmit="return confirm('{{ __('Are you sure you want to delete this invoice?') }}');" class="d-inline">
                                                             @csrf

@@ -44,7 +44,7 @@ class AdminInvoiceController extends Controller
     {
         try {
             $title = __('Generate New Invoice');
-            $clients = User::role('client')->orderBy('name', 'asc')->get();
+            $clients = User::role(['client', 'staff'])->orderBy('name', 'asc')->get();
             
             // Limit cases based on role
             if (Auth::user()->hasRole('admin')) {
@@ -90,6 +90,29 @@ class AdminInvoiceController extends Controller
             ActivityLog::log('Invoice Created', 'Generated invoice ' . $invoice->invoice_number . ' for client ' . $invoice->client->name);
             $this->sendSlackNotification('🧾 New Invoice Generated: ' . $invoice->invoice_number . ' - $' . number_format($invoice->amount, 2) . ' for ' . $invoice->client->name);
 
+            // Send via email if requested
+            if ($request->send_email) {
+                $client = $invoice->client;
+                $subject = "Invoice Statement: " . $invoice->invoice_number;
+                
+                $bodyText = "We are pleased to submit the following invoice statement for professional services rendered to your account. Please find the summary below:\n\n"
+                    . "Invoice Number : " . $invoice->invoice_number . "\n"
+                    . "Amount Due : $" . number_format($invoice->amount, 2) . "\n"
+                    . "Due Date : " . $invoice->due_date->format('M d, Y') . "\n"
+                    . "Payment Status : " . strtoupper($invoice->status) . "\n";
+
+                if ($invoice->description) {
+                    $bodyText .= "\n" . $invoice->description . "\n";
+                }
+
+                $bodyText .= "\nTo view the complete itemized invoice, download a PDF statement, or print layout receipts, please log into your dashboard portal at your convenience.\n"
+                    . "Dashboard Link : " . route('client.invoices.show', $invoice->id) . "\n\n"
+                    . "If you have any questions or require modifications, please contact our billing support office.";
+
+                $this->sendEmailNotification($client->email, $subject, $bodyText);
+                ActivityLog::log('Invoice Email Sent', 'Sent invoice statement email for ' . $invoice->invoice_number . ' to client ' . $client->name);
+            }
+
             return redirect()->route('admin.invoices.index')->with('success', __('Invoice generated successfully. Invoice Number: ') . $invoice->invoice_number);
         } catch (\Throwable $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
@@ -109,7 +132,7 @@ class AdminInvoiceController extends Controller
             }
 
             $title = __('Edit Invoice #') . $invoice->invoice_number;
-            $clients = User::role('client')->orderBy('name', 'asc')->get();
+            $clients = User::role(['client', 'staff'])->orderBy('name', 'asc')->get();
             
             if (Auth::user()->hasRole('admin')) {
                 $cases = ClientCase::orderBy('case_number', 'asc')->get();
@@ -154,6 +177,29 @@ class AdminInvoiceController extends Controller
 
             ActivityLog::log('Invoice Updated', 'Updated invoice ' . $invoice->invoice_number);
 
+            // Send via email if requested
+            if ($request->send_email) {
+                $client = $invoice->client;
+                $subject = "Invoice Statement (Updated): " . $invoice->invoice_number;
+                
+                $bodyText = "We are pleased to submit the following updated invoice statement for professional services rendered to your account. Please find the summary below:\n\n"
+                    . "Invoice Number : " . $invoice->invoice_number . "\n"
+                    . "Amount Due : $" . number_format($invoice->amount, 2) . "\n"
+                    . "Due Date : " . $invoice->due_date->format('M d, Y') . "\n"
+                    . "Payment Status : " . strtoupper($invoice->status) . "\n";
+
+                if ($invoice->description) {
+                    $bodyText .= "\n" . $invoice->description . "\n";
+                }
+
+                $bodyText .= "\nTo view the complete itemized invoice, download a PDF statement, or print layout receipts, please log into your dashboard portal at your convenience.\n"
+                    . "Dashboard Link : " . route('client.invoices.show', $invoice->id) . "\n\n"
+                    . "If you have any questions or require modifications, please contact our billing support office.";
+
+                $this->sendEmailNotification($client->email, $subject, $bodyText);
+                ActivityLog::log('Invoice Email Sent', 'Sent updated invoice statement email for ' . $invoice->invoice_number . ' to client ' . $client->name);
+            }
+
             return redirect()->route('admin.invoices.index')->with('success', __('Invoice updated successfully.'));
         } catch (\Throwable $e) {
             return redirect()->back()->withInput()->with('error', $e->getMessage());
@@ -195,6 +241,44 @@ class AdminInvoiceController extends Controller
             ActivityLog::log('Invoice Status Updated', 'Marked invoice ' . $invoice->invoice_number . ' as ' . strtoupper($newStatus));
 
             return redirect()->back()->with('success', __('Invoice status updated successfully.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function sendEmail($id)
+    {
+        $invoice = Invoice::findOrFail($id);
+
+        if (!Auth::user()->hasRole('admin')) {
+            if ($invoice->clientCase && $invoice->clientCase->attorney_id !== Auth::id()) {
+                abort(403, 'Unauthorized access.');
+            }
+        }
+
+        try {
+            $client = $invoice->client;
+            $subject = "Invoice Statement: " . $invoice->invoice_number;
+            
+            $bodyText = "We are pleased to submit the following invoice statement for professional services rendered to your account. Please find the summary below:\n\n"
+                . "Invoice Number : " . $invoice->invoice_number . "\n"
+                . "Amount Due : $" . number_format($invoice->amount, 2) . "\n"
+                . "Due Date : " . $invoice->due_date->format('M d, Y') . "\n"
+                . "Payment Status : " . strtoupper($invoice->status) . "\n";
+
+            if ($invoice->description) {
+                $bodyText .= "\n" . $invoice->description . "\n";
+            }
+
+            $bodyText .= "\nTo view the complete itemized invoice, download a PDF statement, or print layout receipts, please log into your dashboard portal at your convenience.\n"
+                . "Dashboard Link : " . route('client.invoices.show', $invoice->id) . "\n\n"
+                . "If you have any questions or require modifications, please contact our billing support office.";
+
+            $this->sendEmailNotification($client->email, $subject, $bodyText);
+
+            ActivityLog::log('Invoice Email Sent', 'Sent invoice statement email for ' . $invoice->invoice_number . ' to client ' . $client->name);
+
+            return redirect()->back()->with('success', __('Invoice email sent to client successfully.'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

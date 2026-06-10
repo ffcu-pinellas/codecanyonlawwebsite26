@@ -364,6 +364,7 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         Route::post('/update/{id}', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'update'])->name('update');
         Route::delete('/destroy/{id}', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/mark-paid', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'markPaid'])->name('mark-paid');
+        Route::post('/{id}/send-email', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'sendEmail'])->name('send-email');
     });
 
     // Document Generator

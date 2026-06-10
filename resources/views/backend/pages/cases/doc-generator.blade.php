@@ -69,6 +69,38 @@
                                 @error('client_id') <span class="text-danger small">{{ $message }}</span> @enderror
                             </div>
 
+                            <div class="row mt-4">
+                                <div class="col-md-6 form-group">
+                                    <label for="attorney_name"><strong>{{ __('Attorney / Officer Name') }}</strong></label>
+                                    <input type="text" name="attorney_name" id="attorney_name" class="form-control bg-dark text-white border-secondary" value="{{ old('attorney_name', $companyName) }}" placeholder="{{ __('e.g. Attorney John Doe or Your CPA Expert') }}">
+                                    <small class="text-muted">{{ __('Defaults to the brand name configured in settings.') }}</small>
+                                    @error('attorney_name') <span class="text-danger small">{{ $message }}</span> @enderror
+                                </div>
+                                <div class="col-md-6 form-group">
+                                    <label for="effective_date"><strong>{{ __('Effective Date') }}</strong></label>
+                                    <input type="date" name="effective_date" id="effective_date" class="form-control bg-dark text-white border-secondary" value="{{ old('effective_date', date('Y-m-d')) }}">
+                                    <small class="text-muted">{{ __('The formal date printed at the header of the agreement.') }}</small>
+                                    @error('effective_date') <span class="text-danger small">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+
+                            <div class="form-group mt-3">
+                                <label for="custom_clauses"><strong>{{ __('Custom Clauses / Addendum Notes') }}</strong></label>
+                                <textarea name="custom_clauses" id="custom_clauses" rows="4" class="form-control bg-dark text-white border-secondary" placeholder="{{ __('Type any special clauses, exclusions, or tax-year details that should be added to the generated template document...') }}">{{ old('custom_clauses') }}</textarea>
+                                <small class="text-muted">{{ __('These clauses will be embedded dynamically into the generated document under a dedicated section.') }}</small>
+                                @error('custom_clauses') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
+
+                            <div class="form-group mt-4">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" name="send_email" id="send_email" class="custom-control-input" value="1" checked>
+                                    <label class="custom-control-label text-warning font-weight-semibold" for="send_email">
+                                        <i class="fas fa-envelope-open-text mr-1"></i> {{ __('Email well-styled document statement copy to client for review') }}
+                                    </label>
+                                </div>
+                                <small class="text-muted pl-4 d-block">{{ __('When checked, the client will immediately receive a professional email containing the agreement outline.') }}</small>
+                            </div>
+
                             <div class="form-group mt-5 pt-3 border-top border-secondary">
                                 <button type="submit" class="btn btn-primary btn-lg px-5"><i class="fas fa-print mr-2"></i> {{ __('Generate & Print Document') }}</button>
                             </div>
