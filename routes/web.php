@@ -36,6 +36,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/setup', function (){
+    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
     \Illuminate\Support\Facades\Artisan::call('storage:link');
     \Illuminate\Support\Facades\Artisan::call('cache:clear');
     \Illuminate\Support\Facades\Artisan::call('view:clear');
