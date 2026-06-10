@@ -148,7 +148,7 @@
         <tr>
             <td>
                 @if($companyLogo)
-                    <img src="{{ $companyLogo }}" alt="{{ $companyName }}" style="max-height: 45px; margin-bottom: 8px;"><br>
+                    <img src="{{ $companyLogo }}" alt="{{ $companyName }}" style="max-height: 45px; width: auto; max-width: 100%; object-fit: contain; margin-bottom: 8px;"><br>
                 @endif
                 <div class="company-name">{{ $companyName }}</div>
                 <div style="font-size: 12px; color: #777;">Corporate Payroll Department</div>

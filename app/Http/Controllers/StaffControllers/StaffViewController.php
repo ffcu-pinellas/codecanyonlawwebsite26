@@ -81,7 +81,7 @@ class StaffViewController extends Controller
 
         $companyLogoHtml = '';
         if ($companyLogoUrl) {
-            $companyLogoHtml = '<img class="logo-img" src="' . e($companyLogoUrl) . '" alt="' . e($appName) . '"><br>';
+            $companyLogoHtml = '<img class="logo-img" src="' . e($companyLogoUrl) . '" alt="' . e($appName) . '" style="max-height: 50px; width: auto; object-fit: contain;"><br>';
         }
 
         // Format body text beautifully
