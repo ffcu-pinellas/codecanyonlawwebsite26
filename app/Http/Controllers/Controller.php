@@ -39,7 +39,24 @@ class Controller extends BaseController
         $newReliefRequestCount = 0;
 
         try { $headerSetting = HeaderSettings::first(); } catch (\Throwable $th) {}
-        try { $logoFavicon = LogoSettings::first(); } catch (\Throwable $th) {}
+        try {
+            $logoFavicon = LogoSettings::first();
+            if (!$logoFavicon) {
+                $logoFavicon = new LogoSettings();
+            }
+            if (empty($logoFavicon->logo) || (!str_starts_with($logoFavicon->logo, 'http') && !file_exists(public_path($logoFavicon->logo)))) {
+                if (file_exists(public_path('upload/settings/1731322171New_Project-removebg-preview.png'))) {
+                    $logoFavicon->logo = '/upload/settings/1731322171New_Project-removebg-preview.png';
+                }
+            }
+            if (empty($logoFavicon->favicon) || (!str_starts_with($logoFavicon->favicon, 'http') && !file_exists(public_path($logoFavicon->favicon)))) {
+                if (file_exists(public_path('upload/settings/1632769376favicon.png'))) {
+                    $logoFavicon->favicon = '/upload/settings/1632769376favicon.png';
+                } elseif (file_exists(public_path('upload/settings/1631508115dna3emDAC.png'))) {
+                    $logoFavicon->favicon = '/upload/settings/1631508115dna3emDAC.png';
+                }
+            }
+        } catch (\Throwable $th) {}
         try { $categories = BlogCategory::all(); } catch (\Throwable $th) {}
         try { $popular_post = Blog::where('is_popular', true)->take(config('page.footer.column3_popular_post_title_number'))->get(); } catch (\Throwable $th) {}
         try { $featured_post = Blog::where('is_featured', true)->take(config('page.footer.column2_recent_post_number'))->get(); } catch (\Throwable $th) {}
@@ -163,9 +180,14 @@ class Controller extends BaseController
 
         // Logo
         $logoSettings = \App\Models\LogoSettings::first();
+        $logoPath = $logoSettings ? $logoSettings->logo : null;
+        if (!$logoPath || (!str_starts_with($logoPath, 'http') && !file_exists(public_path($logoPath)))) {
+            if (file_exists(public_path('upload/settings/1731322171New_Project-removebg-preview.png'))) {
+                $logoPath = '/upload/settings/1731322171New_Project-removebg-preview.png';
+            }
+        }
         $companyLogoUrl = null;
-        if ($logoSettings && $logoSettings->logo) {
-            $logoPath = $logoSettings->logo;
+        if ($logoPath) {
             if (str_starts_with($logoPath, 'http')) {
                 $companyLogoUrl = $logoPath;
             } else {

@@ -38,7 +38,13 @@
 
     // Logo
     $logoSettings = \App\Models\LogoSettings::first();
-    $companyLogo = $logoSettings && $logoSettings->logo ? asset($logoSettings->logo) : null;
+    $logoPath = $logoSettings ? $logoSettings->logo : null;
+    if (!$logoPath || (!str_starts_with($logoPath, 'http') && !file_exists(public_path($logoPath)))) {
+        if (file_exists(public_path('upload/settings/1731322171New_Project-removebg-preview.png'))) {
+            $logoPath = '/upload/settings/1731322171New_Project-removebg-preview.png';
+        }
+    }
+    $companyLogo = $logoPath ? asset($logoPath) : null;
 @endphp
 <!DOCTYPE html>
 <html>

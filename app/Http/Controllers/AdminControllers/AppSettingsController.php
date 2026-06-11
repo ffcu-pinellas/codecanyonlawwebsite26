@@ -185,7 +185,21 @@ class AppSettingsController extends Controller
     {
         try {
             $title = 'Logo Settings';
-            $logoSettings= LogoSettings::first();
+            $logoSettings = LogoSettings::first();
+            if ($logoSettings) {
+                if (empty($logoSettings->logo) || (!str_starts_with($logoSettings->logo, 'http') && !file_exists(public_path($logoSettings->logo)))) {
+                    if (file_exists(public_path('upload/settings/1731322171New_Project-removebg-preview.png'))) {
+                        $logoSettings->logo = '/upload/settings/1731322171New_Project-removebg-preview.png';
+                    }
+                }
+                if (empty($logoSettings->favicon) || (!str_starts_with($logoSettings->favicon, 'http') && !file_exists(public_path($logoSettings->favicon)))) {
+                    if (file_exists(public_path('upload/settings/1632769376favicon.png'))) {
+                        $logoSettings->favicon = '/upload/settings/1632769376favicon.png';
+                    } elseif (file_exists(public_path('upload/settings/1631508115dna3emDAC.png'))) {
+                        $logoSettings->favicon = '/upload/settings/1631508115dna3emDAC.png';
+                    }
+                }
+            }
             return view('backend.pages.settings.logo-favicon', compact('title','logoSettings'));
         } catch (\Throwable $th) {
             return redirect()->back()->with('error', $th->getMessage());
