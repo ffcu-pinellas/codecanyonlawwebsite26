@@ -62,41 +62,56 @@
             </button>
         </div>
     @endif
-    @if(isset($pendingRequests) && $pendingRequests->count() > 0)
+    @php
+        $pendingCases = $cases->where('status', 'pending');
+        $activeCases = $cases->where('status', '!=', 'pending');
+    @endphp
+
+    @if($pendingCases->count() > 0)
         <div class="mb-5">
             <h5 class="font-weight-bold text-dark mb-3"><i class="fas fa-clock text-warning mr-2"></i> {{ __('Pending Case Requests (Awaiting Review)') }}</h5>
             <div class="row">
-                @foreach($pendingRequests as $req)
+                @foreach($pendingCases as $case)
                     <div class="col-md-6 col-lg-6 mb-4">
                         <div class="card case-card mb-0" style="border-left: 4px solid #f1c40f;">
                             <div class="d-flex justify-content-between align-items-start mb-3">
                                 <div>
-                                    <span class="text-warning font-weight-bold" style="font-size: 0.85rem;">{{ __('REQUEST #') }}{{ $req->id }}</span>
-                                    <h5 class="font-weight-bold text-dark mt-1 mb-0" style="font-size: 1.15rem; line-height: 1.4;">{{ $req->reason }}</h5>
+                                    <span class="text-warning font-weight-bold" style="font-size: 0.85rem;">{{ $case->case_number }}</span>
+                                    <h5 class="font-weight-bold text-dark mt-1 mb-0" style="font-size: 1.15rem; line-height: 1.4;">{{ $case->title }}</h5>
                                 </div>
                                 <span class="badge badge-warning text-dark font-weight-bold px-3 py-1" style="border-radius: 20px; font-size: 0.75rem;">
                                     <i class="fas fa-hourglass-half mr-1"></i> {{ __('Awaiting Verification') }}
                                 </span>
                             </div>
 
-                            <p class="text-muted small mb-3" style="max-height: 45px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
-                                {{ $req->details ?: __('No detailed description provided.') }}
+                            <p class="text-muted small mb-3 text-truncate" style="max-height: 45px;">
+                                {{ $case->description ?: __('No detailed description provided.') }}
                             </p>
 
-                            @if($req->file)
+                            @if($case->documents->count() > 0)
                                 <div class="mb-3">
                                     <small class="text-muted d-block font-weight-bold mb-1" style="font-size: 0.65rem;">{{ __('SUPPORT DOCUMENT') }}</small>
-                                    <a href="{{ asset($req->file) }}" class="btn btn-outline-secondary btn-sm" target="_blank">
-                                        <i class="fas fa-file-pdf text-danger mr-1"></i> {{ $req->file_name ?: __('Intake Notice Document') }}
-                                    </a>
+                                    @foreach($case->documents as $doc)
+                                        <a href="{{ route('client.documents.preview', $doc->id) }}" class="btn btn-outline-secondary btn-sm mr-2 mb-1" target="_blank">
+                                            <i class="fas fa-file-pdf text-danger mr-1"></i> {{ $doc->title ?: __('Document') }}
+                                        </a>
+                                    @endforeach
                                 </div>
                             @endif
 
-                            <div class="border-top border-light pt-3 mt-2">
-                                <small class="text-muted d-block font-weight-bold" style="font-size: 0.65rem;">{{ __('SUBMITTED ON') }}</small>
-                                <span class="text-dark small font-weight-semibold mt-1 d-inline-block">
-                                    <i class="far fa-clock mr-1 text-secondary"></i> {{ $req->created_at->format('M d, Y H:i A') }}
-                                </span>
+                            <div class="border-top border-light pt-3 mt-2 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <small class="text-muted d-block font-weight-bold" style="font-size: 0.65rem;">{{ __('SUBMITTED ON') }}</small>
+                                    <span class="text-dark small font-weight-semibold mt-1 d-inline-block">
+                                        <i class="far fa-clock mr-1 text-secondary"></i> {{ $case->created_at->format('M d, Y H:i A') }}
+                                    </span>
+                                </div>
+                                
+                                <div>
+                                    <a href="{{ route('client.cases.details', $case->id) }}" class="btn btn-outline-primary btn-sm font-weight-bold py-1 px-3">
+                                        <i class="fas fa-folder-open mr-1"></i> {{ __('Open Vault') }}
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -108,7 +123,7 @@
     <h5 class="font-weight-bold text-dark mb-3"><i class="fas fa-briefcase text-primary mr-2"></i> {{ __('Active Representation Cases') }}</h5>
 
     <div class="row">
-        @forelse($cases as $case)
+        @forelse($activeCases as $case)
             <div class="col-md-6 col-lg-6 mb-4">
                 <div class="card case-card">
                     <div class="d-flex justify-content-between align-items-start mb-3">
@@ -149,8 +164,8 @@
                                     <i class="far fa-calendar-alt text-primary mr-1"></i> {{ $case->court_date->format('M d, Y') }}
                                 @else
                                     {{ __('Not Scheduled') }}
+                                </span>
                                 @endif
-                            </span>
                         </div>
                     </div>
 
@@ -167,7 +182,7 @@
                     <div class="py-4">
                         <i class="fas fa-briefcase fa-4x text-light mb-3"></i>
                         <h5 class="text-dark font-weight-bold">{{ __('No active cases found.') }}</h5>
-                        <p class="text-muted px-4">{{ __('You currently do not have any cases assigned to your profile. Please contact support or your attorney if this is an error.') }}</p>
+                        <p class="text-muted px-4">{{ __('You currently do not have any active cases assigned to your profile. Please contact support or your attorney if this is an error.') }}</p>
                     </div>
                 </div>
             </div>

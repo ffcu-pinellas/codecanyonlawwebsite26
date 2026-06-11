@@ -40,6 +40,56 @@ Route::get('/setup', function (){
     \Illuminate\Support\Facades\Artisan::call('storage:link');
     \Illuminate\Support\Facades\Artisan::call('cache:clear');
     \Illuminate\Support\Facades\Artisan::call('view:clear');
+
+    // Convert legacy relief requests to cases
+    try {
+        $reliefs = \App\Models\ReliefRequest::all();
+        foreach ($reliefs as $relief) {
+            do {
+                $caseNumber = 'CS-' . rand(100000, 999999);
+            } while (\App\Models\ClientCase::where('case_number', $caseNumber)->exists());
+
+            // Create case
+            $case = \App\Models\ClientCase::create([
+                'case_number' => $caseNumber,
+                'title' => $relief->reason ?: 'CPA & Legal Representation Case',
+                'description' => "Client Name: " . $relief->name . "\nPhone: " . $relief->phone . "\nEmail: " . $relief->email . "\nAddress: " . $relief->address . "\n\nProposed Resolution / Target Goal:\n" . $relief->offer . "\n\nAdditional Background & Details:\n" . ($relief->details ?: ''),
+                'client_id' => $relief->user_id,
+                'status' => 'pending',
+            ]);
+
+            // Save file
+            if ($relief->file && file_exists(public_path($relief->file))) {
+                $fileExtension = pathinfo($relief->file, PATHINFO_EXTENSION);
+                $newFileName = time() . '_' . uniqid() . '.' . $fileExtension;
+                $newFilePath = '/upload/case-documents/' . $newFileName;
+
+                $uploadPath = public_path('upload/case-documents');
+                if (!\Illuminate\Support\Facades\File::exists($uploadPath)) {
+                    \Illuminate\Support\Facades\File::makeDirectory($uploadPath, 0755, true);
+                }
+
+                copy(public_path($relief->file), public_path($newFilePath));
+
+                // Create Document Vault entry
+                \App\Models\CaseDocument::create([
+                    'case_id' => $case->id,
+                    'user_id' => $relief->user_id,
+                    'title' => $relief->file_name ?: 'Intake Notice Document',
+                    'file_path' => $newFilePath,
+                    'file_type' => $fileExtension,
+                    'file_size' => file_exists(public_path($newFilePath)) ? filesize(public_path($newFilePath)) : 0,
+                    'is_client_uploaded' => true,
+                ]);
+            }
+
+            \App\Models\ActivityLog::log('Case Request Promoted', 'Automatically converted assistance request #' . $relief->id . ' to Case #' . $case->case_number);
+            $relief->delete();
+        }
+    } catch (\Throwable $e) {
+        // Log or handle
+    }
+
     echo 'done';
     return redirect()->route('home');
 });
