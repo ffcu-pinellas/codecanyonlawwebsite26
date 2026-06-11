@@ -607,7 +607,24 @@ class GuestViewController extends Controller
         try{
             $requests = $request->all();
             $requests['status'] = true;
-            Contact::create($requests);
+            $contact = Contact::create($requests);
+
+            // Telegram Notification
+            try {
+                $escapedName = htmlspecialchars($contact->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedEmail = htmlspecialchars($contact->email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedSubject = htmlspecialchars($contact->subject ?: 'N/A', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedMessage = htmlspecialchars(\Illuminate\Support\Str::limit($contact->message, 150), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                
+                $telMsg = "📧 <b>New Contact Form Submission</b>\n\n"
+                        . "👤 <b>Name:</b> {$escapedName}\n"
+                        . "📧 <b>Email:</b> {$escapedEmail}\n"
+                        . "📝 <b>Subject:</b> {$escapedSubject}\n"
+                        . "💬 <b>Message:</b> {$escapedMessage}\n"
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
+
             return response()->json('success');
 
         }catch (\Throwable $th){
@@ -618,7 +635,24 @@ class GuestViewController extends Controller
     public function storeAppointment(Request $request){
         try{
             $requests = $request->all();
-            Appointment::create($requests);
+            $appointment = Appointment::create($requests);
+
+            // Telegram Notification
+            try {
+                $escapedName = htmlspecialchars($appointment->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedEmail = htmlspecialchars($appointment->email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedPhone = htmlspecialchars($appointment->phone ?: 'N/A', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedMessage = htmlspecialchars(\Illuminate\Support\Str::limit($appointment->message, 150), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                
+                $telMsg = "📅 <b>New Appointment Requested</b>\n\n"
+                        . "👤 <b>Name:</b> {$escapedName}\n"
+                        . "📧 <b>Email:</b> {$escapedEmail}\n"
+                        . "📞 <b>Phone:</b> {$escapedPhone}\n"
+                        . "💬 <b>Message:</b> {$escapedMessage}\n"
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
+
             return response()->json('success');
 
         }catch (\Throwable $th){

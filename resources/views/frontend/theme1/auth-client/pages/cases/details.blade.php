@@ -178,26 +178,26 @@
                 <form action="{{ route('client.cases.upload-document', $case->id) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="form-group mb-3">
-                        <label for="title" class="font-weight-semibold text-dark small">{{ __('Document Label/Title') }} <span class="text-danger">*</span></label>
-                        <input type="text" name="title" id="title" class="form-control" required placeholder="e.g. Identity Proof / Form W-2 / Signed Contract">
+                        <label for="title" class="font-weight-semibold text-dark small">{{ __('Document Label/Title (Optional)') }}</label>
+                        <input type="text" name="title" id="title" class="form-control" placeholder="e.g. Identity Proof / Form W-2 (Defaults to filename if blank)">
                         @error('title') <span class="text-danger small">{{ $message }}</span> @enderror
                     </div>
 
                     <div class="form-group mb-4">
-                        <label class="font-weight-semibold text-dark small d-block">{{ __('Select Document') }} <span class="text-danger">*</span></label>
+                        <label class="font-weight-semibold text-dark small d-block">{{ __('Select Documents') }} <span class="text-danger">*</span></label>
                         <div class="upload-box">
-                            <input type="file" name="file" id="file" class="form-control-file d-none" required onchange="$('#file-selected-name').text(this.files[0].name)">
+                            <input type="file" name="files[]" id="file" class="form-control-file d-none" multiple required onchange="let count = this.files.length; if(count > 1) { $('#file-selected-name').text(count + ' files selected'); } else { $('#file-selected-name').text(this.files[0].name); }">
                             <label for="file" style="cursor:pointer;" class="mb-0">
                                 <i class="fas fa-file-upload fa-2x text-muted mb-2"></i>
                                 <span class="d-block font-weight-semibold text-primary small">{{ __('Click to browse files') }}</span>
-                                <span class="d-block text-muted small mt-1" style="font-size: 0.75rem;">{{ __('Supported: PDF, PNG, JPG, DOCX, XLSX (Max 20MB)') }}</span>
+                                <span class="d-block text-muted small mt-1" style="font-size: 0.75rem;">{{ __('Supported: PDF, PNG, JPG, DOCX, XLSX (Max 20MB per file, can select multiple)') }}</span>
                             </label>
                             <span id="file-selected-name" class="d-block text-success font-weight-semibold small mt-2"></span>
                         </div>
-                        @error('file') <span class="text-danger small">{{ $message }}</span> @enderror
+                        @error('files') <span class="text-danger small">{{ $message }}</span> @enderror
                     </div>
 
-                    <button type="submit" class="btn btn-primary btn-block font-weight-bold py-2"><i class="fas fa-upload mr-1"></i> {{ __('Upload & Lock File') }}</button>
+                    <button type="submit" class="btn btn-primary btn-block font-weight-bold py-2"><i class="fas fa-upload mr-1"></i> {{ __('Upload & Lock Files') }}</button>
                 </form>
             </div>
         </div>

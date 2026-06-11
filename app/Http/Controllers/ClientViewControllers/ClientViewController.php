@@ -167,7 +167,8 @@ class ClientViewController extends Controller
             'phone' => ['required', 'string', 'max:20', 'regex:/^([0-9\s\-\+\(\)]*)$/'],
             'email' => ['required', 'string', 'email', 'max:255'],
             'address' => ['required', 'string', 'max:255'],
-            'file' => ['required', 'file', 'mimes:pdf,docx,doc,jpeg,png,jpg', 'max:10240'],
+            'files' => ['required', 'array'],
+            'files.*' => ['file', 'mimes:pdf,docx,doc,jpeg,png,jpg,xlsx', 'max:20480'],
             'reason' => ['required', 'string'],
             'offer' => ['required', 'string'],
         ]);
@@ -187,30 +188,34 @@ class ClientViewController extends Controller
                 'status' => 'pending',
             ]);
 
-            // Save file to secure vault
-            if ($request->hasFile('file')) {
-                $file = $request->file('file');
-                $fileExtension = $file->getClientOriginalExtension();
-                $newFileName = time() . '_' . uniqid() . '.' . $fileExtension;
-                
+            // Save files to secure vault
+            $allUploadedFilesInfo = [];
+            if ($request->hasFile('files')) {
                 $uploadPath = public_path('upload/case-documents');
                 if (!File::exists($uploadPath)) {
                     File::makeDirectory($uploadPath, 0755, true);
                 }
 
-                $file->move($uploadPath, $newFileName);
-                $newFilePath = '/upload/case-documents/' . $newFileName;
+                foreach ($request->file('files') as $file) {
+                    $fileExtension = $file->getClientOriginalExtension();
+                    $newFileName = time() . '_' . uniqid() . '.' . $fileExtension;
+                    $file->move($uploadPath, $newFileName);
+                    $newFilePath = '/upload/case-documents/' . $newFileName;
 
-                // Create Document Vault entry
-                CaseDocument::create([
-                    'case_id' => $case->id,
-                    'user_id' => Auth::user()->id,
-                    'title' => $file->getClientOriginalName() ?: 'Initial Case Document',
-                    'file_path' => $newFilePath,
-                    'file_type' => $fileExtension,
-                    'file_size' => file_exists(public_path($newFilePath)) ? filesize(public_path($newFilePath)) : 0,
-                    'is_client_uploaded' => true,
-                ]);
+                    $title = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+
+                    CaseDocument::create([
+                        'case_id' => $case->id,
+                        'user_id' => Auth::user()->id,
+                        'title' => $title ?: 'Intake Notice Document',
+                        'file_path' => $newFilePath,
+                        'file_type' => $fileExtension,
+                        'file_size' => file_exists(public_path($newFilePath)) ? filesize(public_path($newFilePath)) : 0,
+                        'is_client_uploaded' => true,
+                    ]);
+
+                    $allUploadedFilesInfo[] = $file->getClientOriginalName() . " (" . round(filesize(public_path($newFilePath)) / 1024, 2) . " KB)";
+                }
             }
 
             \App\Models\ActivityLog::log('Case Created', 'Client ' . Auth::user()->name . ' submitted a new case #' . $case->case_number);
@@ -222,12 +227,21 @@ class ClientViewController extends Controller
 
             // Telegram Notification
             try {
-                $telMsg = "📂 *New Case Representation Opened*\n\n"
-                        . "👤 *Client:* " . Auth::user()->name . "\n"
-                        . "📧 *Email:* " . Auth::user()->email . "\n"
-                        . "🔢 *Case Number:* {$case->case_number}\n"
-                        . "💼 *Case Title:* {$case->title}\n"
-                        . "📅 *Time:* " . now()->format('Y-m-d H:i:s') . "\n";
+                $escapedName = htmlspecialchars(Auth::user()->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedEmail = htmlspecialchars(Auth::user()->email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedTitle = htmlspecialchars($case->title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                
+                $filesStr = implode("\n", array_map(function($f) {
+                    return "📄 " . htmlspecialchars($f, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                }, $allUploadedFilesInfo));
+
+                $telMsg = "📂 <b>New Case Representation Opened</b>\n\n"
+                        . "👤 <b>Client:</b> {$escapedName}\n"
+                        . "📧 <b>Email:</b> {$escapedEmail}\n"
+                        . "🔢 <b>Case Number:</b> {$case->case_number}\n"
+                        . "💼 <b>Case Title:</b> {$escapedTitle}\n"
+                        . "📁 <b>Uploaded Files:</b>\n{$filesStr}\n"
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
                 \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
             } catch (\Throwable $e) {}
 
@@ -392,6 +406,21 @@ class ClientViewController extends Controller
                         $participant->notify(new \App\Notifications\MessageNotification($message));
                     }
                 }
+
+                // Telegram Notification
+                try {
+                    $escapedName = htmlspecialchars(Auth::user()->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                    $messageText = $message->text ? \Illuminate\Support\Str::limit($message->text, 100) : '';
+                    $escapedText = htmlspecialchars($messageText, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                    $attachmentInfo = $message->file_name ? "📎 " . htmlspecialchars($message->file_name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') : 'None';
+                    
+                    $telMsg = "💬 <b>New Client Message Sent</b>\n\n"
+                            . "👤 <b>Client:</b> {$escapedName}\n"
+                            . "✉️ <b>Message:</b> " . ($escapedText ?: '<i>[Empty or Attachment only]</i>') . "\n"
+                            . "📄 <b>Attachment:</b> {$attachmentInfo}\n"
+                            . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
+                    \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+                } catch (\Throwable $e) {}
             }
 
             return back();
@@ -434,8 +463,9 @@ class ClientViewController extends Controller
     public function uploadCaseDocument(Request $request, $id)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'file' => 'required|file|mimes:pdf,png,jpg,jpeg,doc,docx,xlsx|max:20480',
+            'title' => 'nullable|string|max:255',
+            'files' => 'required|array',
+            'files.*' => 'file|mimes:pdf,png,jpg,jpeg,doc,docx,xlsx|max:20480',
         ]);
 
         try {
@@ -445,41 +475,60 @@ class ClientViewController extends Controller
                 abort(403, 'Unauthorized access.');
             }
 
-            $fileName = time() . '_' . uniqid() . '.' . $request->file->getClientOriginalExtension();
-            
             $uploadPath = public_path('upload/case-documents');
             if (!File::exists($uploadPath)) {
                 File::makeDirectory($uploadPath, 0755, true);
             }
-            
-            $request->file->move($uploadPath, $fileName);
 
-            CaseDocument::create([
-                'case_id' => $case->id,
-                'user_id' => Auth::id(),
-                'title' => $request->title,
-                'file_path' => '/upload/case-documents/' . $fileName,
-                'file_type' => $request->file->getClientOriginalExtension(),
-                'file_size' => $request->file->getSize(),
-                'is_client_uploaded' => true,
-            ]);
+            $uploadedFilesInfo = [];
+            foreach ($request->file('files') as $file) {
+                $fileExtension = $file->getClientOriginalExtension();
+                $originalName = $file->getClientOriginalName();
+                $newFileName = time() . '_' . uniqid() . '.' . $fileExtension;
+                $file->move($uploadPath, $newFileName);
+                $newFilePath = '/upload/case-documents/' . $newFileName;
 
-            \App\Models\ActivityLog::log('Client Document Uploaded', 'Client ' . Auth::user()->name . ' uploaded "' . $request->title . '" for case ' . $case->case_number);
-            $this->sendSlackNotification('📁 New Document Uploaded to Vault by Client ' . Auth::user()->name . ' for Case: ' . $case->case_number);
+                $fileTitle = $request->title ? ($request->title . ' - ' . pathinfo($originalName, PATHINFO_FILENAME)) : pathinfo($originalName, PATHINFO_FILENAME);
+                if (!$request->title && count($request->file('files')) === 1) {
+                    $fileTitle = pathinfo($originalName, PATHINFO_FILENAME);
+                } elseif ($request->title && count($request->file('files')) === 1) {
+                    $fileTitle = $request->title;
+                }
+
+                CaseDocument::create([
+                    'case_id' => $case->id,
+                    'user_id' => Auth::id(),
+                    'title' => $fileTitle ?: 'Case Document',
+                    'file_path' => $newFilePath,
+                    'file_type' => $fileExtension,
+                    'file_size' => file_exists(public_path($newFilePath)) ? filesize(public_path($newFilePath)) : 0,
+                    'is_client_uploaded' => true,
+                ]);
+
+                \App\Models\ActivityLog::log('Client Document Uploaded', 'Client ' . Auth::user()->name . ' uploaded "' . $fileTitle . '" for case ' . $case->case_number);
+
+                $uploadedFilesInfo[] = $fileTitle . " (" . $fileExtension . ")";
+            }
+
+            $this->sendSlackNotification('📁 New Documents Uploaded to Vault by Client ' . Auth::user()->name . ' for Case: ' . $case->case_number);
 
             // Telegram Notification
             try {
-                $fileSizeKB = round($request->file->getSize() / 1024, 2);
-                $telMsg = "📁 *New Document Uploaded to Vault*\n\n"
-                        . "👤 *Client:* " . Auth::user()->name . "\n"
-                        . "🔢 *Case Number:* {$case->case_number}\n"
-                        . "📄 *Document Title:* {$request->title}\n"
-                        . "💾 *File Details:* " . $request->file->getClientOriginalExtension() . " ({$fileSizeKB} KB)\n"
-                        . "📅 *Time:* " . now()->format('Y-m-d H:i:s') . "\n";
+                $escapedName = htmlspecialchars(Auth::user()->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                
+                $filesStr = implode("\n", array_map(function($f) {
+                    return "📄 " . htmlspecialchars($f, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                }, $uploadedFilesInfo));
+
+                $telMsg = "📁 <b>New Document(s) Uploaded to Vault</b>\n\n"
+                        . "👤 <b>Client:</b> {$escapedName}\n"
+                        . "🔢 <b>Case Number:</b> {$case->case_number}\n"
+                        . "📄 <b>Documents:</b>\n{$filesStr}\n"
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
                 \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
             } catch (\Throwable $e) {}
 
-            return redirect()->back()->with('success', __('Document uploaded to secure vault successfully.'));
+            return redirect()->back()->with('success', __('Documents uploaded to secure vault successfully.'));
         } catch (\Throwable $e) {
             return $this->backWithError($e->getMessage());
         }
@@ -609,14 +658,19 @@ class ClientViewController extends Controller
 
             // Telegram Notification
             try {
-                $telMsg = "💸 *Offline Payment Proof Submitted*\n\n"
-                        . "👤 *Client:* " . Auth::user()->name . "\n"
-                        . "🧾 *Invoice:* {$invoice->invoice_number}\n"
-                        . "💰 *Amount:* $" . number_format($invoice->amount, 2) . "\n"
-                        . "💳 *Method:* {$request->payment_method}\n"
-                        . "🆔 *Reference:* " . ($request->payment_reference ?: 'N/A') . "\n"
-                        . "📝 *Notes:* " . ($request->payment_notes ?: 'N/A') . "\n"
-                        . "📅 *Time:* " . now()->format('Y-m-d H:i:s') . "\n";
+                $escapedName = htmlspecialchars(Auth::user()->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedMethod = htmlspecialchars($request->payment_method, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedRef = htmlspecialchars($request->payment_reference ?: 'N/A', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedNotes = htmlspecialchars($request->payment_notes ?: 'N/A', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+                $telMsg = "💸 <b>Offline Payment Proof Submitted</b>\n\n"
+                        . "👤 <b>Client:</b> {$escapedName}\n"
+                        . "🧾 <b>Invoice:</b> {$invoice->invoice_number}\n"
+                        . "💰 <b>Amount:</b> $" . number_format($invoice->amount, 2) . "\n"
+                        . "💳 <b>Method:</b> {$escapedMethod}\n"
+                        . "🆔 <b>Reference:</b> {$escapedRef}\n"
+                        . "📝 <b>Notes:</b> {$escapedNotes}\n"
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
                 \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
             } catch (\Throwable $e) {}
 

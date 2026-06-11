@@ -250,12 +250,13 @@ class AdminInvoiceController extends Controller
 
             // Telegram Notification
             try {
-                $telMsg = "✅ *Invoice Status Manually Updated*\n\n"
-                        . "🧾 *Invoice:* {$invoice->invoice_number}\n"
-                        . "👤 *Client:* {$invoice->client->name}\n"
-                        . "💰 *Amount:* $" . number_format($invoice->amount, 2) . "\n"
-                        . "📝 *Status:* Marked as " . strtoupper($newStatus) . "\n"
-                        . "📅 *Time:* " . now()->format('Y-m-d H:i:s') . "\n";
+                $escapedName = htmlspecialchars($invoice->client->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $telMsg = "✅ <b>Invoice Status Manually Updated</b>\n\n"
+                        . "🧾 <b>Invoice:</b> {$invoice->invoice_number}\n"
+                        . "👤 <b>Client:</b> {$escapedName}\n"
+                        . "💰 <b>Amount:</b> $" . number_format($invoice->amount, 2) . "\n"
+                        . "📝 <b>Status:</b> Marked as " . strtoupper($newStatus) . "\n"
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
                 \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
             } catch (\Throwable $e) {}
 
@@ -344,13 +345,17 @@ class AdminInvoiceController extends Controller
             
             // Telegram Notification
             try {
-                $telMsg = "✅ *Offline Payment Proof Approved*\n\n"
-                        . "🧾 *Invoice:* {$invoice->invoice_number}\n"
-                        . "👤 *Client:* {$invoice->client->name}\n"
-                        . "💰 *Amount:* $" . number_format($invoice->amount, 2) . "\n"
-                        . "💳 *Method:* {$invoice->payment_method}\n"
-                        . "🆔 *Reference:* {$invoice->payment_reference}\n"
-                        . "📅 *Time:* " . now()->format('Y-m-d H:i:s') . "\n";
+                $escapedName = htmlspecialchars($invoice->client->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedMethod = htmlspecialchars($invoice->payment_method ?: 'N/A', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedRef = htmlspecialchars($invoice->payment_reference ?: 'N/A', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                
+                $telMsg = "✅ <b>Offline Payment Proof Approved</b>\n\n"
+                        . "🧾 <b>Invoice:</b> {$invoice->invoice_number}\n"
+                        . "👤 <b>Client:</b> {$escapedName}\n"
+                        . "💰 <b>Amount:</b> $" . number_format($invoice->amount, 2) . "\n"
+                        . "💳 <b>Method:</b> {$escapedMethod}\n"
+                        . "🆔 <b>Reference:</b> {$escapedRef}\n"
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
                 \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
             } catch (\Throwable $e) {}
             
@@ -394,12 +399,15 @@ class AdminInvoiceController extends Controller
 
             // Telegram Notification
             try {
-                $telMsg = "❌ *Offline Payment Proof Rejected*\n\n"
-                        . "🧾 *Invoice:* {$invoice->invoice_number}\n"
-                        . "👤 *Client:* {$invoice->client->name}\n"
-                        . "💰 *Amount:* $" . number_format($invoice->amount, 2) . "\n"
-                        . "⚠️ *Reason:* " . ($request->rejection_reason ?: 'Invalid payment slip or reference details') . "\n"
-                        . "📅 *Time:* " . now()->format('Y-m-d H:i:s') . "\n";
+                $escapedName = htmlspecialchars($invoice->client->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedReason = htmlspecialchars($request->rejection_reason ?: 'Invalid payment slip or reference details', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+                $telMsg = "❌ <b>Offline Payment Proof Rejected</b>\n\n"
+                        . "🧾 <b>Invoice:</b> {$invoice->invoice_number}\n"
+                        . "👤 <b>Client:</b> {$escapedName}\n"
+                        . "💰 <b>Amount:</b> $" . number_format($invoice->amount, 2) . "\n"
+                        . "⚠️ <b>Reason:</b> {$escapedReason}\n"
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
                 \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
             } catch (\Throwable $e) {}
 

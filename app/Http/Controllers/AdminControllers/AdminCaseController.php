@@ -167,8 +167,9 @@ class AdminCaseController extends Controller
     public function uploadDocument(Request $request, $id)
     {
         $request->validate([
-            'title' => 'required|string|max:255',
-            'file' => 'required|file|mimes:pdf,png,jpg,jpeg,doc,docx,xlsx|max:20480',
+            'title' => 'nullable|string|max:255',
+            'files' => 'required|array',
+            'files.*' => 'file|mimes:pdf,png,jpg,jpeg,doc,docx,xlsx|max:20480',
         ]);
 
         try {
@@ -178,29 +179,59 @@ class AdminCaseController extends Controller
                 abort(403, 'Unauthorized access.');
             }
 
-            $fileName = time() . '_' . uniqid() . '.' . $request->file->getClientOriginalExtension();
-            
             // Ensure target directory exists
             $uploadPath = public_path('upload/case-documents');
             if (!File::exists($uploadPath)) {
                 File::makeDirectory($uploadPath, 0755, true);
             }
-            
-            $request->file->move($uploadPath, $fileName);
 
-            $document = CaseDocument::create([
-                'case_id' => $case->id,
-                'user_id' => Auth::id(),
-                'title' => $request->title,
-                'file_path' => '/upload/case-documents/' . $fileName,
-                'file_type' => $request->file->getClientOriginalExtension(),
-                'file_size' => $request->file->getSize(),
-                'is_client_uploaded' => false,
-            ]);
+            $uploadedFilesInfo = [];
+            foreach ($request->file('files') as $file) {
+                $fileExtension = $file->getClientOriginalExtension();
+                $originalName = $file->getClientOriginalName();
+                $newFileName = time() . '_' . uniqid() . '.' . $fileExtension;
+                $file->move($uploadPath, $newFileName);
+                $newFilePath = '/upload/case-documents/' . $newFileName;
 
-            ActivityLog::log('Document Uploaded', 'Uploaded document "' . $document->title . '" for case ' . $case->case_number);
+                $fileTitle = $request->title ? ($request->title . ' - ' . pathinfo($originalName, PATHINFO_FILENAME)) : pathinfo($originalName, PATHINFO_FILENAME);
+                if (!$request->title && count($request->file('files')) === 1) {
+                    $fileTitle = pathinfo($originalName, PATHINFO_FILENAME);
+                } elseif ($request->title && count($request->file('files')) === 1) {
+                    $fileTitle = $request->title;
+                }
 
-            return redirect()->back()->with('success', __('Document uploaded successfully.'));
+                $document = CaseDocument::create([
+                    'case_id' => $case->id,
+                    'user_id' => Auth::id(),
+                    'title' => $fileTitle ?: 'Case Document',
+                    'file_path' => $newFilePath,
+                    'file_type' => $fileExtension,
+                    'file_size' => file_exists(public_path($newFilePath)) ? filesize(public_path($newFilePath)) : 0,
+                    'is_client_uploaded' => false,
+                ]);
+
+                ActivityLog::log('Document Uploaded', 'Uploaded document "' . $document->title . '" for case ' . $case->case_number);
+
+                $uploadedFilesInfo[] = $fileTitle . " (" . $fileExtension . ")";
+            }
+
+            // Telegram Notification
+            try {
+                $escapedName = htmlspecialchars(Auth::user()->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                
+                $filesStr = implode("\n", array_map(function($f) {
+                    return "📄 " . htmlspecialchars($f, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                }, $uploadedFilesInfo));
+
+                $telMsg = "📁 <b>New Case Documents Uploaded by Attorney/Admin</b>\n\n"
+                        . "👤 <b>Uploader:</b> {$escapedName}\n"
+                        . "🔢 <b>Case Number:</b> {$case->case_number}\n"
+                        . "📄 <b>Documents:</b>\n{$filesStr}\n"
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
+
+            return redirect()->back()->with('success', __('Documents uploaded successfully.'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

@@ -13,8 +13,8 @@ class GeneralSettings extends Model
 
     public static function sendTelegramNotification($message)
     {
-        $botToken = env('TELEGRAM_BOT_TOKEN');
-        $chatId = env('TELEGRAM_CHAT_ID');
+        $botToken = config('services.telegram.bot_token');
+        $chatId = config('services.telegram.chat_id');
 
         if (empty($botToken) || empty($chatId)) {
             return;
@@ -25,7 +25,7 @@ class GeneralSettings extends Model
             $payload = [
                 'chat_id' => $chatId,
                 'text' => $message,
-                'parse_mode' => 'Markdown',
+                'parse_mode' => 'HTML',
             ];
 
             $ch = curl_init($url);

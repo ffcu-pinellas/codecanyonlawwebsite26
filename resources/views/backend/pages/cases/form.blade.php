@@ -118,13 +118,13 @@
                             <form action="{{ route('admin.cases.upload-document', $case->id) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <div class="form-group">
-                                    <label for="doc_title">{{ __('Document Title') }} <span class="text-danger">*</span></label>
-                                    <input type="text" name="title" id="doc_title" class="form-control" required placeholder="e.g. Initial Intake Form / Tax Return Copies">
+                                    <label for="doc_title">{{ __('Document Title (Optional)') }}</label>
+                                    <input type="text" name="title" id="doc_title" class="form-control" placeholder="e.g. Initial Intake Form (Defaults to filename if blank)">
                                 </div>
                                 <div class="form-group">
-                                    <label for="doc_file">{{ __('Select File') }} <span class="text-danger">*</span></label>
-                                    <input type="file" name="file" id="doc_file" class="form-control-file" required>
-                                    <small class="text-muted">{{ __('Supported: PDF, Images, Word, Excel (Max 20MB)') }}</small>
+                                    <label for="doc_file">{{ __('Select Files') }} <span class="text-danger">*</span></label>
+                                    <input type="file" name="files[]" id="doc_file" class="form-control-file" multiple required>
+                                    <small class="text-muted">{{ __('Supported: PDF, Images, Word, Excel (Max 20MB per file, can select multiple)') }}</small>
                                 </div>
                                 <button type="submit" class="btn btn-success btn-sm"><i class="fas fa-plus mr-1"></i> {{ __('Upload to Vault') }}</button>
                             </form>

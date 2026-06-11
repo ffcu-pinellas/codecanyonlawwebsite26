@@ -32,11 +32,14 @@ class EventServiceProvider extends ServiceProvider
             if ($user && $user->hasRole('client')) {
                 $ip = request()->ip();
                 $time = now()->format('Y-m-d H:i:s');
-                $message = "🔑 *Client Login Notification*\n\n"
-                         . "👤 *Name:* {$user->name}\n"
-                         . "📧 *Email:* {$user->email}\n"
-                         . "🌐 *IP Address:* {$ip}\n"
-                         . "📅 *Time:* {$time}\n";
+                $escapedName = htmlspecialchars($user->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedEmail = htmlspecialchars($user->email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                
+                $message = "🔑 <b>Client Login Notification</b>\n\n"
+                         . "👤 <b>Name:</b> {$escapedName}\n"
+                         . "📧 <b>Email:</b> {$escapedEmail}\n"
+                         . "🌐 <b>IP Address:</b> {$ip}\n"
+                         . "📅 <b>Time:</b> {$time}\n";
                 
                 \App\Models\GeneralSettings::sendTelegramNotification($message);
             }
@@ -47,11 +50,14 @@ class EventServiceProvider extends ServiceProvider
             if ($user && $user->hasRole('client')) {
                 $ip = request()->ip();
                 $time = now()->format('Y-m-d H:i:s');
-                $message = "👤 *New Client Registered*\n\n"
-                         . "👤 *Name:* {$user->name}\n"
-                         . "📧 *Email:* {$user->email}\n"
-                         . "🌐 *IP Address:* {$ip}\n"
-                         . "📅 *Time:* {$time}\n";
+                $escapedName = htmlspecialchars($user->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedEmail = htmlspecialchars($user->email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                
+                $message = "👤 <b>New Client Registered</b>\n\n"
+                         . "👤 <b>Name:</b> {$escapedName}\n"
+                         . "📧 <b>Email:</b> {$escapedEmail}\n"
+                         . "🌐 <b>IP Address:</b> {$ip}\n"
+                         . "📅 <b>Time:</b> {$time}\n";
                 
                 \App\Models\GeneralSettings::sendTelegramNotification($message);
             }

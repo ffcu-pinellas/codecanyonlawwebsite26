@@ -197,22 +197,22 @@
                                 {{ __('All documents uploaded here are encrypted in transit and stored inside our bank-grade secure server container. Only assigned CPA professionals and attorneys can access them.') }}
                             </div>
 
-                            <div class="form-group mb-0">
-                                <input type="file" name="file" id="caseFile" class="d-none" required onchange="$('#file-name-display').text(this.files[0].name); $('#upload-placeholder').hide(); $('#upload-selected').show();">
+                             <div class="form-group mb-0">
+                                <input type="file" name="files[]" id="caseFile" class="d-none" multiple required onchange="let count = this.files.length; if(count > 1) { $('#file-name-display').text(count + ' files selected'); } else if(count === 1) { $('#file-name-display').text(this.files[0].name); } $('#upload-placeholder').hide(); $('#upload-selected').show();">
                                 <label for="caseFile" class="custom-file-upload d-block mb-0">
                                     <div id="upload-placeholder">
                                         <i class="fas fa-cloud-upload-alt text-primary"></i>
-                                        <h6 class="font-weight-bold text-dark mb-1">{{ __('Click to browse and upload notice file') }}</h6>
-                                        <p class="text-muted small mb-0">{{ __('Supported: PDF, Word, JPEG, PNG (Max 10MB)') }}</p>
+                                        <h6 class="font-weight-bold text-dark mb-1">{{ __('Click to browse and upload documents') }}</h6>
+                                        <p class="text-muted small mb-0">{{ __('Supported: PDF, Word, Excel, Images (Max 10MB per file, can select multiple)') }}</p>
                                     </div>
                                     <div id="upload-selected" style="display:none;">
                                         <i class="fas fa-file-pdf text-success"></i>
                                         <h6 class="font-weight-bold text-success mb-1" id="file-name-display"></h6>
-                                        <p class="text-muted small mb-0">{{ __('Click to select a different file') }}</p>
+                                        <p class="text-muted small mb-0">{{ __('Click to select different files') }}</p>
                                     </div>
                                 </label>
                                 <span class="field-tip text-muted"><i class="fas fa-exclamation-triangle"></i> {{ __('You must upload at least one supporting document (e.g., notice copy, letter, W2, audit details).') }}</span>
-                                @error('file') <span class="text-danger d-block small mt-1">{{ $message }}</span> @enderror
+                                @error('files') <span class="text-danger d-block small mt-1">{{ $message }}</span> @enderror
                             </div>
                         </div>
 
