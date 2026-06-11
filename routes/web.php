@@ -172,6 +172,8 @@ Route::get('/debug-env', function() {
         'document_root_upload_exists' => isset($_SERVER['DOCUMENT_ROOT']) && file_exists($_SERVER['DOCUMENT_ROOT'] . '/upload') ? 'yes' : 'no',
         'document_root_files' => isset($_SERVER['DOCUMENT_ROOT']) ? scandir($_SERVER['DOCUMENT_ROOT']) : 'no document root',
         'logo_setting_db' => DB::table('logo_settings')->first(),
+        'seo_setting_db' => DB::table('s_e_o_settings')->first(),
+        'table_exists_seo' => Schema::hasTable('s_e_o_settings'),
         'found_files_search' => $foundFiles,
     ];
 });
