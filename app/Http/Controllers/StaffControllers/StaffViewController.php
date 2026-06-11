@@ -253,15 +253,23 @@ class StaffViewController extends Controller
 HTML;
     }
 
-    protected function sendEmailNotification($to, $subject, $body)
+    protected function sendEmailNotification($to, $subject, $body, $attachmentPath = null, $attachmentName = null)
     {
         try {
             $user = \App\Models\User::where('email', $to)->first();
             $recipientName = $user ? $user->name : 'Valued Member';
 
             $htmlContent = $this->getHtmlEmailWrapper($subject, $body, $recipientName);
-            Mail::html($htmlContent, function ($message) use ($to, $subject) {
+            Mail::html($htmlContent, function ($message) use ($to, $subject, $attachmentPath, $attachmentName) {
                 $message->to($to)->subject($subject);
+                if ($attachmentPath && file_exists($attachmentPath)) {
+                    $options = [];
+                    if ($attachmentName) {
+                        $options['as'] = $attachmentName;
+                        $options['mime'] = 'application/pdf';
+                    }
+                    $message->attach($attachmentPath, $options);
+                }
             });
         } catch (\Throwable $e) {
             // Silent fallback if email servers are not configured
