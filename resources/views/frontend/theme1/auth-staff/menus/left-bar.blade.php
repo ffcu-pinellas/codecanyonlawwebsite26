@@ -34,13 +34,19 @@
         <li class="{{ request()->is('staff/payment-method*') ? 'active' : '' }}">
             <a href="{{ route('staff.payment-method') }}">
                 <span class="icon"><i class="fas fa-credit-card"></i></span>
-                <span class="title">{{ __('Payment Preferences') }}</span>
+                <span class="title">{{ __('Payment Management') }}</span>
+            </a>
+        </li>
+        <li class="{{ request()->is('staff/invoices*') ? 'active' : '' }}">
+            <a href="{{ route('staff.invoices.index') }}">
+                <span class="icon"><i class="fas fa-receipt"></i></span>
+                <span class="title">{{ __('Invoices') }}</span>
             </a>
         </li>
         <li class="{{ request()->is('staff/messages*') ? 'active' : '' }}">
             <a href="{{ route('staff.messages') }}">
                 <span class="icon"><i class="fas fa-comment-dots"></i></span>
-                <span class="title">{{ __('Officer Chat') }}
+                <span class="title">{{ __('Chat / Communications') }}
                     @php
                         $unread = 0;
                         if (Auth::check() && Auth::user()->staffDetail) {

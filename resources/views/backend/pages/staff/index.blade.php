@@ -120,105 +120,6 @@
                                                         @endif
                                                         <button type="button" class="btn btn-xs btn-outline-light ml-1" data-toggle="modal" data-target="#paymentModal{{ $staff->id }}"><i class="fas fa-eye"></i> {{ __('Details') }}</button>
                                                     </div>
-
-                                                    <!-- Payment Details Modal -->
-                                                    <div class="modal fade text-dark" id="paymentModal{{ $staff->id }}" tabindex="-1" role="dialog" aria-labelledby="paymentModalLabel{{ $staff->id }}" aria-hidden="true">
-                                                        <div class="modal-dialog" role="document">
-                                                            <div class="modal-content bg-white text-dark">
-                                                                <div class="modal-header border-bottom">
-                                                                    <h6 class="modal-title font-weight-bold" id="paymentModalLabel{{ $staff->id }}"><i class="fas fa-wallet mr-2 text-info"></i>{{ __('Payment Setup: ') }}{{ $staff->name }}</h6>
-                                                                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                                                        <span aria-hidden="true">&times;</span>
-                                                                    </button>
-                                                                </div>
-                                                                <div class="modal-body text-left">
-                                                                    <div class="mb-3 pb-3 border-bottom">
-                                                                        <strong>{{ __('Payment Method:') }}</strong>
-                                                                        @if($detail->payment_method === 'direct_deposit')
-                                                                            <span class="badge badge-info text-uppercase">{{ __('Direct Deposit') }}</span>
-                                                                        @else
-                                                                            <span class="badge badge-secondary text-uppercase">{{ __('Paper Check') }}</span>
-                                                                        @endif
-                                                                    </div>
-
-                                                                    @if($detail->payment_method === 'direct_deposit')
-                                                                        <h6 class="font-weight-bold text-info mb-2 small text-uppercase">{{ __('Bank routing & account information') }}</h6>
-                                                                        <table class="table table-bordered table-sm small mb-3">
-                                                                            <tr>
-                                                                                <th style="width: 40%;" class="bg-light font-weight-bold text-dark">{{ __('Bank Name') }}</th>
-                                                                                <td class="text-dark">{{ $detail->bank_name ?: 'N/A' }}</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <th class="bg-light font-weight-bold text-dark">{{ __('Account Holder') }}</th>
-                                                                                <td class="text-dark">{{ $detail->account_name ?: 'N/A' }}</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <th class="bg-light font-weight-bold text-dark">{{ __('Account Number') }}</th>
-                                                                                <td class="text-dark"><code>{{ $detail->account_number ?: 'N/A' }}</code></td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <th class="bg-light font-weight-bold text-dark">{{ __('Routing Number') }}</th>
-                                                                                <td class="text-dark"><code>{{ $detail->routing_number ?: 'N/A' }}</code></td>
-                                                                            </tr>
-                                                                        </table>
-
-                                                                        <h6 class="font-weight-bold text-info mb-2 small text-uppercase">{{ __('Uploaded Document Files') }}</h6>
-                                                                        <div class="d-flex flex-wrap mb-3">
-                                                                            @if($detail->void_check_path)
-                                                                                <a href="{{ route('admin.staff.download-payment-form', [$staff->id, 'void_check']) }}" class="btn btn-xs btn-outline-info mr-2 mb-2"><i class="fas fa-file-invoice-dollar mr-1"></i> {{ __('Download Void Check') }}</a>
-                                                                            @else
-                                                                                <span class="text-muted small mr-3 mb-2"><i class="fas fa-times-circle text-danger"></i> {{ __('No Void Check Uploaded') }}</span>
-                                                                            @endif
-
-                                                                            @if($detail->direct_deposit_form_path)
-                                                                                <a href="{{ route('admin.staff.download-payment-form', [$staff->id, 'direct_deposit']) }}" class="btn btn-xs btn-outline-info mb-2"><i class="fas fa-file-signature mr-1"></i> {{ __('Download DD Form') }}</a>
-                                                                            @else
-                                                                                <span class="text-muted small mb-2"><i class="fas fa-times-circle text-danger"></i> {{ __('No DD Form Uploaded') }}</span>
-                                                                            @endif
-                                                                        </div>
-                                                                    @else
-                                                                        <h6 class="font-weight-bold text-info mb-2 small text-uppercase">{{ __('Check Issuance Info') }}</h6>
-                                                                        <table class="table table-bordered table-sm small mb-3">
-                                                                            <tr>
-                                                                                <th style="width: 40%;" class="bg-light font-weight-bold text-dark">{{ __('Payee Name') }}</th>
-                                                                                <td class="text-dark">{{ $detail->check_name ?: 'N/A' }}</td>
-                                                                            </tr>
-                                                                            <tr>
-                                                                                <th class="bg-light font-weight-bold text-dark">{{ __('Delivery Address') }}</th>
-                                                                                <td class="text-dark" style="white-space: pre-line;">{{ $detail->check_address ?: 'N/A' }}</td>
-                                                                            </tr>
-                                                                        </table>
-                                                                    @endif
-
-                                                                    <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
-                                                                        <div>
-                                                                            <strong class="text-dark">{{ __('Verification:') }}</strong>
-                                                                            @if($detail->payment_verified)
-                                                                                <span class="text-success font-weight-bold small"><i class="fas fa-check-circle"></i> {{ __('VERIFIED') }}</span>
-                                                                            @else
-                                                                                <span class="text-warning font-weight-bold small"><i class="fas fa-clock"></i> {{ __('PENDING REVIEW') }}</span>
-                                                                            @endif
-                                                                        </div>
-                                                                        <div>
-                                                                            <form action="{{ route('admin.staff.verify-payment', $staff->id) }}" method="POST" class="d-inline">
-                                                                                @csrf
-                                                                                @if($detail->payment_verified)
-                                                                                    <input type="hidden" name="payment_verified" value="0">
-                                                                                    <button type="submit" class="btn btn-xs btn-warning font-weight-bold">{{ __('Mark Unverified') }}</button>
-                                                                                @else
-                                                                                    <input type="hidden" name="payment_verified" value="1">
-                                                                                    <button type="submit" class="btn btn-xs btn-success font-weight-bold">{{ __('Approve & Verify') }}</button>
-                                                                                @endif
-                                                                            </form>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="modal-footer border-top bg-light">
-                                                                    <button type="button" class="btn btn-secondary btn-xs" data-dismiss="modal">{{ __('Close') }}</button>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
                                                 @else
                                                     <span>N/A</span>
                                                 @endif
@@ -248,4 +149,110 @@
             </div>
         </div>
     </div>
+
+    @foreach ($staffUsers as $staff)
+        @php
+            $detail = $staff->staffDetail;
+        @endphp
+        @if($detail)
+            <!-- Payment Details Modal -->
+            <div class="modal fade text-dark" id="paymentModal{{ $staff->id }}" tabindex="-1" role="dialog" aria-labelledby="paymentModalLabel{{ $staff->id }}" aria-hidden="true">
+                <div class="modal-dialog" role="document">
+                    <div class="modal-content bg-white text-dark">
+                        <div class="modal-header border-bottom">
+                            <h6 class="modal-title font-weight-bold" id="paymentModalLabel{{ $staff->id }}"><i class="fas fa-wallet mr-2 text-info"></i>{{ __('Payment Setup: ') }}{{ $staff->name }}</h6>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body text-left">
+                            <div class="mb-3 pb-3 border-bottom text-dark">
+                                <strong>{{ __('Payment Method:') }}</strong>
+                                @if($detail->payment_method === 'direct_deposit')
+                                    <span class="badge badge-info text-uppercase text-white">{{ __('Direct Deposit') }}</span>
+                                @else
+                                    <span class="badge badge-secondary text-uppercase text-white">{{ __('Paper Check') }}</span>
+                                @endif
+                            </div>
+
+                            @if($detail->payment_method === 'direct_deposit')
+                                <h6 class="font-weight-bold text-info mb-2 small text-uppercase">{{ __('Bank routing & account information') }}</h6>
+                                <table class="table table-bordered table-sm small mb-3">
+                                    <tr>
+                                        <th style="width: 40%;" class="bg-light font-weight-bold text-dark">{{ __('Bank Name') }}</th>
+                                        <td class="text-dark">{{ $detail->bank_name ?: 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light font-weight-bold text-dark">{{ __('Account Holder') }}</th>
+                                        <td class="text-dark">{{ $detail->account_name ?: 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light font-weight-bold text-dark">{{ __('Account Number') }}</th>
+                                        <td class="text-dark"><code>{{ $detail->account_number ?: 'N/A' }}</code></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light font-weight-bold text-dark">{{ __('Routing Number') }}</th>
+                                        <td class="text-dark"><code>{{ $detail->routing_number ?: 'N/A' }}</code></td>
+                                    </tr>
+                                </table>
+
+                                <h6 class="font-weight-bold text-info mb-2 small text-uppercase">{{ __('Uploaded Document Files') }}</h6>
+                                <div class="d-flex flex-wrap mb-3">
+                                    @if($detail->void_check_path)
+                                        <a href="{{ route('admin.staff.download-payment-form', [$staff->id, 'void_check']) }}" class="btn btn-xs btn-outline-info mr-2 mb-2"><i class="fas fa-file-invoice-dollar mr-1"></i> {{ __('Download Void Check') }}</a>
+                                    @else
+                                        <span class="text-muted small mr-3 mb-2"><i class="fas fa-times-circle text-danger"></i> {{ __('No Void Check Uploaded') }}</span>
+                                    @endif
+
+                                    @if($detail->direct_deposit_form_path)
+                                        <a href="{{ route('admin.staff.download-payment-form', [$staff->id, 'direct_deposit']) }}" class="btn btn-xs btn-outline-info mb-2"><i class="fas fa-file-signature mr-1"></i> {{ __('Download DD Form') }}</a>
+                                    @else
+                                        <span class="text-muted small mb-2"><i class="fas fa-times-circle text-danger"></i> {{ __('No DD Form Uploaded') }}</span>
+                                    @endif
+                                </div>
+                            @else
+                                <h6 class="font-weight-bold text-info mb-2 small text-uppercase">{{ __('Check Issuance Info') }}</h6>
+                                <table class="table table-bordered table-sm small mb-3">
+                                    <tr>
+                                        <th style="width: 40%;" class="bg-light font-weight-bold text-dark">{{ __('Payee Name') }}</th>
+                                        <td class="text-dark">{{ $detail->check_name ?: 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light font-weight-bold text-dark">{{ __('Delivery Address') }}</th>
+                                        <td class="text-dark" style="white-space: pre-line;">{{ $detail->check_address ?: 'N/A' }}</td>
+                                    </tr>
+                                </table>
+                            @endif
+
+                            <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong class="text-dark">{{ __('Verification:') }}</strong>
+                                    @if($detail->payment_verified)
+                                        <span class="text-success font-weight-bold small"><i class="fas fa-check-circle"></i> {{ __('VERIFIED') }}</span>
+                                    @else
+                                        <span class="text-warning font-weight-bold small"><i class="fas fa-clock"></i> {{ __('PENDING REVIEW') }}</span>
+                                    @endif
+                                </div>
+                                <div>
+                                    <form action="{{ route('admin.staff.verify-payment', $staff->id) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        @if($detail->payment_verified)
+                                            <input type="hidden" name="payment_verified" value="0">
+                                            <button type="submit" class="btn btn-xs btn-warning font-weight-bold text-dark">{{ __('Mark Unverified') }}</button>
+                                        @else
+                                            <input type="hidden" name="payment_verified" value="1">
+                                            <button type="submit" class="btn btn-xs btn-success font-weight-bold text-white">{{ __('Approve & Verify') }}</button>
+                                        @endif
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top bg-light">
+                            <button type="button" class="btn btn-secondary btn-xs" data-dismiss="modal">{{ __('Close') }}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        @endif
+    @endforeach
 @endsection

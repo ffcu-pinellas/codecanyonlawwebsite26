@@ -363,8 +363,24 @@ class AdminCaseController extends Controller
                     . ($request->custom_clauses ?: "No custom clauses added.") . "\n\n"
                     . "Please review the formal print-ready agreement details online, and submit signed execution documents directly to your secure vault or reply to this message.";
 
-                $this->sendEmailNotification($client->email, $subject, $bodyText);
-                ActivityLog::log('Document Email Sent', 'Emailed generated ' . $request->template_type . ' agreement to client ' . $client->name);
+                // Generate PDF representation of the document
+                $pdfPath = null;
+                try {
+                    $isPdf = true;
+                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', compact('title', 'content', 'client', 'companyName', 'dateStr', 'isPdf'));
+                    $pdfPath = tempnam(sys_get_temp_dir(), 'doc_') . '.pdf';
+                    $pdf->save($pdfPath);
+                } catch (\Throwable $pdfError) {
+                    // Fail silently
+                }
+
+                $attachmentName = str_replace(' ', '_', $title) . '.pdf';
+                $this->sendEmailNotification($client->email, $subject, $bodyText, $pdfPath, $attachmentName);
+
+                if ($pdfPath && file_exists($pdfPath)) {
+                    @unlink($pdfPath);
+                }
+                ActivityLog::log('Document Email Sent', 'Emailed generated ' . $request->template_type . ' agreement with PDF attachment to client ' . $client->name);
             }
 
             return view('backend.pages.cases.doc-print', compact('title', 'content', 'client', 'companyName', 'dateStr'));

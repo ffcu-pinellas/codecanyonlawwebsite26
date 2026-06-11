@@ -967,4 +967,39 @@ HTML;
 
         return view('frontend.theme1.auth-staff.direct-deposit-pdf', compact('title', 'user', 'staffDetail'));
     }
+
+    public function invoicesIndex()
+    {
+        try {
+            $title = __('Client Invoices');
+            $invoices = \App\Models\Invoice::with(['client', 'clientCase'])->orderBy('created_at', 'desc')->get();
+
+            return view('frontend.theme1.auth-staff.pages.invoices.index', compact('title', 'invoices'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    public function invoiceShow($id)
+    {
+        try {
+            $invoice = \App\Models\Invoice::with(['client', 'clientCase.attorney'])->findOrFail($id);
+
+            $title = __('Invoice #') . $invoice->invoice_number;
+            $companySettings = \App\Models\GeneralSettings::first();
+            $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+
+            $contactPage = \App\Models\PageSettings::where('name', 'contact')->first();
+            $contactInfo = $contactPage ? $contactPage->sections()->where('name', 'contact_info')->first() : null;
+            $emailInfo = $contactPage ? $contactPage->sections()->where('name', 'email')->first() : null;
+
+            $companyAddress = env('COMPANY_ADDRESS') ?: ($contactInfo ? implode(', ', array_filter([$contactInfo->line_one, $contactInfo->line_two])) : '582 Professional Way, Financial District, DC');
+            $companyPhone = env('COMPANY_PHONE') ?: ($contactInfo && $contactInfo->line_two && preg_match('/[0-9]/', $contactInfo->line_two) ? $contactInfo->line_two : '(216) 230-1837');
+            $companyEmail = env('COMPANY_EMAIL') ?: ($emailInfo ? $emailInfo->line_one : 'support@yourcpaexpert.com');
+
+            return view('frontend.theme1.auth-staff.pages.invoices.details', compact('title', 'invoice', 'companyName', 'companyAddress', 'companyPhone', 'companyEmail'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
 }

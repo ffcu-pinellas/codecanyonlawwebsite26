@@ -107,9 +107,11 @@
 </head>
 <body>
 
+    @if(empty($isPdf))
     <div class="print-btn-container">
         <button class="print-btn" onclick="window.print()">{{ __('Print Document') }}</button>
     </div>
+    @endif
 
     <div class="header">
         <h1>{{ $companyName }}</h1>
@@ -148,6 +150,7 @@
         </table>
     </div>
 
+    @if(empty($isPdf))
     <script>
         window.onload = function() {
             setTimeout(function() {
@@ -155,5 +158,6 @@
             }, 500);
         }
     </script>
+    @endif
 </body>
 </html>

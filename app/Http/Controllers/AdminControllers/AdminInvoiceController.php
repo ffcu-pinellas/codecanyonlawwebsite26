@@ -109,8 +109,12 @@ class AdminInvoiceController extends Controller
                     . "Dashboard Link : " . route('client.invoices.show', $invoice->id) . "\n\n"
                     . "If you have any questions or require modifications, please contact our billing support office.";
 
-                $this->sendEmailNotification($client->email, $subject, $bodyText);
-                ActivityLog::log('Invoice Email Sent', 'Sent invoice statement email for ' . $invoice->invoice_number . ' to client ' . $client->name);
+                $pdfPath = $this->generateInvoicePdfFile($invoice);
+                $this->sendEmailNotification($client->email, $subject, $bodyText, $pdfPath, 'Invoice_' . $invoice->invoice_number . '.pdf');
+                if ($pdfPath && file_exists($pdfPath)) {
+                    @unlink($pdfPath);
+                }
+                ActivityLog::log('Invoice Email Sent', 'Sent invoice statement email with PDF attachment for ' . $invoice->invoice_number . ' to client ' . $client->name);
             }
 
             return redirect()->route('admin.invoices.index')->with('success', __('Invoice generated successfully. Invoice Number: ') . $invoice->invoice_number);
@@ -196,8 +200,12 @@ class AdminInvoiceController extends Controller
                     . "Dashboard Link : " . route('client.invoices.show', $invoice->id) . "\n\n"
                     . "If you have any questions or require modifications, please contact our billing support office.";
 
-                $this->sendEmailNotification($client->email, $subject, $bodyText);
-                ActivityLog::log('Invoice Email Sent', 'Sent updated invoice statement email for ' . $invoice->invoice_number . ' to client ' . $client->name);
+                $pdfPath = $this->generateInvoicePdfFile($invoice);
+                $this->sendEmailNotification($client->email, $subject, $bodyText, $pdfPath, 'Invoice_' . $invoice->invoice_number . '.pdf');
+                if ($pdfPath && file_exists($pdfPath)) {
+                    @unlink($pdfPath);
+                }
+                ActivityLog::log('Invoice Email Sent', 'Sent updated invoice statement email with PDF attachment for ' . $invoice->invoice_number . ' to client ' . $client->name);
             }
 
             return redirect()->route('admin.invoices.index')->with('success', __('Invoice updated successfully.'));
@@ -274,13 +282,35 @@ class AdminInvoiceController extends Controller
                 . "Dashboard Link : " . route('client.invoices.show', $invoice->id) . "\n\n"
                 . "If you have any questions or require modifications, please contact our billing support office.";
 
-            $this->sendEmailNotification($client->email, $subject, $bodyText);
+            $pdfPath = $this->generateInvoicePdfFile($invoice);
+            $this->sendEmailNotification($client->email, $subject, $bodyText, $pdfPath, 'Invoice_' . $invoice->invoice_number . '.pdf');
+            if ($pdfPath && file_exists($pdfPath)) {
+                @unlink($pdfPath);
+            }
 
-            ActivityLog::log('Invoice Email Sent', 'Sent invoice statement email for ' . $invoice->invoice_number . ' to client ' . $client->name);
+            ActivityLog::log('Invoice Email Sent', 'Sent invoice statement email with PDF attachment for ' . $invoice->invoice_number . ' to client ' . $client->name);
 
             return redirect()->back()->with('success', __('Invoice email sent to client successfully.'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    private function generateInvoicePdfFile($invoice)
+    {
+        try {
+            $companyName = config('app.name', 'Your CPA Expert');
+            $companyAddress = config('settings.company_address', '582 Professional Way, Financial District, DC');
+            $companyPhone = config('settings.company_phone', '(216) 230-1837');
+            $companyEmail = config('settings.company_email', 'support@yourcpaexpert.com');
+            $title = __('Invoice ') . $invoice->invoice_number;
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.invoice-pdf', compact('title', 'invoice', 'companyName', 'companyAddress', 'companyPhone', 'companyEmail'));
+            $tempPdfPath = tempnam(sys_get_temp_dir(), 'invoice_') . '.pdf';
+            $pdf->save($tempPdfPath);
+            return $tempPdfPath;
+        } catch (\Throwable $e) {
+            return null;
         }
     }
 }
