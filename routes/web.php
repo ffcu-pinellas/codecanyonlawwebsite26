@@ -76,6 +76,23 @@ Route::get('/setup', function (){
             \Illuminate\Support\Facades\DB::table('footer_settings')->where('footer_copy_right', 'like', '%bdCoder%')->update(['footer_copy_right' => 'Copyright © 2026 Your CPA Expert All reserved.']);
             \Illuminate\Support\Facades\DB::table('footer_settings')->where('footer_copy_right', 'like', '%bapric%')->update(['footer_copy_right' => 'Copyright © 2026 Your CPA Expert All reserved.']);
         }
+        if (\Illuminate\Support\Facades\Schema::hasTable('s_e_o_settings')) {
+            $seo = \Illuminate\Support\Facades\DB::table('s_e_o_settings')->first();
+            if (!$seo) {
+                \Illuminate\Support\Facades\DB::table('s_e_o_settings')->insert([
+                    'meta_keyword' => 'cpa, tax advisor, certified public accountant, accounting services, tax planning, business consulting, legal representation, your cpa expert',
+                    'meta_description' => 'Your CPA Expert provides integrated certified public accounting, tax advisory, and legal representation services for businesses and individuals.',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            } else {
+                \Illuminate\Support\Facades\DB::table('s_e_o_settings')->where('id', $seo->id)->update([
+                    'meta_keyword' => 'cpa, tax advisor, certified public accountant, accounting services, tax planning, business consulting, legal representation, your cpa expert',
+                    'meta_description' => 'Your CPA Expert provides integrated certified public accounting, tax advisory, and legal representation services for businesses and individuals.',
+                    'updated_at' => now()
+                ]);
+            }
+        }
     } catch (\Throwable $dbEx) {
         // Silence errors
     }
