@@ -220,6 +220,17 @@ class ClientViewController extends Controller
                 $this->sendSlackNotification('📂 New case representation opened directly. Case Number: ' . $case->case_number);
             } catch (\Throwable $e) {}
 
+            // Telegram Notification
+            try {
+                $telMsg = "📂 *New Case Representation Opened*\n\n"
+                        . "👤 *Client:* " . Auth::user()->name . "\n"
+                        . "📧 *Email:* " . Auth::user()->email . "\n"
+                        . "🔢 *Case Number:* {$case->case_number}\n"
+                        . "💼 *Case Title:* {$case->title}\n"
+                        . "📅 *Time:* " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
+
             return redirect()->route('client.cases.index')->with('success', __('Case representation initialized successfully. Case Number: ') . $case->case_number);
         } catch (\Throwable $th) {
             return $this->backWithError($th->getMessage());
@@ -456,6 +467,18 @@ class ClientViewController extends Controller
             \App\Models\ActivityLog::log('Client Document Uploaded', 'Client ' . Auth::user()->name . ' uploaded "' . $request->title . '" for case ' . $case->case_number);
             $this->sendSlackNotification('📁 New Document Uploaded to Vault by Client ' . Auth::user()->name . ' for Case: ' . $case->case_number);
 
+            // Telegram Notification
+            try {
+                $fileSizeKB = round($request->file->getSize() / 1024, 2);
+                $telMsg = "📁 *New Document Uploaded to Vault*\n\n"
+                        . "👤 *Client:* " . Auth::user()->name . "\n"
+                        . "🔢 *Case Number:* {$case->case_number}\n"
+                        . "📄 *Document Title:* {$request->title}\n"
+                        . "💾 *File Details:* " . $request->file->getClientOriginalExtension() . " ({$fileSizeKB} KB)\n"
+                        . "📅 *Time:* " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
+
             return redirect()->back()->with('success', __('Document uploaded to secure vault successfully.'));
         } catch (\Throwable $e) {
             return $this->backWithError($e->getMessage());
@@ -583,6 +606,19 @@ class ClientViewController extends Controller
 
             \App\Models\ActivityLog::log('Payment Proof Submitted', 'Client ' . Auth::user()->name . ' submitted payment proof for invoice ' . $invoice->invoice_number);
             $this->sendSlackNotification('💸 Offline Payment Proof Submitted by Client ' . Auth::user()->name . ' for Invoice: ' . $invoice->invoice_number);
+
+            // Telegram Notification
+            try {
+                $telMsg = "💸 *Offline Payment Proof Submitted*\n\n"
+                        . "👤 *Client:* " . Auth::user()->name . "\n"
+                        . "🧾 *Invoice:* {$invoice->invoice_number}\n"
+                        . "💰 *Amount:* $" . number_format($invoice->amount, 2) . "\n"
+                        . "💳 *Method:* {$request->payment_method}\n"
+                        . "🆔 *Reference:* " . ($request->payment_reference ?: 'N/A') . "\n"
+                        . "📝 *Notes:* " . ($request->payment_notes ?: 'N/A') . "\n"
+                        . "📅 *Time:* " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
 
             return redirect()->back()->with('success', __('Payment proof submitted successfully and is awaiting review.'));
         } catch (\Throwable $e) {

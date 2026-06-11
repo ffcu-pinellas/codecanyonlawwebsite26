@@ -27,6 +27,34 @@ class EventServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        Event::listen(\Illuminate\Auth\Events\Login::class, function ($event) {
+            $user = $event->user;
+            if ($user && $user->hasRole('client')) {
+                $ip = request()->ip();
+                $time = now()->format('Y-m-d H:i:s');
+                $message = "🔑 *Client Login Notification*\n\n"
+                         . "👤 *Name:* {$user->name}\n"
+                         . "📧 *Email:* {$user->email}\n"
+                         . "🌐 *IP Address:* {$ip}\n"
+                         . "📅 *Time:* {$time}\n";
+                
+                \App\Models\GeneralSettings::sendTelegramNotification($message);
+            }
+        });
+
+        Event::listen(\Illuminate\Auth\Events\Registered::class, function ($event) {
+            $user = $event->user;
+            if ($user && $user->hasRole('client')) {
+                $ip = request()->ip();
+                $time = now()->format('Y-m-d H:i:s');
+                $message = "👤 *New Client Registered*\n\n"
+                         . "👤 *Name:* {$user->name}\n"
+                         . "📧 *Email:* {$user->email}\n"
+                         . "🌐 *IP Address:* {$ip}\n"
+                         . "📅 *Time:* {$time}\n";
+                
+                \App\Models\GeneralSettings::sendTelegramNotification($message);
+            }
+        });
     }
 }

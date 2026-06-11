@@ -248,6 +248,17 @@ class AdminInvoiceController extends Controller
 
             ActivityLog::log('Invoice Status Updated', 'Marked invoice ' . $invoice->invoice_number . ' as ' . strtoupper($newStatus));
 
+            // Telegram Notification
+            try {
+                $telMsg = "✅ *Invoice Status Manually Updated*\n\n"
+                        . "🧾 *Invoice:* {$invoice->invoice_number}\n"
+                        . "👤 *Client:* {$invoice->client->name}\n"
+                        . "💰 *Amount:* $" . number_format($invoice->amount, 2) . "\n"
+                        . "📝 *Status:* Marked as " . strtoupper($newStatus) . "\n"
+                        . "📅 *Time:* " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
+
             return redirect()->back()->with('success', __('Invoice status updated successfully.'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
@@ -331,6 +342,18 @@ class AdminInvoiceController extends Controller
 
             ActivityLog::log('Payment Proof Approved', 'Approved offline payment proof for invoice ' . $invoice->invoice_number);
             
+            // Telegram Notification
+            try {
+                $telMsg = "✅ *Offline Payment Proof Approved*\n\n"
+                        . "🧾 *Invoice:* {$invoice->invoice_number}\n"
+                        . "👤 *Client:* {$invoice->client->name}\n"
+                        . "💰 *Amount:* $" . number_format($invoice->amount, 2) . "\n"
+                        . "💳 *Method:* {$invoice->payment_method}\n"
+                        . "🆔 *Reference:* {$invoice->payment_reference}\n"
+                        . "📅 *Time:* " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
+            
             $client = $invoice->client;
             $subject = "Payment Confirmed: Invoice " . $invoice->invoice_number;
             $bodyText = "We are pleased to confirm that we have successfully verified your offline payment proof for Invoice " . $invoice->invoice_number . ".\n\n"
@@ -368,6 +391,17 @@ class AdminInvoiceController extends Controller
                 'status' => 'unpaid',
                 'payment_notes' => ($invoice->payment_notes ? $invoice->payment_notes . "\n" : "") . "[Rejected on " . date('Y-m-d') . "]: " . ($request->rejection_reason ?: 'Invalid payment slip or reference details'),
             ]);
+
+            // Telegram Notification
+            try {
+                $telMsg = "❌ *Offline Payment Proof Rejected*\n\n"
+                        . "🧾 *Invoice:* {$invoice->invoice_number}\n"
+                        . "👤 *Client:* {$invoice->client->name}\n"
+                        . "💰 *Amount:* $" . number_format($invoice->amount, 2) . "\n"
+                        . "⚠️ *Reason:* " . ($request->rejection_reason ?: 'Invalid payment slip or reference details') . "\n"
+                        . "📅 *Time:* " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
 
             $client = $invoice->client;
             $subject = "Payment Proof Rejected: Invoice " . $invoice->invoice_number;
