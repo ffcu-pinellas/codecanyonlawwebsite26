@@ -36,10 +36,18 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/setup', function (){
-    \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    \Illuminate\Support\Facades\Artisan::call('storage:link');
-    \Illuminate\Support\Facades\Artisan::call('cache:clear');
-    \Illuminate\Support\Facades\Artisan::call('view:clear');
+    try {
+        \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
+    } catch (\Throwable $e) {}
+    try {
+        \Illuminate\Support\Facades\Artisan::call('storage:link');
+    } catch (\Throwable $e) {}
+    try {
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
+    } catch (\Throwable $e) {}
+    try {
+        \Illuminate\Support\Facades\Artisan::call('view:clear');
+    } catch (\Throwable $e) {}
 
     // Clean up settings.json to remove bdcoder / bapric / bipric
     try {
