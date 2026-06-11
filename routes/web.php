@@ -44,6 +44,18 @@ Route::get('/setup', function (){
     return redirect()->route('home');
 });
 
+Route::get('/debug-env', function() {
+    return [
+        'public_path' => public_path(),
+        'base_path' => base_path(),
+        'document_root' => $_SERVER['DOCUMENT_ROOT'] ?? 'unknown',
+        'public_upload_exists' => file_exists(public_path('upload')) ? 'yes' : 'no',
+        'public_upload_settings_files' => file_exists(public_path('upload/settings')) ? scandir(public_path('upload/settings')) : 'settings folder not found',
+        'document_root_upload_exists' => isset($_SERVER['DOCUMENT_ROOT']) && file_exists($_SERVER['DOCUMENT_ROOT'] . '/upload') ? 'yes' : 'no',
+        'document_root_files' => isset($_SERVER['DOCUMENT_ROOT']) ? scandir($_SERVER['DOCUMENT_ROOT']) : 'no document root',
+    ];
+});
+
 Route::get('/login', [GuestViewController::class, 'loginRedirect'])->name('login');
 Route::get('/forgot-password', [GuestViewController::class, 'forgetPassword'])->name('password.request');
 Route::get('/reset-password/{token}', [GuestViewController::class, 'resetPassword'])->name('password.reset');
