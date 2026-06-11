@@ -245,7 +245,7 @@
 
                     <div class="mb-4">
                         <h6 class="font-weight-bold text-dark mb-1"><i class="fas fa-lock text-warning mr-1"></i> {{ __('Notice Vault Security') }}</h6>
-                        <p class="text-muted small" style="line-height: 1.5;">{{ __('Bibric Law ensures zero-disclosure secure file transmissions. Your documents are isolated and shielded against unauthenticated threats.') }}</p>
+                        <p class="text-muted small" style="line-height: 1.5;">{{ $generalSetting && $generalSetting->site_name ? $generalSetting->site_name : config('app.name', 'Your CPA Expert') }} {{ __('ensures zero-disclosure secure file transmissions. Your documents are isolated and shielded against unauthenticated threats.') }}</p>
                     </div>
 
                     <div class="alert alert-info mb-0 small">
