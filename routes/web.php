@@ -53,6 +53,7 @@ Route::get('/debug-env', function() {
         'public_upload_settings_files' => file_exists(public_path('upload/settings')) ? scandir(public_path('upload/settings')) : 'settings folder not found',
         'document_root_upload_exists' => isset($_SERVER['DOCUMENT_ROOT']) && file_exists($_SERVER['DOCUMENT_ROOT'] . '/upload') ? 'yes' : 'no',
         'document_root_files' => isset($_SERVER['DOCUMENT_ROOT']) ? scandir($_SERVER['DOCUMENT_ROOT']) : 'no document root',
+        'logo_setting_db' => DB::table('logo_settings')->first(),
     ];
 });
 
