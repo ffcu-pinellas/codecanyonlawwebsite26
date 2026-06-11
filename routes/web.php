@@ -45,6 +45,18 @@ Route::get('/setup', function (){
 });
 
 Route::get('/debug-env', function() {
+    $foundFiles = [];
+    try {
+        $dir = new RecursiveDirectoryIterator(base_path());
+        $ite = new RecursiveIteratorIterator($dir);
+        $files = new RegexIterator($ite, '/IMG_1933/i', preg_match::class === 'class' ? RegexIterator::GET_MATCH : RegexIterator::MATCH);
+        foreach($files as $name => $object){
+            $foundFiles[] = $name;
+        }
+    } catch (\Throwable $e) {
+        $foundFiles = 'error: ' . $e->getMessage();
+    }
+
     return [
         'public_path' => public_path(),
         'base_path' => base_path(),
@@ -54,6 +66,7 @@ Route::get('/debug-env', function() {
         'document_root_upload_exists' => isset($_SERVER['DOCUMENT_ROOT']) && file_exists($_SERVER['DOCUMENT_ROOT'] . '/upload') ? 'yes' : 'no',
         'document_root_files' => isset($_SERVER['DOCUMENT_ROOT']) ? scandir($_SERVER['DOCUMENT_ROOT']) : 'no document root',
         'logo_setting_db' => DB::table('logo_settings')->first(),
+        'found_files_search' => $foundFiles,
     ];
 });
 
