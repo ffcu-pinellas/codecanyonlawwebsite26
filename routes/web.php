@@ -209,6 +209,7 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
     Route::prefix('financial-relief')->as('financial-relief.')->group(function (){
         Route::get('/', [AdminController::class, 'getReliefRequests'])->name('index');
         Route::get('/{relief}', [AdminController::class, 'viewReliefRequest'])->name('view');
+        Route::post('/{id}/approve-case', [AdminController::class, 'approveAndCreateCase'])->name('approve-case');
         Route::delete('/{relief}', [AdminController::class, 'destroyReliefRequest'])->name('destroy');
     });
 

@@ -86,6 +86,6 @@
 @endsection
 
 @section('page-script')
-    @include('backend.pages.hardships.internal-assets.js.delete-warning')
+    @include('backend.pages.relief-requests.internal-assets.js.delete-warning')
     @include('backend.layouts.message')
 @endsection

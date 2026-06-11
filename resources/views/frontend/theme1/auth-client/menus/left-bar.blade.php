@@ -32,8 +32,8 @@
         </li>
         <li class="{{ request()->is('client/financial-relief*') ? 'active' : '' }}">
             <a href="{{ route('client.financial-relief') }}">
-                <span class="icon"><i class="fas fa-file-invoice-dollar"></i></span>
-                <span class="title">{{ __('CPA / Legal Assistance') }}</span>
+                <span class="icon"><i class="fas fa-folder-plus"></i></span>
+                <span class="title">{{ __('Open New Case') }}</span>
             </a>
         </li>
         <li class="{{ request()->is('client/cases*') ? 'active' : '' }}">

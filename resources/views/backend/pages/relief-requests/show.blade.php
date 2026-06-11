@@ -76,9 +76,34 @@
                                     <textarea class="form-control" name="offer" aria-label="With textarea" rows="5" placeholder="Write description here..." readonly>{!! clean($hardship->offer)!!}</textarea>
                                 </div>
 
+                        </div>
+
+
+                        </div>
+
+                        <div class="card-footer d-flex justify-content-between bg-dark border-top border-secondary">
+                            <div>
+                                @if($hardship->file)
+                                    <a href="{{ asset($hardship->file) }}" class="btn btn-info mr-2" target="_blank">
+                                        <i class="fas fa-file-download mr-1"></i> {{ __('Download Document') }} ({{ $hardship->file_name }})
+                                    </a>
+                                @endif
                             </div>
-
-
+                            <div class="d-flex">
+                                <form action="{{ route('admin.financial-relief.approve-case', $hardship->id) }}" method="POST" class="mr-2">
+                                    @csrf
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="fas fa-check-circle mr-1"></i> {{ __('Approve & Initialize Case Representation') }}
+                                    </button>
+                                </form>
+                                <form action="{{ route('admin.financial-relief.destroy', $hardship->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this request?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-danger">
+                                        <i class="fas fa-trash-alt mr-1"></i> {{ __('Delete Request') }}
+                                    </button>
+                                </form>
+                            </div>
                         </div>
 
                     </form>

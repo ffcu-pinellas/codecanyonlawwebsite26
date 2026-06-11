@@ -92,9 +92,9 @@
     <div class="row mb-2 mb-md-4">
         <div class="col-6 col-md-4 mb-3 px-2 px-md-3">
             <div class="stat-card p-3">
-                <div class="stat-icon icon-relief mb-2" style="width: 40px; height: 40px; font-size: 1.2rem;"><i class="fas fa-hand-holding-usd"></i></div>
-                <h6 class="text-muted text-uppercase font-weight-bold" style="font-size: 0.65rem;">Assistance</h6>
-                <h3 class="font-weight-bold mb-0" style="font-size: 1.5rem;">{{ $reliefRequestCount }}</h3>
+                <div class="stat-icon icon-relief mb-2" style="width: 40px; height: 40px; font-size: 1.2rem;"><i class="fas fa-briefcase"></i></div>
+                <h6 class="text-muted text-uppercase font-weight-bold" style="font-size: 0.65rem;">Active Cases</h6>
+                <h3 class="font-weight-bold mb-0" style="font-size: 1.5rem;">{{ $casesCount }}</h3>
                 <small class="text-success d-none d-sm-block mt-1"><i class="fas fa-check-circle"></i> Active</small>
             </div>
         </div>
@@ -117,81 +117,76 @@
     </div>
 
     <div class="row">
-        <!-- Main Content: Relief Tracker -->
+        <!-- Main Content: Case Tracker -->
         <div class="col-lg-8 mb-4">
             <div class="card stat-card shadow-sm border-0">
                 <div class="card-body">
-                    <h5 class="section-title">Case & Relief Status</h5>
-                    @forelse(Auth::user()->reliefRequests()->latest()->take(3)->get() as $relief)
+                    <h5 class="section-title">{{ __('Case & Representation Status') }}</h5>
+                    @forelse($latestCases as $c)
                     <div class="d-flex align-items-center justify-content-between p-3 mb-3 bg-light rounded border-left border-primary" style="border-left-width: 5px !important;">
                         <div>
-                            <h6 class="mb-1 font-weight-bold">{{ $relief->reason }}</h6>
-                            <small class="text-muted"><i class="far fa-calendar-alt"></i> Filed on {{ $relief->created_at->format('M d, Y') }}</small>
+                            <h6 class="mb-1 font-weight-bold">{{ $c->title }}</h6>
+                            <small class="text-muted"><i class="far fa-calendar-alt"></i> {{ __('Opened on') }} {{ $c->created_at->format('M d, Y') }}</small>
                         </div>
                         <div>
-                            @if($relief->viewed)
-                                <span class="badge badge-success status-badge">Under Review</span>
-                            @else
-                                <span class="badge badge-warning status-badge">Pending</span>
-                            @endif
+                            <span class="badge badge-{{ $c->status === 'pending' ? 'warning' : 'success' }} status-badge">{{ ucfirst($c->status) }}</span>
                         </div>
                     </div>
                     @empty
                     <div class="text-center py-5">
-                        <i class="fas fa-file-invoice-dollar display-4 text-light mb-3"></i>
-                        <p class="text-muted">No active relief requests found.</p>
-                        <a href="{{ route('client.financial-relief') }}" class="btn btn-primary btn-sm px-4">Apply Now</a>
+                        <i class="fas fa-briefcase display-4 text-light mb-3"></i>
+                        <p class="text-muted">{{ __('No active cases found.') }}</p>
+                        <a href="{{ route('client.financial-relief') }}" class="btn btn-primary btn-sm px-4">{{ __('Open a Case') }}</a>
                     </div>
                     @endforelse
                     
-                    @if($reliefRequestCount > 3)
+                    @if($casesCount > 3)
                     <div class="text-center mt-3">
-                        <a href="javascript:void(0)" class="text-primary small font-weight-bold">View All Requests</a>
+                        <a href="{{ route('client.cases.index') }}" class="text-primary small font-weight-bold">{{ __('View All Cases') }}</a>
                     </div>
                     @endif
                 </div>
             </div>
 
-            <!-- CPA / Legal Assistance Tracker -->
+            <!-- Case & Vault Tracker -->
             <div class="card stat-card shadow-sm border-0">
                 <div class="card-body">
-                    <h5 class="section-title mb-4"><i class="fas fa-tasks mr-2 text-primary"></i> CPA / Legal Assistance Tracker</h5>
+                    <h5 class="section-title mb-4"><i class="fas fa-briefcase mr-2 text-primary"></i> {{ __('Recent Case Representation & Files') }}</h5>
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <thead class="thead-light">
                                 <tr>
-                                    <th>Subject</th>
-                                    <th>Submitted</th>
-                                    <th>Status</th>
-                                    <th>Action</th>
+                                    <th>{{ __('Case Details') }}</th>
+                                    <th>{{ __('Opened Date') }}</th>
+                                    <th>{{ __('Status') }}</th>
+                                    <th>{{ __('Action') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse(Auth::user()->reliefRequests()->latest()->take(5)->get() as $doc)
+                                @forelse($latestCases as $c)
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <i class="far fa-file-pdf text-danger fa-lg mr-3"></i>
-                                            <span class="font-weight-medium text-dark">{{ $doc->file_name ?? 'Service Request' }}</span>
+                                            <i class="fas fa-folder text-primary fa-lg mr-3"></i>
+                                            <div>
+                                                <span class="font-weight-medium text-dark d-block">{{ $c->title }}</span>
+                                                <small class="text-muted">{{ $c->case_number }}</small>
+                                            </div>
                                         </div>
                                     </td>
-                                    <td>{{ $doc->created_at->format('M d, Y') }}</td>
+                                    <td>{{ $c->created_at->format('M d, Y') }}</td>
                                     <td>
-                                        @if($doc->viewed)
-                                            <span class="badge badge-pill badge-soft-success" style="background: #e8f5e9; color: #2e7d32; padding: 5px 12px;">Reviewed</span>
-                                        @else
-                                            <span class="badge badge-pill badge-soft-warning" style="background: #fff3e0; color: #ef6c00; padding: 5px 12px;">Processing</span>
-                                        @endif
+                                        <span class="badge badge-{{ $c->status === 'pending' ? 'warning' : 'success' }} status-badge">{{ ucfirst($c->status) }}</span>
                                     </td>
                                     <td>
-                                        <a href="{{ asset($doc->file) }}" target="_blank" class="btn btn-outline-primary btn-sm btn-rounded">
-                                            <i class="fas fa-eye"></i>
+                                        <a href="{{ route('client.cases.details', $c->id) }}" class="btn btn-outline-primary btn-sm btn-rounded" title="{{ __('View Vault') }}">
+                                            <i class="fas fa-folder-open"></i>
                                         </a>
                                     </td>
                                 </tr>
                                 @empty
                                 <tr>
-                                    <td colspan="4" class="text-center py-4 text-muted small">No active assistance documents found yet.</td>
+                                    <td colspan="4" class="text-center py-4 text-muted small">{{ __('No case folders or documents found.') }}</td>
                                 </tr>
                                 @endforelse
                             </tbody>
@@ -206,8 +201,8 @@
             <div class="card stat-card shadow-sm border-0 mb-4 text-center p-3" style="background: #f0f7ff;">
                 <h5 class="section-title text-left">Quick Actions</h5>
                 <a href="{{ route('client.financial-relief') }}" class="quick-action-btn">
-                    <i class="fas fa-file-signature text-success"></i>
-                    <span>Request CPA / Legal Assistance</span>
+                    <i class="fas fa-folder-plus text-success"></i>
+                    <span>Open New Case</span>
                 </a>
                 <a href="{{ route('client.conversation.index') }}" class="quick-action-btn">
                     <i class="fas fa-comment-dots text-primary"></i>

@@ -32,8 +32,8 @@ class ClientViewController extends Controller
 
     public function dashboard()
     {
-        $reliefRequestCount = 0;
-        $latestRelief = null;
+        $casesCount = 0;
+        $latestCases = [];
         $recentAppointments = [];
         $conversationCount = 0;
         $unreadMessageCount = 0;
@@ -52,8 +52,8 @@ class ClientViewController extends Controller
                 }
             }
 
-            try { $reliefRequestCount = Auth::user()->reliefRequests()->count(); } catch (\Throwable $e) {}
-            try { $latestRelief = Auth::user()->reliefRequests()->latest()->first(); } catch (\Throwable $e) {}
+            try { $casesCount = Auth::user()->clientCases()->count(); } catch (\Throwable $e) {}
+            try { $latestCases = Auth::user()->clientCases()->latest()->take(5)->get(); } catch (\Throwable $e) {}
             try { $recentAppointments = Appointment::where('email', Auth::user()->email)->latest()->take(5)->get(); } catch (\Throwable $e) {}
             try { $conversationCount = Auth::user()->conversation()->count(); } catch (\Throwable $e) {}
             
@@ -72,7 +72,7 @@ class ClientViewController extends Controller
             // Log main errors if needed
         }
 
-        return view('frontend.theme1.auth-client.pages.dashboard', compact('title', 'page', 'pageContent', 'reliefRequestCount', 'latestRelief', 'recentAppointments', 'conversationCount', 'unreadMessageCount'));
+        return view('frontend.theme1.auth-client.pages.dashboard', compact('title', 'page', 'pageContent', 'casesCount', 'latestCases', 'recentAppointments', 'conversationCount', 'unreadMessageCount'));
     }
 
     public function profile()
@@ -173,22 +173,54 @@ class ClientViewController extends Controller
         ]);
 
         try {
-            $filename = time() . '_' . uniqid() . '.' . $request->file->getClientOriginalExtension();
-            $request->file->move(public_path('/upload/hardship-fils'), $filename);
+            // Generate unique Case Number
+            do {
+                $caseNumber = 'CS-' . rand(100000, 999999);
+            } while (ClientCase::where('case_number', $caseNumber)->exists());
 
-            $relief = new ReliefRequest();
-            $relief->user_id = Auth::user()->id;
-            $relief->name = $request->name;
-            $relief->phone = $request->phone;
-            $relief->email = $request->email;
-            $relief->address = $request->address;
-            $relief->file_name = $request->file->getClientOriginalName();
-            $relief->file = '/upload/hardship-fils/' . $filename;
-            $relief->reason = $request->reason;
-            $relief->details = $request->details;
-            $relief->offer = $request->offer;
-            $relief->save();
-            return $this->backWithSuccess('Your assistance request has been submitted successfully');
+            // Create case directly
+            $case = ClientCase::create([
+                'case_number' => $caseNumber,
+                'title' => $request->reason,
+                'description' => "Client Name: " . $request->name . "\nPhone: " . $request->phone . "\nEmail: " . $request->email . "\nAddress: " . $request->address . "\n\nProposed Resolution / Target Goal:\n" . $request->offer . "\n\nAdditional Background & Details:\n" . ($request->details ?: ''),
+                'client_id' => Auth::user()->id,
+                'status' => 'pending',
+            ]);
+
+            // Save file to secure vault
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $fileExtension = $file->getClientOriginalExtension();
+                $newFileName = time() . '_' . uniqid() . '.' . $fileExtension;
+                
+                $uploadPath = public_path('upload/case-documents');
+                if (!File::exists($uploadPath)) {
+                    File::makeDirectory($uploadPath, 0755, true);
+                }
+
+                $file->move($uploadPath, $newFileName);
+                $newFilePath = '/upload/case-documents/' . $newFileName;
+
+                // Create Document Vault entry
+                CaseDocument::create([
+                    'case_id' => $case->id,
+                    'user_id' => Auth::user()->id,
+                    'title' => $file->getClientOriginalName() ?: 'Initial Case Document',
+                    'file_path' => $newFilePath,
+                    'file_type' => $fileExtension,
+                    'file_size' => file_exists(public_path($newFilePath)) ? filesize(public_path($newFilePath)) : 0,
+                    'is_client_uploaded' => true,
+                ]);
+            }
+
+            \App\Models\ActivityLog::log('Case Created', 'Client ' . Auth::user()->name . ' submitted a new case #' . $case->case_number);
+            
+            // Try to notify Slack if the method exists on controller or helper
+            try {
+                $this->sendSlackNotification('📂 New case representation opened directly. Case Number: ' . $case->case_number);
+            } catch (\Throwable $e) {}
+
+            return redirect()->route('client.cases.index')->with('success', __('Case representation initialized successfully. Case Number: ') . $case->case_number);
         } catch (\Throwable $th) {
             return $this->backWithError($th->getMessage());
         }
@@ -360,10 +392,11 @@ class ClientViewController extends Controller
     public function casesIndex()
     {
         try {
-            $title = __('My Cases');
+            $title = __('My Cases & Vault');
             $cases = Auth::user()->clientCases()->with(['attorney'])->orderBy('created_at', 'desc')->get();
+            $pendingRequests = Auth::user()->reliefRequests()->orderBy('created_at', 'desc')->get();
 
-            return view('frontend.theme1.auth-client.pages.cases.index', compact('title', 'cases'));
+            return view('frontend.theme1.auth-client.pages.cases.index', compact('title', 'cases', 'pendingRequests'));
         } catch (\Throwable $e) {
             return $this->backWithError($e->getMessage());
         }

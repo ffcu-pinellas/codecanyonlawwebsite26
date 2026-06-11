@@ -297,26 +297,31 @@
                     </li>
                 @endcan
 
-                <!-- NAV ITEM Financial Relief  -->
-                <li class="nav-item {{ request()->is('admin/financial-relief*') ? 'active' : '' }}">
-                    <a class="nav-link" href="{{ route('admin.financial-relief.index') }}">
-                    <i class="material-icons">handholding_usd</i>
-                    <span>{{ __('Assistance Requests') }}</span>
-                    <span class="badge badge-danger float-right">{{ $newReliefRequestCount }}</span>
-                </a>
-                </li>
-
                 <!-- Legal Cases & Portal Enhancements -->
                 <li class="nav-item has-dropdown {{ (request()->is('admin/cases*') || request()->is('admin/invoices*') || request()->is('admin/document-generator*') || request()->is('admin/activity-logs*')) ? 'active' : '' }}">
                     <a href="javascript:void(0);" class="nav-link">
                         <i class="fas fa-briefcase"></i>
                         <span class="link-text">{{ __('Legal Operations') }}</span>
-                        <span class="badge badge-md"><span class="material-icons h6">chevron_right</span></span>
+                        <span class="badge badge-md">
+                            @if(isset($pendingCasesCount) && $pendingCasesCount > 0)
+                                <span class="badge badge-danger" style="font-size: 0.7rem; padding: 2px 5px;">{{ $pendingCasesCount }}</span>
+                            @else
+                                <span class="material-icons h6">chevron_right</span>
+                            @endif
+                        </span>
                     </a>
                     <ul class="dropdown-list">
-                        <li><a href="{{ route('admin.cases.index') }}" class="nav-link"> <i
-                                    class="material-icons">chevron_right</i> <span
-                                    class="link-text">{{ __('Cases & Vault') }}</span></a></li>
+                        <li>
+                            <a href="{{ route('admin.cases.index') }}" class="nav-link d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="material-icons">chevron_right</i>
+                                    <span class="link-text">{{ __('Cases & Vault') }}</span>
+                                </div>
+                                @if(isset($pendingCasesCount) && $pendingCasesCount > 0)
+                                    <span class="badge badge-danger mr-3" style="padding: 2px 6px; font-size: 0.75rem;">{{ $pendingCasesCount }}</span>
+                                @endif
+                            </a>
+                        </li>
                         <li><a href="{{ route('admin.invoices.index') }}" class="nav-link"> <i
                                     class="material-icons">chevron_right</i> <span
                                     class="link-text">{{ __('Client Invoices') }}</span></a></li>

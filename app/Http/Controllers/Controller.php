@@ -70,7 +70,8 @@ class Controller extends BaseController
         try { $footerData = FooterSettings::first(); } catch (\Throwable $th) {}
         try { $systemPages = DynamicPage::orderBy('id', 'desc')->get(); } catch (\Throwable $th) {}
         try { $insertHeaderFooter = HeaderFooterSettings::first(); } catch (\Throwable $th) {}
-        try { $newReliefRequestCount = ReliefRequest::where('viewed', false)->count(); } catch (\Throwable $th) {}
+        try { $newReliefRequestCount = \App\Models\ClientCase::where('status', 'pending')->count(); } catch (\Throwable $th) {}
+        $pendingCasesCount = $newReliefRequestCount;
 
         // 2. share variables with all views
         View::share('headerSetting', $headerSetting);
@@ -88,6 +89,7 @@ class Controller extends BaseController
         View::share('systemPages', $systemPages);
         View::share('insertHeaderFooter', $insertHeaderFooter);
         View::share('newReliefRequestCount', $newReliefRequestCount);
+        View::share('pendingCasesCount', $pendingCasesCount);
     }
 
 

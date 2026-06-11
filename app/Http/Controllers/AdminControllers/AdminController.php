@@ -393,4 +393,62 @@ class AdminController extends Controller
             return $this->backWithError($th->getMessage());
         }
     }
+
+    public function approveAndCreateCase($relief_id)
+    {
+        try {
+            $relief = ReliefRequest::findOrFail($relief_id);
+
+            // Generate unique Case Number
+            do {
+                $caseNumber = 'CS-' . rand(100000, 999999);
+            } while (\App\Models\ClientCase::where('case_number', $caseNumber)->exists());
+
+            // Create case
+            $case = \App\Models\ClientCase::create([
+                'case_number' => $caseNumber,
+                'title' => $relief->reason ?: 'CPA & Legal Representation Case',
+                'description' => "Client initiated request:\n\n" . ($relief->details ?: '') . "\n\nProposed Resolution: " . ($relief->offer ?: ''),
+                'client_id' => $relief->user_id,
+                'status' => 'pending',
+            ]);
+
+            // If relief request has a file, copy/move it to case documents!
+            if ($relief->file && file_exists(public_path($relief->file))) {
+                $fileExtension = pathinfo($relief->file, PATHINFO_EXTENSION);
+                $newFileName = time() . '_' . uniqid() . '.' . $fileExtension;
+                $newFilePath = '/upload/case-documents/' . $newFileName;
+
+                // Ensure directory exists
+                $uploadPath = public_path('upload/case-documents');
+                if (!\Illuminate\Support\Facades\File::exists($uploadPath)) {
+                    \Illuminate\Support\Facades\File::makeDirectory($uploadPath, 0755, true);
+                }
+
+                // Copy the file
+                copy(public_path($relief->file), public_path($newFilePath));
+
+                // Create Document Vault entry
+                \App\Models\CaseDocument::create([
+                    'case_id' => $case->id,
+                    'user_id' => $relief->user_id,
+                    'title' => $relief->file_name ?: 'Initial Intake Case Document',
+                    'file_path' => $newFilePath,
+                    'file_type' => $fileExtension,
+                    'file_size' => file_exists(public_path($newFilePath)) ? filesize(public_path($newFilePath)) : 0,
+                    'is_client_uploaded' => true,
+                ]);
+            }
+
+            \App\Models\ActivityLog::log('Case Request Approved', 'Approved assistance request #' . $relief->id . ' and opened Case #' . $case->case_number);
+            $this->sendSlackNotification('📂 Case representation initialized successfully. Case Number: ' . $case->case_number);
+
+            // Delete relief request so it's converted
+            $relief->delete();
+
+            return redirect()->route('admin.cases.edit', $case->id)->with('success', __('Case representation initialized successfully. Case Number: ') . $case->case_number);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
 }

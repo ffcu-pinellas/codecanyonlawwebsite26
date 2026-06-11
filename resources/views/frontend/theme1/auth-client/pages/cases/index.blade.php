@@ -62,6 +62,50 @@
             </button>
         </div>
     @endif
+    @if(isset($pendingRequests) && $pendingRequests->count() > 0)
+        <div class="mb-5">
+            <h5 class="font-weight-bold text-dark mb-3"><i class="fas fa-clock text-warning mr-2"></i> {{ __('Pending Case Requests (Awaiting Review)') }}</h5>
+            <div class="row">
+                @foreach($pendingRequests as $req)
+                    <div class="col-md-6 col-lg-6 mb-4">
+                        <div class="card case-card mb-0" style="border-left: 4px solid #f1c40f;">
+                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                <div>
+                                    <span class="text-warning font-weight-bold" style="font-size: 0.85rem;">{{ __('REQUEST #') }}{{ $req->id }}</span>
+                                    <h5 class="font-weight-bold text-dark mt-1 mb-0" style="font-size: 1.15rem; line-height: 1.4;">{{ $req->reason }}</h5>
+                                </div>
+                                <span class="badge badge-warning text-dark font-weight-bold px-3 py-1" style="border-radius: 20px; font-size: 0.75rem;">
+                                    <i class="fas fa-hourglass-half mr-1"></i> {{ __('Awaiting Verification') }}
+                                </span>
+                            </div>
+
+                            <p class="text-muted small mb-3" style="max-height: 45px; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">
+                                {{ $req->details ?: __('No detailed description provided.') }}
+                            </p>
+
+                            @if($req->file)
+                                <div class="mb-3">
+                                    <small class="text-muted d-block font-weight-bold mb-1" style="font-size: 0.65rem;">{{ __('SUPPORT DOCUMENT') }}</small>
+                                    <a href="{{ asset($req->file) }}" class="btn btn-outline-secondary btn-sm" target="_blank">
+                                        <i class="fas fa-file-pdf text-danger mr-1"></i> {{ $req->file_name ?: __('Intake Notice Document') }}
+                                    </a>
+                                </div>
+                            @endif
+
+                            <div class="border-top border-light pt-3 mt-2">
+                                <small class="text-muted d-block font-weight-bold" style="font-size: 0.65rem;">{{ __('SUBMITTED ON') }}</small>
+                                <span class="text-dark small font-weight-semibold mt-1 d-inline-block">
+                                    <i class="far fa-clock mr-1 text-secondary"></i> {{ $req->created_at->format('M d, Y H:i A') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
+    <h5 class="font-weight-bold text-dark mb-3"><i class="fas fa-briefcase text-primary mr-2"></i> {{ __('Active Representation Cases') }}</h5>
 
     <div class="row">
         @forelse($cases as $case)
