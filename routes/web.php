@@ -178,6 +178,13 @@ Route::get('/debug-env', function() {
     ];
 });
 
+Route::get('/debug-seo', function() {
+    return [
+        'seo_setting_db' => \Illuminate\Support\Facades\DB::table('s_e_o_settings')->first(),
+        'table_exists_seo' => \Illuminate\Support\Facades\Schema::hasTable('s_e_o_settings'),
+    ];
+});
+
 Route::get('/login', [GuestViewController::class, 'loginRedirect'])->name('login');
 Route::get('/forgot-password', [GuestViewController::class, 'forgetPassword'])->name('password.request');
 Route::get('/reset-password/{token}', [GuestViewController::class, 'resetPassword'])->name('password.reset');
