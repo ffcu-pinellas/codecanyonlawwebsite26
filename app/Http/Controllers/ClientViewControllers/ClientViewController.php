@@ -11,12 +11,16 @@ use App\Models\Message;
 use App\Models\PageSectionSettings;
 use App\Models\PageSettings;
 use App\Models\User;
+use App\Models\ClientCase;
+use App\Models\CaseDocument;
+use App\Models\Invoice;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File;
 
 class ClientViewController extends Controller
 {
@@ -368,7 +372,9 @@ class ClientViewController extends Controller
     public function caseDetails($id)
     {
         try {
-            $case = ClientCase::with(['attorney', 'documents.uploader'])->findOrFail($id);
+            $case = ClientCase::with(['attorney', 'documents.uploader', 'milestones' => function($q) {
+                $q->orderBy('milestone_date', 'asc')->orderBy('created_at', 'asc');
+            }])->findOrFail($id);
 
             if ($case->client_id !== Auth::id()) {
                 abort(403, 'Unauthorized access.');
@@ -500,6 +506,52 @@ class ClientViewController extends Controller
             $companyEmail = env('COMPANY_EMAIL') ?: ($emailInfo ? $emailInfo->line_one : 'support@yourcpaexpert.com');
 
             return view('frontend.theme1.auth-client.pages.invoices.details', compact('title', 'invoice', 'companyName', 'companyAddress', 'companyPhone', 'companyEmail'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    public function submitPaymentProof(Request $request, $id)
+    {
+        $request->validate([
+            'payment_method' => 'required|string|max:255',
+            'payment_reference' => 'nullable|string|max:255',
+            'payment_slip' => 'required|file|mimes:pdf,png,jpg,jpeg|max:10240',
+            'payment_notes' => 'nullable|string',
+        ]);
+
+        try {
+            $invoice = Invoice::findOrFail($id);
+
+            if ($invoice->client_id !== Auth::id()) {
+                abort(403, 'Unauthorized access.');
+            }
+
+            if ($invoice->status !== 'unpaid') {
+                return redirect()->back()->with('error', __('Only unpaid invoices can accept payment proofs.'));
+            }
+
+            $fileName = time() . '_' . uniqid() . '.' . $request->payment_slip->getClientOriginalExtension();
+            $uploadPath = public_path('upload/payment-slips');
+            if (!File::exists($uploadPath)) {
+                File::makeDirectory($uploadPath, 0755, true);
+            }
+
+            $request->payment_slip->move($uploadPath, $fileName);
+
+            $invoice->update([
+                'status' => 'pending',
+                'payment_method' => $request->payment_method,
+                'payment_reference' => $request->payment_reference,
+                'payment_slip_path' => '/upload/payment-slips/' . $fileName,
+                'payment_notes' => $request->payment_notes,
+                'payment_submitted_at' => now(),
+            ]);
+
+            \App\Models\ActivityLog::log('Payment Proof Submitted', 'Client ' . Auth::user()->name . ' submitted payment proof for invoice ' . $invoice->invoice_number);
+            $this->sendSlackNotification('💸 Offline Payment Proof Submitted by Client ' . Auth::user()->name . ' for Invoice: ' . $invoice->invoice_number);
+
+            return redirect()->back()->with('success', __('Payment proof submitted successfully and is awaiting review.'));
         } catch (\Throwable $e) {
             return $this->backWithError($e->getMessage());
         }

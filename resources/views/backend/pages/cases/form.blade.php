@@ -187,6 +187,96 @@
                             @endif
                         </div>
                     </div>
+                    
+                    <!-- Case Milestones Section -->
+                    <div class="card card-dark bg-dark mt-4">
+                        <div class="card-header">
+                            <h6 class="card-title"><i class="fas fa-route mr-1"></i> {{ __('Case Progress Milestones') }}</h6>
+                        </div>
+                        <div class="card-body">
+                            <!-- Add Milestone Form -->
+                            <form action="{{ route('admin.cases.add-milestone', $case->id) }}" method="POST" class="mb-4">
+                                @csrf
+                                <div class="row">
+                                    <div class="col-md-6 form-group">
+                                        <label for="milestone_title" class="small">{{ __('Milestone Title') }} <span class="text-danger">*</span></label>
+                                        <input type="text" name="title" id="milestone_title" class="form-control form-control-sm text-white bg-dark border-secondary" required placeholder="e.g. Filed Complaint, Discovery Request">
+                                    </div>
+                                    <div class="col-md-6 form-group">
+                                        <label for="milestone_date" class="small">{{ __('Target Date') }}</label>
+                                        <input type="date" name="milestone_date" id="milestone_date" class="form-control form-control-sm text-white bg-dark border-secondary">
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-6 form-group">
+                                        <label for="milestone_status" class="small">{{ __('Status') }} <span class="text-danger">*</span></label>
+                                        <select name="status" id="milestone_status" class="form-control form-control-sm text-white bg-dark border-secondary" required>
+                                            <option value="pending">{{ __('Pending') }}</option>
+                                            <option value="active">{{ __('Active') }}</option>
+                                            <option value="completed">{{ __('Completed') }}</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6 form-group">
+                                        <label for="milestone_desc" class="small">{{ __('Brief Description') }}</label>
+                                        <input type="text" name="description" id="milestone_desc" class="form-control form-control-sm text-white bg-dark border-secondary" placeholder="e.g. Handled by IRS clerk.">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-info btn-xs font-weight-bold px-3 py-1"><i class="fas fa-plus mr-1"></i> {{ __('Add Milestone') }}</button>
+                            </form>
+
+                            <!-- Milestones List -->
+                            @if($case->milestones->isEmpty())
+                                <div class="text-center py-3 text-muted small border-top border-secondary pt-3">
+                                    <i class="fas fa-info-circle mb-1"></i>
+                                    <p class="mb-0">{{ __('No progress milestones registered for this case yet.') }}</p>
+                                </div>
+                            @else
+                                <div class="table-responsive style-scroll border-top border-secondary pt-3">
+                                    <table class="table table-striped table-bordered table-dark small mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>{{ __('Milestone') }}</th>
+                                                <th>{{ __('Status') }}</th>
+                                                <th>{{ __('Target Date') }}</th>
+                                                <th>{{ __('Action') }}</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($case->milestones as $milestone)
+                                                <tr>
+                                                    <td>
+                                                        <strong>{{ $milestone->title }}</strong>
+                                                        @if($milestone->description)
+                                                            <div class="text-muted small">{{ $milestone->description }}</div>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        @if($milestone->status === 'completed')
+                                                            <span class="badge badge-success">{{ __('Completed') }}</span>
+                                                        @elseif($milestone->status === 'active')
+                                                            <span class="badge badge-primary">{{ __('Active') }}</span>
+                                                        @else
+                                                            <span class="badge badge-secondary">{{ __('Pending') }}</span>
+                                                        @endif
+                                                    </td>
+                                                    <td>
+                                                        {{ $milestone->milestone_date ? $milestone->milestone_date->format('M d, Y') : __('N/A') }}
+                                                    </td>
+                                                    <td>
+                                                        <form action="{{ route('admin.cases.destroy-milestone', $milestone->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Are you sure you want to delete this milestone?') }}')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-xs btn-outline-danger"><i class="fas fa-trash-alt"></i></button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
                 </div>
             @endif
         </div>

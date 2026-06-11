@@ -53,6 +53,8 @@
                                         <th>{{ __('Clocked Out') }}</th>
                                         <th>{{ __('Duration') }}</th>
                                         <th>{{ __('Hourly Rate') }}</th>
+                                        <th>{{ __('IP details') }}</th>
+                                        <th>{{ __('Location Map') }}</th>
                                         <th class="text-right">{{ __('Wages Earned') }}</th>
                                     </tr>
                                 </thead>
@@ -76,6 +78,27 @@
                                                 @endif
                                             </td>
                                             <td>${{ number_format($log->hourly_rate_at_time, 2) }}/hr</td>
+                                            <td>
+                                                <small class="d-block text-muted"><strong>In:</strong> {{ $log->clock_in_ip ?: 'N/A' }}</small>
+                                                @if($log->clocked_out_at)
+                                                    <small class="d-block text-muted"><strong>Out:</strong> {{ $log->clock_out_ip ?: 'N/A' }}</small>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($log->clock_in_latitude && $log->clock_in_longitude)
+                                                    <a href="https://www.google.com/maps?q={{ $log->clock_in_latitude }},{{ $log->clock_in_longitude }}" target="_blank" class="btn btn-xs btn-outline-info p-1 m-1" title="{{ __('Clock In Location') }}">
+                                                        <i class="fas fa-map-marker-alt text-success"></i> {{ __('In Location') }}
+                                                    </a>
+                                                @endif
+                                                @if($log->clocked_out_at && $log->clock_out_latitude && $log->clock_out_longitude)
+                                                    <a href="https://www.google.com/maps?q={{ $log->clock_out_latitude }},{{ $log->clock_out_longitude }}" target="_blank" class="btn btn-xs btn-outline-info p-1 m-1" title="{{ __('Clock Out Location') }}">
+                                                        <i class="fas fa-map-marker-alt text-danger"></i> {{ __('Out Location') }}
+                                                    </a>
+                                                @endif
+                                                @if(!$log->clock_in_latitude && (!$log->clock_out_latitude || !$log->clocked_out_at))
+                                                    <span class="text-muted small">{{ __('N/A') }}</span>
+                                                @endif
+                                            </td>
                                             <td class="text-right text-success font-weight-bold">
                                                 @if($log->clocked_out_at)
                                                     ${{ number_format($log->earned_amount, 2) }}

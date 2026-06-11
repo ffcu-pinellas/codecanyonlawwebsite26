@@ -18,6 +18,12 @@ class StaffTimeLog extends Model
         'duration_seconds',
         'hourly_rate_at_time',
         'earned_amount',
+        'clock_in_ip',
+        'clock_out_ip',
+        'clock_in_latitude',
+        'clock_in_longitude',
+        'clock_out_latitude',
+        'clock_out_longitude',
     ];
 
     protected $casts = [

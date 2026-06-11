@@ -44,4 +44,9 @@ class ClientCase extends Model
     {
         return $this->hasMany(Invoice::class, 'case_id');
     }
+
+    public function milestones()
+    {
+        return $this->hasMany(CaseMilestone::class, 'case_id');
+    }
 }

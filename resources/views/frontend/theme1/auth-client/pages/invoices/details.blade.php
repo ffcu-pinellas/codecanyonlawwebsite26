@@ -19,6 +19,7 @@
         margin-bottom: 25px;
     }
     .status-badge-unpaid { background-color: #ffeef0; color: #f84f5a; font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
+    .status-badge-pending { background-color: #fef5e7; color: #f39c12; font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
     .status-badge-paid { background-color: #e8f5e9; color: #2e7d32; font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
     .status-badge-cancelled { background-color: #f1f3f5; color: #868e96; font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
     
@@ -169,5 +170,104 @@
             <p class="mb-0">{{ __('If you have any questions about this statement, please contact our financial billing department at') }} {{ $companyEmail }}.</p>
         </div>
     </div>
+
+    @if($invoice->status === 'unpaid')
+        <div class="card p-4 mt-4 d-print-none" style="border-radius: 15px; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <h5 class="font-weight-bold text-dark mb-3"><i class="fas fa-money-bill-wave text-success mr-2"></i> {{ __('Offline Payment Slip Submission') }}</h5>
+            <p class="text-muted small mb-4">{{ __('If you have paid this invoice via bank wire transfer or by depositing a check, please upload the receipt/deposit slip copy and enter reference details below to verify your payment.') }}</p>
+            
+            <form action="{{ route('client.invoices.submit-proof', $invoice->id) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="row">
+                    <div class="col-md-6 form-group">
+                        <label for="payment_method" class="font-weight-semibold text-dark small">{{ __('Payment Method Used') }} <span class="text-danger">*</span></label>
+                        <select name="payment_method" id="payment_method" class="form-control" required>
+                            <option value="bank_transfer">{{ __('Bank Wire Transfer') }}</option>
+                            <option value="check_deposit">{{ __('Check Deposit') }}</option>
+                            <option value="direct_deposit">{{ __('Direct Bank Transfer') }}</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 form-group">
+                        <label for="payment_reference" class="font-weight-semibold text-dark small">{{ __('Transaction ID / Reference Number') }}</label>
+                        <input type="text" name="payment_reference" id="payment_reference" class="form-control" placeholder="e.g. TXN98327189 or Check #1204">
+                    </div>
+                </div>
+                
+                <div class="form-group mb-4">
+                    <label class="font-weight-semibold text-dark small d-block">{{ __('Upload Bank Receipt / Deposit Slip') }} <span class="text-danger">*</span></label>
+                    <div class="custom-file">
+                        <input type="file" name="payment_slip" id="payment_slip" class="custom-file-input" required onchange="$('#slip-file-name').text(this.files[0].name)">
+                        <label class="custom-file-label" for="payment_slip" id="slip-file-name">{{ __('Choose file...') }}</label>
+                    </div>
+                    <small class="text-muted d-block mt-1">{{ __('Supported formats: PDF, PNG, JPG, JPEG (Max 10MB)') }}</small>
+                </div>
+
+                <div class="form-group">
+                    <label for="payment_notes" class="font-weight-semibold text-dark small">{{ __('Additional Notes (Optional)') }}</label>
+                    <textarea name="payment_notes" id="payment_notes" rows="3" class="form-control" placeholder="Any details about the sender account, bank branch, or date..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-success font-weight-bold px-4"><i class="fas fa-upload mr-1"></i> {{ __('Submit Payment Proof') }}</button>
+            </form>
+        </div>
+    @elseif($invoice->status === 'pending')
+        <div class="card p-4 mt-4 d-print-none text-white bg-dark" style="border-radius: 15px; border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div class="d-flex align-items-center mb-3">
+                <i class="fas fa-clock text-warning fa-2x mr-3"></i>
+                <div>
+                    <h5 class="font-weight-bold text-white mb-0">{{ __('Payment Proof Submitted - Pending Review') }}</h5>
+                    <p class="text-white-50 small mb-0">{{ __('Our financial department is currently verifying your offline deposit. Invoice status will be updated upon approval.') }}</p>
+                </div>
+            </div>
+            
+            <div class="border-top border-secondary pt-3 mt-3">
+                <div class="row text-white small">
+                    <div class="col-md-4 mb-2">
+                        <strong>{{ __('Payment Method:') }}</strong> {{ ucwords(str_replace('_', ' ', $invoice->payment_method)) }}
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <strong>{{ __('Reference Number:') }}</strong> {{ $invoice->payment_reference ?: __('N/A') }}
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <strong>{{ __('Date Submitted:') }}</strong> {{ $invoice->payment_submitted_at ? $invoice->payment_submitted_at->format('M d, Y h:i A') : __('N/A') }}
+                    </div>
+                </div>
+                @if($invoice->payment_notes)
+                    <div class="mt-2 bg-secondary p-3 rounded text-white small">
+                        <strong>{{ __('My Notes:') }}</strong> {{ $invoice->payment_notes }}
+                    </div>
+                @endif
+                @if($invoice->payment_slip_path)
+                    <div class="mt-3">
+                        <strong>{{ __('Uploaded Slip File:') }}</strong>
+                        <a href="{{ asset($invoice->payment_slip_path) }}" target="_blank" class="btn btn-sm btn-outline-warning ml-2"><i class="fas fa-external-link-alt mr-1"></i> {{ __('View Attachment') }}</a>
+                    </div>
+                @endif
+            </div>
+        </div>
+    @elseif($invoice->status === 'paid' && $invoice->payment_method)
+        <div class="card p-4 mt-4 d-print-none bg-light" style="border-radius: 15px; border: none; border-left: 5px solid #2ecc71; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-check-circle text-success fa-2x mr-3"></i>
+                <div>
+                    <h5 class="font-weight-bold text-dark mb-0">{{ __('Verified Offline Payment') }}</h5>
+                    <p class="text-muted small mb-0">{{ __('This invoice has been settled via offline manual payment verification.') }}</p>
+                </div>
+            </div>
+            <div class="border-top pt-3 mt-3 small text-muted">
+                <div class="row">
+                    <div class="col-md-4 mb-2">
+                        <strong>{{ __('Payment Method:') }}</strong> {{ ucwords(str_replace('_', ' ', $invoice->payment_method)) }}
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <strong>{{ __('Reference Number:') }}</strong> {{ $invoice->payment_reference ?: __('N/A') }}
+                    </div>
+                    <div class="col-md-4 mb-2">
+                        <strong>{{ __('Settled Date:') }}</strong> {{ $invoice->payment_submitted_at ? $invoice->payment_submitted_at->format('M d, Y') : $invoice->updated_at->format('M d, Y') }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
 @endsection

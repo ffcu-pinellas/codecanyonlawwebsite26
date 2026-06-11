@@ -147,6 +147,7 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client']
     // client invoices
     Route::get('/invoices', [ClientViewController::class, 'invoicesIndex'])->name('invoices.index');
     Route::get('/invoices/{id}', [ClientViewController::class, 'invoiceShow'])->name('invoices.show');
+    Route::post('/invoices/{id}/submit-proof', [ClientViewController::class, 'submitPaymentProof'])->name('invoices.submit-proof');
 });
 
 
@@ -379,6 +380,8 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         Route::post('/{id}/upload-document', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'uploadDocument'])->name('upload-document');
         Route::delete('/document/{doc_id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'destroyDocument'])->name('destroy-document');
         Route::get('/document/preview/{doc_id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'previewDocument'])->name('document.preview');
+        Route::post('/{id}/milestones', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'addMilestone'])->name('add-milestone');
+        Route::delete('/milestones/{milestone_id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'destroyMilestone'])->name('destroy-milestone');
     });
 
     // Invoice Management (Admin/Attorney)
@@ -391,6 +394,8 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         Route::delete('/destroy/{id}', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/mark-paid', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'markPaid'])->name('mark-paid');
         Route::post('/{id}/send-email', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'sendEmail'])->name('send-email');
+        Route::post('/{id}/approve-proof', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'approvePaymentProof'])->name('approve-proof');
+        Route::post('/{id}/reject-proof', [App\Http\Controllers\AdminControllers\AdminInvoiceController::class, 'rejectPaymentProof'])->name('reject-proof');
     });
 
     // Document Generator

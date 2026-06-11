@@ -458,6 +458,9 @@ HTML;
             'clocked_in_at' => now(),
             'hourly_rate_at_time' => $staffDetail->hourly_rate,
             'earned_amount' => 0.00,
+            'clock_in_ip' => $request->ip(),
+            'clock_in_latitude' => $request->input('latitude'),
+            'clock_in_longitude' => $request->input('longitude'),
         ]);
 
         // Send email to Officer/Admin
@@ -502,6 +505,9 @@ HTML;
             'clocked_out_at' => $clockedOutAt,
             'duration_seconds' => $durationSeconds,
             'earned_amount' => $earnedAmount,
+            'clock_out_ip' => $request->ip(),
+            'clock_out_latitude' => $request->input('latitude'),
+            'clock_out_longitude' => $request->input('longitude'),
         ]);
 
         // Send email to Officer/Admin

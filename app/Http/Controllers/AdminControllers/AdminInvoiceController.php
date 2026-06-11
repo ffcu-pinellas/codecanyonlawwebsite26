@@ -67,7 +67,7 @@ class AdminInvoiceController extends Controller
             'case_id' => 'nullable|exists:client_cases,id',
             'amount' => 'required|numeric|min:0.01',
             'due_date' => 'required|date',
-            'status' => 'required|in:unpaid,paid,cancelled',
+            'status' => 'required|in:unpaid,pending,paid,cancelled',
             'description' => 'nullable|string',
         ]);
 
@@ -165,7 +165,7 @@ class AdminInvoiceController extends Controller
             'case_id' => 'nullable|exists:client_cases,id',
             'amount' => 'required|numeric|min:0.01',
             'due_date' => 'required|date',
-            'status' => 'required|in:unpaid,paid,cancelled',
+            'status' => 'required|in:unpaid,pending,paid,cancelled',
             'description' => 'nullable|string',
         ]);
 
@@ -311,6 +311,77 @@ class AdminInvoiceController extends Controller
             return $tempPdfPath;
         } catch (\Throwable $e) {
             return null;
+        }
+    }
+
+    public function approvePaymentProof(Request $request, $id)
+    {
+        $invoice = Invoice::findOrFail($id);
+
+        if (!Auth::user()->hasRole('admin')) {
+            if ($invoice->clientCase && $invoice->clientCase->attorney_id !== Auth::id()) {
+                abort(403, 'Unauthorized access.');
+            }
+        }
+
+        try {
+            $invoice->update([
+                'status' => 'paid',
+            ]);
+
+            ActivityLog::log('Payment Proof Approved', 'Approved offline payment proof for invoice ' . $invoice->invoice_number);
+            
+            $client = $invoice->client;
+            $subject = "Payment Confirmed: Invoice " . $invoice->invoice_number;
+            $bodyText = "We are pleased to confirm that we have successfully verified your offline payment proof for Invoice " . $invoice->invoice_number . ".\n\n"
+                . "Invoice Number : " . $invoice->invoice_number . "\n"
+                . "Amount Paid : $" . number_format($invoice->amount, 2) . "\n"
+                . "Status : PAID\n\n"
+                . "Thank you for choosing our professional services. You can view or download the paid receipt statement by logging into your dashboard portal.";
+            
+            $pdfPath = $this->generateInvoicePdfFile($invoice);
+            $this->sendEmailNotification($client->email, $subject, $bodyText, $pdfPath, 'Invoice_' . $invoice->invoice_number . '_PAID.pdf');
+            if ($pdfPath && file_exists($pdfPath)) {
+                @unlink($pdfPath);
+            }
+
+            return redirect()->back()->with('success', __('Offline payment proof approved successfully.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function rejectPaymentProof(Request $request, $id)
+    {
+        $invoice = Invoice::findOrFail($id);
+
+        if (!Auth::user()->hasRole('admin')) {
+            if ($invoice->clientCase && $invoice->clientCase->attorney_id !== Auth::id()) {
+                abort(403, 'Unauthorized access.');
+            }
+        }
+
+        try {
+            ActivityLog::log('Payment Proof Rejected', 'Rejected offline payment proof for invoice ' . $invoice->invoice_number . '. Reason: ' . ($request->rejection_reason ?: 'No reason provided'));
+
+            $invoice->update([
+                'status' => 'unpaid',
+                'payment_notes' => ($invoice->payment_notes ? $invoice->payment_notes . "\n" : "") . "[Rejected on " . date('Y-m-d') . "]: " . ($request->rejection_reason ?: 'Invalid payment slip or reference details'),
+            ]);
+
+            $client = $invoice->client;
+            $subject = "Payment Proof Rejected: Invoice " . $invoice->invoice_number;
+            $bodyText = "Unfortunately, we were unable to verify your offline payment proof for Invoice " . $invoice->invoice_number . ".\n\n"
+                . "Invoice Number : " . $invoice->invoice_number . "\n"
+                . "Amount Due : $" . number_format($invoice->amount, 2) . "\n"
+                . "Rejection Reason : " . ($request->rejection_reason ?: 'The reference number or uploaded slip was invalid.') . "\n\n"
+                . "Please review the transaction details or upload a valid bank wire / check deposit confirmation slip via the client dashboard portal.";
+            
+            $this->sendEmailNotification($client->email, $subject, $bodyText);
+
+            return redirect()->back()->with('success', __('Offline payment proof rejected. Invoice reset to unpaid status.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 }

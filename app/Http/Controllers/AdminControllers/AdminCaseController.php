@@ -92,7 +92,9 @@ class AdminCaseController extends Controller
     public function edit($id)
     {
         try {
-            $case = ClientCase::findOrFail($id);
+            $case = ClientCase::with(['documents.uploader', 'milestones' => function($q) {
+                $q->orderBy('milestone_date', 'asc')->orderBy('created_at', 'asc');
+            }])->findOrFail($id);
             
             // Limit attorney access
             if (!Auth::user()->hasRole('admin') && $case->attorney_id !== Auth::id()) {
@@ -384,6 +386,63 @@ class AdminCaseController extends Controller
             }
 
             return view('backend.pages.cases.doc-print', compact('title', 'content', 'client', 'companyName', 'dateStr'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Add milestone to legal case
+     */
+    public function addMilestone(Request $request, $id)
+    {
+        $case = ClientCase::findOrFail($id);
+
+        if (!Auth::user()->hasRole('admin') && $case->attorney_id !== Auth::id()) {
+            abort(403, 'Unauthorized access.');
+        }
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'status' => 'required|in:pending,active,completed',
+            'milestone_date' => 'nullable|date',
+        ]);
+
+        try {
+            \App\Models\CaseMilestone::create([
+                'case_id' => $case->id,
+                'title' => $request->title,
+                'description' => $request->description,
+                'status' => $request->status,
+                'milestone_date' => $request->milestone_date,
+            ]);
+
+            ActivityLog::log('Case Milestone Added', 'Added milestone "' . $request->title . '" to case ' . $case->case_number);
+
+            return redirect()->back()->with('success', __('Case milestone added successfully.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Delete milestone from legal case
+     */
+    public function destroyMilestone($milestone_id)
+    {
+        try {
+            $milestone = \App\Models\CaseMilestone::findOrFail($milestone_id);
+            $case = $milestone->clientCase;
+
+            if (!Auth::user()->hasRole('admin') && $case->attorney_id !== Auth::id()) {
+                abort(403, 'Unauthorized access.');
+            }
+
+            ActivityLog::log('Case Milestone Deleted', 'Deleted milestone "' . $milestone->title . '" from case ' . $case->case_number);
+            $milestone->delete();
+
+            return redirect()->back()->with('success', __('Case milestone deleted successfully.'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

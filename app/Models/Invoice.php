@@ -17,11 +17,17 @@ class Invoice extends Model
         'due_date',
         'status',
         'description',
+        'payment_method',
+        'payment_reference',
+        'payment_slip_path',
+        'payment_notes',
+        'payment_submitted_at',
     ];
 
     protected $casts = [
         'due_date' => 'date',
         'amount' => 'decimal:2',
+        'payment_submitted_at' => 'datetime',
     ];
 
     public function clientCase()

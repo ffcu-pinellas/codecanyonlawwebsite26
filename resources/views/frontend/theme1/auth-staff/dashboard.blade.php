@@ -138,18 +138,22 @@
                                 <p class="text-muted small mb-4">
                                     <i class="fas fa-sign-in-alt mr-1 text-success"></i> Clocked in at: {{ $activeLog->clocked_in_at->format('h:i:s A') }}
                                 </p>
-                                <form action="{{ route('staff.clock-out') }}" method="POST">
+                                <form id="clock-out-form" action="{{ route('staff.clock-out') }}" method="POST">
                                     @csrf
-                                    <button type="submit" class="btn btn-clock-out btn-lg px-5">
+                                    <input type="hidden" name="latitude" id="clock-out-lat">
+                                    <input type="hidden" name="longitude" id="clock-out-lng">
+                                    <button type="button" onclick="submitWithLocation('clock-out-form')" class="btn btn-clock-out btn-lg px-5">
                                         <i class="fas fa-sign-out-alt mr-2"></i> {{ __('Clock Out') }}
                                     </button>
                                 </form>
                             @else
                                 <p class="text-muted mb-1 small text-uppercase font-weight-bold">{{ __('Current Time') }}</p>
                                 <div class="digital-clock mb-4" id="digital-clock">00:00:00 AM</div>
-                                <form action="{{ route('staff.clock-in') }}" method="POST">
+                                <form id="clock-in-form" action="{{ route('staff.clock-in') }}" method="POST">
                                     @csrf
-                                    <button type="submit" class="btn btn-clock-in btn-lg px-5">
+                                    <input type="hidden" name="latitude" id="clock-in-lat">
+                                    <input type="hidden" name="longitude" id="clock-in-lng">
+                                    <button type="button" onclick="submitWithLocation('clock-in-form')" class="btn btn-clock-in btn-lg px-5">
                                         <i class="fas fa-sign-in-alt mr-2"></i> {{ __('Clock In Now') }}
                                     </button>
                                 </form>
@@ -193,6 +197,34 @@
 @section('page-script')
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script>
+    function submitWithLocation(formId) {
+        const form = document.getElementById(formId);
+        if (!form) return;
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const latField = form.querySelector('input[name="latitude"]');
+                    const lngField = form.querySelector('input[name="longitude"]');
+                    if (latField) latField.value = position.coords.latitude;
+                    if (lngField) lngField.value = position.coords.longitude;
+                    form.submit();
+                },
+                function(error) {
+                    console.warn("Geolocation failed: ", error.message);
+                    form.submit();
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 5000,
+                    maximumAge: 0
+                }
+            );
+        } else {
+            form.submit();
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         // Local Live Clock
         const clockElement = document.getElementById('digital-clock');

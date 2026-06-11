@@ -51,6 +51,11 @@
     .upload-box:hover {
         border-color: #007bff;
     }
+    @keyframes pulse-active {
+        0% { box-shadow: 0 0 0 0 rgba(52,152,219,0.5); }
+        70% { box-shadow: 0 0 0 6px rgba(52,152,219,0); }
+        100% { box-shadow: 0 0 0 0 rgba(52,152,219,0); }
+    }
 </style>
 @endsection
 
@@ -135,6 +140,34 @@
                         </span>
                     </div>
                 </div>
+            </div>
+
+            <!-- Case Timeline Feed -->
+            <div class="card vault-card p-4">
+                <h5 class="font-weight-bold text-dark mb-3" style="font-size: 1.05rem;"><i class="fas fa-route text-info mr-2"></i> {{ __('Case Progress Timeline') }}</h5>
+                @if($case->milestones->isEmpty())
+                    <div class="text-center py-4 text-muted small">
+                        <i class="fas fa-info-circle mb-1"></i>
+                        <p class="mb-0">{{ __('No progress milestones registered for this case yet.') }}</p>
+                    </div>
+                @else
+                    <div class="timeline-container pl-3 pt-2">
+                        @foreach($case->milestones as $milestone)
+                            <div class="timeline-item mb-4 position-relative" style="border-left: 2px solid {{ $milestone->status === 'completed' ? '#2ecc71' : ($milestone->status === 'active' ? '#3498db' : '#dee2e6') }}; padding-left: 20px; margin-left: 8px;">
+                                <div class="timeline-dot" style="position: absolute; left: -7px; top: 0; width: 12px; height: 12px; border-radius: 50%; background-color: {{ $milestone->status === 'completed' ? '#2ecc71' : ($milestone->status === 'active' ? '#3498db' : '#95a5a6') }}; border: 2px solid white; box-shadow: 0 0 0 2px {{ $milestone->status === 'completed' ? '#e8f5e9' : ($milestone->status === 'active' ? '#dff9fb' : '#f1f3f5') }}; {{ $milestone->status === 'active' ? 'animation: pulse-active 2s infinite;' : '' }}"></div>
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <h6 class="font-weight-bold text-dark mb-0 small" style="font-size: 0.85rem;">{{ $milestone->title }}</h6>
+                                    @if($milestone->milestone_date)
+                                        <span class="text-muted" style="font-size: 0.7rem;">{{ $milestone->milestone_date->format('M d, Y') }}</span>
+                                    @endif
+                                </div>
+                                @if($milestone->description)
+                                    <p class="text-muted mb-0 mt-1" style="font-size: 0.75rem; line-height: 1.4;">{{ $milestone->description }}</p>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @endif
             </div>
 
             <!-- Upload Box Form -->
