@@ -30,7 +30,7 @@
                 </div>
                 <div class="card-body ">
                     <div class="table-responsive style-scroll">
-                        <table id="bdcoder" class="table table-striped table-bordered miw-500" cellspacing="0" width="100%">
+                        <table id="menuCategoryTable" class="table table-striped table-bordered miw-500" cellspacing="0" width="100%">
                             <thead>
                             <tr>
                                 <th width="10%">{{__('SL No')}}.</th>

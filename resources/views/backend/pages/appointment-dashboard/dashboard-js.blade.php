@@ -1,9 +1,9 @@
 <script>
     /*===================================================================================================
 
- - TEMPLATE : Bibric
+ - TEMPLATE : {{ config('app.name') }}
  - DESCRIPTION : MODERN BOOTSTRAP 4 ADMIN TEMPLATE - FULLY RESPONSIVE
- - AUTHOR : bdCoder (http://www.bdcoder.com/)
+ - AUTHOR : {{ config('app.name') }}
  - VERSION : 1.0
  - FILE : DASHBAORD JS
 

@@ -259,7 +259,7 @@ CREATE TABLE `contacts` (
 
 LOCK TABLES `contacts` WRITE;
 /*!40000 ALTER TABLE `contacts` DISABLE KEYS */;
-INSERT INTO `contacts` VALUES (1,'Julfikar','Ali','julfikar@gmail.com','','Here is the message that you seen.',2,'2021-08-26 00:37:50','2021-09-08 03:01:03'),(5,'Saikat','Majumder','saikat.mder@gmail.com','adca','SD',2,'2021-09-08 03:02:29','2021-09-08 03:48:29'),(7,'sgshgh','shshsh','admin@bdcoder.com','ddghsdh','hgfhgfh',2,'2021-09-18 05:39:39','2021-09-29 20:26:16');
+INSERT INTO `contacts` VALUES (1,'Julfikar','Ali','julfikar@gmail.com','','Here is the message that you seen.',2,'2021-08-26 00:37:50','2021-09-08 03:01:03'),(5,'Saikat','Majumder','saikat.mder@gmail.com','adca','SD',2,'2021-09-08 03:02:29','2021-09-08 03:48:29'),(7,'sgshgh','shshsh','admin@yourcpaexpert.com','ddghsdh','hgfhgfh',2,'2021-09-18 05:39:39','2021-09-29 20:26:16');
 /*!40000 ALTER TABLE `contacts` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -468,7 +468,7 @@ CREATE TABLE `footer_settings` (
 
 LOCK TABLES `footer_settings` WRITE;
 /*!40000 ALTER TABLE `footer_settings` DISABLE KEYS */;
-INSERT INTO `footer_settings` VALUES (5,1,'There Are Many Variations Of Passages Naim Lorem Ipsum Available, But The Majority Have Suffered Alteration.',1,'Recent Post','5','Popular Post','5','Contact Us','Legislative and Parliamentary Affairs Division\r\nMinistry of Law, Justice and Parliamentary Affairs\r\nBangladesh Secretariat, Dhaka - 1000, Bangladesh.','/upload/settings/1631529418footer-logo.png',1,'© 2020, All Rights Reserved, Design & Developed By: bdCodera','2021-09-13 04:36:58','2021-09-13 04:36:58');
+INSERT INTO `footer_settings` VALUES (5,1,'There Are Many Variations Of Passages Naim Lorem Ipsum Available, But The Majority Have Suffered Alteration.',1,'Recent Post','5','Popular Post','5','Contact Us','Legislative and Parliamentary Affairs Division\r\nMinistry of Law, Justice and Parliamentary Affairs\r\nBangladesh Secretariat, Dhaka - 1000, Bangladesh.','/upload/settings/1631529418footer-logo.png',1,'© 2020, All Rights Reserved, Design & Developed By: Your CPA Expert','2021-09-13 04:36:58','2021-09-13 04:36:58');
 /*!40000 ALTER TABLE `footer_settings` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -500,7 +500,7 @@ CREATE TABLE `general_settings` (
 
 LOCK TABLES `general_settings` WRITE;
 /*!40000 ALTER TABLE `general_settings` DISABLE KEYS */;
-INSERT INTO `general_settings` VALUES (2,'Bapric','Law and Attorney website CMS with Appointment','Law and Attorney website CMS with Appointment','BdCoder','Bibric – Law and Attorney website CMS','Bibric is a lawyer and attorney website CMS with Appointment PHP Scripts. Attorg is a better way to present your modern service business. It is a complete solution for a law firm or justice website.','/upload/settings/1632769376favicon.png','2021-09-26 01:21:04','2021-09-27 19:02:56');
+INSERT INTO `general_settings` VALUES (2,'Your CPA Expert','Law and Attorney website CMS with Appointment','Law and Attorney website CMS with Appointment','Your CPA Expert','Bibric – Law and Attorney website CMS','Bibric is a lawyer and attorney website CMS with Appointment PHP Scripts. Attorg is a better way to present your modern service business. It is a complete solution for a law firm or justice website.','/upload/settings/1632769376favicon.png','2021-09-26 01:21:04','2021-09-27 19:02:56');
 /*!40000 ALTER TABLE `general_settings` ENABLE KEYS */;
 UNLOCK TABLES;
 

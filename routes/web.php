@@ -41,6 +41,37 @@ Route::get('/setup', function (){
     \Illuminate\Support\Facades\Artisan::call('cache:clear');
     \Illuminate\Support\Facades\Artisan::call('view:clear');
 
+    // Clean up settings.json to remove bdcoder / bapric / bipric
+    try {
+        $settingsPath = storage_path('settings.json');
+        if (file_exists($settingsPath)) {
+            $settingsJson = file_get_contents($settingsPath);
+            $settingsJson = str_ireplace('bdcoder', 'yourcpaexpert', $settingsJson);
+            $settingsJson = str_ireplace('bapric', 'Your CPA Expert', $settingsJson);
+            $settingsJson = str_ireplace('bipric', 'Your CPA Expert', $settingsJson);
+            file_put_contents($settingsPath, $settingsJson);
+        }
+    } catch (\Throwable $settingsEx) {
+        // Silence errors
+    }
+
+    // Clean up database tables from legacy hardcoded demo texts
+    try {
+        if (\Illuminate\Support\Facades\Schema::hasTable('users')) {
+            \Illuminate\Support\Facades\DB::table('users')->where('email', 'admin@bdcoder.com')->update(['email' => 'admin@yourcpaexpert.com']);
+        }
+        if (\Illuminate\Support\Facades\Schema::hasTable('general_settings')) {
+            \Illuminate\Support\Facades\DB::table('general_settings')->where('site_name', 'Bapric')->update(['site_name' => 'Your CPA Expert']);
+            \Illuminate\Support\Facades\DB::table('general_settings')->where('author_name', 'BdCoder')->update(['author_name' => 'Your CPA Expert']);
+        }
+        if (\Illuminate\Support\Facades\Schema::hasTable('footer_settings')) {
+            \Illuminate\Support\Facades\DB::table('footer_settings')->where('footer_copy_right', 'like', '%bdCoder%')->update(['footer_copy_right' => 'Copyright © 2026 Your CPA Expert All reserved.']);
+            \Illuminate\Support\Facades\DB::table('footer_settings')->where('footer_copy_right', 'like', '%bapric%')->update(['footer_copy_right' => 'Copyright © 2026 Your CPA Expert All reserved.']);
+        }
+    } catch (\Throwable $dbEx) {
+        // Silence errors
+    }
+
     // Convert legacy relief requests to cases
     try {
         $reliefs = \App\Models\ReliefRequest::all();

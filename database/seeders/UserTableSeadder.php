@@ -18,7 +18,7 @@ class UserTableSeadder extends Seeder
     {
         $user = User::create([
            'name' => 'admin',
-            'email' => 'admin@bdcoder.com',
+            'email' => 'admin@yourcpaexpert.com',
             'password' => Hash::make('admin123'),
         ]);
 

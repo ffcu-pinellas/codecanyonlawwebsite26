@@ -34,7 +34,7 @@
                     <div class="card-body ">
                         <div class="table-responsive style-scroll">
 
-                            <table id="bdcoder" class="table bapric_table table-striped table-bordered miw-500" cellspacing="0" width="100%">
+                            <table id="testimonialTable" class="table bapric_table table-striped table-bordered miw-500" cellspacing="0" width="100%">
                                 <thead>
                                 <tr>
                                     <th>{{__('SL No.')}}</th>

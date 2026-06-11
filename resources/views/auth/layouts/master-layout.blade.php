@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>bdCoder - Account - Login</title>
+    <title>{{ config('app.name') }} - Account - Login</title>
     <!-- ENCODING -->
     <meta charset="UTF-8" />
     <!-- AUTHOR -->
-    <meta name="author" content="bdCoder" />
+    <meta name="author" content="{{ config('app.name') }}" />
     <!-- DESCRIPTION -->
     <meta name="description" content="Modern Bootstrap 4 Admin Template - Fully Responsive" />
     <!-- IE EDGE COMPATIBILITY -->
