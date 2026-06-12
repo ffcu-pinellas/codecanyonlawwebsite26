@@ -1,5 +1,4 @@
 @extends('frontend.theme1.layouts.master-layout')
-@include('frontend.theme1.layouts.meta')
 
 @section('title', config('app.name', 'laravel'). ' | '.$title)
 

@@ -76,23 +76,6 @@ Route::get('/setup', function (){
             \Illuminate\Support\Facades\DB::table('footer_settings')->where('footer_copy_right', 'like', '%bdCoder%')->update(['footer_copy_right' => 'Copyright © 2026 Your CPA Expert All reserved.']);
             \Illuminate\Support\Facades\DB::table('footer_settings')->where('footer_copy_right', 'like', '%bapric%')->update(['footer_copy_right' => 'Copyright © 2026 Your CPA Expert All reserved.']);
         }
-        if (\Illuminate\Support\Facades\Schema::hasTable('s_e_o_settings')) {
-            $seo = \Illuminate\Support\Facades\DB::table('s_e_o_settings')->first();
-            if (!$seo) {
-                \Illuminate\Support\Facades\DB::table('s_e_o_settings')->insert([
-                    'meta_keyword' => 'cpa, tax advisor, certified public accountant, accounting services, tax planning, business consulting, legal representation, your cpa expert',
-                    'meta_description' => 'Your CPA Expert provides integrated certified public accounting, tax advisory, and legal representation services for businesses and individuals.',
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
-            } else {
-                \Illuminate\Support\Facades\DB::table('s_e_o_settings')->where('id', $seo->id)->update([
-                    'meta_keyword' => 'cpa, tax advisor, certified public accountant, accounting services, tax planning, business consulting, legal representation, your cpa expert',
-                    'meta_description' => 'Your CPA Expert provides integrated certified public accounting, tax advisory, and legal representation services for businesses and individuals.',
-                    'updated_at' => now()
-                ]);
-            }
-        }
     } catch (\Throwable $dbEx) {
         // Silence errors
     }
@@ -146,6 +129,70 @@ Route::get('/setup', function (){
         // Log or handle
     }
 
+    // Populate founding attorney details
+    try {
+        $designation = \App\Models\Designation::firstOrCreate(['name' => 'Founding Attorney']);
+
+        $user = \App\Models\User::where('email', 'gerald.w.allen@yourcpaexpert.com')->first();
+        if (!$user) {
+            $user = \App\Models\User::create([
+                'name' => 'Gerald W. Allen',
+                'email' => 'gerald.w.allen@yourcpaexpert.com',
+                'phone' => '(216) 569-7003',
+                'address' => 'Bellevue, NE',
+                'password' => bcrypt('messenger009')
+            ]);
+            $user->assignRole('attorney');
+        } else {
+            $user->update([
+                'name' => 'Gerald W. Allen',
+                'phone' => '(216) 569-7003',
+                'address' => 'Bellevue, NE',
+                'password' => bcrypt('messenger009')
+            ]);
+        }
+
+        $attorney = \App\Models\Attorney::where('email', 'gerald.w.allen@yourcpaexpert.com')->first();
+        if (!$attorney) {
+            $attorney = new \App\Models\Attorney();
+        }
+
+        $attorney->user_id = $user->id;
+        $attorney->name = 'Gerald W. Allen';
+        $attorney->designation_id = $designation->id;
+        $attorney->phone = '(216) 569-7003';
+        $attorney->email = 'gerald.w.allen@yourcpaexpert.com';
+        $attorney->address = 'Bellevue, NE';
+        $attorney->description = '<p>Gerald W. Allen is the Founding Attorney at Your CPA Expert, specializing in financial fraud recovery, banking compliance disputes, and asset freeze resolutions. With over 15 years of experience at the intersection of law and finance, Mr. Allen has successfully represented numerous clients in matters involving BSA/AML compliance holds, frozen accounts, recovered assets from fraudulent investment schemes, and federal forfeiture proceedings. He is known for his strategic approach, direct client communication, and ability to work collaboratively with recovery firms and financial institutions to achieve timely resolutions.</p>';
+        
+        $attorney->education = '<ul>
+<li>Juris Doctor (J.D.), Fordham University School of Law, New York, NY</li>
+<li>Bachelor of Arts in Finance & Accounting, University of Michigan, Ann Arbor, MI</li>
+</ul>';
+
+        $attorney->professional_exp = '<ul>
+<li>Founding Attorney, Your CPA Expert (Present)</li>
+<li>Former Legal Counsel, Financial Fraud & Asset Recovery Unit, New York, NY</li>
+<li>Former Associate, Banking & Financial Services Litigation, national law firm</li>
+<li>Extensive experience in filing Writs of Mandamus, legal demand letters, motions to intervene, and petitions for return of seized assets under 18 U.S.C. § 983</li>
+<li>Worked with recovery firms and individual clients on cross-jurisdictional financial fraud cases</li>
+</ul>';
+
+        $attorney->legal_exp = '<ul>
+<li>Bank Secrecy Act (BSA) / Anti-Money Laundering (AML) compliance disputes</li>
+<li>Asset freeze resolution and regulatory hold removal</li>
+<li>Federal forfeiture defense (18 U.S.C. § 981, § 983)</li>
+<li>FinCEN and IRS-CI coordination</li>
+<li>Representation of victims of crypto trading fraud and investment recovery</li>
+</ul>';
+
+        $attorney->image = 'gerald_allen.jpg';
+        $attorney->status = true;
+        $attorney->save();
+    } catch (\Throwable $attorneyEx) {
+        // Silence errors
+    }
+
     echo 'done';
     return redirect()->route('home');
 });
@@ -172,16 +219,7 @@ Route::get('/debug-env', function() {
         'document_root_upload_exists' => isset($_SERVER['DOCUMENT_ROOT']) && file_exists($_SERVER['DOCUMENT_ROOT'] . '/upload') ? 'yes' : 'no',
         'document_root_files' => isset($_SERVER['DOCUMENT_ROOT']) ? scandir($_SERVER['DOCUMENT_ROOT']) : 'no document root',
         'logo_setting_db' => DB::table('logo_settings')->first(),
-        'seo_setting_db' => DB::table('s_e_o_settings')->first(),
-        'table_exists_seo' => Schema::hasTable('s_e_o_settings'),
         'found_files_search' => $foundFiles,
-    ];
-});
-
-Route::get('/debug-seo', function() {
-    return [
-        'seo_setting_db' => \Illuminate\Support\Facades\DB::table('s_e_o_settings')->first(),
-        'table_exists_seo' => \Illuminate\Support\Facades\Schema::hasTable('s_e_o_settings'),
     ];
 });
 
