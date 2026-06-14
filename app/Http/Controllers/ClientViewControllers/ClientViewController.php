@@ -688,61 +688,183 @@ class ClientViewController extends Controller
     {
         try {
             $title = __('Client Document Center');
-            $templates = DocumentTemplate::where('type', 'client')->where('status', true)->orderBy('title', 'asc')->get();
+            $user = Auth::user();
+            $documents = \App\Models\DocumentLog::where('client_id', $user->id)
+                ->whereNotNull('content')
+                ->orderBy('created_at', 'desc')
+                ->get();
 
-            return view('frontend.theme1.auth-client.pages.documents.index', compact('title', 'templates'));
+            return view('frontend.theme1.auth-client.pages.documents.index', compact('title', 'documents'));
         } catch (\Throwable $e) {
             return $this->backWithError($e->getMessage());
         }
     }
 
     /**
-     * Preview and print client templates
+     * Preview and print client documents
      */
-    public function viewDocument($key)
+    public function viewDocument($id)
     {
         try {
             $user = Auth::user();
-            $template = DocumentTemplate::where('type', 'client')->where('key', $key)->where('status', true)->firstOrFail();
+            $document = \App\Models\DocumentLog::where('client_id', $user->id)
+                ->where('id', $id)
+                ->firstOrFail();
 
-            $title = $template->title;
-            $rawContent = $template->content;
+            $title = $document->template_title;
+            $content = $document->content;
 
             $companySettings = \App\Models\GeneralSettings::first();
             $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
 
-            // Find client case (if exists) for this client, to get case_number and attorney
-            $clientCase = ClientCase::where('client_id', $user->id)->orderBy('created_at', 'desc')->first();
-            $caseNumber = $clientCase ? $clientCase->case_number : 'N/A';
-            $attorneyName = $clientCase && $clientCase->attorney ? $clientCase->attorney->name : $companyName;
-
-            // Replace client templates placeholders
-            $placeholders = [
-                '{{client_name}}' => $user->name,
-                '{{client_email}}' => $user->email,
-                '{{client_phone}}' => $user->phone ?: 'N/A',
-                '{{client_address}}' => $user->address ?: 'N/A',
-                '{{company_name}}' => $companyName,
-                '{{date}}' => date('F d, Y'),
-                '{{attorney_name}}' => $attorneyName,
-                '{{case_number}}' => $caseNumber,
-            ];
-
-            $content = str_replace(array_keys($placeholders), array_values($placeholders), $rawContent);
-
-            // Log document view
-            \App\Models\DocumentLog::create([
-                'template_key' => $key,
-                'template_title' => $title,
-                'client_id' => $user->id,
-                'recipient_email' => $user->email,
-                'sent_by' => $user->id,
-                'sent_to_email' => false,
-                'status' => 'viewed',
-                'tracking_token' => uniqid() . bin2hex(random_bytes(8)),
-            ]);
+            // Log document view status if it was sent/not yet viewed
+            if ($document->status === 'sent') {
+                $document->update([
+                    'status' => 'viewed',
+                    'opened_at' => now(),
+                ]);
+            }
 
             return view('frontend.theme1.auth-client.pages.documents.print', compact('title', 'content', 'user', 'companyName'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    /**
+     * Approve document log
+     */
+    public function approveDocument(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            $document = \App\Models\DocumentLog::where('client_id', $user->id)
+                ->where('id', $id)
+                ->firstOrFail();
+
+            if ($document->action_required !== 'approve') {
+                return redirect()->back()->with([
+                    'message' => 'No approval required for this document.',
+                    'alert-type' => 'warning'
+                ]);
+            }
+
+            $recipientNotes = $request->recipient_notes;
+
+            $document->update([
+                'status' => 'approved',
+                'recipient_notes' => $recipientNotes
+            ]);
+
+            // Notify Admin via Email and Telegram
+            $this->notifyAdminOfDocumentAction($document, 'approved', $recipientNotes);
+
+            return redirect()->back()->with([
+                'message' => 'Document approved successfully.',
+                'alert-type' => 'success'
+            ]);
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    /**
+     * Reject document log
+     */
+    public function rejectDocument(Request $request, $id)
+    {
+        $request->validate([
+            'recipient_notes' => 'required|string|max:1000'
+        ], [
+            'recipient_notes.required' => 'Please provide a reason/note for rejecting the document.'
+        ]);
+
+        try {
+            $user = Auth::user();
+            $document = \App\Models\DocumentLog::where('client_id', $user->id)
+                ->where('id', $id)
+                ->firstOrFail();
+
+            $recipientNotes = $request->recipient_notes;
+
+            $document->update([
+                'status' => 'rejected',
+                'recipient_notes' => $recipientNotes
+            ]);
+
+            // Notify Admin via Email and Telegram
+            $this->notifyAdminOfDocumentAction($document, 'rejected', $recipientNotes);
+
+            return redirect()->back()->with([
+                'message' => 'Document has been rejected. The administrator has been notified.',
+                'alert-type' => 'info'
+            ]);
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    /**
+     * Upload signed copy of document
+     */
+    public function uploadSignedDocument(Request $request, $id)
+    {
+        $request->validate([
+            'signed_file' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'recipient_notes' => 'nullable|string|max:1000'
+        ]);
+
+        try {
+            $user = Auth::user();
+            $document = \App\Models\DocumentLog::where('client_id', $user->id)
+                ->where('id', $id)
+                ->firstOrFail();
+
+            if ($document->action_required !== 'sign_upload') {
+                return redirect()->back()->with([
+                    'message' => 'No signature upload required for this document.',
+                    'alert-type' => 'warning'
+                ]);
+            }
+
+            if ($request->hasFile('signed_file')) {
+                $file = $request->file('signed_file');
+                $uploadPath = public_path('upload/signed-documents');
+                if (!File::exists($uploadPath)) {
+                    File::makeDirectory($uploadPath, 0755, true);
+                }
+
+                $fileExtension = $file->getClientOriginalExtension();
+                $newFileName = time() . '_' . uniqid() . '.' . $fileExtension;
+                $file->move($uploadPath, $newFileName);
+                $newFilePath = '/upload/signed-documents/' . $newFileName;
+
+                // Delete old file if exists
+                if ($document->signed_path && File::exists(public_path($document->signed_path))) {
+                    @unlink(public_path($document->signed_path));
+                }
+
+                $recipientNotes = $request->recipient_notes;
+
+                $document->update([
+                    'signed_path' => $newFilePath,
+                    'status' => 'signed',
+                    'recipient_notes' => $recipientNotes
+                ]);
+
+                // Notify Admin via Email and Telegram
+                $this->notifyAdminOfDocumentAction($document, 'signed & uploaded', $recipientNotes);
+
+                return redirect()->back()->with([
+                    'message' => 'Signed document uploaded successfully.',
+                    'alert-type' => 'success'
+                ]);
+            }
+
+            return redirect()->back()->with([
+                'message' => 'No file was uploaded.',
+                'alert-type' => 'error'
+            ]);
         } catch (\Throwable $e) {
             return $this->backWithError($e->getMessage());
         }

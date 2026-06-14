@@ -399,6 +399,7 @@ class AdminCaseController extends Controller
                 \App\Models\DocumentLog::create([
                     'template_key' => $request->template_key,
                     'template_title' => $title,
+                    'content' => $content,
                     'client_id' => $client->id,
                     'recipient_email' => $client->email,
                     'sent_by' => Auth::id(),
@@ -430,6 +431,7 @@ class AdminCaseController extends Controller
                 \App\Models\DocumentLog::create([
                     'template_key' => $request->template_key,
                     'template_title' => $title,
+                    'content' => $content,
                     'client_id' => $client->id,
                     'recipient_email' => $client->email,
                     'sent_by' => Auth::id(),

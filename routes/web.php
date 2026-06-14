@@ -241,7 +241,10 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client']
 
     // client document center
     Route::get('/document-center', [ClientViewController::class, 'documentCenter'])->name('documents.index');
-    Route::get('/document-center/{key}/print', [ClientViewController::class, 'viewDocument'])->name('documents.print');
+    Route::get('/document-center/{id}/print', [ClientViewController::class, 'viewDocument'])->name('documents.print');
+    Route::post('/document-center/{id}/approve', [ClientViewController::class, 'approveDocument'])->name('documents.approve');
+    Route::post('/document-center/{id}/upload-signed', [ClientViewController::class, 'uploadSignedDocument'])->name('documents.upload-signed');
+    Route::post('/document-center/{id}/reject', [ClientViewController::class, 'rejectDocument'])->name('documents.reject');
 });
 
 
@@ -408,7 +411,7 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
 
     // Document Templates
     Route::get('/document-templates/{id}/preview', [\App\Http\Controllers\AdminControllers\AdminDocumentTemplateController::class, 'preview'])->name('document-templates.preview');
-    Route::post('/document-templates/{id}/send-test', [\App\Http\Controllers\AdminControllers\AdminDocumentTemplateController::class, 'sendTestEmail'])->name('document-templates.send-test');
+    Route::post('/document-templates/{id}/process', [\App\Http\Controllers\AdminControllers\AdminDocumentTemplateController::class, 'processPreview'])->name('document-templates.process');
     Route::resource('/document-templates', \App\Http\Controllers\AdminControllers\AdminDocumentTemplateController::class);
     Route::get('/document-history', [\App\Http\Controllers\AdminControllers\AdminDocumentTemplateController::class, 'sentHistory'])->name('document-templates.history');
 
@@ -539,6 +542,9 @@ Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff'])-
 
     // Document Center
     Route::get('/document-center', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'documentCenter'])->name('documents.index');
-    Route::get('/document-center/{key}/print', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'viewDocument'])->name('documents.print');
+    Route::get('/document-center/{id}/print', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'viewDocument'])->name('documents.print');
+    Route::post('/document-center/{id}/approve', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'approveDocument'])->name('documents.approve');
+    Route::post('/document-center/{id}/upload-signed', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'uploadSignedDocument'])->name('documents.upload-signed');
+    Route::post('/document-center/{id}/reject', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'rejectDocument'])->name('documents.reject');
 });
 

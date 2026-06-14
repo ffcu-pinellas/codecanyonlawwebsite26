@@ -172,9 +172,9 @@ class AdminDocumentTemplateController extends Controller
     }
 
     /**
-     * Preview a document template with sample placeholders.
+     * Preview a document template with sample placeholders or selected user data.
      */
-    public function preview($id)
+    public function preview(Request $request, $id)
     {
         try {
             $template = DocumentTemplate::findOrFail($id);
@@ -189,36 +189,103 @@ class AdminDocumentTemplateController extends Controller
             $companyPhone = env('COMPANY_PHONE') ?: ($contactInfo && $contactInfo->line_two && preg_match('/[0-9]/', $contactInfo->line_two) ? $contactInfo->line_two : '(216) 230-1837');
             $companyEmail = env('COMPANY_EMAIL') ?: ($emailInfo ? $emailInfo->line_one : 'support@yourcpaexpert.com');
 
+            $selectedUser = null;
+            if ($request->filled('user_id')) {
+                $selectedUser = \App\Models\User::find($request->user_id);
+            }
+
+            // Populate recipient details based on selected user or sample data
+            if ($selectedUser) {
+                $name = $selectedUser->name;
+                $email = $selectedUser->email;
+                $phone = $selectedUser->phone ?: 'N/A';
+                $address = $selectedUser->address ?: 'N/A';
+                
+                // Find client case (if exists) for this client, to get case_number and attorney
+                $caseNumber = 'N/A';
+                $attorneyName = 'Gerald W. Allen';
+                $clientCase = \App\Models\ClientCase::where('client_id', $selectedUser->id)->orderBy('created_at', 'desc')->first();
+                if ($clientCase) {
+                    $caseNumber = $clientCase->case_number;
+                    if ($clientCase->attorney) {
+                        $attorneyName = $clientCase->attorney->name;
+                    }
+                }
+                $staffId = ($selectedUser->staffDetail) ? $selectedUser->staffDetail->staff_id : 'N/A';
+            } else {
+                $name = 'John Doe (Sample)';
+                $email = 'john.doe@example.com';
+                $phone = '(555) 019-2834';
+                $address = '123 Prosperity Way, Suite 100, New York, NY 10001';
+                $caseNumber = 'CAS-2026-0042';
+                $attorneyName = 'Founding Attorney Gerald W. Allen';
+                $staffId = 'STF-88902';
+            }
+
             $placeholders = [
-                '{{client_name}}' => 'John Doe (Sample Client)',
-                '{{client_email}}' => 'john.doe@example.com',
-                '{{client_phone}}' => '(555) 019-2834',
-                '{{client_address}}' => '123 Prosperity Way, Suite 100, New York, NY 10001',
-                '{{employee_name}}' => 'Sarah Jenkins (Sample Employee)',
-                '{{employee_email}}' => 'sarah.jenkins@example.com',
-                '{{employee_phone}}' => '(555) 014-9821',
-                '{{employee_address}}' => '456 Synergy Blvd, Austin, TX 78701',
-                '{{staff_id}}' => 'STF-88902',
+                '{{client_name}}' => $name,
+                '{{client_email}}' => $email,
+                '{{client_phone}}' => $phone,
+                '{{client_address}}' => $address,
+                '{{employee_name}}' => $name,
+                '{{employee_email}}' => $email,
+                '{{employee_phone}}' => $phone,
+                '{{employee_address}}' => $address,
+                '{{staff_id}}' => $staffId,
                 '{{company_name}}' => $companyName,
                 '{{date}}' => date('F d, Y'),
-                '{{attorney_name}}' => 'Founding Attorney Gerald W. Allen',
-                '{{case_number}}' => 'CAS-2026-0042',
+                '{{attorney_name}}' => $attorneyName,
+                '{{case_number}}' => $caseNumber,
             ];
 
             $content = str_replace(array_keys($placeholders), array_values($placeholders), $template->content);
 
             // Fetch list of users/clients to populate the drop-down on the preview page
-            $users = \App\Models\User::orderBy('name', 'asc')->get();
+            if ($template->type === 'staff') {
+                try {
+                    $users = \App\Models\User::role('staff')->orderBy('name', 'asc')->get();
+                } catch (\Throwable $e) {
+                    $users = \App\Models\User::orderBy('name', 'asc')->get();
+                }
+            } else {
+                try {
+                    $users = \App\Models\User::role('client')->orderBy('name', 'asc')->get();
+                } catch (\Throwable $e) {
+                    $users = \App\Models\User::orderBy('name', 'asc')->get();
+                }
+            }
+
+            // Create default email subject and body
+            $emailSubject = "Action Required: Agreement Document - " . $template->title;
+            $emailBody = "Hello " . $name . ",\n\n"
+                . "We have generated the following document for your review:\n\n"
+                . "Document Title: " . $template->title . "\n"
+                . "Date: " . date('F d, Y') . "\n"
+                . "Issuer: " . $companyName . "\n";
+            if ($selectedUser) {
+                $emailBody .= "Recipient Name: " . $name . "\n"
+                    . "Recipient Email: " . $email . "\n";
+            }
+            $emailBody .= "\n"
+                . "Please review the attached PDF for full details. "
+                . "You can view, print, approve, or sign this document directly inside your Secure Dashboard.\n\n"
+                . "Best regards,\n"
+                . "Operations Team\n"
+                . $companyName;
 
             return view('backend.pages.document-templates.preview', [
-                'title' => 'Preview & Test Template: ' . $template->title,
+                'title' => 'Preview & Process Template: ' . $template->title,
                 'template' => $template,
                 'content' => $content,
                 'users' => $users,
+                'selectedUser' => $selectedUser,
+                'recipientEmail' => $selectedUser ? $selectedUser->email : '',
                 'companyName' => $companyName,
                 'companyAddress' => $companyAddress,
                 'companyPhone' => $companyPhone,
                 'companyEmail' => $companyEmail,
+                'emailSubject' => $emailSubject,
+                'emailBody' => $emailBody,
             ]);
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
@@ -226,13 +293,19 @@ class AdminDocumentTemplateController extends Controller
     }
 
     /**
-     * Send a template document via email to a client/recipient.
+     * Process document template - support direct download or send notification email with custom settings.
      */
-    public function sendTestEmail(Request $request, $id)
+    public function processPreview(Request $request, $id)
     {
         $request->validate([
-            'recipient_email' => 'required|email',
+            'action' => 'required|in:email,download',
             'user_id' => 'nullable|exists:users,id',
+            'recipient_email' => 'required_if:action,email|email',
+            'document_content' => 'required|string',
+            'action_required' => 'required|in:none,approve,sign_upload',
+            'admin_notes' => 'nullable|string',
+            'email_subject' => 'required_if:action,email|string|max:255',
+            'email_body' => 'required_if:action,email|string',
         ]);
 
         try {
@@ -251,62 +324,11 @@ class AdminDocumentTemplateController extends Controller
             $phone = $user ? $user->phone : '(555) 019-2834';
             $address = $user ? $user->address : '123 Prosperity Way, Suite 100, New York, NY 10001';
 
-            // Find client case (if exists) for this client, to get case_number and attorney
-            $caseNumber = 'N/A';
-            $attorneyName = 'Gerald W. Allen';
-            if ($user) {
-                $clientCase = \App\Models\ClientCase::where('client_id', $user->id)->orderBy('created_at', 'desc')->first();
-                if ($clientCase) {
-                    $caseNumber = $clientCase->case_number;
-                    if ($clientCase->attorney) {
-                        $attorneyName = $clientCase->attorney->name;
-                    }
-                }
-            }
+            // Content comes from the rich text editor (populated and edited content)
+            $content = $request->document_content;
 
-            $placeholders = [
-                '{{client_name}}' => $name,
-                '{{client_email}}' => $email,
-                '{{client_phone}}' => $phone ?: 'N/A',
-                '{{client_address}}' => $address ?: 'N/A',
-                '{{employee_name}}' => $name,
-                '{{employee_email}}' => $email,
-                '{{employee_phone}}' => $phone ?: 'N/A',
-                '{{employee_address}}' => $address ?: 'N/A',
-                '{{staff_id}}' => ($user && $user->staffDetail) ? $user->staffDetail->staff_id : 'STF-88902',
-                '{{company_name}}' => $companyName,
-                '{{date}}' => date('F d, Y'),
-                '{{attorney_name}}' => $attorneyName,
-                '{{case_number}}' => $caseNumber,
-            ];
-
-            $content = str_replace(array_keys($placeholders), array_values($placeholders), $template->content);
-
-            $subject = "Agreement Document: " . $template->title;
-
-            $bodyText = "Hello " . $name . ",\n\n"
-                . "We have generated the following document for your review:\n\n"
-                . "Document Title: " . $template->title . "\n"
-                . "Date: " . date('F d, Y') . "\n"
-                . "Issuer: " . $companyName . "\n";
-            if ($user) {
-                $bodyText .= "Recipient Name: " . $name . "\n"
-                    . "Recipient Email: " . $email . "\n";
-            }
-            $bodyText .= "\n"
-                . "Please review the attached PDF for full details. "
-                . "You can view, print, or download this template directly inside your Secure Dashboard.\n\n"
-                . "Best regards,\n"
-                . "Operations Team\n"
-                . $companyName;
-
-            $trackingToken = uniqid() . bin2hex(random_bytes(8));
-
-            // Generate PDF representation of the document
-            $pdfPath = null;
-            $attachmentName = null;
-            try {
-                $pdfPath = storage_path('app/temp_' . uniqid() . '.pdf');
+            if ($request->action === 'download') {
+                // Generate PDF representation of the document
                 $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', [
                     'title' => $template->title,
                     'content' => $content,
@@ -316,28 +338,77 @@ class AdminDocumentTemplateController extends Controller
                     'hideDefaultSignatures' => true,
                     'isPdf' => true
                 ]);
-                $pdf->save($pdfPath);
-                $attachmentName = str_replace(' ', '_', $template->title) . '.pdf';
-            } catch (\Throwable $pdfError) {
-                $pdfPath = null;
+
+                // Log the downloaded document record if a user profile is selected, so it's in their Document Center
+                if ($user) {
+                    \App\Models\DocumentLog::create([
+                        'template_key' => $template->key,
+                        'template_title' => $template->title,
+                        'content' => $content,
+                        'client_id' => $template->type == 'client' ? $user->id : null,
+                        'staff_id' => $template->type == 'staff' ? $user->id : null,
+                        'recipient_email' => $email,
+                        'sent_by' => \Illuminate\Support\Facades\Auth::id(),
+                        'sent_to_email' => false,
+                        'status' => 'viewed',
+                        'action_required' => $request->action_required,
+                        'admin_notes' => $request->admin_notes,
+                        'tracking_token' => uniqid() . bin2hex(random_bytes(8)),
+                    ]);
+                }
+
+                $filename = str_replace(' ', '_', $template->title) . '.pdf';
+                return $pdf->download($filename);
             }
 
-            // Log document log
+            // Action is Email
+            $subject = $request->email_subject;
+            $bodyText = $request->email_body;
+
+            // Append Admin Notes if provided
+            if ($request->filled('admin_notes')) {
+                $bodyText .= "\n\n"
+                    . "----------------------------------------\n"
+                    . "Instructions from Administrator:\n"
+                    . $request->admin_notes;
+            }
+
+            $trackingToken = uniqid() . bin2hex(random_bytes(8));
+
+            // Generate PDF representation of the document for attachment
+            $pdfPath = storage_path('app/temp_' . uniqid() . '.pdf');
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', [
+                'title' => $template->title,
+                'content' => $content,
+                'client' => $user ?: (object)['name' => $name, 'email' => $email, 'phone' => $phone, 'address' => $address],
+                'companyName' => $companyName,
+                'dateStr' => date('F d, Y'),
+                'hideDefaultSignatures' => true,
+                'isPdf' => true
+            ]);
+            $pdf->save($pdfPath);
+            $attachmentName = str_replace(' ', '_', $template->title) . '.pdf';
+
+            // Log document log in database
             \App\Models\DocumentLog::create([
                 'template_key' => $template->key,
                 'template_title' => $template->title,
+                'content' => $content,
                 'client_id' => ($user && $template->type == 'client') ? $user->id : null,
                 'staff_id' => ($user && $template->type == 'staff') ? $user->id : null,
                 'recipient_email' => $email,
                 'sent_by' => \Illuminate\Support\Facades\Auth::id(),
                 'sent_to_email' => true,
                 'status' => 'sent',
+                'action_required' => $request->action_required,
+                'admin_notes' => $request->admin_notes,
                 'tracking_token' => $trackingToken,
             ]);
 
+            // Dispatch notification email with attachment
             $this->sendEmailNotification($email, $subject, $bodyText, $pdfPath, $attachmentName, $trackingToken);
 
-            if ($pdfPath && file_exists($pdfPath)) {
+            if (file_exists($pdfPath)) {
                 @unlink($pdfPath);
             }
 
@@ -346,7 +417,7 @@ class AdminDocumentTemplateController extends Controller
                 'alert-type' => 'success'
             ]);
         } catch (\Throwable $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            return redirect()->back()->with('error', $e->getMessage())->withInput();
         }
     }
 }

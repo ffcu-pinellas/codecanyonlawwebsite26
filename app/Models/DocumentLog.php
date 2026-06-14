@@ -12,6 +12,7 @@ class DocumentLog extends Model
     protected $fillable = [
         'template_key',
         'template_title',
+        'content',
         'client_id',
         'staff_id',
         'recipient_email',
@@ -19,6 +20,10 @@ class DocumentLog extends Model
         'sent_to_email',
         'pdf_path',
         'status',
+        'action_required',
+        'signed_path',
+        'admin_notes',
+        'recipient_notes',
         'tracking_token',
         'opened_at'
     ];

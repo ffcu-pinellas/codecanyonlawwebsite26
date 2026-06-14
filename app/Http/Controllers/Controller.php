@@ -400,6 +400,62 @@ HTML;
         }
     }
 
+    protected function notifyAdminOfDocumentAction($documentLog, $action, $recipientNotes = null)
+    {
+        try {
+            // Fetch admin user
+            $admin = \App\Models\User::role('admin')->first() ?: \App\Models\User::first();
+            $adminEmail = $admin ? $admin->email : 'admin@yourcpaexpert.com';
+            $companySettings = \App\Models\GeneralSettings::first();
+            $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+
+            $recipient = $documentLog->client ?: $documentLog->staff;
+            $recipientName = $recipient ? $recipient->name : 'Valued Member';
+            $recipientEmail = $recipient ? $recipient->email : $documentLog->recipient_email;
+
+            // Formulate subject and body for email
+            $subject = "Document Notice: " . $recipientName . " has " . strtoupper($action) . " '" . $documentLog->template_title . "'";
+            
+            $body = "Hello Administrator,\n\n"
+                . "A recipient has performed an action on a generated document:\n\n"
+                . "Document Title: " . $documentLog->template_title . "\n"
+                . "Recipient Name: " . $recipientName . "\n"
+                . "Recipient Email: " . $recipientEmail . "\n"
+                . "Action Performed: " . strtoupper($action) . "\n";
+
+            if ($recipientNotes) {
+                $body .= "Recipient Notes / Comments: " . $recipientNotes . "\n";
+            }
+
+            $historyUrl = route('admin.document-templates.history');
+            $body .= "\n"
+                . "You can view the full tracking logs and document details in the Admin Portal here:\n"
+                . $historyUrl . "\n\n"
+                . "Best regards,\n"
+                . "Operations System\n"
+                . $companyName;
+
+            // Send Email to Admin
+            $this->sendEmailNotification($adminEmail, $subject, $body);
+
+            // Send Telegram Notification to Admin
+            $telegramMsg = "🔔 *Document Update Notice*\n\n"
+                . "*Document:* " . $documentLog->template_title . " (" . $documentLog->template_key . ")\n"
+                . "*Recipient:* " . $recipientName . " (" . $recipientEmail . ")\n"
+                . "*Action:* " . strtoupper($action) . "\n";
+
+            if ($recipientNotes) {
+                $telegramMsg .= "*Recipient Notes:* " . $recipientNotes . "\n";
+            }
+
+            $telegramMsg .= "\n🔗 *View Details:* [Document History](" . $historyUrl . ")";
+
+            \App\Models\GeneralSettings::sendTelegramNotification($telegramMsg);
+        } catch (\Throwable $e) {
+            // Silent fallback if notification tools fail
+        }
+    }
+
     public function headerMenueView($headerMenu)
     {
         $row1 = [];
