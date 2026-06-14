@@ -53,31 +53,11 @@
             margin-bottom: 20px;
             text-indent: 30px;
         }
-        .content h3 {
+        .content h3, .content h4 {
             text-indent: 0;
             font-size: 16px;
             margin-top: 30px;
             text-transform: uppercase;
-        }
-        .signature-section {
-            margin-top: 80px;
-            page-break-inside: avoid;
-        }
-        .signature-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .signature-table td {
-            width: 50%;
-            vertical-align: top;
-            padding-top: 40px;
-        }
-        .signature-line {
-            width: 80%;
-            border-top: 1px solid #000;
-            margin-top: 40px;
-            padding-top: 5px;
-            font-size: 14px;
         }
         .print-btn-container {
             position: fixed;
@@ -86,7 +66,7 @@
             z-index: 9999;
         }
         .print-btn {
-            background-color: #007bff;
+            background-color: #1a1a2e;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -94,6 +74,8 @@
             border-radius: 5px;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            font-family: sans-serif;
+            font-weight: 600;
         }
         @media print {
             .print-btn-container {
@@ -107,11 +89,9 @@
 </head>
 <body>
 
-    @if(empty($isPdf))
     <div class="print-btn-container">
         <button class="print-btn" onclick="window.print()">{{ __('Print Document') }}</button>
     </div>
-    @endif
 
     @include('backend.layouts.letterhead')
 
@@ -121,37 +101,8 @@
 
     <div class="content">
         {!! $content !!}
-
-        @if(empty($hideDefaultSignatures))
-        <h4 style="margin-top: 40px;">{{ __('Execution of Agreement') }}</h4>
-        <p>{{ __('IN WITNESS WHEREOF, the parties hereto have executed this Agreement as of the date first written above. The parties warrant that they possess full authority to execute and bind their respective representatives.') }}</p>
-        @endif
     </div>
 
-    @if(empty($hideDefaultSignatures))
-    <div class="signature-section">
-        <table class="signature-table">
-            <tr>
-                <td>
-                    <div class="signature-line">
-                        <strong>{{ __('For the Firm:') }}</strong><br>
-                        {{ $companyName }} Representative<br>
-                        {{ __('Date:') }} ____________________
-                    </div>
-                </td>
-                <td>
-                    <div class="signature-line">
-                        <strong>{{ __('For the Client:') }}</strong><br>
-                        {{ $client->name }}<br>
-                        {{ __('Date:') }} ____________________
-                    </div>
-                </td>
-            </tr>
-        </table>
-    </div>
-    @endif
-
-    @if(empty($isPdf))
     <script>
         window.onload = function() {
             setTimeout(function() {
@@ -159,6 +110,5 @@
             }, 500);
         }
     </script>
-    @endif
 </body>
 </html>

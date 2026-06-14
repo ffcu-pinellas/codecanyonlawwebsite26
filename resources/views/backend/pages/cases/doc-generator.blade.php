@@ -47,14 +47,14 @@
                             @csrf
                             
                             <div class="form-group">
-                                <label for="template_type"><strong>{{ __('Select Document Template') }} <span class="text-danger">*</span></strong></label>
-                                <select name="template_type" id="template_type" class="form-control form-control-lg bg-dark text-white border-secondary" required>
+                                <label for="template_key"><strong>{{ __('Select Document Template') }} <span class="text-danger">*</span></strong></label>
+                                <select name="template_key" id="template_key" class="form-control form-control-lg bg-dark text-white border-secondary" required>
                                     <option value="">-- {{ __('Choose Template') }} --</option>
-                                    <option value="retainer">{{ __('Legal Representation Retainer Agreement') }}</option>
-                                    <option value="power_of_attorney">{{ __('General Power of Attorney (POA)') }}</option>
-                                    <option value="cpa_auth">{{ __('IRS Form CPA Representation Authorization') }}</option>
+                                    @foreach($templates as $tmpl)
+                                        <option value="{{ $tmpl->key }}" {{ old('template_key') == $tmpl->key ? 'selected' : '' }}>{{ $tmpl->title }}</option>
+                                    @endforeach
                                 </select>
-                                @error('template_type') <span class="text-danger small">{{ $message }}</span> @enderror
+                                @error('template_key') <span class="text-danger small">{{ $message }}</span> @enderror
                             </div>
 
                             <div class="form-group">

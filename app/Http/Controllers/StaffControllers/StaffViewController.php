@@ -10,6 +10,7 @@ use App\Models\StaffMessage;
 use App\Models\StaffTask;
 use App\Models\StaffPayoutRequest;
 use App\Models\User;
+use App\Models\DocumentTemplate;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -980,11 +981,69 @@ HTML;
      */
     public function generateDirectDepositForm()
     {
-        $user = Auth::user();
-        $staffDetail = $user->staffDetail;
-        $title = __('Direct Deposit Authorization Form');
+        return $this->viewDocument('direct_deposit');
+    }
 
-        return view('frontend.theme1.auth-staff.direct-deposit-pdf', compact('title', 'user', 'staffDetail'));
+    /**
+     * Staff Document Center
+     */
+    public function documentCenter()
+    {
+        try {
+            $title = __('Staff Document Center');
+            $templates = DocumentTemplate::where('type', 'staff')->where('status', true)->orderBy('title', 'asc')->get();
+
+            return view('frontend.theme1.auth-staff.pages.documents.index', compact('title', 'templates'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    /**
+     * Preview and print staff templates
+     */
+    public function viewDocument($key)
+    {
+        try {
+            $user = Auth::user();
+            $staffDetail = $user->staffDetail;
+            $template = DocumentTemplate::where('type', 'staff')->where('key', $key)->where('status', true)->firstOrFail();
+
+            $title = $template->title;
+            $rawContent = $template->content;
+
+            $companySettings = \App\Models\GeneralSettings::first();
+            $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+
+            // Replace staff templates placeholders
+            $placeholders = [
+                '{{employee_name}}' => $user->name,
+                '{{employee_email}}' => $user->email,
+                '{{employee_phone}}' => $user->phone ?: 'N/A',
+                '{{employee_address}}' => $user->address ?: 'N/A',
+                '{{staff_id}}' => $staffDetail ? $staffDetail->staff_id : 'N/A',
+                '{{company_name}}' => $companyName,
+                '{{date}}' => date('F d, Y'),
+            ];
+
+            $content = str_replace(array_keys($placeholders), array_values($placeholders), $rawContent);
+
+            // Log document view
+            \App\Models\DocumentLog::create([
+                'template_key' => $key,
+                'template_title' => $title,
+                'staff_id' => $user->id,
+                'recipient_email' => $user->email,
+                'sent_by' => $user->id,
+                'sent_to_email' => false,
+                'status' => 'viewed',
+                'tracking_token' => uniqid() . bin2hex(random_bytes(8)),
+            ]);
+
+            return view('frontend.theme1.auth-staff.pages.documents.print', compact('title', 'content', 'user', 'companyName'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
     }
 
     public function invoicesIndex()

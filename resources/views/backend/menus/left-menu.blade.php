@@ -328,6 +328,12 @@
                         <li><a href="{{ route('admin.document-generator') }}" class="nav-link"> <i
                                     class="material-icons">chevron_right</i> <span
                                     class="link-text">{{ __('Document Builder') }}</span></a></li>
+                        <li><a href="{{ route('admin.document-templates.index') }}" class="nav-link"> <i
+                                    class="material-icons">chevron_right</i> <span
+                                    class="link-text">{{ __('Document Templates') }}</span></a></li>
+                        <li><a href="{{ route('admin.document-templates.history') }}" class="nav-link"> <i
+                                    class="material-icons">chevron_right</i> <span
+                                    class="link-text">{{ __('Sent & Tracking History') }}</span></a></li>
                         @role('admin')
                         <li><a href="{{ route('admin.activity-logs') }}" class="nav-link"> <i
                                     class="material-icons">chevron_right</i> <span

@@ -42,6 +42,12 @@
                 <span class="title">{{ __('Cases & Vault') }}</span>
             </a>
         </li>
+        <li class="{{ request()->is('client/document-center*') ? 'active' : '' }}">
+            <a href="{{ route('client.documents.index') }}">
+                <span class="icon"><i class="fas fa-folder-open"></i></span>
+                <span class="title">{{ __('Document Center') }}</span>
+            </a>
+        </li>
         <li class="{{ request()->is('client/invoices*') ? 'active' : '' }}">
             <a href="{{ route('client.invoices.index') }}">
                 <span class="icon"><i class="fas fa-receipt"></i></span>

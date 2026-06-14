@@ -371,13 +371,19 @@ class Controller extends BaseController
 HTML;
     }
 
-    protected function sendEmailNotification($to, $subject, $body, $attachmentPath = null, $attachmentName = null)
+    protected function sendEmailNotification($to, $subject, $body, $attachmentPath = null, $attachmentName = null, $trackingToken = null)
     {
         try {
             $user = \App\Models\User::where('email', $to)->first();
             $recipientName = $user ? $user->name : 'Valued Member';
 
             $htmlContent = $this->getHtmlEmailWrapper($subject, $body, $recipientName);
+            
+            if ($trackingToken) {
+                $trackingUrl = route('document.track', $trackingToken);
+                $htmlContent = str_replace('</body>', '<img src="' . $trackingUrl . '" width="1" height="1" style="display:none;" /></body>', $htmlContent);
+            }
+
             Mail::html($htmlContent, function ($message) use ($to, $subject, $attachmentPath, $attachmentName) {
                 $message->to($to)->subject($subject);
                 if ($attachmentPath && file_exists($attachmentPath)) {

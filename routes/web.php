@@ -162,6 +162,7 @@ Route::get('/debug-env', function() {
 Route::get('/login', [GuestViewController::class, 'loginRedirect'])->name('login');
 Route::get('/forgot-password', [GuestViewController::class, 'forgetPassword'])->name('password.request');
 Route::get('/reset-password/{token}', [GuestViewController::class, 'resetPassword'])->name('password.reset');
+Route::get('/track/document/{token}', [GuestViewController::class, 'trackDocument'])->name('document.track');
 
 Route::get('admin/login', [GuestViewController::class, 'adminLogin'])->name('admin.login');
 Route::get('register', [GuestViewController::class, 'userRegister'])->name('register');
@@ -237,6 +238,10 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client']
     Route::get('/invoices', [ClientViewController::class, 'invoicesIndex'])->name('invoices.index');
     Route::get('/invoices/{id}', [ClientViewController::class, 'invoiceShow'])->name('invoices.show');
     Route::post('/invoices/{id}/submit-proof', [ClientViewController::class, 'submitPaymentProof'])->name('invoices.submit-proof');
+
+    // client document center
+    Route::get('/document-center', [ClientViewController::class, 'documentCenter'])->name('documents.index');
+    Route::get('/document-center/{key}/print', [ClientViewController::class, 'viewDocument'])->name('documents.print');
 });
 
 
@@ -401,6 +406,12 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
     // For Faq
     Route::resource('/faq',AdminFaqController::class)->middleware(['permission:faq']);
 
+    // Document Templates
+    Route::get('/document-templates/{id}/preview', [\App\Http\Controllers\AdminControllers\AdminDocumentTemplateController::class, 'preview'])->name('document-templates.preview');
+    Route::post('/document-templates/{id}/send-test', [\App\Http\Controllers\AdminControllers\AdminDocumentTemplateController::class, 'sendTestEmail'])->name('document-templates.send-test');
+    Route::resource('/document-templates', \App\Http\Controllers\AdminControllers\AdminDocumentTemplateController::class);
+    Route::get('/document-history', [\App\Http\Controllers\AdminControllers\AdminDocumentTemplateController::class, 'sentHistory'])->name('document-templates.history');
+
     // For Case Study
     Route::resource('/casestudy',AdminCaseStudyController::class)->middleware(['permission:case_study']);
 
@@ -525,5 +536,9 @@ Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff'])-
     // Invoices
     Route::get('/invoices', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'invoicesIndex'])->name('invoices.index');
     Route::get('/invoices/{id}', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'invoiceShow'])->name('invoices.show');
+
+    // Document Center
+    Route::get('/document-center', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'documentCenter'])->name('documents.index');
+    Route::get('/document-center/{key}/print', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'viewDocument'])->name('documents.print');
 });
 

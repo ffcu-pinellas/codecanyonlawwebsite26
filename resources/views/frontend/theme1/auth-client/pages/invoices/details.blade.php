@@ -81,7 +81,10 @@
         <div class="invoice-header">
             <div class="row align-items-center">
                 <div class="col-md-6 mb-3 mb-md-0 text-center text-md-left">
-                    <span class="company-logo-text">{{ $companyName }}</span>
+                    @if(!empty($logoFavicon) && !empty($logoFavicon->logo))
+                        <img src="{{ asset($logoFavicon->logo) }}" alt="{{ $companyName }}" style="max-height: 50px; margin-bottom: 10px;">
+                    @endif
+                    <span class="company-logo-text" style="display: block;">{{ $companyName }}</span>
                     <div class="text-muted small mt-2">
                         <p class="mb-1"><strong>{{ __('Corporate Office Address:') }}</strong> {{ $companyAddress }}</p>
                         <p class="mb-1"><strong>{{ __('Phone:') }}</strong> {{ $companyPhone }} &nbsp;|&nbsp; <strong>{{ __('Email:') }}</strong> {{ $companyEmail }}</p>

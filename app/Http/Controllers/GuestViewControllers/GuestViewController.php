@@ -712,4 +712,24 @@ class GuestViewController extends Controller
             return $this->backWithError($th->getMessage());
         }
     }
+
+    //=============== Track Email Opens ================//
+    public function trackDocument($token)
+    {
+        try {
+            $log = \App\Models\DocumentLog::where('tracking_token', $token)->first();
+            if ($log) {
+                if ($log->status === 'sent') {
+                    $log->update([
+                        'status' => 'opened',
+                        'opened_at' => now(),
+                    ]);
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        // Return 1x1 transparent tracking pixel
+        $pixel = base64_decode('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7');
+        return response($pixel, 200)->header('Content-Type', 'image/gif');
+    }
 }

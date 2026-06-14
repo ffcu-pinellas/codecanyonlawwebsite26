@@ -43,6 +43,12 @@
                 <span class="title">{{ __('Invoices') }}</span>
             </a>
         </li>
+        <li class="{{ request()->is('staff/document-center*') ? 'active' : '' }}">
+            <a href="{{ route('staff.documents.index') }}">
+                <span class="icon"><i class="fas fa-folder-open"></i></span>
+                <span class="title">{{ __('Document Center') }}</span>
+            </a>
+        </li>
         <li class="{{ request()->is('staff/messages*') ? 'active' : '' }}">
             <a href="{{ route('staff.messages') }}">
                 <span class="icon"><i class="fas fa-comment-dots"></i></span>

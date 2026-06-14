@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\ClientCase;
 use App\Models\CaseDocument;
 use App\Models\Invoice;
+use App\Models\DocumentTemplate;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -675,6 +676,73 @@ class ClientViewController extends Controller
             } catch (\Throwable $e) {}
 
             return redirect()->back()->with('success', __('Payment proof submitted successfully and is awaiting review.'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    /**
+     * Client Document Center
+     */
+    public function documentCenter()
+    {
+        try {
+            $title = __('Client Document Center');
+            $templates = DocumentTemplate::where('type', 'client')->where('status', true)->orderBy('title', 'asc')->get();
+
+            return view('frontend.theme1.auth-client.pages.documents.index', compact('title', 'templates'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    /**
+     * Preview and print client templates
+     */
+    public function viewDocument($key)
+    {
+        try {
+            $user = Auth::user();
+            $template = DocumentTemplate::where('type', 'client')->where('key', $key)->where('status', true)->firstOrFail();
+
+            $title = $template->title;
+            $rawContent = $template->content;
+
+            $companySettings = \App\Models\GeneralSettings::first();
+            $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+
+            // Find client case (if exists) for this client, to get case_number and attorney
+            $clientCase = ClientCase::where('client_id', $user->id)->orderBy('created_at', 'desc')->first();
+            $caseNumber = $clientCase ? $clientCase->case_number : 'N/A';
+            $attorneyName = $clientCase && $clientCase->attorney ? $clientCase->attorney->name : $companyName;
+
+            // Replace client templates placeholders
+            $placeholders = [
+                '{{client_name}}' => $user->name,
+                '{{client_email}}' => $user->email,
+                '{{client_phone}}' => $user->phone ?: 'N/A',
+                '{{client_address}}' => $user->address ?: 'N/A',
+                '{{company_name}}' => $companyName,
+                '{{date}}' => date('F d, Y'),
+                '{{attorney_name}}' => $attorneyName,
+                '{{case_number}}' => $caseNumber,
+            ];
+
+            $content = str_replace(array_keys($placeholders), array_values($placeholders), $rawContent);
+
+            // Log document view
+            \App\Models\DocumentLog::create([
+                'template_key' => $key,
+                'template_title' => $title,
+                'client_id' => $user->id,
+                'recipient_email' => $user->email,
+                'sent_by' => $user->id,
+                'sent_to_email' => false,
+                'status' => 'viewed',
+                'tracking_token' => uniqid() . bin2hex(random_bytes(8)),
+            ]);
+
+            return view('frontend.theme1.auth-client.pages.documents.print', compact('title', 'content', 'user', 'companyName'));
         } catch (\Throwable $e) {
             return $this->backWithError($e->getMessage());
         }

@@ -300,6 +300,8 @@ class AdminCaseController extends Controller
         }
     }
 
+
+
     public function documentGenerator()
     {
         try {
@@ -307,8 +309,9 @@ class AdminCaseController extends Controller
             $clients = User::role('client')->orderBy('name', 'asc')->get();
             $companySettings = \App\Models\GeneralSettings::first();
             $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+            $templates = \App\Models\DocumentTemplate::where('type', 'client')->where('status', true)->orderBy('title', 'asc')->get();
 
-            return view('backend.pages.cases.doc-generator', compact('title', 'clients', 'companyName'));
+            return view('backend.pages.cases.doc-generator', compact('title', 'clients', 'companyName', 'templates'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
@@ -317,7 +320,7 @@ class AdminCaseController extends Controller
     public function generateDocument(Request $request)
     {
         $request->validate([
-            'template_type' => 'required|in:retainer,power_of_attorney,cpa_auth',
+            'template_key' => 'required|string|exists:document_templates,key',
             'client_id' => 'required|exists:users,id',
             'custom_clauses' => 'nullable|string',
             'attorney_name' => 'nullable|string|max:255',
@@ -327,74 +330,82 @@ class AdminCaseController extends Controller
 
         try {
             $client = User::findOrFail($request->client_id);
-            $title = '';
-            $content = '';
+            $template = \App\Models\DocumentTemplate::where('key', $request->template_key)->firstOrFail();
+            
+            $title = $template->title;
+            $rawContent = $template->content;
+            
             $dateStr = $request->effective_date ? \Carbon\Carbon::parse($request->effective_date)->format('F d, Y') : date('F d, Y');
             $attorneyName = $request->attorney_name ?: config('app.name', 'Your CPA Expert');
-
-            if ($request->template_type === 'retainer') {
-                $title = __('Legal Representation Retainer Agreement');
-                $content = "
-                    <h3 style='text-align: center; color: #1e3c72;'>" . __('RETAINER AGREEMENT') . "</h3>
-                    <p><strong>" . __('Effective Date:') . "</strong> {$dateStr}</p>
-                    <p>This Retainer Agreement is entered into by and between <strong>{$attorneyName}</strong> (hereafter 'Firm') and <strong>{$client->name}</strong> (hereafter 'Client') residing at <strong>{$client->address}</strong>.</p>
-                    <p><strong>1. Scope of Services:</strong> Firm agrees to provide legal/accounting representation and consultation services to Client. Services include case evaluation, document preparation, and filings.</p>
-                    <p><strong>2. Fees & Compensation:</strong> Client agrees to pay the agreed hourly rates or flat-fee representation schedules. Invoice statements will be generated cycle-by-cycle.</p>
-                    <p><strong>3. Termination:</strong> Either party may terminate representation upon written notice, subject to professional code constraints.</p>
-                ";
-                if ($request->custom_clauses) {
-                    $content .= "
-                        <p><strong>4. Special Clauses & Custom Agreements:</strong></p>
-                        <p style='white-space: pre-line; background-color: #f8f9fa; padding: 12px; border-left: 3px solid #1e3c72;'>" . e($request->custom_clauses) . "</p>
-                    ";
-                }
-            } elseif ($request->template_type === 'power_of_attorney') {
-                $title = __('General Power of Attorney (POA)');
-                $content = "
-                    <h3 style='text-align: center; color: #1e3c72;'>" . __('GENERAL POWER OF ATTORNEY') . "</h3>
-                    <p><strong>" . __('Effective Date:') . "</strong> {$dateStr}</p>
-                    <p>I, <strong>{$client->name}</strong>, residing at <strong>{$client->address}</strong>, hereby appoint <strong>{$attorneyName}</strong> as my attorney-in-fact to act in my name, place, and stead in any way which I myself could do, if I were personally present, with respect to legal, financial, and tax matters.</p>
-                    <p>This Power of Attorney is durable and shall not be affected by subsequent disability or incapacity of the principal.</p>
-                ";
-                if ($request->custom_clauses) {
-                    $content .= "
-                        <p><strong>Special Powers / Custom Limitation Clauses:</strong></p>
-                        <p style='white-space: pre-line; background-color: #f8f9fa; padding: 12px; border-left: 3px solid #1e3c72;'>" . e($request->custom_clauses) . "</p>
-                    ";
-                }
-            } else {
-                $title = __('IRS Form CPA Representation Authorization');
-                $content = "
-                    <h3 style='text-align: center; color: #1e3c72;'>" . __('IRS TAX REPRESENTATION AUTHORIZATION') . "</h3>
-                    <p><strong>" . __('Effective Date:') . "</strong> {$dateStr}</p>
-                    <p>The undersigned taxpayer, <strong>{$client->name}</strong>, residing at <strong>{$client->address}</strong>, hereby authorizes <strong>{$attorneyName}</strong> to represent the taxpayer before the Internal Revenue Service and state departments of revenue regarding tax audits, compliance filings, and balance resolutions.</p>
-                ";
-                if ($request->custom_clauses) {
-                    $content .= "
-                        <p><strong>Tax Years / Custom Limitations:</strong></p>
-                        <p style='white-space: pre-line; background-color: #f8f9fa; padding: 12px; border-left: 3px solid #1e3c72;'>" . e($request->custom_clauses) . "</p>
-                    ";
-                }
-            }
-
+            
             $companySettings = \App\Models\GeneralSettings::first();
             $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
 
-            ActivityLog::log('Document Generated', 'Generated ' . $request->template_type . ' template for client ' . $client->name);
+            // Find client case (if exists) for this client, to get case_number
+            $clientCase = \App\Models\ClientCase::where('client_id', $client->id)->orderBy('created_at', 'desc')->first();
+            $caseNumber = $clientCase ? $clientCase->case_number : 'N/A';
+
+            // Replace client templates placeholders
+            $placeholders = [
+                '{{client_name}}' => $client->name,
+                '{{client_email}}' => $client->email,
+                '{{client_phone}}' => $client->phone ?: 'N/A',
+                '{{client_address}}' => $client->address ?: 'N/A',
+                '{{company_name}}' => $companyName,
+                '{{date}}' => $dateStr,
+                '{{attorney_name}}' => $attorneyName,
+                '{{case_number}}' => $caseNumber,
+            ];
+
+            $content = str_replace(array_keys($placeholders), array_values($placeholders), $rawContent);
+
+            if ($request->custom_clauses) {
+                $content .= "
+                    <div style='margin-top: 25px; border-top: 1px solid #ddd; padding-top: 15px;'>
+                        <h4>" . __('Special Clauses & Custom Agreements:') . "</h4>
+                        <p style='white-space: pre-line; background-color: #f8f9fa; padding: 12px; border-left: 3px solid #1e3c72; color: #333;'>" . e($request->custom_clauses) . "</p>
+                    </div>
+                ";
+            }
+
+            ActivityLog::log('Document Generated', 'Generated ' . $request->template_key . ' template for client ' . $client->name);
 
             // Optional email dispatch
             if ($request->send_email) {
-                $subject = "Legal Agreement Draft for Review: " . $title;
+                $subject = "Agreement Draft for Review: " . $title;
                 
-                $bodyText = "The following legal representation agreement has been generated and pre-populated for your review. Please examine the details below:\n\n"
-                    . "Document Title : " . $title . "\n"
-                    . "Effective Date : " . $dateStr . "\n"
-                    . "Attorney/Officer : " . $attorneyName . "\n"
-                    . "Client Name : " . $client->name . "\n"
-                    . "Client Address : " . ($client->address ?: 'N/A') . "\n\n"
-                    . "--- SPECIAL CLAUSES ---\n"
+                $bodyText = "Hello " . $client->name . ",\n\n"
+                    . "A legal document draft has been generated for your review by " . $companyName . ".\n\n"
+                    . "Document Title: " . $title . "\n"
+                    . "Effective Date: " . $dateStr . "\n"
+                    . "Attorney/CPA: " . $attorneyName . "\n"
+                    . "Client Name: " . $client->name . "\n"
+                    . "Client Address: " . ($client->address ?: 'N/A') . "\n";
+                if ($clientCase) {
+                    $bodyText .= "Associated Case: Case #" . $clientCase->case_number . " - " . $clientCase->title . "\n";
+                }
+                $bodyText .= "\n"
+                    . "--- CUSTOM AGREEMENT NOTE ---\n"
                     . ($request->custom_clauses ?: "No custom clauses added.") . "\n\n"
-                    . "Please review the formal print-ready agreement details online, and submit signed execution documents directly to your secure vault or reply to this message.";
+                    . "Please check the attached PDF for the full representation agreement details. "
+                    . "You can view, print, or download this template directly inside your Client Dashboard. Please return a signed copy to us or upload it to your secure Document Vault.\n\n"
+                    . "Best regards,\n"
+                    . "Legal Operations Team\n"
+                    . $companyName;
+
+                $trackingToken = uniqid() . bin2hex(random_bytes(8));
+
+                // Log document log
+                \App\Models\DocumentLog::create([
+                    'template_key' => $request->template_key,
+                    'template_title' => $title,
+                    'client_id' => $client->id,
+                    'recipient_email' => $client->email,
+                    'sent_by' => Auth::id(),
+                    'sent_to_email' => true,
+                    'status' => 'sent',
+                    'tracking_token' => $trackingToken,
+                ]);
 
                 // Generate PDF representation of the document
                 $pdfPath = null;
@@ -408,15 +419,29 @@ class AdminCaseController extends Controller
                 }
 
                 $attachmentName = str_replace(' ', '_', $title) . '.pdf';
-                $this->sendEmailNotification($client->email, $subject, $bodyText, $pdfPath, $attachmentName);
+                $this->sendEmailNotification($client->email, $subject, $bodyText, $pdfPath, $attachmentName, $trackingToken);
 
                 if ($pdfPath && file_exists($pdfPath)) {
                     @unlink($pdfPath);
                 }
-                ActivityLog::log('Document Email Sent', 'Emailed generated ' . $request->template_type . ' agreement with PDF attachment to client ' . $client->name);
+                ActivityLog::log('Document Email Sent', 'Emailed generated ' . $request->template_key . ' agreement with PDF attachment to client ' . $client->name);
+            } else {
+                // Log generated document (but not sent to email)
+                \App\Models\DocumentLog::create([
+                    'template_key' => $request->template_key,
+                    'template_title' => $title,
+                    'client_id' => $client->id,
+                    'recipient_email' => $client->email,
+                    'sent_by' => Auth::id(),
+                    'sent_to_email' => false,
+                    'status' => 'generated',
+                    'tracking_token' => uniqid() . bin2hex(random_bytes(8)),
+                ]);
             }
 
-            return view('backend.pages.cases.doc-print', compact('title', 'content', 'client', 'companyName', 'dateStr'));
+            // Hide default print-view signatures since templates have custom ones
+            $hideDefaultSignatures = true;
+            return view('backend.pages.cases.doc-print', compact('title', 'content', 'client', 'companyName', 'dateStr', 'hideDefaultSignatures'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
