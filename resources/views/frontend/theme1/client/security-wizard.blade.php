@@ -1,4 +1,4 @@
-@extends('frontend.theme1.auth.layouts.master-layout')
+@extends('auth.layouts.master-layout')
 
 @section('content')
 <style>

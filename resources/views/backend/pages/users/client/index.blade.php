@@ -391,42 +391,68 @@
 </div>
 @endsection
 
-@section('page-js')
+@section('page-script')
 <script>
-    function autoFillFromLead(select) {
+    window.autoFillFromLead = function(select) {
         var opt = select.options[select.selectedIndex];
         if (opt && opt.value) {
-            document.getElementById('client_name').value = opt.getAttribute('data-name') || '';
-            document.getElementById('client_email').value = opt.getAttribute('data-email') || '';
-            document.getElementById('client_phone').value = opt.getAttribute('data-phone') || '';
+            var name = opt.getAttribute('data-name') || '';
+            var email = opt.getAttribute('data-email') || '';
+            var phone = opt.getAttribute('data-phone') || '';
+            
+            var nameInput = document.getElementById('client_name');
+            var emailInput = document.getElementById('client_email');
+            var phoneInput = document.getElementById('client_phone');
+            
+            if (nameInput) nameInput.value = name;
+            if (emailInput) emailInput.value = email;
+            if (phoneInput) phoneInput.value = phone;
         }
-    }
+    };
 
-    function openWelcomeEmailModal(clientId, name, email) {
-        document.getElementById('modal_email_client_id').value = clientId;
-        document.getElementById('modal_email_recipient_display').value = name + ' (' + email + ')';
+    window.openWelcomeEmailModal = function(clientId, name, email) {
+        var idInput = document.getElementById('modal_email_client_id');
+        var dispInput = document.getElementById('modal_email_recipient_display');
+        
+        if (idInput) idInput.value = clientId;
+        if (dispInput) dispInput.value = name + ' (' + email + ')';
+        
         $('#welcomeEmailModal').modal('show');
-    }
+    };
 
-    function copyCredentialsText() {
-        var email = document.getElementById('cred-email').innerText;
-        var pwd = document.getElementById('cred-pwd').innerText;
-        var pin = document.getElementById('cred-pin').innerText;
+    window.copyCredentialsText = function() {
+        var emailElem = document.getElementById('cred-email');
+        var pwdElem = document.getElementById('cred-pwd');
+        var pinElem = document.getElementById('cred-pin');
+        
+        var email = emailElem ? emailElem.innerText.trim() : '';
+        var pwd = pwdElem ? pwdElem.innerText.trim() : '';
+        var pin = pinElem ? pinElem.innerText.trim() : '';
+        
         var text = "Portal Login: " + window.location.origin + "/login\nUsername: " + email + "\nTemporary Password: " + pwd + "\nDefault PIN: " + pin;
         navigator.clipboard.writeText(text).then(function() {
             alert('Credentials copied to clipboard!');
         });
-    }
+    };
 
     $(document).ready(function() {
-        $('.user_btn').on('click', function() {
+        $(document).on('click', '.user_btn', function() {
             var userId = $(this).data('id');
+            $('#modal_data').html('<div class="text-center p-3"><i class="fas fa-spinner fa-spin fa-2x text-warning"></i></div>');
             $.ajax({
                 url: "{{ route('admin.user.index') }}",
                 type: 'GET',
                 data: { id: userId },
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
                 success: function(response) {
-                    $('#modal_data').html(response.data);
+                    if (response && response.data) {
+                        $('#modal_data').html(response.data);
+                    }
+                },
+                error: function(xhr) {
+                    $('#modal_data').html('<div class="alert alert-danger p-2 m-2">Error loading user profile details.</div>');
                 }
             });
         });

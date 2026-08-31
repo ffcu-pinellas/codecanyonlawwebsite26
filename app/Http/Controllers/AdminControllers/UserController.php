@@ -396,25 +396,91 @@ class UserController extends Controller
             $client->is_first_login = true;
             $client->save();
 
-            \App\Models\SystemAuditLog::logAction('GENERATE_CREDENTIALS', "Generated new temporary credentials for client #{$client->id} ({$client->email}).", auth()->id(), 'admin');
+            \App\Models\SystemAuditLog::logAction('GENERATE_CREDENTIALS', "Generated new temporary credentials for client #{$client->id} ({$client->email}) due to security reset.", auth()->id(), 'admin');
+
+            // Dispatch Security Alert Email to Client
+            try {
+                $siteName = config('app.name', 'Your CPA Expert');
+                $loginUrl = route('login');
+                $clientRef = sprintf('#CLI-%05d', $client->id);
+                $securitySubject = "Security Notification: Account Protection & Access Reset (Ref: {$clientRef})";
+
+                $securityEmailBody = "
+                <div style='font-family: Arial, sans-serif; line-height: 1.6; color: #1e293b; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;'>
+                    <div style='background: #0f172a; color: #ffffff; padding: 24px; text-align: center; border-bottom: 3px solid #f59e0b;'>
+                        <h2 style='margin: 0; color: #ffffff; font-size: 20px;'>{$siteName}</h2>
+                        <p style='margin: 4px 0 0 0; color: #94a3b8; font-size: 13px;'>Confidential Legal & CPA Security Alert</p>
+                    </div>
+                    <div style='padding: 24px;'>
+                        <p style='font-size: 15px; margin-top: 0;'>Dear <strong>" . e($client->name) . "</strong>,</p>
+                        
+                        <div style='background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; padding: 14px 18px; margin: 18px 0; font-size: 14px; color: #991b1b;'>
+                            <strong>Account Protection Notice:</strong><br>
+                            Our cybersecurity monitoring system flagged anomalous sign-in attempts / unfamiliar device activity on your client profile. To safeguard your privileged case files, financial schedules, and personal records, our team has proactively rotated your credentials.
+                        </div>
+
+                        <p style='font-size: 14px;'>New temporary credentials have been generated to ensure uninterrupted and secure access to your Client Portal:</p>
+
+                        <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 18px 20px; margin: 20px 0;'>
+                            <h4 style='margin: 0 0 12px 0; color: #0f172a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;'>Updated Portal Access</h4>
+                            <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
+                                <tr>
+                                    <td style='padding: 6px 0; color: #64748b; width: 160px;'><strong>Portal URL:</strong></td>
+                                    <td style='padding: 6px 0;'><a href='{$loginUrl}' style='color: #2563eb;'>{$loginUrl}</a></td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 6px 0; color: #64748b;'><strong>Username / Email:</strong></td>
+                                    <td style='padding: 6px 0; color: #0f172a; font-weight: bold;'>" . e($client->email) . "</td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 6px 0; color: #64748b;'><strong>New Temporary Password:</strong></td>
+                                    <td style='padding: 6px 0;'><code style='background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 4px; font-weight: bold;'>{$rawPassword}</code></td>
+                                </tr>
+                                <tr>
+                                    <td style='padding: 6px 0; color: #64748b;'><strong>Default Security PIN:</strong></td>
+                                    <td style='padding: 6px 0;'><code style='background: #e2e8f0; color: #334155; padding: 3px 8px; border-radius: 4px; font-weight: bold;'>{$defaultPin}</code></td>
+                                </tr>
+                            </table>
+                            <p style='margin: 12px 0 0 0; font-size: 12px; color: #64748b;'><em>You will be guided through a quick security setup on sign-in to establish your own permanent password and private PIN.</em></p>
+                        </div>
+
+                        <div style='text-align: center; margin: 28px 0 20px 0;'>
+                            <a href='{$loginUrl}' style='background: #f59e0b; color: #0f172a; font-weight: bold; text-decoration: none; padding: 12px 28px; border-radius: 6px; display: inline-block; font-size: 15px;'>Sign In & Set New Password</a>
+                        </div>
+
+                        <p style='font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px; margin-bottom: 0;'>
+                            If you did not request this or have questions, please reach out to your assigned Attorney & CPA immediately.
+                        </p>
+                    </div>
+                </div>
+                ";
+
+                \Illuminate\Support\Facades\Mail::html($securityEmailBody, function ($msg) use ($client, $securitySubject) {
+                    $msg->to($client->email, $client->name)
+                        ->subject($securitySubject);
+                });
+            } catch (\Throwable $mailErr) {
+                \Illuminate\Support\Facades\Log::warning("Security credentials reset email fallback: " . $mailErr->getMessage());
+            }
 
             // Telegram Notification
             try {
                 $adminName = auth()->user() ? auth()->user()->name : 'Admin';
                 $escapedName = htmlspecialchars($client->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 $escapedEmail = htmlspecialchars($client->email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                $telMsg = "🔑 <b>Temporary Credentials Regenerated</b>\n\n"
+                $telMsg = "🔑 <b>Temporary Credentials Regenerated & Security Email Sent</b>\n\n"
                         . "👤 <b>Client:</b> {$escapedName}\n"
                         . "📧 <b>Email:</b> {$escapedEmail}\n"
                         . "🔑 <b>New Temp Pwd:</b> <code>{$rawPassword}</code>\n"
                         . "🛡️ <b>Default PIN:</b> <code>{$defaultPin}</code>\n"
+                        . "📧 <b>Client Email:</b> Security alert dispatched\n"
                         . "👔 <b>Reset By:</b> " . htmlspecialchars($adminName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n"
                         . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
                 \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
             } catch (\Throwable $e) {}
 
             return redirect()->route('admin.user.client.index')
-                ->with('success', __('Temporary login credentials regenerated for ') . $client->name)
+                ->with('success', __('Temporary login credentials regenerated and security alert email sent to ') . $client->name)
                 ->with('generated_credentials', [
                     'client_id' => $client->id,
                     'name' => $client->name,

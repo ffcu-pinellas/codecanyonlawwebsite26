@@ -2,6 +2,7 @@
 
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Http\Controllers\AdminControllers\AdminController;
+use App\Http\Controllers\AdminControllers\AdminAuthController;
 use App\Http\Controllers\AdminControllers\AdminBlogCategoryController;
 use App\Http\Controllers\AdminControllers\AdminBlogController;
 use App\Http\Controllers\AdminControllers\AdminCaseStudyController;
@@ -263,6 +264,10 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client',
 });
 
 
+
+// Admin & Staff Authentication Portal
+Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
+Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.submit');
 
 Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctum','verified', 'admin']], function () {
     // dashboard route

@@ -294,9 +294,10 @@ class AdminController extends Controller
     public function conversationIndex()
     {
         try {
-            $title = 'Conversations';
+            $title = 'Client Messaging & Live Chat Hub';
+            $chatSettings = \App\Services\ChatwootService::getSettings();
             $conversations = $this->viewConversationsOnIndex(Auth::user()->conversation);
-            return view('backend.pages.conversations.index', compact('conversations', 'title'));
+            return view('backend.pages.conversations.index', compact('conversations', 'title', 'chatSettings'));
         } catch (\Throwable $th) {
             return $this->backWithError($th->getMessage());
         }
