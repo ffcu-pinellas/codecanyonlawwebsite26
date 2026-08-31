@@ -869,4 +869,102 @@ class ClientViewController extends Controller
             return $this->backWithError($e->getMessage());
         }
     }
+
+    /**
+     * Legal & CPA Due Diligence & Financial Documents (KYC)
+     */
+    public function kycIndex()
+    {
+        try {
+            $title = __('Client Financial & Legal Document Intake');
+            $user = Auth::user();
+            $documents = \App\Models\ClientKycDocument::where('client_id', $user->id)->orderBy('id', 'desc')->get();
+            $cases = $user->clientCases()->get();
+
+            return view('frontend.theme1.auth-client.pages.kyc.index', compact('title', 'user', 'documents', 'cases'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function kycUpload(Request $request)
+    {
+        $request->validate([
+            'document_type' => 'required|string|max:100',
+            'file_title' => 'required|string|max:255',
+            'document_file' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png,xls,xlsx|max:15360',
+            'case_id' => 'nullable|exists:client_cases,id',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $file = $request->file('document_file');
+            $uploadPath = public_path('upload/client-kyc-docs');
+            if (!File::exists($uploadPath)) {
+                File::makeDirectory($uploadPath, 0755, true);
+            }
+
+            $extension = $file->getClientOriginalExtension();
+            $newFileName = time() . '_' . uniqid() . '.' . $extension;
+            $file->move($uploadPath, $newFileName);
+            $filePath = '/upload/client-kyc-docs/' . $newFileName;
+            $fileSize = file_exists(public_path($filePath)) ? round(filesize(public_path($filePath)) / 1024, 1) . ' KB' : 'N/A';
+
+            \App\Models\ClientKycDocument::create([
+                'client_id' => $user->id,
+                'case_id' => $request->case_id,
+                'document_type' => $request->document_type,
+                'file_title' => $request->file_title,
+                'file_path' => $filePath,
+                'file_size' => $fileSize,
+                'status' => 'Pending Review',
+            ]);
+
+            \App\Models\SystemAuditLog::logAction('KYC_DOCUMENT_UPLOADED', "Client uploaded KYC/Tax document: {$request->file_title} ({$request->document_type})", $user->id, 'client');
+
+            return redirect()->back()->with('success', __('Document uploaded successfully and queued for Attorney & CPA review.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Retainer & Trust Settlement Payout Digital Confirmation
+     */
+    public function confirmSettlement(Request $request, $id)
+    {
+        $request->validate([
+            'payout_method' => 'required|string|max:100',
+            'payout_destination_details' => 'required|string|max:1000',
+            'pin' => 'required|numeric|digits:4',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $settlement = \App\Models\CaseSettlement::where('case_id', $id)
+                ->where('client_id', $user->id)
+                ->firstOrFail();
+
+            // Verify PIN
+            if ($user->pin_hash && !\Illuminate\Support\Facades\Hash::check($request->pin, $user->pin_hash)) {
+                return redirect()->back()->with('error', __('Invalid 4-digit Security PIN. Please verify your PIN and try again.'));
+            }
+
+            $signatureHash = hash('sha256', $user->id . '_' . $settlement->id . '_' . time() . '_' . $request->ip());
+
+            $settlement->update([
+                'payout_method' => $request->payout_method,
+                'payout_destination_details' => $request->payout_destination_details,
+                'client_confirmed_at' => now(),
+                'client_signature_hash' => $signatureHash,
+                'status' => 'Client Confirmed - Pending Disbursement',
+            ]);
+
+            \App\Models\SystemAuditLog::logAction('SETTLEMENT_CONFIRMED', "Client confirmed settlement disbursement instructions for Case #{$id}. Hash: {$signatureHash}", $user->id, 'client');
+
+            return redirect()->back()->with('success', __('Settlement disbursement instructions confirmed successfully.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
 }

@@ -3,6 +3,7 @@
 
 @include('frontend.theme1.auth-client.layouts.head')
 <body id="body">
+@include('components.impersonation-bar')
 
 @include('frontend.theme1.auth-client.layouts.pre-loader')
 
@@ -69,6 +70,7 @@
 
 @include('backend.layouts.toster-script')
 {!! $insertHeaderFooter?$insertHeaderFooter->footer:'' !!}
+@include('components.chatwoot-widget')
 </body>
 
 </html>

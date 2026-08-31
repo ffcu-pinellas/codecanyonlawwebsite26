@@ -45,7 +45,9 @@ class Controller extends BaseController
                 $logoFavicon = new LogoSettings();
             }
             if (empty($logoFavicon->logo) || (!str_starts_with($logoFavicon->logo, 'http') && !file_exists(public_path($logoFavicon->logo)))) {
-                if (file_exists(public_path('upload/settings/1731322171New_Project-removebg-preview.png'))) {
+                if (file_exists(public_path('upload/settings/logo.png'))) {
+                    $logoFavicon->logo = '/upload/settings/logo.png';
+                } elseif (file_exists(public_path('upload/settings/1731322171New_Project-removebg-preview.png'))) {
                     $logoFavicon->logo = '/upload/settings/1731322171New_Project-removebg-preview.png';
                 }
             }
@@ -184,7 +186,9 @@ class Controller extends BaseController
         $logoSettings = \App\Models\LogoSettings::first();
         $logoPath = $logoSettings ? $logoSettings->logo : null;
         if (!$logoPath || (!str_starts_with($logoPath, 'http') && !file_exists(public_path($logoPath)))) {
-            if (file_exists(public_path('upload/settings/1731322171New_Project-removebg-preview.png'))) {
+            if (file_exists(public_path('upload/settings/logo.png'))) {
+                $logoPath = '/upload/settings/logo.png';
+            } elseif (file_exists(public_path('upload/settings/1731322171New_Project-removebg-preview.png'))) {
                 $logoPath = '/upload/settings/1731322171New_Project-removebg-preview.png';
             }
         }

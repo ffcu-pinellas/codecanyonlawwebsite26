@@ -9,18 +9,13 @@
         border-radius: 15px;
         border: none;
         box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        margin-bottom: 30px;
+        margin-bottom: 25px;
     }
     .status-badge-pending { background-color: #ffeaa7; color: #d63031; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
     .status-badge-active { background-color: #dff9fb; color: #0984e3; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
     .status-badge-suspended { background-color: #ffcccc; color: #ff0000; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
     .status-badge-resolved { background-color: #e3fafc; color: #0ca678; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
     
-    .section-title {
-        font-weight: 700;
-        color: #1a1a2e;
-        font-family: 'Montserrat', sans-serif;
-    }
     .attorney-info {
         background: #f8f9fa;
         border-radius: 12px;
@@ -51,10 +46,50 @@
     .upload-box:hover {
         border-color: #007bff;
     }
-    @keyframes pulse-active {
-        0% { box-shadow: 0 0 0 0 rgba(52,152,219,0.5); }
-        70% { box-shadow: 0 0 0 6px rgba(52,152,219,0); }
-        100% { box-shadow: 0 0 0 0 rgba(52,152,219,0); }
+    .lifecycle-step {
+        flex: 1;
+        text-align: center;
+        position: relative;
+        padding: 10px 5px;
+    }
+    .lifecycle-step .step-number {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #e2e8f0;
+        color: #64748b;
+        font-weight: bold;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 8px;
+        font-size: 13px;
+    }
+    .lifecycle-step.completed .step-number {
+        background: #22c55e;
+        color: white;
+    }
+    .lifecycle-step.active .step-number {
+        background: #f59e0b;
+        color: #0f172a;
+        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.25);
+    }
+    .lifecycle-step .step-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .lifecycle-step.active .step-title, .lifecycle-step.completed .step-title {
+        color: #0f172a;
+    }
+    .settlement-stat-box {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 14px;
+        text-align: center;
     }
 </style>
 @endsection
@@ -68,7 +103,7 @@
 
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
-            {{ session('success') }}
+            <i class="fas fa-check-circle mr-1"></i> {{ session('success') }}
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
             </button>
@@ -77,10 +112,217 @@
 
     @if(session('error'))
         <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-            {{ session('error') }}
+            <i class="fas fa-exclamation-circle mr-1"></i> {{ session('error') }}
             <button type="button" class="close" data-dismiss="alert" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
             </button>
+        </div>
+    @endif
+
+    <!-- Case Lifecycle Stages & Progress Bar -->
+    <div class="card vault-card p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h5 class="font-weight-bold text-dark mb-0"><i class="fas fa-tasks text-warning mr-2"></i> {{ __('Case Progression Lifecycle') }}</h5>
+                <small class="text-muted">{{ __('Current procedural phase for Case Reference') }} #{{ $case->case_number }}</small>
+            </div>
+            <span class="badge badge-warning px-3 py-2 font-weight-bold" style="font-size: 13px;">
+                {{ $case->progress_percent ?: 25 }}% {{ __('Completed') }}
+            </span>
+        </div>
+
+        <div class="progress mb-4" style="height: 8px; border-radius: 4px; background: #e2e8f0;">
+            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $case->progress_percent ?: 25 }}%;" aria-valuenow="{{ $case->progress_percent ?: 25 }}" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+
+        @php $currentStage = $case->lifecycle_stage ?: 1; @endphp
+        <div class="d-flex justify-content-between flex-wrap">
+            <div class="lifecycle-step {{ $currentStage > 1 ? 'completed' : ($currentStage == 1 ? 'active' : '') }}">
+                <div class="step-number">{{ $currentStage > 1 ? '✓' : '1' }}</div>
+                <div class="step-title">{{ __('Intake & File Review') }}</div>
+            </div>
+            <div class="lifecycle-step {{ $currentStage > 2 ? 'completed' : ($currentStage == 2 ? 'active' : '') }}">
+                <div class="step-number">{{ $currentStage > 2 ? '✓' : '2' }}</div>
+                <div class="step-title">{{ __('Audit & Research') }}</div>
+            </div>
+            <div class="lifecycle-step {{ $currentStage > 3 ? 'completed' : ($currentStage == 3 ? 'active' : '') }}">
+                <div class="step-number">{{ $currentStage > 3 ? '✓' : '3' }}</div>
+                <div class="step-title">{{ __('Court & Tax Filings') }}</div>
+            </div>
+            <div class="lifecycle-step {{ $currentStage > 4 ? 'completed' : ($currentStage == 4 ? 'active' : '') }}">
+                <div class="step-number">{{ $currentStage > 4 ? '✓' : '4' }}</div>
+                <div class="step-title">{{ __('Settlement & Escrow') }}</div>
+            </div>
+            <div class="lifecycle-step {{ $currentStage >= 5 ? 'completed' : '' }}">
+                <div class="step-number">{{ $currentStage >= 5 ? '✓' : '5' }}</div>
+                <div class="step-title">{{ __('Final Resolution') }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Retainer & Trust Settlement Hub (If configured) -->
+    @if($case->show_settlement_escrow || $case->settlement)
+        @php $settle = $case->settlement; @endphp
+        <div class="card vault-card p-4 mb-4" style="border-left: 4px solid #10b981;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div>
+                    <h5 class="font-weight-bold text-dark mb-0">
+                        <i class="fas fa-university text-success mr-2"></i> {{ $case->settlement_title ?: __('Retainer & Trust Settlement Hub') }}
+                    </h5>
+                    <small class="text-muted">{{ __('Verified legal trust depository, retainer funds, and settlement disbursement schedule.') }}</small>
+                </div>
+                <span class="badge badge-success px-3 py-2 font-weight-bold">{{ $settle?->status ?: __('Funds Secured in Trust') }}</span>
+            </div>
+
+            <div class="row mb-3">
+                <div class="col-md-3 mb-2">
+                    <div class="settlement-stat-box">
+                        <small class="text-muted text-uppercase d-block font-weight-bold" style="font-size: 11px;">{{ __('Gross Settlement / Retainer') }}</small>
+                        <h4 class="font-weight-bold text-dark mb-0 mt-1">${{ number_format($settle?->gross_amount ?? $case->settled_amount ?? 0, 2) }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <div class="settlement-stat-box">
+                        <small class="text-muted text-uppercase d-block font-weight-bold" style="font-size: 11px;">{{ __('Legal & Advisory Fee') }} ({{ $settle?->legal_fee_percent ?? 10 }}%)</small>
+                        <h4 class="font-weight-bold text-danger mb-0 mt-1">-${{ number_format($settle?->legal_fee_amount ?? 0, 2) }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <div class="settlement-stat-box">
+                        <small class="text-muted text-uppercase d-block font-weight-bold" style="font-size: 11px;">{{ __('Court & Filing Expenses') }}</small>
+                        <h4 class="font-weight-bold text-muted mb-0 mt-1">-${{ number_format($settle?->expenses_amount ?? 0, 2) }}</h4>
+                    </div>
+                </div>
+                <div class="col-md-3 mb-2">
+                    <div class="settlement-stat-box" style="background: #ecfdf5; border-color: #a7f3d0;">
+                        <small class="text-success text-uppercase d-block font-weight-bold" style="font-size: 11px;">{{ __('Net Client Disbursement') }}</small>
+                        <h4 class="font-weight-bold text-success mb-0 mt-1">${{ number_format($settle?->net_client_payout ?? ($settle?->gross_amount ?? 0), 2) }}</h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confirmation Action Form if not confirmed -->
+            @if($settle && !$settle->client_confirmed_at)
+                <div class="p-3 bg-light rounded mt-2 border">
+                    <h6 class="font-weight-bold text-dark mb-2"><i class="fas fa-lock mr-1 text-warning"></i> {{ __('Authorize Settlement Disbursement (Requires 4-Digit Security PIN)') }}</h6>
+                    <form action="{{ route('client.cases.confirm-settlement', $case->id) }}" method="POST">
+                        @csrf
+                        <div class="row">
+                            <div class="col-md-4 form-group mb-2">
+                                <label class="small font-weight-bold">{{ __('Disbursement Method') }} <span class="text-danger">*</span></label>
+                                <select name="payout_method" class="form-control form-control-sm" required>
+                                    <option value="Wire Transfer / ACH (Direct Deposit)">{{ __('Wire Transfer / ACH Direct Deposit') }}</option>
+                                    <option value="Certified Trust Check">{{ __('Certified Trust Check (Mail)') }}</option>
+                                    <option value="Client Escrow Depository">{{ __('Client Escrow Depository Account') }}</option>
+                                </select>
+                            </div>
+                            <div class="col-md-5 form-group mb-2">
+                                <label class="small font-weight-bold">{{ __('Destination Account / Routing Details') }} <span class="text-danger">*</span></label>
+                                <input type="text" name="payout_destination_details" class="form-control form-control-sm" required placeholder="Bank Name, Routing #, Account #, Beneficial Owner Name">
+                            </div>
+                            <div class="col-md-3 form-group mb-2">
+                                <label class="small font-weight-bold">{{ __('4-Digit PIN') }} <span class="text-danger">*</span></label>
+                                <div class="input-group input-group-sm">
+                                    <input type="password" name="pin" maxlength="4" class="form-control" required placeholder="••••" inputmode="numeric">
+                                    <div class="input-group-append">
+                                        <button type="submit" class="btn btn-success font-weight-bold px-3">
+                                            <i class="fas fa-check mr-1"></i> {{ __('Confirm') }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            @elseif($settle && $settle->client_confirmed_at)
+                <div class="alert alert-success mb-0 py-2" style="font-size: 13px;">
+                    <i class="fas fa-check-circle mr-1"></i> {{ __('Disbursement instructions confirmed by client on') }} {{ $settle->client_confirmed_at->format('M d, Y H:i') }}. (Digital Signature Hash: <code>{{ substr($settle->client_signature_hash, 0, 16) }}...</code>)
+                </div>
+            @endif
+        </div>
+    @endif
+
+    <!-- Audit & Financial Schedules Ledger (If configured) -->
+    @if($case->show_financial_schedule || $case->financialSchedules->isNotEmpty())
+        <div class="card vault-card p-4 mb-4">
+            <h5 class="font-weight-bold text-dark mb-1">
+                <i class="fas fa-file-invoice text-info mr-2"></i> {{ $case->schedule_title ?: __('Audit & Financial Schedule Ledger') }}
+            </h5>
+            <small class="text-muted d-block mb-3">{{ __('Itemized record of audited assets, liabilities, tax filings, and claimed ledger items.') }}</small>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="small font-weight-bold">{{ __('Item Description') }}</th>
+                            <th class="small font-weight-bold">{{ __('Category') }}</th>
+                            <th class="small font-weight-bold">{{ __('Ref Code') }}</th>
+                            <th class="small font-weight-bold">{{ __('Amount') }}</th>
+                            <th class="small font-weight-bold">{{ __('Audit Status') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($case->financialSchedules as $sched)
+                            <tr>
+                                <td>
+                                    <div class="font-weight-bold text-dark">{{ $sched->item_description }}</div>
+                                    @if($sched->notes)<small class="text-muted">{{ $sched->notes }}</small>@endif
+                                </td>
+                                <td><span class="badge badge-secondary">{{ $sched->item_category }}</span></td>
+                                <td><code>{{ $sched->reference_code ?: '-' }}</code></td>
+                                <td class="font-weight-bold text-dark">${{ number_format($sched->amount, 2) }} {{ $sched->currency }}</td>
+                                <td><span class="badge badge-success px-2 py-1">{{ $sched->status }}</span></td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3 small">{{ __('No financial schedule items registered for this case yet.') }}</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    @endif
+
+    <!-- Court & Regulatory Jurisdictions Tracker (If configured) -->
+    @if($case->show_jurisdiction_tracker || $case->jurisdictions->isNotEmpty())
+        <div class="card vault-card p-4 mb-4">
+            <h5 class="font-weight-bold text-dark mb-1">
+                <i class="fas fa-gavel text-primary mr-2"></i> {{ $case->jurisdiction_title ?: __('Court & Regulatory Jurisdictions') }}
+            </h5>
+            <small class="text-muted d-block mb-3">{{ __('Official legal filings, court venues, and active proceedings on record.') }}</small>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="small font-weight-bold">{{ __('Jurisdiction / Court') }}</th>
+                            <th class="small font-weight-bold">{{ __('Action / Petition Type') }}</th>
+                            <th class="small font-weight-bold">{{ __('Docket #') }}</th>
+                            <th class="small font-weight-bold">{{ __('Filing Date') }}</th>
+                            <th class="small font-weight-bold">{{ __('Filing Status') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($case->jurisdictions as $juris)
+                            <tr>
+                                <td>
+                                    <div class="font-weight-bold text-dark">{{ $juris->jurisdiction_name }}</div>
+                                    @if($juris->court_venue)<small class="text-muted">{{ $juris->court_venue }}</small>@endif
+                                </td>
+                                <td>{{ $juris->action_type }}</td>
+                                <td><code>{{ $juris->docket_number ?: '-' }}</code></td>
+                                <td>{{ $juris->filing_date ? $juris->filing_date->format('M d, Y') : '-' }}</td>
+                                <td><span class="badge badge-info px-2 py-1">{{ $juris->status }}</span></td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-3 small">{{ __('No jurisdictional filings recorded yet.') }}</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     @endif
 

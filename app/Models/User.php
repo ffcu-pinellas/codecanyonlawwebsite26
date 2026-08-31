@@ -30,6 +30,8 @@ class User extends Authenticatable
      */
     protected $fillable = [
         'name', 'email', 'password', 'phone', 'address',
+        'pin_hash', 'is_temp_password', 'is_first_login',
+        'assigned_attorney_id', 'preferred_currency', 'device_history',
     ];
 
     /**
@@ -39,6 +41,7 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
+        'pin_hash',
         'remember_token',
         'two_factor_recovery_codes',
         'two_factor_secret',
@@ -141,5 +144,25 @@ class User extends Authenticatable
     public function activityLogs()
     {
         return $this->hasMany(ActivityLog::class, 'user_id');
+    }
+
+    public function assignedAttorney()
+    {
+        return $this->belongsTo(User::class, 'assigned_attorney_id');
+    }
+
+    public function kycDocuments()
+    {
+        return $this->hasMany(ClientKycDocument::class, 'client_id');
+    }
+
+    public function caseSettlements()
+    {
+        return $this->hasMany(CaseSettlement::class, 'client_id');
+    }
+
+    public function systemAuditLogs()
+    {
+        return $this->hasMany(SystemAuditLog::class, 'user_id');
     }
 }

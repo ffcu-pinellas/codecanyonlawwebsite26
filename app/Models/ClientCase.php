@@ -19,10 +19,26 @@ class ClientCase extends Model
         'attorney_id',
         'status',
         'court_date',
+        'lifecycle_stage',
+        'progress_percent',
+        'claim_amount',
+        'settled_amount',
+        'currency',
+        'show_financial_schedule',
+        'show_settlement_escrow',
+        'show_jurisdiction_tracker',
+        'schedule_title',
+        'settlement_title',
+        'jurisdiction_title',
     ];
 
     protected $casts = [
         'court_date' => 'datetime',
+        'claim_amount' => 'decimal:2',
+        'settled_amount' => 'decimal:2',
+        'show_financial_schedule' => 'boolean',
+        'show_settlement_escrow' => 'boolean',
+        'show_jurisdiction_tracker' => 'boolean',
     ];
 
     public function client()
@@ -48,5 +64,25 @@ class ClientCase extends Model
     public function milestones()
     {
         return $this->hasMany(CaseMilestone::class, 'case_id');
+    }
+
+    public function financialSchedules()
+    {
+        return $this->hasMany(CaseFinancialSchedule::class, 'case_id');
+    }
+
+    public function settlement()
+    {
+        return $this->hasOne(CaseSettlement::class, 'case_id');
+    }
+
+    public function jurisdictions()
+    {
+        return $this->hasMany(CaseJurisdiction::class, 'case_id');
+    }
+
+    public function kycDocuments()
+    {
+        return $this->hasMany(ClientKycDocument::class, 'case_id');
     }
 }

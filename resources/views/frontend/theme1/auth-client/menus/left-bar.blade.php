@@ -54,6 +54,12 @@
                 <span class="title">{{ __('My Invoices') }}</span>
             </a>
         </li>
+        <li class="{{ request()->is('client/kyc-documents*') ? 'active' : '' }}">
+            <a href="{{ route('client.kyc.index') }}">
+                <span class="icon"><i class="fas fa-file-invoice-dollar"></i></span>
+                <span class="title">{{ __('Financial & KYC Intake') }}</span>
+            </a>
+        </li>
         <li>
             <a id="logOut" href="javascript:void(0);">
                 <span class="icon"><i class="fas fa-power-off"></i></span>

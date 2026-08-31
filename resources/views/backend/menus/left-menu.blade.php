@@ -99,6 +99,10 @@
                                         class="link-text">{{ __('insert header footer') }}</span></a>
                             </li>
 
+                            <li><a href="{{ route('admin.settings.chat') }}" class="nav-link"> <i
+                                        class="material-icons">chevron_right</i> <span
+                                        class="link-text">{{ __('Live Chat & Chatwoot') }}</span></a>
+                            </li>
                         </ul>
                     </li>
                 @endcan

@@ -18,6 +18,7 @@ use App\Http\Controllers\AdminControllers\AdminFaqController;
 use App\Http\Controllers\AdminControllers\DynamicPageController;
 use App\Http\Controllers\AdminControllers\UserController;
 use App\Http\Controllers\ClientViewControllers\ClientViewController;
+use App\Http\Controllers\ClientViewControllers\ClientSecurityController;
 use App\Http\Controllers\GuestViewControllers\GuestViewController;
 use App\Http\Controllers\MenuSettings\MenuCategoryController;
 use App\Http\Controllers\MenuSettings\MenuItemController;
@@ -208,13 +209,27 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 //    return view('dashboard');
 //})->name('dashboard');
 
-Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client'])->as('client.')->group(function (){
-   Route::get('/dashboard', [ClientViewController::class, 'dashboard'])->name('dashboard');
-    // profile routs
+Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client', 'security.setup'])->as('client.')->group(function (){
+    Route::get('/dashboard', [ClientViewController::class, 'dashboard'])->name('dashboard');
+    // profile routes
     Route::get('/profile', [ClientViewController::class, 'profile'])->name('profile');
     Route::post('/profile', [ClientViewController::class, 'profileUpdate'])->name('profile-update');
     Route::post('/profile-info', [ClientViewController::class, 'profileInfoUpdate'])->name('profile-info');
     Route::post('/password-update', [UpdateUserPassword::class, 'updateAdminPassword'])->name('password-update');
+
+    // Security Wizard & PIN setup
+    Route::get('/security-wizard', [ClientSecurityController::class, 'showSecurityWizard'])->withoutMiddleware(['security.setup'])->name('security.wizard');
+    Route::post('/security-wizard', [ClientSecurityController::class, 'processSecurityWizard'])->withoutMiddleware(['security.setup'])->name('security.wizard.process');
+    Route::post('/security/set-pin', [ClientSecurityController::class, 'setPin'])->name('security.set-pin');
+    Route::post('/security/verify-pin-challenge', [ClientSecurityController::class, 'verifyPinChallenge'])->name('security.verify-pin-challenge');
+
+    // Financial & KYC Documents
+    Route::get('/kyc-documents', [ClientViewController::class, 'kycIndex'])->name('kyc.index');
+    Route::post('/kyc-documents/upload', [ClientViewController::class, 'kycUpload'])->name('kyc.upload');
+
+    // Retainer & Trust Settlement Confirmation
+    Route::post('/cases/{id}/confirm-settlement', [ClientViewController::class, 'confirmSettlement'])->name('cases.confirm-settlement');
+
     // financial relief
     Route::get('/financial-relief', [ClientViewController::class, 'createReliefRequest'])->name('financial-relief');
     Route::post('/financial-relief', [ClientViewController::class, 'storeReliefRequest']);
@@ -281,6 +296,11 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         //client
         Route::prefix('client')->as('client.')->group(function (){
             Route::get('/', [UserController::class, 'clientIndex'])->name('index');
+            Route::post('/store', [UserController::class, 'clientStore'])->name('store');
+            Route::post('/{id}/generate-credentials', [UserController::class, 'generateCredentials'])->name('generate-credentials');
+            Route::post('/send-welcome-email', [UserController::class, 'sendCustomWelcomeEmail'])->name('send-welcome-email');
+            Route::get('/{id}/impersonate', [UserController::class, 'impersonateClient'])->name('impersonate');
+            Route::get('/stop-impersonation', [UserController::class, 'stopImpersonation'])->name('stop-impersonation');
         });
 
         Route::get('/', [UserController::class, 'userIndex'])->name('index');
@@ -342,6 +362,10 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
        //social media
         Route::get('social-media', [AppSettingsController::class, 'socialMediaSettings'])->name('social-media');
         Route::post('social-media-save', [AppSettingsController::class, 'saveSocialMediaSettings'])->name('social-media-save');
+
+        // Chatwoot & Live Support
+        Route::get('chat', [AppSettingsController::class, 'getChatSettings'])->name('chat');
+        Route::post('chat', [AppSettingsController::class, 'saveChatSettings'])->name('chat-save');
 
     });
 

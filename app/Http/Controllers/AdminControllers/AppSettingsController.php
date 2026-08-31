@@ -394,4 +394,53 @@ class AppSettingsController extends Controller
             return redirect()->back()->with('error', $th->getMessage());
         }
     }
+
+    /*>>>>>>>>>>> Chatwoot & Live Support Settings >>>>>>>>*/
+    public function getChatSettings()
+    {
+        try {
+            $title = 'Live Chat & Chatwoot Settings';
+            $chatSettings = \App\Services\ChatwootService::getSettings();
+            return view('backend.pages.settings.chat', compact('title', 'chatSettings'));
+        } catch (\Throwable $th) {
+            return redirect()->back()->with('error', $th->getMessage());
+        }
+    }
+
+    public function saveChatSettings(Request $request)
+    {
+        $request->validate([
+            'provider' => 'required|in:chatwoot,tawkto,internal',
+            'website_token' => 'nullable|string',
+            'base_url' => 'nullable|url',
+            'account_id' => 'nullable|string',
+            'hmac_key' => 'nullable|string',
+            'tawkto_property_id' => 'nullable|string',
+        ]);
+
+        try {
+            $settingsPath = storage_path('settings.json');
+            $data = [];
+            if (file_exists($settingsPath)) {
+                $data = json_decode(file_get_contents($settingsPath), true) ?: [];
+            }
+
+            $data['chat'] = [
+                'provider' => $request->provider,
+                'website_token' => $request->website_token,
+                'base_url' => rtrim($request->base_url ?: 'https://app.chatwoot.com', '/'),
+                'account_id' => $request->account_id,
+                'hmac_key' => $request->hmac_key,
+                'tawkto_property_id' => $request->tawkto_property_id,
+            ];
+
+            file_put_contents($settingsPath, json_encode($data, JSON_PRETTY_PRINT));
+
+            \App\Models\SystemAuditLog::logAction('CHAT_SETTINGS_UPDATED', 'Updated Chatwoot and live chat integration settings.', auth()->id(), 'admin');
+
+            return $this->backWithSuccess('Chat & Chatwoot settings updated successfully.');
+        } catch (\Throwable $th) {
+            return redirect()->back()->with('error', $th->getMessage());
+        }
+    }
 }

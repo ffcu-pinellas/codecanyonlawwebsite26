@@ -4,7 +4,7 @@
 @include('frontend.theme1.layouts.head')
 
 <body id="body">
-
+@include('components.impersonation-bar')
 
 @include('frontend.theme1.layouts.pre-loader')
 
@@ -25,6 +25,7 @@
 @yield('page-script')
 @include('backend.layouts.toster-script')
 {!! $insertHeaderFooter?$insertHeaderFooter->footer:'' !!}
+@include('components.chatwoot-widget')
 </body>
 
 </html>
