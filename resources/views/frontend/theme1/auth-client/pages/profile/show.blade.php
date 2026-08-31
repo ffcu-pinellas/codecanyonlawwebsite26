@@ -20,6 +20,10 @@
                 @include('frontend.theme1.auth-client.pages.profile.update-password-form')
             </div>
         @endif
+
+        <div class="col-12">
+            @include('frontend.theme1.auth-client.pages.profile.update-pin-form')
+        </div>
     </div>
     <!-- END WRAPPER CONTENT ------------------------------------------------------------------------->
 @endsection

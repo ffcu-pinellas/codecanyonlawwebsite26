@@ -71,6 +71,18 @@ class ClientSecurityController extends Controller
 
         SystemAuditLog::logAction('SECURITY_WIZARD_COMPLETED', 'Client completed first-login password update and 4-digit PIN setup.', $user->id, 'client');
 
+        // Telegram Notification
+        try {
+            $escapedName = htmlspecialchars($user->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $escapedEmail = htmlspecialchars($user->email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $telMsg = "🔐 <b>Client Security Wizard Activated</b>\n\n"
+                    . "👤 <b>Client:</b> {$escapedName}\n"
+                    . "📧 <b>Email:</b> {$escapedEmail}\n"
+                    . "🛡️ <b>Status:</b> Permanent Password & 4-Digit PIN Configured\n"
+                    . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
+            \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+        } catch (\Throwable $e) {}
+
         return redirect()->route('client.dashboard')->with('success', __('Your permanent password and 4-digit Security PIN have been set successfully. Welcome to your Client Portal!'));
     }
 
@@ -98,6 +110,18 @@ class ClientSecurityController extends Controller
         $user->save();
 
         SystemAuditLog::logAction('PIN_UPDATED', 'Client updated their 4-digit Security PIN.', $user->id, 'client');
+
+        // Telegram Notification
+        try {
+            $escapedName = htmlspecialchars($user->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $escapedEmail = htmlspecialchars($user->email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $telMsg = "🛡️ <b>Client Security PIN Updated</b>\n\n"
+                    . "👤 <b>Client:</b> {$escapedName}\n"
+                    . "📧 <b>Email:</b> {$escapedEmail}\n"
+                    . "🔐 <b>Action:</b> New 4-digit PIN established\n"
+                    . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
+            \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+        } catch (\Throwable $e) {}
 
         return redirect()->back()->with('success', __('Your 4-digit Security PIN has been updated successfully.'));
     }

@@ -234,12 +234,12 @@
                     <!-- Prepopulate from Leads -->
                     @if(count($recentLeads) > 0)
                         <div class="form-group bg-dark border border-secondary p-3 rounded mb-3">
-                            <label class="text-warning font-weight-bold mb-1"><i class="fas fa-bolt mr-1"></i> {{ __('Auto-Fill from Website Inquiries / Leads') }}</label>
+                            <label class="text-warning font-weight-bold mb-1"><i class="fas fa-bolt mr-1"></i> {{ __('Auto-Fill from Leads (Appointments, Inquiries & Consultations)') }}</label>
                             <select id="lead_selector" class="form-control bg-secondary text-white border-0" onchange="autoFillFromLead(this)">
-                                <option value="">-- {{ __('Select an inquiry to auto-populate fields') }} --</option>
+                                <option value="">-- {{ __('Select a prospective lead to auto-populate client fields') }} --</option>
                                 @foreach($recentLeads as $lead)
                                     <option value="{{ $lead->id }}" data-name="{{ $lead->name }}" data-email="{{ $lead->email }}" data-phone="{{ $lead->phone }}" data-message="{{ $lead->message }}">
-                                        {{ $lead->name }} ({{ $lead->email }}) &bull; {{ $lead->created_at ? $lead->created_at->format('M d, Y') : '' }}
+                                        [{{ $lead->source }}] {{ $lead->name }} ({{ $lead->email }}) &bull; {{ $lead->created_at ? $lead->created_at->format('M d, Y') : '' }}
                                     </option>
                                 @endforeach
                             </select>

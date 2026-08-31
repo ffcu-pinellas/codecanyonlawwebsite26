@@ -249,7 +249,65 @@ class UserController extends Controller
         try {
             $clients = User::role('client')->with(['assignedAttorney', 'clientCases'])->orderBy('id', 'desc')->get();
             $attorneys = User::role('attorney')->get();
-            $recentLeads = \App\Models\Contact::orderBy('id', 'desc')->limit(30)->get();
+
+            // Aggregated Leads from Appointments, Contact Messages, and Relief/Consultation Requests
+            $leadsList = collect();
+
+            // 1. Appointments
+            try {
+                $appointments = \App\Models\Appointment::orderBy('id', 'desc')->limit(30)->get();
+                foreach ($appointments as $apt) {
+                    $leadsList->push((object)[
+                        'id' => 'apt_' . $apt->id,
+                        'source' => 'Appointment Booking',
+                        'badge_class' => 'badge-info',
+                        'name' => $apt->name,
+                        'email' => $apt->email,
+                        'phone' => $apt->phone ?? '',
+                        'message' => $apt->message ?? ($apt->description ?? ''),
+                        'created_at' => $apt->created_at,
+                    ]);
+                }
+            } catch (\Throwable $e) {}
+
+            // 2. Contact Inquiries
+            try {
+                $contacts = \App\Models\Contact::orderBy('id', 'desc')->limit(30)->get();
+                foreach ($contacts as $cnt) {
+                    $leadsList->push((object)[
+                        'id' => 'cnt_' . $cnt->id,
+                        'source' => 'Contact Form',
+                        'badge_class' => 'badge-primary',
+                        'name' => $cnt->name,
+                        'email' => $cnt->email,
+                        'phone' => $cnt->phone ?? '',
+                        'message' => ($cnt->subject ? "[{$cnt->subject}] " : '') . ($cnt->message ?? ''),
+                        'created_at' => $cnt->created_at,
+                    ]);
+                }
+            } catch (\Throwable $e) {}
+
+            // 3. Consultation / Relief Requests
+            try {
+                $reliefs = \App\Models\ReliefRequest::orderBy('id', 'desc')->limit(30)->get();
+                foreach ($reliefs as $rlf) {
+                    $leadsList->push((object)[
+                        'id' => 'rlf_' . $rlf->id,
+                        'source' => 'Consultation Request',
+                        'badge_class' => 'badge-warning text-dark',
+                        'name' => $rlf->name,
+                        'email' => $rlf->email,
+                        'phone' => $rlf->phone ?? '',
+                        'message' => ($rlf->reason ? "[{$rlf->reason}] " : '') . ($rlf->details ?? ''),
+                        'created_at' => $rlf->created_at,
+                    ]);
+                }
+            } catch (\Throwable $e) {}
+
+            // Sort all aggregated leads by latest created_at
+            $recentLeads = $leadsList->sortByDesc(function ($item) {
+                return $item->created_at ? $item->created_at->timestamp : 0;
+            })->values();
 
             return view('backend.pages.users.client.index', [
                 'title' => __('Client Management Directory'),
@@ -294,6 +352,23 @@ class UserController extends Controller
 
             \App\Models\SystemAuditLog::logAction('CLIENT_PROVISIONED', "Provisioned client #{$user->id} ({$user->email}) with temporary credentials.", auth()->id(), 'admin');
 
+            // Telegram Notification
+            try {
+                $adminName = auth()->user() ? auth()->user()->name : 'Admin';
+                $escapedName = htmlspecialchars($user->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedEmail = htmlspecialchars($user->email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedPhone = htmlspecialchars($user->phone ?: 'N/A', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $telMsg = "👤 <b>New Legal/CPA Client Account Provisioned</b>\n\n"
+                        . "👤 <b>Client:</b> {$escapedName}\n"
+                        . "📧 <b>Email:</b> {$escapedEmail}\n"
+                        . "📞 <b>Phone:</b> {$escapedPhone}\n"
+                        . "🔑 <b>Temp Pwd:</b> <code>{$rawPassword}</code>\n"
+                        . "🛡️ <b>Default PIN:</b> <code>{$defaultPin}</code>\n"
+                        . "👔 <b>Provisioned By:</b> " . htmlspecialchars($adminName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n"
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
+
             return redirect()->route('admin.user.client.index')
                 ->with('success', __('Client account created successfully.'))
                 ->with('generated_credentials', [
@@ -322,6 +397,21 @@ class UserController extends Controller
             $client->save();
 
             \App\Models\SystemAuditLog::logAction('GENERATE_CREDENTIALS', "Generated new temporary credentials for client #{$client->id} ({$client->email}).", auth()->id(), 'admin');
+
+            // Telegram Notification
+            try {
+                $adminName = auth()->user() ? auth()->user()->name : 'Admin';
+                $escapedName = htmlspecialchars($client->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedEmail = htmlspecialchars($client->email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $telMsg = "🔑 <b>Temporary Credentials Regenerated</b>\n\n"
+                        . "👤 <b>Client:</b> {$escapedName}\n"
+                        . "📧 <b>Email:</b> {$escapedEmail}\n"
+                        . "🔑 <b>New Temp Pwd:</b> <code>{$rawPassword}</code>\n"
+                        . "🛡️ <b>Default PIN:</b> <code>{$defaultPin}</code>\n"
+                        . "👔 <b>Reset By:</b> " . htmlspecialchars($adminName, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n"
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
 
             return redirect()->route('admin.user.client.index')
                 ->with('success', __('Temporary login credentials regenerated for ') . $client->name)
@@ -408,44 +498,62 @@ class UserController extends Controller
                             </tr>
                             <tr>
                                 <td style='padding: 6px 0; color: #64748b;'><strong>Temporary Password:</strong></td>
-                                <td style='padding: 6px 0;'><span style='background: #0f172a; color: #f59e0b; font-family: monospace; font-size: 15px; font-weight: bold; padding: 4px 10px; border-radius: 4px; display: inline-block;'>{$rawPassword}</span></td>
+                                <td style='padding: 6px 0;'><code style='background: #fef3c7; color: #92400e; padding: 3px 8px; border-radius: 4px; font-weight: bold;'>{$rawPassword}</code></td>
+                            </tr>
+                            <tr>
+                                <td style='padding: 6px 0; color: #64748b;'><strong>Default 4-Digit PIN:</strong></td>
+                                <td style='padding: 6px 0;'><code style='background: #e2e8f0; color: #334155; padding: 3px 8px; border-radius: 4px; font-weight: bold;'>{$defaultPin}</code></td>
                             </tr>
                         </table>
-                    </div>
-
-                    <div style='text-align: center; margin: 28px 0;'>
-                        <a href='{$loginUrl}' style='background: #f59e0b; color: #0f172a; text-decoration: none; font-weight: bold; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; padding: 14px 30px; border-radius: 6px; display: inline-block;'>
-                            ACCESS CLIENT PORTAL
-                        </a>
-                    </div>
-
-                    <div style='background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 12px 16px; margin: 20px 0; font-size: 12px; color: #92400e;'>
-                        <strong>Security Notice:</strong> Upon your first login, a security setup wizard will guide you to set a permanent password and establish your private 4-digit Security PIN.
+                        <p style='margin: 12px 0 0 0; font-size: 12px; color: #64748b;'><em>Upon initial sign-in, you will be prompted to set your permanent password and confidential security PIN.</em></p>
                     </div>
                 ";
             }
 
             $htmlBody .= "
-                    <p style='color: #64748b; font-size: 12px; margin-top: 24px; border-top: 1px solid #e2e8f0; padding-top: 16px;'>
-                        If you have any questions or require assistance, please reply directly to this email or reach our office directly.
+                    <div style='text-align: center; margin: 30px 0 20px 0;'>
+                        <a href='{$loginUrl}' style='background: #f59e0b; color: #0f172a; font-weight: bold; text-decoration: none; padding: 12px 28px; border-radius: 6px; display: inline-block; font-size: 15px;'>Access Client Portal</a>
+                    </div>
+                    <p style='font-size: 12px; color: #94a3b8; border-top: 1px solid #e2e8f0; padding-top: 16px; margin-bottom: 0;'>
+                        CONFIDENTIALITY NOTICE: This transmission is privileged and intended only for the designated recipient.
                     </p>
                 </div>
             </div>
             ";
 
+            // Attempt Email Dispatch with fallback logging
             try {
-                \Illuminate\Support\Facades\Mail::html($htmlBody, function ($message) use ($client, $subject, $siteName) {
-                    $message->to($client->email, $client->name)
+                \Illuminate\Support\Facades\Mail::html($htmlBody, function ($msg) use ($client, $subject) {
+                    $msg->to($client->email, $client->name)
                         ->subject($subject);
                 });
-            } catch (\Throwable $mailEx) {
-                \Log::error('Welcome email dispatch error: ' . $mailEx->getMessage());
+                $emailSent = true;
+            } catch (\Throwable $mailErr) {
+                \Illuminate\Support\Facades\Log::warning("Welcome email dispatch fallback: " . $mailErr->getMessage());
+                $emailSent = false;
             }
 
-            \App\Models\SystemAuditLog::logAction('SEND_WELCOME_EMAIL', "Dispatched custom welcome email to client #{$client->id} ({$client->email}).", auth()->id(), 'admin');
+            \App\Models\SystemAuditLog::logAction('WELCOME_EMAIL_SENT', "Sent custom welcome email to {$client->email}. Credentials included: " . ($includeCredentials ? 'Yes' : 'No'), auth()->id(), 'admin');
+
+            // Telegram Notification
+            try {
+                $escapedName = htmlspecialchars($client->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedEmail = htmlspecialchars($client->email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedSubject = htmlspecialchars($subject, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $telMsg = "📧 <b>Custom Welcome & Onboarding Email Dispatched</b>\n\n"
+                        . "👤 <b>Client:</b> {$escapedName}\n"
+                        . "📧 <b>Email:</b> {$escapedEmail}\n"
+                        . "📝 <b>Subject:</b> {$escapedSubject}\n"
+                        . ($includeCredentials ? "🔑 <b>Temporary Credentials:</b> Included (PIN: 1234)\n" : "")
+                        . (!empty($customNote) ? "💬 <b>Attorney/CPA Briefing:</b> " . htmlspecialchars(\Illuminate\Support\Str::limit($customNote, 120), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n" : "")
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
+
+            $msg = $emailSent ? __('Welcome email successfully dispatched to client.') : __('Welcome email prepared & logged (check mail settings).');
 
             return redirect()->route('admin.user.client.index')
-                ->with('success', __('Custom welcome email dispatched to ') . $client->email)
+                ->with('success', $msg)
                 ->with('generated_credentials', $includeCredentials ? [
                     'client_id' => $client->id,
                     'name' => $client->name,

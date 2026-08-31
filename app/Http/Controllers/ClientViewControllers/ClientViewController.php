@@ -922,6 +922,20 @@ class ClientViewController extends Controller
 
             \App\Models\SystemAuditLog::logAction('KYC_DOCUMENT_UPLOADED', "Client uploaded KYC/Tax document: {$request->file_title} ({$request->document_type})", $user->id, 'client');
 
+            // Telegram Notification
+            try {
+                $escapedName = htmlspecialchars($user->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedTitle = htmlspecialchars($request->file_title, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedType = htmlspecialchars($request->document_type, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $telMsg = "📁 <b>New Client Financial / KYC Document Uploaded</b>\n\n"
+                        . "👤 <b>Client:</b> {$escapedName}\n"
+                        . "📄 <b>Document:</b> {$escapedTitle}\n"
+                        . "🏷️ <b>Category:</b> {$escapedType}\n"
+                        . "💾 <b>Size:</b> {$fileSize}\n"
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
+
             return redirect()->back()->with('success', __('Document uploaded successfully and queued for Attorney & CPA review.'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
@@ -961,6 +975,21 @@ class ClientViewController extends Controller
             ]);
 
             \App\Models\SystemAuditLog::logAction('SETTLEMENT_CONFIRMED', "Client confirmed settlement disbursement instructions for Case #{$id}. Hash: {$signatureHash}", $user->id, 'client');
+
+            // Telegram Notification
+            try {
+                $escapedName = htmlspecialchars($user->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedMethod = htmlspecialchars($request->payout_method, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $payoutAmount = number_format($settlement->net_client_payout ?: $settlement->gross_amount, 2);
+                $telMsg = "⚖️ <b>Settlement Disbursement Authorized by Client</b>\n\n"
+                        . "👤 <b>Client:</b> {$escapedName}\n"
+                        . "💼 <b>Case ID:</b> #{$id}\n"
+                        . "💵 <b>Net Payout:</b> $" . $payoutAmount . "\n"
+                        . "🏦 <b>Method:</b> {$escapedMethod}\n"
+                        . "🛡️ <b>Authorization:</b> 4-Digit Security PIN Verified\n"
+                        . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
 
             return redirect()->back()->with('success', __('Settlement disbursement instructions confirmed successfully.'));
         } catch (\Throwable $e) {
