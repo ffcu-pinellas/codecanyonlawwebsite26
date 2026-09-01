@@ -20,8 +20,8 @@
             @endif
         </div>
         <h6 class="font-weight-bold text-white mb-0" style="font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ Auth::user()->name }}</h6>
-        <div class="badge mt-1 font-weight-bold" style="background: rgba(254, 204, 86, 0.15); color: #fecc56; border: 1px solid rgba(254, 204, 86, 0.3); font-size: 11px;">
-            CLI-{{ sprintf('%05d', Auth::user()->id) }}
+        <div class="badge mt-1 font-weight-bold" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 11px;">
+            <i class="fas fa-check-circle mr-1"></i> {{ __('Verified Client') }}
         </div>
     </div>
 

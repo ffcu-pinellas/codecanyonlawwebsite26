@@ -31,7 +31,7 @@
         <!-- Center Status Badge -->
         <div class="d-none d-xl-flex align-items-center">
             <span class="badge px-3 py-2" style="background: rgba(254, 204, 86, 0.1); color: #fecc56; border: 1px solid rgba(254, 204, 86, 0.3); font-size: 11.5px; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 700;">
-                <i class="fas fa-shield-alt mr-1"></i> {{ __('Privileged Legal & CPA File') }} &bull; CLI-{{ sprintf('%05d', Auth::user()->id) }}
+                <i class="fas fa-shield-alt mr-1"></i> {{ __('Secure Client Portal') }} &bull; {{ config('app.name', 'Your CPA Expert') }}
             </span>
         </div>
 
@@ -56,7 +56,7 @@
                 ];
             @endphp
             <div class="dropdown">
-                <button class="btn btn-sm btn-dark dropdown-toggle font-weight-bold text-light px-2 py-1" type="button" id="currencyDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background: #161a23; border: 1px solid #28303f; border-radius: 6px; font-size: 11.5px;">
+                <button class="btn btn-sm btn-dark dropdown-toggle font-weight-bold text-light px-2 py-1" type="button" id="currencyDropdown" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background: #161a23; border: 1px solid #28303f; border-radius: 6px; font-size: 11.5px;">
                     <i class="fas fa-dollar-sign text-warning mr-1"></i> <span id="currentCurrencyLabel">{{ $userCurrency }}</span>
                 </button>
                 <div class="dropdown-menu dropdown-menu-right shadow-lg p-1" aria-labelledby="currencyDropdown" style="background: #161a23; border: 1px solid #28303f; min-width: 120px;">
@@ -71,7 +71,7 @@
 
             <!-- 3. Language Switcher Dropdown -->
             <div class="dropdown">
-                <button class="btn btn-sm btn-dark dropdown-toggle font-weight-bold text-light px-2 py-1" type="button" id="languageDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background: #161a23; border: 1px solid #28303f; border-radius: 6px; font-size: 11.5px;">
+                <button class="btn btn-sm btn-dark dropdown-toggle font-weight-bold text-light px-2 py-1" type="button" id="languageDropdown" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background: #161a23; border: 1px solid #28303f; border-radius: 6px; font-size: 11.5px;">
                     <span id="currentLangFlag">🇺🇸</span> <span id="currentLangShort" class="d-none d-sm-inline">EN</span>
                 </button>
                 <div class="dropdown-menu dropdown-menu-right shadow-lg p-2" aria-labelledby="languageDropdown" style="background: #161a23; border: 1px solid #28303f; min-width: 170px; max-height: 280px; overflow-y: auto;">
@@ -107,7 +107,7 @@
 
             <!-- 4. User Profile Dropdown -->
             <div class="dropdown ml-1">
-                <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-white" id="userMenuDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-white" id="userMenuDropdown" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     @if(Auth::user()->profile_photo_path)
                         <img src="{{ Storage::url(Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()->name }}" class="rounded-circle" style="width: 34px; height: 34px; object-fit: cover; border: 2px solid #fecc56;">
                     @else
@@ -117,7 +117,7 @@
                     @endif
                     <div class="d-none d-lg-block text-left ml-2">
                         <strong class="text-white d-block small mb-0" style="line-height: 1.2;">{{ Auth::user()->name }}</strong>
-                        <small class="text-warning font-weight-bold" style="font-size: 10px;">CLI-{{ sprintf('%05d', Auth::user()->id) }}</small>
+                        <small class="text-muted" style="font-size: 10px;">{{ Auth::user()->email }}</small>
                     </div>
                 </a>
                 <div class="dropdown-menu dropdown-menu-right shadow-lg p-2" aria-labelledby="userMenuDropdown" style="background: #161a23; border: 1px solid #28303f; min-width: 220px;">
@@ -150,23 +150,19 @@
 
 <!-- Main Client Application Canvas -->
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
-<main class="client-portal-wrapper py-4" style="background-color: #0a0c10; min-height: calc(100vh - 120px);">
-    <div class="container-fluid px-3 px-lg-4">
-        <div class="row">
-            <!-- Sidebar Column (Wide 250px) -->
-            <div class="col-lg-3 col-xl-2 mb-4 mb-lg-0" style="min-width: 250px;">
-                @include('frontend.theme1.auth-client.menus.left-bar')
-            </div>
+<div class="client-portal-wrapper" style="background-color: #0a0c10; min-height: calc(100vh - 60px); display: flex; flex-direction: row; align-items: flex-start;">
+    <!-- Sidebar Column -->
+    <div class="client-sidebar-col d-none d-lg-block" style="width: 250px; flex-shrink: 0; padding: 20px 0 20px 16px;">
+        @include('frontend.theme1.auth-client.menus.left-bar')
+    </div>
 
-            <!-- Content Column -->
-            <div class="col-lg-9 col-xl-10">
-                <div class="client-content-container p-3 p-md-4 rounded" style="background: #11151e; border: 1px solid #28303f; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-height: 80vh;">
-                    @yield('content')
-                </div>
-            </div>
+    <!-- Content Column -->
+    <div class="client-content-col" style="flex: 1; min-width: 0; padding: 20px 16px 20px 16px;">
+        <div class="client-content-container p-3 p-md-4 rounded" style="background: #11151e; border: 1px solid #28303f; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-height: 80vh;">
+            @yield('content')
         </div>
     </div>
-</main>
+</div>
 
 <!-- Minimal App Footer -->
 <footer class="py-3 px-4 border-top text-center" style="background: #0d1017; border-color: #28303f !important; color: #94a3b8; font-size: 12px;">
@@ -186,86 +182,155 @@
 @include('backend.layouts.toster-script')
 
 <style>
-    /* EXECUTIVE IFW RECOVERY THEME SYSTEM */
-    body {
+    /* ===== DARK MODE BASE (DEFAULT) ===== */
+    html, body {
         font-family: 'Montserrat', sans-serif !important;
         background-color: #0a0c10 !important;
-        color: #ffffff !important;
+        color: #f1f5f9 !important;
     }
-    h1, h2, h3, h4, h5, h6, .card-title, strong, b {
-        color: #ffffff !important;
+    .client-portal-wrapper { background-color: #0a0c10 !important; }
+    h1, h2, h3, h4, h5, h6, .card-title { color: #f1f5f9 !important; }
+    strong, b { color: inherit !important; }
+    p, span, li { color: #cbd5e1; }
+    label, small { color: #94a3b8; }
+    .text-muted { color: #64748b !important; }
+    .text-white { color: #f1f5f9 !important; }
+    .text-dark { color: #f1f5f9 !important; }
+    .text-warning { color: #fecc56 !important; }
+    .text-success { color: #4ade80 !important; }
+    .text-danger { color: #f87171 !important; }
+    .text-info { color: #38bdf8 !important; }
+    .text-primary { color: #60a5fa !important; }
+    /* Cards & containers dark */
+    .card, .vault-card, .client-content-container, .portal-card {
+        background: #161a23 !important;
+        border-color: #28303f !important;
+        color: #f1f5f9 !important;
     }
-    p, span, td, th {
-        color: #f1f5f9;
+    .card-header { background: #1f2533 !important; border-color: #28303f !important; color: #f1f5f9 !important; }
+    .card-body { background: inherit !important; color: #f1f5f9 !important; }
+    /* Tables dark */
+    table { color: #f1f5f9 !important; }
+    thead th { color: #94a3b8 !important; background: #1f2533 !important; border-color: #28303f !important; }
+    tbody tr { border-color: #28303f !important; }
+    tbody td { color: #e2e8f0 !important; border-color: #28303f !important; background: transparent !important; }
+    tbody tr:hover td { background: rgba(255,255,255,0.04) !important; }
+    /* Forms dark */
+    .form-control, .form-select, select, input, textarea {
+        background: #0f172a !important;
+        border-color: #334155 !important;
+        color: #f1f5f9 !important;
     }
-    .text-muted {
-        color: #94a3b8 !important;
-    }
-    .dropdown-item {
-        color: #e2e8f0 !important;
-    }
-    .dropdown-item:hover {
-        background-color: #1f2533 !important;
-        color: #fecc56 !important;
-    }
+    .form-control:focus { border-color: #fecc56 !important; box-shadow: 0 0 0 2px rgba(254,204,86,0.2) !important; color: #f1f5f9 !important; }
+    input::placeholder, textarea::placeholder { color: #475569 !important; }
+    .form-group label { color: #94a3b8 !important; }
+    /* Badges */
+    .badge-warning { background: rgba(254,204,86,0.2) !important; color: #fecc56 !important; }
+    .badge-success { background: rgba(34,197,94,0.15) !important; color: #4ade80 !important; }
+    .badge-danger { background: rgba(239,68,68,0.15) !important; color: #f87171 !important; }
+    .badge-info { background: rgba(56,189,248,0.15) !important; color: #38bdf8 !important; }
+    .badge-secondary { background: rgba(100,116,139,0.2) !important; color: #94a3b8 !important; }
+    /* Alerts */
+    .alert { border-radius: 8px !important; }
+    .alert-success { background: rgba(34,197,94,0.1) !important; border-color: rgba(34,197,94,0.3) !important; color: #4ade80 !important; }
+    .alert-danger { background: rgba(239,68,68,0.1) !important; border-color: rgba(239,68,68,0.3) !important; color: #f87171 !important; }
+    .alert-warning { background: rgba(254,204,86,0.1) !important; border-color: rgba(254,204,86,0.3) !important; color: #fecc56 !important; }
+    .alert-info { background: rgba(56,189,248,0.1) !important; border-color: rgba(56,189,248,0.3) !important; color: #38bdf8 !important; }
+    /* Buttons */
+    .btn-warning { background: #fecc56 !important; color: #000 !important; border-color: #fecc56 !important; }
+    .btn-outline-warning { border-color: #fecc56 !important; color: #fecc56 !important; }
+    .btn-outline-secondary { border-color: #374151 !important; color: #94a3b8 !important; }
+    .btn-secondary { background: #1f2533 !important; border-color: #374151 !important; color: #94a3b8 !important; }
+    .btn-dark { background: #161a23 !important; border-color: #28303f !important; color: #f1f5f9 !important; }
+    /* Dropdown menus */
+    .dropdown-menu { background: #161a23 !important; border-color: #28303f !important; }
+    .dropdown-item { color: #e2e8f0 !important; }
+    .dropdown-item:hover { background: #1f2533 !important; color: #fecc56 !important; }
+    .dropdown-divider { border-color: #28303f !important; }
+    /* Footer */
+    footer { background: #0d1017 !important; border-color: #28303f !important; color: #64748b !important; }
 
-    /* LIGHT MODE STYLES */
-    html.light-mode,
-    body.light-mode {
-        background-color: #f8fafc !important;
+    /* ===== LIGHT MODE OVERRIDES ===== */
+    html.light-mode, body.light-mode {
+        background-color: #f1f5f9 !important;
         color: #0f172a !important;
     }
+    body.light-mode .client-portal-wrapper { background-color: #f1f5f9 !important; }
+    body.light-mode h1, body.light-mode h2, body.light-mode h3,
+    body.light-mode h4, body.light-mode h5, body.light-mode h6,
+    body.light-mode .card-title { color: #0f172a !important; }
+    body.light-mode p, body.light-mode span:not(.badge):not(.text-warning):not(.text-success):not(.text-danger):not(.text-info),
+    body.light-mode li, body.light-mode td, body.light-mode th { color: #334155 !important; }
+    body.light-mode label, body.light-mode small { color: #64748b !important; }
+    body.light-mode .text-muted { color: #94a3b8 !important; }
+    body.light-mode .text-white { color: #0f172a !important; }
+    body.light-mode .text-dark { color: #0f172a !important; }
+    body.light-mode strong, body.light-mode b { color: #0f172a !important; }
+    body.light-mode .font-weight-bold { color: #0f172a !important; }
+    /* Cards & containers light */
+    body.light-mode .card, body.light-mode .vault-card,
+    body.light-mode .client-content-container, body.light-mode .portal-card {
+        background: #ffffff !important; border-color: #e2e8f0 !important; color: #0f172a !important;
+    }
+    body.light-mode .card-header { background: #f8fafc !important; border-color: #e2e8f0 !important; color: #0f172a !important; }
+    /* Header light */
     body.light-mode header.client-portal-navbar {
-        background: #ffffff !important;
-        border-bottom-color: #e2e8f0 !important;
+        background: #ffffff !important; border-bottom-color: #e2e8f0 !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
     }
-    body.light-mode .client-content-container,
-    body.light-mode .portal-card,
+    body.light-mode header.client-portal-navbar .text-white { color: #0f172a !important; }
+    body.light-mode header.client-portal-navbar .btn-outline-secondary { border-color: #cbd5e1 !important; color: #475569 !important; }
+    body.light-mode header.client-portal-navbar .dropdown-menu { background: #ffffff !important; border-color: #e2e8f0 !important; }
+    body.light-mode header.client-portal-navbar .dropdown-item { color: #374151 !important; }
+    body.light-mode header.client-portal-navbar .dropdown-item:hover { background: #f1f5f9 !important; color: #0f172a !important; }
+    /* Sidebar light */
     body.light-mode .ifw-client-sidebar {
-        background: #ffffff !important;
-        border-color: #e2e8f0 !important;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+        background: #ffffff !important; border-color: #e2e8f0 !important;
     }
-    body.light-mode h1, body.light-mode h2, body.light-mode h3, body.light-mode h4, body.light-mode h5, body.light-mode h6,
-    body.light-mode .font-weight-bold.text-white {
-        color: #0f172a !important;
+    body.light-mode .ifw-client-sidebar .text-white { color: #0f172a !important; }
+    body.light-mode .ifw-client-sidebar .border-bottom { border-color: #e2e8f0 !important; }
+    body.light-mode .ifw-client-sidebar ul.ifw-nav-list > li > a { color: #475569 !important; background: transparent !important; }
+    body.light-mode .ifw-client-sidebar ul.ifw-nav-list > li > a:hover { background: #f1f5f9 !important; color: #0f172a !important; }
+    body.light-mode .ifw-client-sidebar ul.ifw-nav-list > li.active > a { background: rgba(254,204,86,0.15) !important; color: #b45309 !important; border-left-color: #fecc56 !important; }
+    body.light-mode .ifw-client-sidebar ul.ifw-nav-list > li > a .nav-icon { color: #b45309 !important; }
+    /* Tables light */
+    body.light-mode table { color: #334155 !important; }
+    body.light-mode thead th { background: #f8fafc !important; color: #475569 !important; border-color: #e2e8f0 !important; }
+    body.light-mode tbody td { color: #374151 !important; border-color: #e2e8f0 !important; }
+    body.light-mode tbody tr:hover td { background: #f8fafc !important; }
+    /* Forms light */
+    body.light-mode .form-control, body.light-mode select, body.light-mode input, body.light-mode textarea {
+        background: #ffffff !important; border-color: #cbd5e1 !important; color: #0f172a !important;
     }
-    body.light-mode p, body.light-mode td, body.light-mode th {
-        color: #334155 !important;
-    }
-    body.light-mode footer {
-        background: #f1f5f9 !important;
-        border-top-color: #e2e8f0 !important;
-    }
-    body.light-mode footer .text-white {
-        color: #475569 !important;
-    }
-    body.light-mode .ifw-client-sidebar ul.ifw-nav-list > li > a {
-        color: #475569 !important;
-    }
-    body.light-mode .ifw-client-sidebar ul.ifw-nav-list > li > a:hover {
-        background: #f1f5f9 !important;
-        color: #0f172a !important;
-    }
-    body.light-mode .ifw-client-sidebar ul.ifw-nav-list > li.active > a {
-        background: rgba(254,204,86,0.15) !important;
-        color: #b45309 !important;
-    }
+    body.light-mode input::placeholder, body.light-mode textarea::placeholder { color: #94a3b8 !important; }
+    body.light-mode .form-group label { color: #475569 !important; }
+    /* Buttons light */
+    body.light-mode .btn-dark { background: #f1f5f9 !important; border-color: #cbd5e1 !important; color: #374151 !important; }
+    body.light-mode .btn-outline-secondary { border-color: #cbd5e1 !important; color: #475569 !important; }
+    body.light-mode .btn-secondary { background: #e2e8f0 !important; border-color: #cbd5e1 !important; color: #374151 !important; }
+    /* Dropdown light */
+    body.light-mode .dropdown-menu { background: #ffffff !important; border-color: #e2e8f0 !important; box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important; }
+    body.light-mode .dropdown-item { color: #374151 !important; }
+    body.light-mode .dropdown-item:hover { background: #f1f5f9 !important; color: #0f172a !important; }
+    /* Footer light */
+    body.light-mode footer { background: #ffffff !important; border-color: #e2e8f0 !important; color: #64748b !important; }
+    body.light-mode footer .text-white { color: #475569 !important; }
+    /* Content wrapper light */
+    body.light-mode .client-content-container { background: #ffffff !important; border-color: #e2e8f0 !important; }
 
-    /* Mobile Drawer */
-    .sidebar-overlay {
-        display: none;
-    }
+    /* Mobile Drawer Overlay */
+    .sidebar-overlay { display: none; }
     .sidebar-overlay.active {
-        display: block;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100vw;
-        height: 100vh;
-        background: rgba(0,0,0,0.75);
-        backdrop-filter: blur(3px);
-        z-index: 1050;
+        display: block; position: fixed; top: 0; left: 0;
+        width: 100vw; height: 100vh;
+        background: rgba(0,0,0,0.75); backdrop-filter: blur(3px); z-index: 1050;
+    }
+    /* Mobile: show sidebar as drawer, stack layout vertically */
+    @media (max-width: 991px) {
+        .client-portal-wrapper { flex-direction: column !important; }
+        .client-sidebar-col { display: none !important; }
+        .client-content-col { padding: 12px 10px !important; }
+        .client-content-container { min-height: 60vh !important; }
     }
 </style>
 
@@ -291,6 +356,10 @@
             document.getElementById('themeModeText').innerText = 'Light Mode';
             localStorage.setItem('portal_theme', 'dark');
         }
+        // Dispatch event so Chatwoot widget & other components can sync
+        try {
+            window.dispatchEvent(new CustomEvent('ifw:theme_changed', { detail: { theme: targetMode } }));
+        } catch(e) {}
     }
 
     function initThemeMode() {

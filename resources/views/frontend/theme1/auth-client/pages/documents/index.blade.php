@@ -23,7 +23,7 @@
     .doc-item {
         background: #161a23;
         border-bottom: 1px solid #232a38;
-        padding: 18px 20px;
+        padding: 20px 22px;
         transition: background 0.15s;
     }
     .doc-item:hover {
@@ -33,16 +33,17 @@
         border-bottom: none;
     }
     .icon-box {
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
         border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.35rem;
+        font-size: 1.4rem;
         background: rgba(254, 204, 86, 0.12);
         color: #fecc56;
         border: 1px solid rgba(254, 204, 86, 0.25);
+        flex-shrink: 0;
     }
     .btn-gold {
         background: linear-gradient(135deg, #fecc56, #f0a500);
@@ -53,6 +54,9 @@
         padding: 6px 14px;
         font-size: 12px;
         transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
     }
     .btn-gold:hover {
         transform: translateY(-1px);
@@ -66,6 +70,9 @@
         border-radius: 6px;
         font-size: 12px;
         padding: 6px 12px;
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
     }
     .btn-portal-secondary:hover {
         background: #333d4e;
@@ -77,6 +84,7 @@
         font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
+        display: inline-block;
     }
     .badge-action {
         padding: 4px 10px;
@@ -84,12 +92,28 @@
         font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
+        display: inline-block;
     }
+    body.light-mode .doc-item { background: #ffffff !important; border-color: #e2e8f0 !important; }
+    body.light-mode .doc-item:hover { background: #f8fafc !important; }
 </style>
 @endsection
 
 @section('content')
 <div class="container-fluid px-0">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap" style="gap:10px;">
+        <div>
+            <h4 class="font-weight-bold text-white mb-1">
+                <i class="fas fa-file-contract text-warning mr-2"></i> {{ __('Document Center & Executed Agreements') }}
+            </h4>
+            <p class="text-muted small mb-0">{{ __('Official case retainers, fee agreements, powers of attorney, and cryptographic authorizations.') }}</p>
+        </div>
+        <a href="{{ route('client.dashboard') }}" class="btn btn-sm btn-outline-secondary text-light font-weight-bold px-3">
+            <i class="fas fa-arrow-left mr-1"></i> {{ __('Back to Dashboard') }}
+        </a>
+    </div>
+
     @if(session('message'))
         <div class="alert alert-success alert-dismissible fade show mb-4 font-weight-bold" style="background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3);">
             <i class="fas fa-check-circle mr-1"></i> {{ session('message') }}
@@ -104,82 +128,88 @@
         </div>
     @endif
 
-    <div class="portal-card">
-        <div class="portal-card-header d-flex justify-content-between align-items-center">
-            <span><i class="fas fa-file-contract mr-2"></i> {{ __('Contracts, Retainers & Legal Agreements') }}</span>
-            <span class="badge badge-warning text-dark font-weight-bold">{{ $documents->count() }} {{ __('Total Agreements') }}</span>
+    <div class="portal-card mb-4">
+        <div class="portal-card-header d-flex justify-content-between align-items-center flex-wrap" style="gap:8px;">
+            <div>
+                <i class="fas fa-folder-open mr-1"></i> {{ __('Assigned Legal Agreements & Templates') }}
+            </div>
+            <span class="badge badge-success px-3 py-1 font-weight-bold" style="font-size:11px;">
+                <i class="fas fa-shield-alt mr-1"></i> {{ __('ISO/IEC 27037 Tamper-Evident Vault') }}
+            </span>
         </div>
 
-        <div class="p-3 border-bottom" style="background: #11151e; border-color: #28303f !important;">
-            <p class="text-muted mb-0 small">
-                {{ __('Review, preview, sign, or approve personalized engagement agreements, retainer schedules, and legal authorizations prepared by your legal team.') }}
-            </p>
-        </div>
-
-        <div class="p-0">
+        <div class="doc-list">
             @forelse($documents as $doc)
                 <div class="doc-item">
-                    <div class="row align-items-start">
-                        <!-- Icon Column -->
-                        <div class="col-md-1 text-center d-none d-md-block">
-                            <div class="icon-box mx-auto">
-                                <i class="fas fa-file-signature"></i>
-                            </div>
-                        </div>
-                        <!-- Info Column -->
-                        <div class="col-md-7 col-sm-12">
-                            <div class="d-flex flex-wrap align-items-center mb-2" style="gap: 8px;">
-                                <h6 class="font-weight-bold text-white mb-0">{{ $doc->template_title }}</h6>
-                                
-                                <!-- Action Required Badge -->
-                                @if($doc->action_required === 'approve')
-                                    <span class="badge badge-info badge-action" style="background: rgba(14,165,233,0.15); color: #38bdf8; border: 1px solid rgba(14,165,233,0.3);"><i class="fas fa-check-circle mr-1"></i>Approval Required</span>
-                                @elseif($doc->action_required === 'sign_upload')
-                                    <span class="badge badge-danger badge-action" style="background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3);"><i class="fas fa-pen-fancy mr-1"></i>Signature Required</span>
+                    <div class="row align-items-center">
+                        <!-- Icon & Document Details -->
+                        <div class="col-md-7 d-flex align-items-start mb-3 mb-md-0">
+                            <div class="icon-box mr-3">
+                                @if($doc->action_required === 'sign_upload' || $doc->action_required === 'sign_pin')
+                                    <i class="fas fa-file-signature"></i>
+                                @elseif($doc->action_required === 'approve')
+                                    <i class="fas fa-file-check"></i>
                                 @else
-                                    <span class="badge badge-secondary badge-action" style="background: rgba(148,163,184,0.15); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3);">Records Only</span>
-                                @endif
-
-                                <!-- Status Badge -->
-                                @if($doc->status === 'sent')
-                                    <span class="badge badge-secondary badge-status">Sent</span>
-                                @elseif($doc->status === 'viewed')
-                                    <span class="badge badge-warning text-dark badge-status">Viewed</span>
-                                @elseif($doc->status === 'approved')
-                                    <span class="badge badge-success badge-status">Approved</span>
-                                @elseif($doc->status === 'signed')
-                                    <span class="badge badge-success badge-status">Signed</span>
-                                @elseif($doc->status === 'rejected')
-                                    <span class="badge badge-danger badge-status">Rejected</span>
+                                    <i class="fas fa-file-alt"></i>
                                 @endif
                             </div>
+                            <div>
+                                <h6 class="font-weight-bold text-white mb-1" style="font-size: 15px;">{{ $doc->template_title }}</h6>
+                                <p class="text-muted small mb-2" style="line-height: 1.4;">
+                                    {{ __('Standard legal representation agreement requiring review and execution.') }}
+                                </p>
+                                <div class="d-flex flex-wrap align-items-center small" style="gap: 10px;">
+                                    <span class="text-muted">
+                                        <i class="far fa-calendar-alt text-warning mr-1"></i> {{ $doc->created_at->format('M d, Y') }}
+                                    </span>
+                                    <span class="text-muted">&bull;</span>
+                                    <!-- Action Required Badge -->
+                                    @if($doc->action_required === 'sign_upload')
+                                        <span class="badge-action text-warning border border-warning" style="background: rgba(254,204,86,0.1);">
+                                            <i class="fas fa-signature mr-1"></i> {{ __('Signature & Upload Required') }}
+                                        </span>
+                                    @elseif($doc->action_required === 'sign_pin')
+                                        <span class="badge-action text-warning border border-warning" style="background: rgba(254,204,86,0.1);">
+                                            <i class="fas fa-fingerprint mr-1"></i> {{ __('PIN e-Signature Required') }}
+                                        </span>
+                                    @elseif($doc->action_required === 'approve')
+                                        <span class="badge-action text-info border border-info" style="background: rgba(56,189,248,0.1);">
+                                            <i class="fas fa-user-check mr-1"></i> {{ __('Approval Required') }}
+                                        </span>
+                                    @else
+                                        <span class="badge-action text-secondary border border-secondary" style="background: rgba(148,163,184,0.1);">
+                                            <i class="fas fa-eye mr-1"></i> {{ __('Review Only') }}
+                                        </span>
+                                    @endif
 
-                            <p class="text-muted mb-0 small">
-                                {{ __('Issued on:') }} <strong class="text-white">{{ $doc->created_at->format('F d, Y h:i A') }}</strong> &bull; 
-                                {{ __('Ref:') }} <code class="text-warning">{{ $doc->template_key }}</code>
-                            </p>
-
-                            <!-- Admin Notes Callout -->
-                            @if($doc->admin_notes)
-                                <div class="mt-2 text-white small p-2 rounded" style="background: #11151e; border: 1px solid #28303f; border-left: 3px solid #fecc56;">
-                                    <strong class="text-warning">Administrator Instructions:</strong> {{ $doc->admin_notes }}
+                                    <!-- Status Badge -->
+                                    @if($doc->status === 'approved' || $doc->status === 'signed')
+                                        <span class="badge-status text-success border border-success" style="background: rgba(34,197,94,0.15);">
+                                            <i class="fas fa-check-circle mr-1"></i> {{ ucfirst($doc->status) }}
+                                        </span>
+                                    @elseif($doc->status === 'rejected')
+                                        <span class="badge-status text-danger border border-danger" style="background: rgba(239,68,68,0.15);">
+                                            <i class="fas fa-times-circle mr-1"></i> {{ __('Rejected') }}
+                                        </span>
+                                    @elseif($doc->status === 'under_review')
+                                        <span class="badge-status text-warning border border-warning" style="background: rgba(254,204,86,0.15);">
+                                            <i class="fas fa-clock mr-1"></i> {{ __('Under Review') }}
+                                        </span>
+                                    @else
+                                        <span class="badge-status text-warning border border-warning" style="background: rgba(245,158,11,0.15);">
+                                            <i class="fas fa-hourglass-start mr-1"></i> {{ __('Pending Action') }}
+                                        </span>
+                                    @endif
                                 </div>
-                            @endif
-
-                            <!-- Recipient Notes Callout -->
-                            @if($doc->recipient_notes)
-                                <div class="mt-2 text-white small p-2 rounded" style="background: #11151e; border: 1px solid #28303f; border-left: 3px solid #22c55e;">
-                                    <strong class="text-success">Your Response:</strong> {{ $doc->recipient_notes }}
-                                </div>
-                            @endif
+                            </div>
                         </div>
-                        
-                        <!-- Interaction Column -->
-                        <div class="col-md-4 col-sm-12 text-md-right mt-3 mt-md-0">
-                            <div class="d-flex flex-column align-items-md-end w-100">
+
+                        <!-- Actions Column -->
+                        <div class="col-md-5 text-md-right">
+                            <div class="d-flex flex-column align-items-md-end" style="gap: 8px;">
                                 <!-- View & Print -->
-                                <a href="{{ route('client.documents.print', $doc->id) }}" target="_blank" class="btn btn-gold btn-sm px-3 mb-2">
-                                    <i class="fas fa-print mr-1"></i> {{ __('View & Print') }}
+                                <a href="{{ route('client.documents.print', $doc->id) }}" target="_blank" class="btn btn-gold btn-sm px-3">
+                                    <i class="fas fa-print mr-1"></i> {{ __('View & Print Document') }}
                                 </a>
 
                                 <!-- Action Section: Approve -->

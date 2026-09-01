@@ -521,9 +521,9 @@ class ClientViewController extends Controller
                 ->get();
             $unreadMessage->each->update(['read' => true]);
 
-            return view('frontend.theme1.auth-client.pages.chat.messages', compact('title', 'conversation'));
+            return redirect()->route('client.conversation.index');
         } catch (\Throwable $th) {
-            return $this->backWithError($th->getMessage());
+            return redirect()->route('client.conversation.index');
         }
     }
 

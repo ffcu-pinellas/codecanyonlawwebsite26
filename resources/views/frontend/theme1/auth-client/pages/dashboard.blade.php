@@ -278,10 +278,10 @@
     <div class="portal-hero">
         <div class="row align-items-center">
             <div class="col-lg-7">
-                <span class="portal-hero-badge"><i class="fas fa-shield-alt mr-1"></i> Privileged Legal & CPA Client Portal</span>
+                <span class="portal-hero-badge"><i class="fas fa-shield-alt mr-1"></i> {{ __('Client Portal & Case Management') }}</span>
                 <h3 class="font-weight-bold text-white mb-1" style="font-size: 24px;">Welcome, {{ Auth::user()->name }}</h3>
                 <p class="text-muted mb-0 small">
-                    Client File: <strong class="text-warning">CLI-{{ sprintf('%05d', Auth::user()->id) }}</strong> &bull; 
+                    Account: <strong class="text-white">{{ Auth::user()->email }}</strong> &bull; 
                     Status: <span class="text-success font-weight-bold"><i class="fas fa-check-circle"></i> Active & Protected</span>
                 </p>
             </div>

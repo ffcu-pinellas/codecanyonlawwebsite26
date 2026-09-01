@@ -54,51 +54,24 @@
     .upload-box:hover {
         border-color: #fecc56;
     }
-    .lifecycle-step {
-        flex: 1;
-        text-align: center;
-        position: relative;
-        padding: 10px 5px;
-    }
-    .lifecycle-step .step-number {
-        width: 34px;
-        height: 34px;
-        border-radius: 50%;
-        background: #1c212c;
-        border: 2px solid #374151;
-        color: #94a3b8;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin: 0 auto 8px;
-        font-size: 13px;
-    }
-    .lifecycle-step.completed .step-number {
-        background: #22c55e;
-        border-color: #22c55e;
-        color: white;
-    }
-    .lifecycle-step.active .step-number {
-        background: #fecc56;
-        border-color: #fecc56;
-        color: #0f172a;
-        box-shadow: 0 0 12px rgba(254, 204, 86, 0.5);
-    }
-    .lifecycle-step .step-title {
-        font-size: 11px;
-        font-weight: 600;
-        color: #94a3b8;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    .lifecycle-step.active .step-title {
-        color: #fecc56;
-        font-weight: 700;
-    }
-    .lifecycle-step.completed .step-title {
-        color: #22c55e;
-    }
+    /* === IFW INTERACTIVE LIFECYCLE TRACKER === */
+    .ifw-progress-track { display:flex; justify-content:space-between; position:relative; margin: 16px 0 8px; }
+    .ifw-progress-track::before { content:''; position:absolute; top:17px; left:20px; right:20px; height:4px; background:#262e3d; z-index:1; border-radius:2px; }
+    .ifw-progress-bar-fill { position:absolute; top:17px; left:20px; height:4px; background:linear-gradient(90deg,#fecc56,#22c55e); z-index:2; border-radius:2px; transition:width 0.6s ease; }
+    .ifw-step-item { position:relative; z-index:3; text-align:center; flex:1; min-width:0; padding:0 4px; cursor:pointer; }
+    .ifw-step-icon { width:36px; height:36px; border-radius:50%; background:#1c212c; border:2px solid #374151; display:flex; align-items:center; justify-content:center; margin:0 auto 6px; font-size:13px; font-weight:700; color:#94a3b8; transition:all 0.3s; }
+    .ifw-step-item.active .ifw-step-icon { background:#fecc56; border-color:#fecc56; color:#000; box-shadow:0 0 14px rgba(254,204,86,0.6); }
+    .ifw-step-item.completed .ifw-step-icon { background:#22c55e; border-color:#22c55e; color:#fff; box-shadow:0 0 10px rgba(34,197,94,0.4); }
+    .ifw-step-title { font-size:10.5px; font-weight:600; color:#94a3b8; line-height:1.2; }
+    .ifw-step-item.active .ifw-step-title { color:#fecc56; font-weight:700; }
+    .ifw-step-item.completed .ifw-step-title { color:#22c55e; }
+    .ifw-telemetry-card { background:linear-gradient(180deg,#161a23,#11141c); border:1px solid #28303f; border-radius:10px; padding:16px 20px; margin-top:14px; }
+    .ifw-tel-panel { display:none; }
+    .ifw-tel-panel.active { display:block; animation:fadeInUp 0.3s ease; }
+    @keyframes fadeInUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+    /* Lifecycle step for light mode */
+    body.light-mode .ifw-step-icon, html.light-mode .ifw-step-icon { background:#e2e8f0; border-color:#cbd5e1; color:#64748b; }
+    body.light-mode .ifw-telemetry-card, html.light-mode .ifw-telemetry-card { background:#ffffff; border-color:#e2e8f0; }
     .settlement-stat-box {
         background: #11151e;
         border: 1px solid #28303f;
@@ -143,46 +116,116 @@
         </div>
     @endif
 
-    <!-- Case Lifecycle Stages & Progress Bar -->
+    {{-- IFW INTERACTIVE INVESTIGATION LIFECYCLE TRACKER --}}
+    @php
+        $currentStage   = (int)($case->lifecycle_stage   ?: 1);
+        $progressPct    = (int)($case->progress_percent  ?: max(5, ($currentStage-1)*20+10));
+        $stages = [
+            1 => [
+                'icon'  => 'fa-id-card',
+                'title' => $case->stage_1_title ?: 'Case Intake & Dossier',
+                'desc'  => $case->stage_1_desc  ?: 'Initial dossier registration, victim statement logging, claim valuation, and KYC regulatory identification under international AML frameworks.',
+                'proto' => $case->stage_1_protocol ?: 'KYC-AML / 256-Bit Cryptographic Vault',
+                'juris' => $case->stage_1_jurisdiction ?: 'International Cross-Border Asset Recovery Desk',
+            ],
+            2 => [
+                'icon'  => 'fa-search-dollar',
+                'title' => $case->stage_2_title ?: 'Forensic Audit & Analysis',
+                'desc'  => $case->stage_2_desc  ?: 'Advanced heuristics and forensic audit tracing assets across accounts, entities, and financial instruments.',
+                'proto' => $case->stage_2_protocol ?: 'ISO/IEC 27037 Digital Forensics Admissibility',
+                'juris' => $case->stage_2_jurisdiction ?: 'International Cyber Forensics Intelligence Network',
+            ],
+            3 => [
+                'icon'  => 'fa-file-invoice',
+                'title' => $case->stage_3_title ?: 'Legal & Regulatory Filings',
+                'desc'  => $case->stage_3_desc  ?: 'Filing evidence packages, legal subpoenas, tax authority liaisons, and court petitions.',
+                'proto' => $case->stage_3_protocol ?: 'Judicial Subpoena & Statutory Demand Orders',
+                'juris' => $case->stage_3_jurisdiction ?: 'US Federal Court / High Court of Justice',
+            ],
+            4 => [
+                'icon'  => 'fa-gavel',
+                'title' => $case->stage_4_title ?: 'Settlement Negotiations',
+                'desc'  => $case->stage_4_desc  ?: 'Serving freezing orders, asset-locking injunctions, and initiating formal settlement negotiations with parties.',
+                'proto' => $case->stage_4_protocol ?: 'Judicial Asset Freezing Order & Custodial Escrow Lock',
+                'juris' => $case->stage_4_jurisdiction ?: 'Financial Conduct Authority / SEC / Interpol Taskforce',
+            ],
+            5 => [
+                'icon'  => 'fa-hand-holding-usd',
+                'title' => $case->stage_5_title ?: 'Final Resolution & Release',
+                'desc'  => $case->stage_5_desc  ?: 'Formal escrow release verification, liquidation, and direct settlement disbursement into verified client beneficiary accounts.',
+                'proto' => $case->stage_5_protocol ?: 'Multi-Signature Escrow Disbursement (USDT/EUR/USD)',
+                'juris' => $case->stage_5_jurisdiction ?: 'Client Registered Settlement Account',
+            ],
+        ];
+    @endphp
+
     <div class="card vault-card p-4 mb-4">
-        <div class="d-flex justify-content-between align-items-center mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap mb-2">
             <div>
-                <h5 class="font-weight-bold text-dark mb-0"><i class="fas fa-tasks text-warning mr-2"></i> {{ __('Case Progression Lifecycle') }}</h5>
-                <small class="text-muted">{{ __('Current procedural phase for Case Reference') }} #{{ $case->case_number }}</small>
+                <div class="d-flex align-items-center">
+                    <span class="badge badge-success px-2 py-1 mr-2" style="font-size:10px;">
+                        <i class="fas fa-satellite mr-1"></i>LIVE TELEMETRY
+                    </span>
+                    <h6 class="font-weight-bold mb-0 text-warning">
+                        <i class="fas fa-stream mr-2"></i>{{ __('Investigation & Recovery Lifecycle') }}
+                    </h6>
+                </div>
+                <small class="text-muted">{{ __('Case Reference:') }} <strong class="text-white">{{ $case->case_number }}</strong> &bull; {{ Str::limit($case->title, 55) }}</small>
             </div>
-            <span class="badge badge-warning px-3 py-2 font-weight-bold" style="font-size: 13px;">
-                {{ $case->progress_percent ?: 25 }}% {{ __('Completed') }}
-            </span>
+            <div class="mt-2 mt-sm-0">
+                <span class="badge badge-warning text-dark font-weight-bold px-3 py-1" style="font-size:12px;">
+                    <i class="fas fa-bolt mr-1"></i>{{ $progressPct }}% {{ __('Processed') }}
+                </span>
+            </div>
         </div>
 
-        <div class="progress mb-4" style="height: 8px; border-radius: 4px; background: #e2e8f0;">
-            <div class="progress-bar bg-warning" role="progressbar" style="width: {{ $case->progress_percent ?: 25 }}%;" aria-valuenow="{{ $case->progress_percent ?: 25 }}" aria-valuemin="0" aria-valuemax="100"></div>
+        {{-- Track --}}
+        <div class="ifw-progress-track">
+            <div class="ifw-progress-bar-fill" id="caseProgressBarFill" style="width: {{ max(4, $progressPct - 5) }}%;"></div>
+            @foreach($stages as $num => $stage)
+                @php
+                    $cls = $num < $currentStage ? 'completed' : ($num == $currentStage ? 'active' : '');
+                    $icon = $num < $currentStage ? 'fa-check' : $stage['icon'];
+                @endphp
+                <div class="ifw-step-item {{ $cls }}" onclick="switchIFWStage({{ $num }})" id="ifw-step-{{ $num }}">
+                    <div class="ifw-step-icon"><i class="fas {{ $icon }}"></i></div>
+                    <div class="ifw-step-title">{{ $stage['title'] }}</div>
+                </div>
+            @endforeach
         </div>
 
-        @php $currentStage = $case->lifecycle_stage ?: 1; @endphp
-        <div class="d-flex justify-content-between flex-wrap">
-            <div class="lifecycle-step {{ $currentStage > 1 ? 'completed' : ($currentStage == 1 ? 'active' : '') }}">
-                <div class="step-number">{{ $currentStage > 1 ? '✓' : '1' }}</div>
-                <div class="step-title">{{ __('Intake & File Review') }}</div>
+        {{-- Telemetry Panels --}}
+        @foreach($stages as $num => $stage)
+            <div class="ifw-telemetry-card ifw-tel-panel {{ $num == $currentStage ? 'active' : '' }}" id="ifw-tel-{{ $num }}">
+                <div class="d-flex flex-wrap justify-content-between align-items-start mb-2" style="gap:8px;">
+                    <div>
+                        <span class="badge badge-warning text-dark font-weight-bold px-2 py-1 mr-1" style="font-size:10px;">PHASE {{ $num }}</span>
+                        <strong class="text-warning" style="font-size:13px;">{{ $stage['title'] }}</strong>
+                    </div>
+                    @if($num < $currentStage)
+                        <span class="badge badge-success px-2 py-1" style="font-size:10px;"><i class="fas fa-check-circle mr-1"></i>COMPLETED</span>
+                    @elseif($num == $currentStage)
+                        <span class="badge badge-warning text-dark px-2 py-1" style="font-size:10px;"><i class="fas fa-spinner fa-spin mr-1"></i>IN PROGRESS</span>
+                    @else
+                        <span class="badge badge-secondary px-2 py-1" style="font-size:10px;">PENDING</span>
+                    @endif
+                </div>
+                <p class="text-muted small mb-2" style="font-size:12.5px;">{{ $stage['desc'] }}</p>
+                <div class="d-flex flex-wrap" style="gap:12px; font-size:11px;">
+                    <span class="text-muted"><i class="fas fa-shield-alt text-warning mr-1"></i><strong>Protocol:</strong> {{ $stage['proto'] }}</span>
+                    <span class="text-muted"><i class="fas fa-globe text-info mr-1"></i><strong>Jurisdiction:</strong> {{ $stage['juris'] }}</span>
+                </div>
             </div>
-            <div class="lifecycle-step {{ $currentStage > 2 ? 'completed' : ($currentStage == 2 ? 'active' : '') }}">
-                <div class="step-number">{{ $currentStage > 2 ? '✓' : '2' }}</div>
-                <div class="step-title">{{ __('Audit & Research') }}</div>
-            </div>
-            <div class="lifecycle-step {{ $currentStage > 3 ? 'completed' : ($currentStage == 3 ? 'active' : '') }}">
-                <div class="step-number">{{ $currentStage > 3 ? '✓' : '3' }}</div>
-                <div class="step-title">{{ __('Court & Tax Filings') }}</div>
-            </div>
-            <div class="lifecycle-step {{ $currentStage > 4 ? 'completed' : ($currentStage == 4 ? 'active' : '') }}">
-                <div class="step-number">{{ $currentStage > 4 ? '✓' : '4' }}</div>
-                <div class="step-title">{{ __('Settlement & Escrow') }}</div>
-            </div>
-            <div class="lifecycle-step {{ $currentStage >= 5 ? 'completed' : '' }}">
-                <div class="step-number">{{ $currentStage >= 5 ? '✓' : '5' }}</div>
-                <div class="step-title">{{ __('Final Resolution') }}</div>
-            </div>
-        </div>
+        @endforeach
     </div>
+
+    <script>
+    function switchIFWStage(n) {
+        document.querySelectorAll('.ifw-tel-panel').forEach(function(el) { el.classList.remove('active'); });
+        var p = document.getElementById('ifw-tel-' + n);
+        if (p) p.classList.add('active');
+    }
+    </script>
 
     <!-- Retainer & Trust Settlement Hub (If configured) -->
     @if($case->show_settlement_escrow || $case->settlement)
