@@ -1,241 +1,513 @@
 @extends('frontend.theme1.auth-client.layouts.master-layout')
 
-@section('title', config('app.name', 'laravel'). ' | '.$title)
+@section('title', config('app.name', 'Your CPA Expert') . ' | ' . $title)
 
 @section('page-css')
 <style>
-    .dashboard-header {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-        color: white;
-        padding: 30px;
-        border-radius: 15px;
-        margin-bottom: 30px;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-    }
-    .stat-card {
-        background: white;
-        border-radius: 15px;
-        padding: 20px;
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-        border: none;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        margin-bottom: 25px;
-    }
-    .stat-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 12px 20px rgba(0,0,0,0.1);
-    }
-    .stat-icon {
-        width: 50px;
-        height: 50px;
+    /* EXECUTIVE IFW RECOVERY LUXURY THEME */
+    .portal-hero {
+        background: linear-gradient(135deg, #161a23 0%, #0e1117 100%);
+        border: 1px solid #28303f;
         border-radius: 12px;
+        padding: 24px 28px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    .portal-hero-badge {
+        display: inline-flex;
+        align-items: center;
+        background: rgba(254, 204, 86, 0.12);
+        color: #fecc56;
+        border: 1px solid rgba(254, 204, 86, 0.3);
+        border-radius: 20px;
+        padding: 4px 14px;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+    }
+    .stat-card-luxury {
+        background: linear-gradient(145deg, #181d27 0%, #11151e 100%);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+        padding: 18px 20px;
+        transition: all 0.25s ease;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+    .stat-card-luxury:hover {
+        border-color: rgba(254, 204, 86, 0.35);
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+    }
+    .stat-card-luxury .stat-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .stat-card-luxury .stat-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #94a3b8 !important;
+        margin-bottom: 0;
+    }
+    .stat-card-luxury .stat-icon-wrap {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        background: rgba(254, 204, 86, 0.1);
+        color: #fecc56;
+        border: 1px solid rgba(254, 204, 86, 0.2);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 24px;
-        margin-bottom: 15px;
+        font-size: 14px;
     }
-    .icon-relief { background: rgba(30, 215, 96, 0.1); color: #1ed760; }
-    .icon-msg { background: rgba(54, 162, 235, 0.1); color: #36a2eb; }
-    .icon-appt { background: rgba(255, 99, 132, 0.1); color: #ff6384; }
-    
-    .quick-action-btn {
+    .stat-card-luxury .stat-value {
+        font-size: 1.65rem;
+        font-weight: 800;
+        color: #ffffff;
+        line-height: 1.2;
+        margin-bottom: 4px;
+    }
+    .stat-badge-verified {
+        background: rgba(34, 197, 94, 0.12);
+        color: #4ade80;
+        border: 1px solid rgba(34, 197, 94, 0.25);
+        border-radius: 6px;
+        padding: 3px 10px;
+        font-size: 11.5px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+    }
+    .progress-track-container {
+        background: #161a23;
+        border: 1px solid #28303f;
+        border-radius: 12px;
+        padding: 22px 20px;
+        margin-bottom: 24px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+    .progress-track {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        margin-top: 15px;
+        margin-bottom: 5px;
+    }
+    .progress-track::before {
+        content: '';
+        position: absolute;
+        top: 18px;
+        left: 20px;
+        right: 20px;
+        height: 4px;
+        background: #262e3d;
+        z-index: 1;
+        border-radius: 2px;
+    }
+    .progress-bar-fill {
+        position: absolute;
+        top: 18px;
+        left: 20px;
+        height: 4px;
+        background: linear-gradient(90deg, #fecc56, #22c55e);
+        z-index: 1;
+        border-radius: 2px;
+        transition: width 0.6s ease;
+    }
+    .step-item {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+        flex: 1;
+        min-width: 0;
+        padding: 0 4px;
+    }
+    .step-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: #1c212c;
+        border: 2px solid #374151;
         display: flex;
         align-items: center;
-        padding: 15px;
-        border-radius: 12px;
-        background: #f8f9fa;
-        color: #333;
-        margin-bottom: 10px;
-        transition: all 0.2s;
-        border: 1px solid #eee;
-    }
-    .quick-action-btn:hover {
-        background: #fff;
-        border-color: #36a2eb;
-        color: #36a2eb;
-        transform: translateX(5px);
-    }
-    .quick-action-btn i {
-        margin-right: 15px;
-        font-size: 1.2rem;
-    }
-    .status-badge {
-        font-size: 0.75rem;
-        padding: 5px 10px;
-        border-radius: 20px;
-    }
-    .section-title {
+        justify-content: center;
+        margin: 0 auto 6px;
+        font-size: 12px;
         font-weight: 700;
-        color: #1a1a2e;
-        margin-bottom: 20px;
-        font-family: 'Montserrat', sans-serif;
+        color: #94a3b8;
+        transition: all 0.3s;
+    }
+    .step-item.active .step-icon {
+        background: #fecc56;
+        border-color: #fecc56;
+        color: #000;
+        box-shadow: 0 0 14px rgba(254,204,86,0.6);
+    }
+    .step-item.completed .step-icon {
+        background: #22c55e;
+        border-color: #22c55e;
+        color: #fff;
+        box-shadow: 0 0 10px rgba(34,197,94,0.4);
+    }
+    .step-title {
+        font-size: 11px;
+        font-weight: 600;
+        color: #94a3b8;
+        line-height: 1.2;
+    }
+    .step-item.active .step-title { color: #fecc56; font-weight: 700; }
+    .step-item.completed .step-title { color: #22c55e; }
+
+    .portal-card {
+        background: #161a23;
+        border: 1px solid #28303f;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+        margin-bottom: 24px;
+        overflow: hidden;
+    }
+    .portal-card-header {
+        background: #1f2533;
+        border-bottom: 1px solid #2e3849;
+        padding: 16px 20px;
+        color: #fecc56;
+        font-weight: 700;
+        font-size: 14px;
+    }
+    .table-portal {
+        width: 100%;
+        color: #f1f5f9;
+        margin-bottom: 0;
+        border-collapse: collapse;
+    }
+    .table-portal thead th {
+        background: #191f2c;
+        color: #fecc56;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 12px 16px;
+        border-bottom: 2px solid #28303f;
+    }
+    .table-portal tbody tr {
+        border-bottom: 1px solid #232a38;
+        transition: background 0.15s;
+    }
+    .table-portal tbody tr:hover {
+        background: #1a202c;
+    }
+    .table-portal td {
+        padding: 14px 16px;
+        font-size: 13px;
+        vertical-align: middle;
+    }
+    .btn-gold {
+        background: linear-gradient(135deg, #fecc56, #f0a500);
+        color: #000 !important;
+        border: none;
+        font-weight: 700;
+        border-radius: 6px;
+        padding: 6px 14px;
+        font-size: 12px;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(254,204,86,0.25);
+    }
+    .btn-gold:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(254,204,86,0.45);
+    }
+    .btn-portal-secondary {
+        background: #262e3d;
+        border: 1px solid #374151;
+        color: #e2e8f0;
+        font-weight: 600;
+        border-radius: 6px;
+        font-size: 12px;
+        padding: 6px 12px;
+    }
+    .btn-portal-secondary:hover {
+        background: #333d4e;
+        color: #fff;
     }
 </style>
 @endsection
 
 @section('content')
-<div class="container-fluid py-4">
-    <!-- Welcome Header -->
-    <div class="dashboard-header d-flex flex-column flex-md-row justify-content-between align-items-center text-center text-md-left">
-        <div class="mb-3 mb-md-0">
-            <h2 class="mb-1 text-white" style="font-size: 1.5rem;">Welcome back, {{ Auth::user()->name }}</h2>
-            <p class="mb-0 opacity-75 small">Your legal and financial portal is up to date.</p>
-        </div>
-        <div class="d-none d-md-block">
-            <h5 class="mb-0 text-white">{{ date('l, F jS') }}</h5>
-            <small class="opacity-75">Standard Time</small>
+<div class="container-fluid px-0 py-3">
+
+    <!-- Top Welcome Hero Row -->
+    <div class="portal-hero">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <span class="portal-hero-badge"><i class="fas fa-shield-alt mr-1"></i> Privileged Legal & CPA Client Portal</span>
+                <h3 class="font-weight-bold text-white mb-1" style="font-size: 24px;">Welcome, {{ Auth::user()->name }}</h3>
+                <p class="text-muted mb-0 small">
+                    Client File: <strong class="text-warning">CLI-{{ sprintf('%05d', Auth::user()->id) }}</strong> &bull; 
+                    Status: <span class="text-success font-weight-bold"><i class="fas fa-check-circle"></i> Active & Protected</span>
+                </p>
+            </div>
+            <div class="col-lg-5 text-lg-right mt-3 mt-lg-0">
+                @php
+                    $attorney = Auth::user()->assignedAttorney;
+                    $attorneyName = $attorney ? $attorney->name : 'Gary Livingston, Senior CPA & Legal Counsel';
+                    $attorneyEmail = $attorney ? $attorney->email : 'cpa.advisory@yourcpaexpert.com';
+                    $attorneyPhone = $attorney ? $attorney->phone : '+1 (800) 459-2311';
+                @endphp
+                <div class="d-inline-block text-left p-3 rounded" style="background: #11151e; border: 1px solid #28303f; min-width: 260px;">
+                    <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">Assigned Legal & CPA Counsel</small>
+                    <strong class="text-white d-block" style="font-size: 13px;">{{ $attorneyName }}</strong>
+                    <div class="mt-2 d-flex gap-2" style="gap: 8px;">
+                        <a href="{{ route('client.conversation.index') }}" class="btn-gold d-inline-flex align-items-center" style="font-size: 11px; padding: 4px 10px;">
+                            <i class="fas fa-comment-dots mr-1"></i> Live Chat
+                        </a>
+                        <a href="{{ route('client.kyc.index') }}" class="btn-portal-secondary d-inline-flex align-items-center" style="font-size: 11px; padding: 4px 10px;">
+                            <i class="fas fa-file-upload mr-1"></i> Upload Files
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Stats Grid -->
-    <div class="row mb-2 mb-md-4">
-        <div class="col-6 col-md-4 mb-3 px-2 px-md-3">
-            <div class="stat-card p-3">
-                <div class="stat-icon icon-relief mb-2" style="width: 40px; height: 40px; font-size: 1.2rem;"><i class="fas fa-briefcase"></i></div>
-                <h6 class="text-muted text-uppercase font-weight-bold" style="font-size: 0.65rem;">Active Cases</h6>
-                <h3 class="font-weight-bold mb-0" style="font-size: 1.5rem;">{{ $casesCount }}</h3>
-                <small class="text-success d-none d-sm-block mt-1"><i class="fas fa-check-circle"></i> Active</small>
+    <!-- Executive Stat Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card-luxury">
+                <div class="stat-top">
+                    <span class="stat-label">{{ __('Active Cases') }}</span>
+                    <div class="stat-icon-wrap"><i class="fas fa-briefcase"></i></div>
+                </div>
+                <div>
+                    <div class="stat-value">{{ $casesCount }}</div>
+                    <span class="stat-badge-verified"><i class="fas fa-check"></i> {{ __('Under Representation') }}</span>
+                </div>
             </div>
         </div>
-        <div class="col-6 col-md-4 mb-3 px-2 px-md-3">
-            <div class="stat-card p-3">
-                <div class="stat-icon icon-msg mb-2" style="width: 40px; height: 40px; font-size: 1.2rem;"><i class="fas fa-envelope-open-text"></i></div>
-                <h6 class="text-muted text-uppercase font-weight-bold" style="font-size: 0.65rem;">Messages</h6>
-                <h3 class="font-weight-bold mb-0" style="font-size: 1.5rem;">{{ $unreadMessageCount }}</h3>
-                <small class="text-primary d-none d-sm-block mt-1"><i class="fas fa-clock"></i> New</small>
+
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card-luxury">
+                <div class="stat-top">
+                    <span class="stat-label">{{ __('Invoices & Retainers') }}</span>
+                    <div class="stat-icon-wrap"><i class="fas fa-file-invoice-dollar"></i></div>
+                </div>
+                <div>
+                    <div class="stat-value">${{ number_format($invoicesCount > 0 ? ($invoices->sum('total_amount') ?: 0) : 0, 2) }}</div>
+                    <small class="text-muted" style="font-size: 11px;">{{ $invoicesCount }} {{ __('Statements Logged') }}</small>
+                </div>
             </div>
         </div>
-        <div class="col-12 col-md-4 mb-3 px-2 px-md-3">
-            <div class="stat-card p-3">
-                <div class="stat-icon icon-appt mb-2" style="width: 40px; height: 40px; font-size: 1.2rem;"><i class="fas fa-calendar-check"></i></div>
-                <h6 class="text-muted text-uppercase font-weight-bold" style="font-size: 0.65rem;">Total Matters</h6>
-                <h3 class="font-weight-bold mb-0" style="font-size: 1.5rem;">{{ $conversationCount }}</h3>
-                <small class="text-dark d-none d-sm-block mt-1"><i class="fas fa-user-tie"></i> Team</small>
+
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card-luxury">
+                <div class="stat-top">
+                    <span class="stat-label">{{ __('Document Vault') }}</span>
+                    <div class="stat-icon-wrap"><i class="fas fa-folder-open"></i></div>
+                </div>
+                <div>
+                    <div class="stat-value">{{ $documentsCount }}</div>
+                    <span class="stat-badge-verified"><i class="fas fa-lock"></i> {{ __('256-Bit Encrypted') }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3 col-sm-6 mb-3">
+            <div class="stat-card-luxury">
+                <div class="stat-top">
+                    <span class="stat-label">{{ __('Security Status') }}</span>
+                    <div class="stat-icon-wrap"><i class="fas fa-shield-alt"></i></div>
+                </div>
+                <div>
+                    @if(Auth::user()->pin_hash)
+                        <div class="stat-value text-success" style="font-size: 1.2rem; padding-top: 6px;"><i class="fas fa-check-circle mr-1"></i> PIN ACTIVE</div>
+                        <small class="text-muted" style="font-size: 11px;">4-Digit PIN Configured</small>
+                    @else
+                        <div class="stat-value text-warning" style="font-size: 1.2rem; padding-top: 6px;">PENDING</div>
+                        <a href="{{ route('client.profile') }}" class="text-warning small font-weight-bold">Configure PIN &rarr;</a>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Case Progression Tracker -->
+    @php
+        $latestCase = $cases->first();
+        $progressPct = 40;
+        $currentStage = 2; // Default to Stage 2 (Audit & Verification)
+        if ($latestCase) {
+            $progressPct = $latestCase->progress_percentage ?: 40;
+            if ($progressPct >= 100) $currentStage = 5;
+            elseif ($progressPct >= 75) $currentStage = 4;
+            elseif ($progressPct >= 50) $currentStage = 3;
+            elseif ($progressPct >= 25) $currentStage = 2;
+            else $currentStage = 1;
+        }
+    @endphp
+    <div class="progress-track-container">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="font-weight-bold text-white mb-0" style="font-size: 13px;">
+                <i class="fas fa-tasks text-warning mr-2"></i> {{ __('Active Case Lifecycle Progression') }}
+                @if($latestCase)
+                    <span class="text-muted font-weight-normal ml-2">({{ $latestCase->case_number }} - {{ $latestCase->title }})</span>
+                @endif
+            </h6>
+            <span class="badge badge-warning text-dark font-weight-bold px-2 py-1">{{ $progressPct }}% {{ __('Completed') }}</span>
+        </div>
+        <div class="progress-track">
+            <div class="progress-bar-fill" style="width: {{ $progressPct }}%;"></div>
+            
+            <div class="step-item {{ $currentStage > 1 ? 'completed' : ($currentStage == 1 ? 'active' : '') }}">
+                <div class="step-icon">
+                    @if($currentStage > 1) <i class="fas fa-check"></i> @else 1 @endif
+                </div>
+                <div class="step-title">{{ __('1. Case Intake & Retainer') }}</div>
+            </div>
+
+            <div class="step-item {{ $currentStage > 2 ? 'completed' : ($currentStage == 2 ? 'active' : '') }}">
+                <div class="step-icon">
+                    @if($currentStage > 2) <i class="fas fa-check"></i> @else 2 @endif
+                </div>
+                <div class="step-title">{{ __('2. Forensic Audit & Analysis') }}</div>
+            </div>
+
+            <div class="step-item {{ $currentStage > 3 ? 'completed' : ($currentStage == 3 ? 'active' : '') }}">
+                <div class="step-icon">
+                    @if($currentStage > 3) <i class="fas fa-check"></i> @else 3 @endif
+                </div>
+                <div class="step-title">{{ __('3. Legal & Regulatory Filings') }}</div>
+            </div>
+
+            <div class="step-item {{ $currentStage > 4 ? 'completed' : ($currentStage == 4 ? 'active' : '') }}">
+                <div class="step-icon">
+                    @if($currentStage > 4) <i class="fas fa-check"></i> @else 4 @endif
+                </div>
+                <div class="step-title">{{ __('4. Settlement Negotiations') }}</div>
+            </div>
+
+            <div class="step-item {{ $currentStage == 5 ? 'completed' : '' }}">
+                <div class="step-icon">
+                    @if($currentStage == 5) <i class="fas fa-check"></i> @else 5 @endif
+                </div>
+                <div class="step-title">{{ __('5. Final Resolution & Release') }}</div>
             </div>
         </div>
     </div>
 
     <div class="row">
-        <!-- Main Content: Case Tracker -->
-        <div class="col-lg-8 mb-4">
-            <div class="card stat-card shadow-sm border-0">
-                <div class="card-body">
-                    <h5 class="section-title">{{ __('Case & Representation Status') }}</h5>
-                    @forelse($latestCases as $c)
-                    <div class="d-flex align-items-center justify-content-between p-3 mb-3 bg-light rounded border-left border-primary" style="border-left-width: 5px !important;">
-                        <div>
-                            <h6 class="mb-1 font-weight-bold">{{ $c->title }}</h6>
-                            <small class="text-muted"><i class="far fa-calendar-alt"></i> {{ __('Opened on') }} {{ $c->created_at->format('M d, Y') }}</small>
-                        </div>
-                        <div>
-                            <span class="badge badge-{{ $c->status === 'pending' ? 'warning' : 'success' }} status-badge">{{ ucfirst($c->status) }}</span>
-                        </div>
-                    </div>
-                    @empty
-                    <div class="text-center py-5">
-                        <i class="fas fa-briefcase display-4 text-light mb-3"></i>
-                        <p class="text-muted">{{ __('No active cases found.') }}</p>
-                        <a href="{{ route('client.financial-relief') }}" class="btn btn-primary btn-sm px-4">{{ __('Open a Case') }}</a>
-                    </div>
-                    @endforelse
-                    
-                    @if($casesCount > 3)
-                    <div class="text-center mt-3">
-                        <a href="{{ route('client.cases.index') }}" class="text-primary small font-weight-bold">{{ __('View All Cases') }}</a>
-                    </div>
-                    @endif
+        <!-- Active Cases Table -->
+        <div class="col-lg-7 mb-4">
+            <div class="portal-card h-100">
+                <div class="portal-card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-briefcase mr-2"></i> {{ __('My Active Legal & CPA Cases') }}</span>
+                    <a href="{{ route('client.cases.index') }}" class="btn-portal-secondary" style="font-size: 11px;">{{ __('View All') }}</a>
                 </div>
-            </div>
-
-            <!-- Case & Vault Tracker -->
-            <div class="card stat-card shadow-sm border-0">
-                <div class="card-body">
-                    <h5 class="section-title mb-4"><i class="fas fa-briefcase mr-2 text-primary"></i> {{ __('Recent Case Representation & Files') }}</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="thead-light">
+                <div class="table-responsive">
+                    <table class="table-portal">
+                        <thead>
+                            <tr>
+                                <th>{{ __('Case #') }}</th>
+                                <th>{{ __('Subject / Title') }}</th>
+                                <th>{{ __('Status') }}</th>
+                                <th>{{ __('Action') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($cases->take(4) as $c)
                                 <tr>
-                                    <th>{{ __('Case Details') }}</th>
-                                    <th>{{ __('Opened Date') }}</th>
-                                    <th>{{ __('Status') }}</th>
-                                    <th>{{ __('Action') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($latestCases as $c)
-                                <tr>
+                                    <td><strong class="text-warning">{{ $c->case_number }}</strong></td>
                                     <td>
-                                        <div class="d-flex align-items-center">
-                                            <i class="fas fa-folder text-primary fa-lg mr-3"></i>
-                                            <div>
-                                                <span class="font-weight-medium text-dark d-block">{{ $c->title }}</span>
-                                                <small class="text-muted">{{ $c->case_number }}</small>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>{{ $c->created_at->format('M d, Y') }}</td>
-                                    <td>
-                                        <span class="badge badge-{{ $c->status === 'pending' ? 'warning' : 'success' }} status-badge">{{ ucfirst($c->status) }}</span>
+                                        <div class="font-weight-bold text-white">{{ \Illuminate\Support\Str::limit($c->title, 35) }}</div>
+                                        <small class="text-muted">{{ $c->created_at ? $c->created_at->format('M d, Y') : '' }}</small>
                                     </td>
                                     <td>
-                                        <a href="{{ route('client.cases.details', $c->id) }}" class="btn btn-outline-primary btn-sm btn-rounded" title="{{ __('View Vault') }}">
-                                            <i class="fas fa-folder-open"></i>
+                                        <span class="badge badge-success px-2 py-1">{{ ucfirst($c->status) }}</span>
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('client.cases.details', $c->id) }}" class="btn-gold" style="font-size: 11px;">
+                                            <i class="fas fa-eye mr-1"></i> {{ __('View') }}
                                         </a>
                                     </td>
                                 </tr>
-                                @empty
+                            @empty
                                 <tr>
-                                    <td colspan="4" class="text-center py-4 text-muted small">{{ __('No case folders or documents found.') }}</td>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        <i class="fas fa-folder-open fa-2x mb-2 d-block text-secondary"></i>
+                                        {{ __('No active cases on file.') }}
+                                    </td>
                                 </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
 
-        <!-- Sidebar: Quick Actions & Appointments -->
-        <div class="col-lg-4">
-            <div class="card stat-card shadow-sm border-0 mb-4 text-center p-3" style="background: #f0f7ff;">
-                <h5 class="section-title text-left">Quick Actions</h5>
-                <a href="{{ route('client.financial-relief') }}" class="quick-action-btn">
-                    <i class="fas fa-folder-plus text-success"></i>
-                    <span>Open New Case</span>
-                </a>
-                <a href="{{ route('client.conversation.index') }}" class="quick-action-btn">
-                    <i class="fas fa-comment-dots text-primary"></i>
-                    <span>Message Attorney</span>
-                </a>
-                <a href="{{ route('view-contact-page') }}" class="quick-action-btn">
-                    <i class="fas fa-calendar-plus text-danger"></i>
-                    <span>Book Appointment</span>
-                </a>
-            </div>
-
-            <div class="card stat-card shadow-sm border-0">
-                <div class="card-body">
-                    <h5 class="section-title">Upcoming Meetings</h5>
-                    @forelse($recentAppointments as $appt)
-                    <div class="p-3 mb-2 bg-white rounded border border-light shadow-sm">
-                        <div class="d-flex justify-content-between">
-                            <span class="badge badge-info mb-2">Legal Team</span>
-                            <small class="text-muted">{{ $appt->created_at->format('H:i') }}</small>
-                        </div>
-                        <h6 class="mb-0 font-weight-bold">{{ $appt->name }}</h6>
-                        <small class="text-muted">Ref: Consultation #{{ $appt->id }}</small>
-                    </div>
-                    @empty
-                    <p class="text-muted small text-center py-4">No scheduled meetings.</p>
-                    @endforelse
+        <!-- Recent Invoices & Billing Table -->
+        <div class="col-lg-5 mb-4">
+            <div class="portal-card h-100">
+                <div class="portal-card-header d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-file-invoice mr-2"></i> {{ __('Invoices & Retainers') }}</span>
+                    <a href="{{ route('client.invoices.index') }}" class="btn-portal-secondary" style="font-size: 11px;">{{ __('View All') }}</a>
+                </div>
+                <div class="table-responsive">
+                    <table class="table-portal">
+                        <thead>
+                            <tr>
+                                <th>{{ __('Invoice #') }}</th>
+                                <th>{{ __('Amount') }}</th>
+                                <th>{{ __('Status') }}</th>
+                                <th>{{ __('Action') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($invoices->take(4) as $inv)
+                                <tr>
+                                    <td>
+                                        <strong class="text-white">{{ $inv->invoice_number }}</strong>
+                                        <small class="text-muted d-block">{{ $inv->due_date ? date('M d, Y', strtotime($inv->due_date)) : '' }}</small>
+                                    </td>
+                                    <td>
+                                        <strong class="text-warning">${{ number_format($inv->total_amount, 2) }}</strong>
+                                    </td>
+                                    <td>
+                                        @if(strtolower($inv->status) === 'paid')
+                                            <span class="badge badge-success px-2 py-1">{{ __('Paid') }}</span>
+                                        @else
+                                            <span class="badge badge-danger px-2 py-1">{{ __('Due') }}</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <a href="{{ route('client.invoices.show', $inv->id) }}" class="btn-portal-secondary" style="font-size: 11px;">
+                                            {{ __('Details') }}
+                                        </a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="text-center py-4 text-muted">
+                                        <i class="fas fa-receipt fa-2x mb-2 d-block text-secondary"></i>
+                                        {{ __('No invoices pending.') }}
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
+
 </div>
-@endsection
-
-@section('page-script')
-
 @endsection

@@ -7,8 +7,8 @@
         margin: 40px auto;
         background: #ffffff;
         border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        border: 1px solid #cbd5e1;
+        box-shadow: 0 15px 35px rgba(15, 23, 42, 0.12);
         overflow: hidden;
     }
     .wizard-header {
@@ -31,14 +31,40 @@
         letter-spacing: 0.5px;
         margin-bottom: 10px;
     }
+    .security-wizard-card .form-control {
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+        border: 1px solid #94a3b8 !important;
+        font-size: 14px !important;
+        padding: 10px 14px !important;
+        height: auto !important;
+        font-weight: 500 !important;
+    }
+    .security-wizard-card .form-control:focus {
+        border-color: #f59e0b !important;
+        box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2) !important;
+        background-color: #ffffff !important;
+        color: #0f172a !important;
+    }
+    .security-wizard-card .form-control:disabled,
+    .security-wizard-card .form-control[readonly] {
+        background-color: #e2e8f0 !important;
+        color: #0f172a !important;
+        font-weight: 700 !important;
+        opacity: 1 !important;
+        border-color: #cbd5e1 !important;
+        cursor: not-allowed !important;
+    }
     .pin-input-field {
-        letter-spacing: 12px;
-        font-size: 24px;
-        font-weight: bold;
-        text-align: center;
-        max-width: 220px;
-        margin: 0 auto;
-        border-radius: 8px;
+        letter-spacing: 12px !important;
+        font-size: 24px !important;
+        font-weight: 800 !important;
+        text-align: center !important;
+        max-width: 220px !important;
+        margin: 0 auto !important;
+        border-radius: 8px !important;
+        background-color: #f8fafc !important;
+        color: #0f172a !important;
     }
 </style>
 

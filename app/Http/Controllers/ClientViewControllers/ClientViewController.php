@@ -255,11 +255,16 @@ class ClientViewController extends Controller
     public function getConversation($attorneys = [])
     {
         try {
-            $title = 'conversations';
+            $title = 'Live Support & Attorney Chat';
             $conversations = $this->conversationView(Auth::user()->conversation);
-
             $autoSuggestions = Attorney::all('name');
-            return view('frontend.theme1.auth-client.pages.chat.index', compact('title', 'conversations', 'autoSuggestions', 'attorneys'));
+            
+            $chatSettings = \App\Services\ChatwootService::getSettings();
+            $client = Auth::user();
+            $identifier = 'client_' . $client->id;
+            $hmacHash = !empty($chatSettings['hmac_key']) ? hash_hmac('sha256', $identifier, $chatSettings['hmac_key']) : '';
+
+            return view('frontend.theme1.auth-client.pages.chat.index', compact('title', 'conversations', 'autoSuggestions', 'attorneys', 'chatSettings', 'identifier', 'hmacHash'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

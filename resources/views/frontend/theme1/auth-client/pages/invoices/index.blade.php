@@ -1,112 +1,155 @@
 @extends('frontend.theme1.auth-client.layouts.master-layout')
 
-@section('title', config('app.name', 'laravel') . ' | ' . $title)
+@section('title', config('app.name', 'Your CPA Expert') . ' | ' . $title)
 
 @section('page-css')
 <style>
-    .invoice-card {
-        background: white;
-        border-radius: 15px;
-        padding: 24px;
-        border: none;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        margin-bottom: 25px;
+    .portal-card {
+        background: #161a23;
+        border: 1px solid #28303f;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+        margin-bottom: 24px;
+        overflow: hidden;
     }
-    .status-badge-unpaid { background-color: #ffeef0; color: #f84f5a; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
-    .status-badge-paid { background-color: #e8f5e9; color: #2e7d32; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
-    .status-badge-cancelled { background-color: #f1f3f5; color: #868e96; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
-    
-    .section-title {
+    .portal-card-header {
+        background: #1f2533;
+        border-bottom: 1px solid #2e3849;
+        padding: 16px 20px;
+        color: #fecc56;
         font-weight: 700;
-        color: #1a1a2e;
-        margin-bottom: 25px;
-        font-family: 'Montserrat', sans-serif;
+        font-size: 14px;
+    }
+    .table-portal {
+        width: 100%;
+        color: #f1f5f9;
+        margin-bottom: 0;
+        border-collapse: collapse;
+    }
+    .table-portal thead th {
+        background: #191f2c;
+        color: #fecc56;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 12px 16px;
+        border-bottom: 2px solid #28303f;
+    }
+    .table-portal tbody tr {
+        border-bottom: 1px solid #232a38;
+        transition: background 0.15s;
+    }
+    .table-portal tbody tr:hover {
+        background: #1a202c;
+    }
+    .table-portal td {
+        padding: 14px 16px;
+        font-size: 13px;
+        vertical-align: middle;
+    }
+    .status-badge-unpaid { background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: bold; font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; }
+    .status-badge-paid { background-color: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-weight: bold; font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; }
+    .status-badge-cancelled { background-color: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); font-weight: bold; font-size: 0.75rem; padding: 4px 10px; border-radius: 4px; }
+    
+    .btn-gold {
+        background: linear-gradient(135deg, #fecc56, #f0a500);
+        color: #000 !important;
+        border: none;
+        font-weight: 700;
+        border-radius: 6px;
+        padding: 6px 14px;
+        font-size: 12px;
+        transition: all 0.2s;
+        box-shadow: 0 2px 8px rgba(254,204,86,0.25);
+    }
+    .btn-gold:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(254,204,86,0.45);
     }
 </style>
 @endsection
 
 @section('content')
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="section-title mb-0">{{ __($title) }}</h4>
+<div class="container-fluid px-0 py-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="font-weight-bold text-white mb-1">
+                <i class="fas fa-file-invoice-dollar text-warning mr-2"></i> {{ __('Invoices & Retainers') }}
+            </h4>
+            <p class="text-muted small mb-0">{{ __('Review statements, retainer invoices, and payment receipts.') }}</p>
+        </div>
     </div>
 
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
-            {{ session('success') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+        <div class="alert alert-success font-weight-bold mb-4" style="background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: #4ade80;">
+            <i class="fas fa-check-circle mr-1"></i> {{ session('success') }}
         </div>
     @endif
 
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
-            {{ session('error') }}
-            <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-            </button>
+    <div class="portal-card">
+        <div class="portal-card-header">
+            <i class="fas fa-receipt mr-1"></i> {{ __('Billing & Retainer History') }}
         </div>
-    @endif
-
-    <div class="row">
-        <div class="col-12">
-            <div class="card invoice-card">
-                @if($invoices->isEmpty())
-                    <div class="text-center py-5">
-                        <i class="fas fa-file-invoice-dollar fa-4x text-light mb-3"></i>
-                        <h5 class="text-dark font-weight-bold">{{ __('No invoices found.') }}</h5>
-                        <p class="text-muted">{{ __('You currently have no generated or pending invoices on your profile.') }}</p>
-                    </div>
-                @else
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th>{{ __('Invoice Number') }}</th>
-                                    <th>{{ __('Linked Case') }}</th>
-                                    <th>{{ __('Amount') }}</th>
-                                    <th>{{ __('Due Date') }}</th>
-                                    <th>{{ __('Status') }}</th>
-                                    <th class="text-right">{{ __('Action') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($invoices as $invoice)
-                                    <tr>
-                                        <td>
-                                            <span class="font-weight-bold text-dark">{{ $invoice->invoice_number }}</span>
-                                        </td>
-                                        <td>
-                                            @if($invoice->clientCase)
-                                                <span class="font-weight-medium text-dark">{{ $invoice->clientCase->case_number }}</span>
-                                                <small class="text-muted d-block">{{ $invoice->clientCase->title }}</small>
-                                            @else
-                                                <span class="text-muted small">{{ __('General Account Representation') }}</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <span class="font-weight-bold text-dark">${{ number_format($invoice->amount, 2) }}</span>
-                                        </td>
-                                        <td>
-                                            <span class="small text-muted">{{ $invoice->due_date->format('M d, Y') }}</span>
-                                        </td>
-                                        <td>
-                                            <span class="status-badge-{{ $invoice->status }}">{{ ucfirst($invoice->status) }}</span>
-                                        </td>
-                                        <td class="text-right">
-                                            <a href="{{ route('client.invoices.show', $invoice->id) }}" class="btn btn-outline-primary btn-sm rounded-lg py-1 px-3 font-weight-bold">
-                                                <i class="fas fa-eye mr-1"></i> {{ __('View Details') }}
-                                            </a>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                @endif
+        @if($invoices->isEmpty())
+            <div class="text-center py-5">
+                <i class="fas fa-file-invoice-dollar fa-4x text-secondary mb-3 d-block"></i>
+                <h5 class="text-white font-weight-bold">{{ __('No invoices found.') }}</h5>
+                <p class="text-muted">{{ __('You currently have no generated or pending invoices on your profile.') }}</p>
             </div>
-        </div>
+        @else
+            <div class="table-responsive">
+                <table class="table-portal">
+                    <thead>
+                        <tr>
+                            <th>{{ __('Invoice #') }}</th>
+                            <th>{{ __('Linked Case') }}</th>
+                            <th>{{ __('Amount') }}</th>
+                            <th>{{ __('Due Date') }}</th>
+                            <th>{{ __('Status') }}</th>
+                            <th class="text-right">{{ __('Action') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($invoices as $invoice)
+                            <tr>
+                                <td>
+                                    <strong class="text-white">{{ $invoice->invoice_number }}</strong>
+                                    <small class="text-muted d-block">{{ $invoice->created_at ? $invoice->created_at->format('M d, Y') : '' }}</small>
+                                </td>
+                                <td>
+                                    @if($invoice->clientCase)
+                                        <span class="text-warning font-weight-bold">{{ $invoice->clientCase->case_number }}</span>
+                                    @else
+                                        <span class="text-muted">{{ __('General Retainer') }}</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <strong class="text-warning">${{ number_format($invoice->total_amount, 2) }}</strong>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ $invoice->due_date ? date('M d, Y', strtotime($invoice->due_date)) : 'Upon Receipt' }}</small>
+                                </td>
+                                <td>
+                                    @if($invoice->status === 'paid')
+                                        <span class="status-badge-paid"><i class="fas fa-check-circle mr-1"></i> {{ __('Paid') }}</span>
+                                    @elseif($invoice->status === 'cancelled')
+                                        <span class="status-badge-cancelled">{{ __('Cancelled') }}</span>
+                                    @else
+                                        <span class="status-badge-unpaid"><i class="fas fa-exclamation-circle mr-1"></i> {{ __('Payment Due') }}</span>
+                                    @endif
+                                </td>
+                                <td class="text-right">
+                                    <a href="{{ route('client.invoices.show', $invoice->id) }}" class="btn-gold">
+                                        <i class="fas fa-file-invoice mr-1"></i> {{ __('View & Pay') }}
+                                    </a>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     </div>
 </div>
 @endsection

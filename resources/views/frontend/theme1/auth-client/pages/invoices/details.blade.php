@@ -5,34 +5,68 @@
 @section('page-css')
 <style>
     .invoice-container {
-        background: white;
-        border-radius: 15px;
-        padding: 40px;
-        border: none;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        background: #161a23;
+        border-radius: 12px;
+        padding: 35px;
+        border: 1px solid #28303f;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
         margin-bottom: 30px;
         position: relative;
+        color: #f1f5f9;
     }
     .invoice-header {
-        border-bottom: 2px solid #f8f9fa;
+        border-bottom: 2px solid #28303f;
         padding-bottom: 25px;
         margin-bottom: 25px;
     }
-    .status-badge-unpaid { background-color: #ffeef0; color: #f84f5a; font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
-    .status-badge-pending { background-color: #fef5e7; color: #f39c12; font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
-    .status-badge-paid { background-color: #e8f5e9; color: #2e7d32; font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
-    .status-badge-cancelled { background-color: #f1f3f5; color: #868e96; font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
+    .status-badge-unpaid { background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
+    .status-badge-pending { background-color: rgba(245, 158, 11, 0.15); color: #fecc56; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
+    .status-badge-paid { background-color: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
+    .status-badge-cancelled { background-color: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
     
     .section-title {
         font-weight: 700;
-        color: #1a1a2e;
+        color: #ffffff;
         font-family: 'Montserrat', sans-serif;
     }
     .company-logo-text {
         font-size: 1.6rem;
         font-weight: 800;
-        color: #1a1a2e;
+        color: #fecc56;
         letter-spacing: 0.5px;
+    }
+    .btn-gold {
+        background: linear-gradient(135deg, #fecc56, #f0a500);
+        color: #000 !important;
+        border: none;
+        font-weight: 700;
+        border-radius: 6px;
+        padding: 6px 14px;
+        font-size: 12px;
+        box-shadow: 0 2px 8px rgba(254,204,86,0.25);
+    }
+    .invoice-container .table-hover tbody tr:hover {
+        background-color: #1a202c;
+    }
+    .invoice-container .table {
+        color: #f1f5f9;
+    }
+    .invoice-container .table thead th {
+        background: #1f2533;
+        color: #fecc56;
+        border-color: #28303f;
+    }
+    .invoice-container .table td {
+        border-color: #28303f;
+    }
+    .form-dark .form-control, .invoice-container .form-control {
+        background: #0f172a !important;
+        border: 1px solid #334155 !important;
+        color: #ffffff !important;
+    }
+    .form-dark .form-control:focus, .invoice-container .form-control:focus {
+        border-color: #fecc56 !important;
+        box-shadow: 0 0 0 2px rgba(254, 204, 86, 0.2) !important;
     }
     @media print {
         body * {
@@ -48,6 +82,8 @@
             width: 100%;
             padding: 0;
             box-shadow: none;
+            background: #ffffff !important;
+            color: #000000 !important;
         }
         .print-btn-container {
             display: none !important;

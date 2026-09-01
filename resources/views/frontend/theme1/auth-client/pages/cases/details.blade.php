@@ -5,22 +5,30 @@
 @section('page-css')
 <style>
     .vault-card {
-        background: white;
-        border-radius: 15px;
-        border: none;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        background: #161a23;
+        border-radius: 12px;
+        border: 1px solid #28303f;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
         margin-bottom: 25px;
+        color: #f1f5f9;
+        overflow: hidden;
     }
-    .status-badge-pending { background-color: #ffeaa7; color: #d63031; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
-    .status-badge-active { background-color: #dff9fb; color: #0984e3; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
-    .status-badge-suspended { background-color: #ffcccc; color: #ff0000; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
-    .status-badge-resolved { background-color: #e3fafc; color: #0ca678; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
+    .vault-card .card-header {
+        background: #1f2533;
+        border-bottom: 1px solid #2e3849;
+        color: #fecc56;
+        font-weight: 700;
+    }
+    .status-badge-pending { background-color: rgba(245, 158, 11, 0.15); color: #fecc56; border: 1px solid rgba(245, 158, 11, 0.3); font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
+    .status-badge-active { background-color: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
+    .status-badge-suspended { background-color: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
+    .status-badge-resolved { background-color: rgba(14, 165, 233, 0.15); color: #38bdf8; border: 1px solid rgba(14, 165, 233, 0.3); font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
     
     .attorney-info {
-        background: #f8f9fa;
+        background: #11151e;
         border-radius: 12px;
         padding: 15px;
-        border: 1px solid #e9ecef;
+        border: 1px solid #28303f;
     }
     .attorney-avatar {
         width: 45px;
@@ -28,23 +36,23 @@
         border-radius: 50%;
         object-fit: cover;
         margin-right: 12px;
-        border: 2px solid #fff;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border: 2px solid #fecc56;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
     .file-icon {
         font-size: 1.5rem;
         margin-right: 12px;
     }
     .upload-box {
-        border: 2px dashed #ccd1d9;
+        border: 2px dashed #334155;
         border-radius: 12px;
         padding: 25px;
         text-align: center;
-        background: #fdfdfd;
+        background: #11151e;
         transition: border-color 0.3s;
     }
     .upload-box:hover {
-        border-color: #007bff;
+        border-color: #fecc56;
     }
     .lifecycle-step {
         flex: 1;
@@ -53,11 +61,12 @@
         padding: 10px 5px;
     }
     .lifecycle-step .step-number {
-        width: 32px;
-        height: 32px;
+        width: 34px;
+        height: 34px;
         border-radius: 50%;
-        background: #e2e8f0;
-        color: #64748b;
+        background: #1c212c;
+        border: 2px solid #374151;
+        color: #94a3b8;
         font-weight: bold;
         display: flex;
         align-items: center;
@@ -67,29 +76,44 @@
     }
     .lifecycle-step.completed .step-number {
         background: #22c55e;
+        border-color: #22c55e;
         color: white;
     }
     .lifecycle-step.active .step-number {
-        background: #f59e0b;
+        background: #fecc56;
+        border-color: #fecc56;
         color: #0f172a;
-        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.25);
+        box-shadow: 0 0 12px rgba(254, 204, 86, 0.5);
     }
     .lifecycle-step .step-title {
         font-size: 11px;
         font-weight: 600;
-        color: #64748b;
+        color: #94a3b8;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
-    .lifecycle-step.active .step-title, .lifecycle-step.completed .step-title {
-        color: #0f172a;
+    .lifecycle-step.active .step-title {
+        color: #fecc56;
+        font-weight: 700;
+    }
+    .lifecycle-step.completed .step-title {
+        color: #22c55e;
     }
     .settlement-stat-box {
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: #11151e;
+        border: 1px solid #28303f;
         border-radius: 8px;
         padding: 14px;
         text-align: center;
+    }
+    .form-dark .form-control, .vault-card .form-control {
+        background: #0f172a !important;
+        border: 1px solid #334155 !important;
+        color: #ffffff !important;
+    }
+    .form-dark .form-control:focus, .vault-card .form-control:focus {
+        border-color: #fecc56 !important;
+        box-shadow: 0 0 0 2px rgba(254, 204, 86, 0.2) !important;
     }
 </style>
 @endsection
