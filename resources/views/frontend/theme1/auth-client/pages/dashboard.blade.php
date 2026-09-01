@@ -258,6 +258,27 @@
     }
 
     /* EXPLICIT LIGHT MODE RULES (ZERO CONFLICTS) */
+    body.light-mode .stat-card-luxury, html.light-mode .stat-card-luxury {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+    }
+    body.light-mode .stat-card-luxury .stat-value, html.light-mode .stat-card-luxury .stat-value {
+        color: #0f172a !important;
+    }
+    body.light-mode .stat-card-luxury .stat-label, html.light-mode .stat-card-luxury .stat-label {
+        color: #64748b !important;
+    }
+    body.light-mode .stat-card-luxury .stat-icon-wrap, html.light-mode .stat-card-luxury .stat-icon-wrap {
+        background: rgba(180,83,9,0.1) !important;
+        color: #b45309 !important;
+    }
+    body.light-mode .stat-card-luxury .text-white, html.light-mode .stat-card-luxury .text-white {
+        color: #0f172a !important;
+    }
+    body.light-mode .stat-card-luxury .text-muted, html.light-mode .stat-card-luxury .text-muted {
+        color: #64748b !important;
+    }
     body.light-mode .portal-card, html.light-mode .portal-card {
         background: #ffffff !important;
         border-color: #e2e8f0 !important;

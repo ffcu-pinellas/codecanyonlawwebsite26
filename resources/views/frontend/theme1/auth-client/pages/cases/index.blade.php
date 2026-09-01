@@ -47,6 +47,35 @@
         margin-right: 10px;
         border: 2px solid #fecc56;
     }
+
+    /* LIGHT MODE STYLING */
+    body.light-mode .case-card-item, html.light-mode .case-card-item {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        border-left-color: #f59e0b !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+    }
+    body.light-mode .case-card-item:hover, html.light-mode .case-card-item:hover {
+        background: #f8fafc !important;
+        border-color: #f59e0b !important;
+    }
+    body.light-mode .case-card-item h5, html.light-mode .case-card-item h5,
+    body.light-mode .case-card-item .text-white, html.light-mode .case-card-item .text-white {
+        color: #0f172a !important;
+    }
+    body.light-mode .case-card-item .text-muted, html.light-mode .case-card-item .text-muted {
+        color: #64748b !important;
+    }
+    body.light-mode .case-card-item .border-top, html.light-mode .case-card-item .border-top {
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .container-fluid h4, html.light-mode .container-fluid h4,
+    body.light-mode .container-fluid h6, html.light-mode .container-fluid h6 {
+        color: #0f172a !important;
+    }
+    body.light-mode .container-fluid .text-muted, html.light-mode .container-fluid .text-muted {
+        color: #64748b !important;
+    }
 </style>
 @endsection
 

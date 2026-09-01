@@ -15,12 +15,14 @@
         flex-direction: column;
         height: calc(100vh - 170px);
         min-height: 580px;
+        position: relative;
     }
     .chat-portal-header {
         background: #161a23;
         border-bottom: 1px solid #28303f;
         padding: 14px 20px;
         flex-shrink: 0;
+        z-index: 20;
     }
     .chatwoot-docked-container {
         position: relative !important;
@@ -28,24 +30,57 @@
         width: 100% !important;
         height: 100% !important;
         overflow: hidden !important;
-        background: #000;
+        background: #0a0c10;
     }
-    .chatwoot-docked-container iframe {
-        width: 100% !important;
-        height: 100% !important;
-        min-height: 100% !important;
-        border: none !important;
-        display: block !important;
-        background: #000 !important;
-    }
+    
+    /* DOCKED CHATWOOT OVERRIDES */
     .woot--bubble-holder, .woot-widget-bubble {
         display: none !important;
         opacity: 0 !important;
         pointer-events: none !important;
     }
     .woot-widget-holder {
-        display: none !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        transform: none !important;
+        z-index: 15 !important;
+        display: block !important;
     }
+    .woot-widget-holder iframe,
+    #chatwoot_live_chat_widget {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        border: none !important;
+        border-radius: 0 !important;
+        display: block !important;
+        background: #0a0c10 !important;
+    }
+
+    #chatwootLoadingPh {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #0a0c10;
+        z-index: 10;
+    }
+
+    /* NATIVE FALLBACK */
     .chat-messages-body {
         flex: 1;
         overflow-y: auto;
@@ -142,6 +177,12 @@
         border-bottom-color: #e2e8f0 !important;
     }
     body.light-mode .chatwoot-docked-container, html.light-mode .chatwoot-docked-container {
+        background: #f8fafc !important;
+    }
+    body.light-mode #chatwootLoadingPh, html.light-mode #chatwootLoadingPh {
+        background: #f8fafc !important;
+    }
+    body.light-mode .woot-widget-holder iframe, html.light-mode .woot-widget-holder iframe {
         background: #ffffff !important;
     }
     body.light-mode .chat-messages-body, html.light-mode .chat-messages-body {
@@ -189,8 +230,6 @@
     $cwId           = 'client_'.$u->id;
     $cwHmac         = $hmacHash ?? (!empty($chatSettings['hmac_key']) ? hash_hmac('sha256', $cwId, $chatSettings['hmac_key']) : '');
     $counselName    = ($counsel->name ?? null) ?: 'Gary Livingston, Senior CPA & Legal Counsel';
-
-    $directChatwootUrl = $chatwootBase . '/widget?website_token=' . urlencode($chatwootToken) . '&locale=en';
 @endphp
 
 <div class="container-fluid px-0">
@@ -227,48 +266,100 @@
       </div>
     </div>
 
-    {{-- CHATWOOT DIRECT IFRAME EMBED (RELIABLE & INSTANT) --}}
+    {{-- CHATWOOT OFFICIAL SDK (IFW DOCKED ENGINE) --}}
     @if($provider==='chatwoot')
       @if(!empty($chatwootToken))
-        <div class="chatwoot-docked-container" id="chatwootMountFrame">
-          <iframe id="chatwootIframe"
-                  src="{{ $directChatwootUrl }}"
-                  allow="camera;microphone;autoplay;encrypted-media;fullscreen"
-                  title="Live Case Support"></iframe>
+        <div class="chatwoot-docked-container" id="chatwootMountContainer">
+          <div id="chatwootLoadingPh">
+            <i class="fas fa-spinner fa-spin text-warning mb-3" style="font-size:3rem;"></i>
+            <h5 class="text-warning font-weight-bold">{{ __('Connecting to Secure Case Line...') }}</h5>
+            <p class="text-muted small mb-0">{{ __('Synchronizing credentials & loading conversation history.') }}</p>
+          </div>
         </div>
-        
-        {{-- SDK Identity Sync Script in Background --}}
+
         <script>
-        (function(d,t) {
+        (function() {
           var BASE = @json($chatwootBase);
           var TOK  = @json($chatwootToken);
-          var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
-          g.src=BASE+'/packs/js/sdk.js'; g.async=true; g.defer=true;
-          s.parentNode.insertBefore(g,s);
-          g.onload=function(){
-            if(window.chatwootSDK){
-              window.chatwootSDK.run({websiteToken: TOK, baseUrl: BASE});
-            }
-          };
-        })(document,'script');
+          var CID  = @json($cwId);
+          var HMAC = @json($cwHmac);
+          var NM   = @json($clientName);
+          var EM   = @json($clientEmail);
+          var PH   = @json($clientPhone);
+          var AV   = @json($avatarUrl);
+          var UID  = {{ (int)$u->id }};
 
-        window.addEventListener('chatwoot:ready', function() {
-          if(!window.$chatwoot) return;
-          var ud = {
-            name: @json($clientName),
-            email: @json($clientEmail),
-            phone_number: @json($clientPhone),
-            avatar_url: @json($avatarUrl)
+          function isLight() {
+            return document.documentElement.classList.contains('light-mode') || document.body.classList.contains('light-mode');
+          }
+
+          function dockWidget() {
+            var mount = document.getElementById('chatwootMountContainer');
+            var holder = document.querySelector('.woot-widget-holder');
+            if (mount && holder) {
+              if (holder.parentNode !== mount) {
+                mount.appendChild(holder);
+              }
+              var loader = document.getElementById('chatwootLoadingPh');
+              if (loader) {
+                loader.style.display = 'none';
+              }
+            }
+          }
+
+          window.chatwootSettings = {
+            hideMessageBubble: true,
+            position: 'right',
+            locale: 'en',
+            type: 'expanded_bubble',
+            darkMode: isLight() ? 'light' : 'dark'
           };
-          @if(!empty($cwHmac))
-            ud.identifier_hash = @json($cwHmac);
-          @endif
-          window.$chatwoot.setUser(@json($cwId), ud);
-          window.$chatwoot.setCustomAttributes({
-            client_id: '{{ $u->id }}',
-            portal: '{{ config("app.name", "Your CPA Expert") }}'
+
+          (function(d, t) {
+            var g = d.createElement(t), s = d.getElementsByTagName(t)[0];
+            g.src = BASE + '/packs/js/sdk.js';
+            g.async = true;
+            g.defer = true;
+            s.parentNode.insertBefore(g, s);
+            g.onload = function() {
+              if (window.chatwootSDK) {
+                window.chatwootSDK.run({ websiteToken: TOK, baseUrl: BASE });
+              }
+            };
+            g.onerror = function() {
+              var ph = document.getElementById('chatwootLoadingPh');
+              if (ph) {
+                ph.innerHTML = '<i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i><h5 class="text-warning">Chat Server Offline</h5><p class="text-muted small">Unable to reach chat server. Please contact counsel by email.</p>';
+              }
+            };
+          })(document, 'script');
+
+          window.addEventListener('chatwoot:ready', function() {
+            if (!window.$chatwoot) return;
+            var ud = { name: NM, email: EM, avatar_url: AV, phone_number: PH };
+            if (HMAC) ud.identifier_hash = HMAC;
+            window.$chatwoot.setUser(CID, ud);
+            window.$chatwoot.setCustomAttributes({
+              client_id: String(UID),
+              portal: '{{ config("app.name", "Your CPA Expert") }} Client Portal',
+              account_type: 'Legal & CPA Client'
+            });
+
+            if (isLight()) {
+              try { window.$chatwoot.setDarkMode('light'); } catch(e) {}
+            } else {
+              try { window.$chatwoot.setDarkMode('dark'); } catch(e) {}
+            }
+
+            window.$chatwoot.toggle('open');
+            dockWidget();
+            setTimeout(dockWidget, 300);
+            setTimeout(dockWidget, 1000);
           });
-        });
+
+          var intervalDock = setInterval(dockWidget, 250);
+          setTimeout(function() { clearInterval(intervalDock); }, 8000);
+        })();
         </script>
       @else
         <div class="flex-fill d-flex align-items-center justify-content-center p-5 text-center">

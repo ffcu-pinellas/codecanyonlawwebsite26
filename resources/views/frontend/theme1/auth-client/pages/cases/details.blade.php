@@ -88,6 +88,52 @@
         border-color: #fecc56 !important;
         box-shadow: 0 0 0 2px rgba(254, 204, 86, 0.2) !important;
     }
+
+    /* COMPREHENSIVE LIGHT MODE OVERRIDES */
+    body.light-mode .vault-card, html.light-mode .vault-card {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        color: #0f172a !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+    }
+    body.light-mode .vault-card .card-header, html.light-mode .vault-card .card-header {
+        background: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+        color: #b45309 !important;
+    }
+    body.light-mode .vault-card .text-white, html.light-mode .vault-card .text-white,
+    body.light-mode .vault-card h4, html.light-mode .vault-card h4,
+    body.light-mode .vault-card h5, html.light-mode .vault-card h5,
+    body.light-mode .vault-card h6, html.light-mode .vault-card h6,
+    body.light-mode .vault-card p, html.light-mode .vault-card p,
+    body.light-mode .vault-card strong, html.light-mode .vault-card strong {
+        color: #0f172a !important;
+    }
+    body.light-mode .vault-card .text-muted, html.light-mode .vault-card .text-muted {
+        color: #64748b !important;
+    }
+    body.light-mode .attorney-info, html.light-mode .attorney-info,
+    body.light-mode .settlement-stat-box, html.light-mode .settlement-stat-box,
+    body.light-mode .upload-box, html.light-mode .upload-box {
+        background: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .form-dark .form-control, html.light-mode .form-dark .form-control,
+    body.light-mode .vault-card .form-control, html.light-mode .vault-card .form-control {
+        background: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .list-group-item, html.light-mode .list-group-item {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .badge-dark, html.light-mode .badge-dark {
+        background: #e2e8f0 !important;
+        color: #334155 !important;
+    }
 </style>
 @endsection
 
