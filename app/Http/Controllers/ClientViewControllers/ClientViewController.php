@@ -34,7 +34,11 @@ class ClientViewController extends Controller
     public function dashboard()
     {
         $casesCount = 0;
-        $latestCases = [];
+        $cases = collect();
+        $latestCases = collect();
+        $invoices = collect();
+        $invoicesCount = 0;
+        $documentsCount = 0;
         $recentAppointments = [];
         $conversationCount = 0;
         $unreadMessageCount = 0;
@@ -43,6 +47,7 @@ class ClientViewController extends Controller
         $pageContent = null;
 
         try {
+            $user = Auth::user();
             $page = PageSettings::where('name', 'client_dashboard')->first();
             if (!empty($page)) {
                 $pageContent = PageSectionSettings::where('name', 'client_dashboard_breadcumb_bg_img')->first();
@@ -53,17 +58,30 @@ class ClientViewController extends Controller
                 }
             }
 
-            try { $casesCount = Auth::user()->clientCases()->count(); } catch (\Throwable $e) {}
-            try { $latestCases = Auth::user()->clientCases()->latest()->take(5)->get(); } catch (\Throwable $e) {}
-            try { $recentAppointments = Appointment::where('email', Auth::user()->email)->latest()->take(5)->get(); } catch (\Throwable $e) {}
-            try { $conversationCount = Auth::user()->conversation()->count(); } catch (\Throwable $e) {}
+            try { 
+                $cases = $user->clientCases()->latest()->get();
+                $casesCount = $cases->count();
+                $latestCases = $cases->take(5);
+            } catch (\Throwable $e) {}
+
+            try {
+                $invoices = Invoice::where('client_id', $user->id)->latest()->get();
+                $invoicesCount = $invoices->count();
+            } catch (\Throwable $e) {}
+
+            try {
+                $documentsCount = CaseDocument::where('user_id', $user->id)->count() + \App\Models\KycDocument::where('user_id', $user->id)->count();
+            } catch (\Throwable $e) {}
+
+            try { $recentAppointments = Appointment::where('email', $user->email)->latest()->take(5)->get(); } catch (\Throwable $e) {}
+            try { $conversationCount = $user->conversation()->count(); } catch (\Throwable $e) {}
             
             try {
-                $conversations = Auth::user()->conversation;
+                $conversations = $user->conversation;
                 foreach ($conversations as $conversation) {
                     $count = $conversation->messages()
                         ->where('read', false)
-                        ->where('user_id', '!=', Auth::user()->id)
+                        ->where('user_id', '!=', $user->id)
                         ->count();
                     $unreadMessageCount += $count;
                 }
@@ -73,7 +91,7 @@ class ClientViewController extends Controller
             // Log main errors if needed
         }
 
-        return view('frontend.theme1.auth-client.pages.dashboard', compact('title', 'page', 'pageContent', 'casesCount', 'latestCases', 'recentAppointments', 'conversationCount', 'unreadMessageCount'));
+        return view('frontend.theme1.auth-client.pages.dashboard', compact('title', 'page', 'pageContent', 'cases', 'casesCount', 'latestCases', 'invoices', 'invoicesCount', 'documentsCount', 'recentAppointments', 'conversationCount', 'unreadMessageCount'));
     }
 
     public function profile()

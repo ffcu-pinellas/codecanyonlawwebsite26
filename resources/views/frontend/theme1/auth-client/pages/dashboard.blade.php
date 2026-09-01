@@ -245,7 +245,7 @@
 @endsection
 
 @section('content')
-<div class="container-fluid px-0 py-3">
+<div class="container-fluid px-0">
 
     <!-- Top Welcome Hero Row -->
     <div class="portal-hero">
@@ -290,7 +290,7 @@
                     <div class="stat-icon-wrap"><i class="fas fa-briefcase"></i></div>
                 </div>
                 <div>
-                    <div class="stat-value">{{ $casesCount }}</div>
+                    <div class="stat-value">{{ $casesCount ?? 0 }}</div>
                     <span class="stat-badge-verified"><i class="fas fa-check"></i> {{ __('Under Representation') }}</span>
                 </div>
             </div>
@@ -303,8 +303,8 @@
                     <div class="stat-icon-wrap"><i class="fas fa-file-invoice-dollar"></i></div>
                 </div>
                 <div>
-                    <div class="stat-value">${{ number_format($invoicesCount > 0 ? ($invoices->sum('total_amount') ?: 0) : 0, 2) }}</div>
-                    <small class="text-muted" style="font-size: 11px;">{{ $invoicesCount }} {{ __('Statements Logged') }}</small>
+                    <div class="stat-value">${{ number_format(!empty($invoices) ? ($invoices->sum('total_amount') ?: 0) : 0, 2) }}</div>
+                    <small class="text-muted" style="font-size: 11px;">{{ $invoicesCount ?? 0 }} {{ __('Statements Logged') }}</small>
                 </div>
             </div>
         </div>
@@ -316,7 +316,7 @@
                     <div class="stat-icon-wrap"><i class="fas fa-folder-open"></i></div>
                 </div>
                 <div>
-                    <div class="stat-value">{{ $documentsCount }}</div>
+                    <div class="stat-value">{{ $documentsCount ?? 0 }}</div>
                     <span class="stat-badge-verified"><i class="fas fa-lock"></i> {{ __('256-Bit Encrypted') }}</span>
                 </div>
             </div>
@@ -343,9 +343,9 @@
 
     <!-- Active Case Progression Tracker -->
     @php
-        $latestCase = $cases->first();
+        $latestCase = !empty($cases) ? $cases->first() : null;
         $progressPct = 40;
-        $currentStage = 2; // Default to Stage 2 (Audit & Verification)
+        $currentStage = 2;
         if ($latestCase) {
             $progressPct = $latestCase->progress_percentage ?: 40;
             if ($progressPct >= 100) $currentStage = 5;
@@ -424,30 +424,32 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($cases->take(4) as $c)
-                                <tr>
-                                    <td><strong class="text-warning">{{ $c->case_number }}</strong></td>
-                                    <td>
-                                        <div class="font-weight-bold text-white">{{ \Illuminate\Support\Str::limit($c->title, 35) }}</div>
-                                        <small class="text-muted">{{ $c->created_at ? $c->created_at->format('M d, Y') : '' }}</small>
-                                    </td>
-                                    <td>
-                                        <span class="badge badge-success px-2 py-1">{{ ucfirst($c->status) }}</span>
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('client.cases.details', $c->id) }}" class="btn-gold" style="font-size: 11px;">
-                                            <i class="fas fa-eye mr-1"></i> {{ __('View') }}
-                                        </a>
-                                    </td>
-                                </tr>
-                            @empty
+                            @if(!empty($cases) && $cases->count() > 0)
+                                @foreach($cases->take(4) as $c)
+                                    <tr>
+                                        <td><strong class="text-warning">{{ $c->case_number }}</strong></td>
+                                        <td>
+                                            <div class="font-weight-bold text-white">{{ \Illuminate\Support\Str::limit($c->title, 35) }}</div>
+                                            <small class="text-muted">{{ $c->created_at ? $c->created_at->format('M d, Y') : '' }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-success px-2 py-1">{{ ucfirst($c->status) }}</span>
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('client.cases.details', $c->id) }}" class="btn-gold" style="font-size: 11px;">
+                                                <i class="fas fa-eye mr-1"></i> {{ __('View') }}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @else
                                 <tr>
                                     <td colspan="4" class="text-center py-4 text-muted">
                                         <i class="fas fa-folder-open fa-2x mb-2 d-block text-secondary"></i>
                                         {{ __('No active cases on file.') }}
                                     </td>
                                 </tr>
-                            @endforelse
+                            @endif
                         </tbody>
                     </table>
                 </div>
@@ -472,36 +474,38 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @forelse($invoices->take(4) as $inv)
-                                <tr>
-                                    <td>
-                                        <strong class="text-white">{{ $inv->invoice_number }}</strong>
-                                        <small class="text-muted d-block">{{ $inv->due_date ? date('M d, Y', strtotime($inv->due_date)) : '' }}</small>
-                                    </td>
-                                    <td>
-                                        <strong class="text-warning">${{ number_format($inv->total_amount, 2) }}</strong>
-                                    </td>
-                                    <td>
-                                        @if(strtolower($inv->status) === 'paid')
-                                            <span class="badge badge-success px-2 py-1">{{ __('Paid') }}</span>
-                                        @else
-                                            <span class="badge badge-danger px-2 py-1">{{ __('Due') }}</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        <a href="{{ route('client.invoices.show', $inv->id) }}" class="btn-portal-secondary" style="font-size: 11px;">
-                                            {{ __('Details') }}
-                                        </a>
-                                    </td>
-                                </tr>
-                            @empty
+                            @if(!empty($invoices) && $invoices->count() > 0)
+                                @foreach($invoices->take(4) as $inv)
+                                    <tr>
+                                        <td>
+                                            <strong class="text-white">{{ $inv->invoice_number }}</strong>
+                                            <small class="text-muted d-block">{{ $inv->due_date ? date('M d, Y', strtotime($inv->due_date)) : '' }}</small>
+                                        </td>
+                                        <td>
+                                            <strong class="text-warning">${{ number_format($inv->total_amount, 2) }}</strong>
+                                        </td>
+                                        <td>
+                                            @if(strtolower($inv->status) === 'paid')
+                                                <span class="badge badge-success px-2 py-1">{{ __('Paid') }}</span>
+                                            @else
+                                                <span class="badge badge-danger px-2 py-1">{{ __('Due') }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('client.invoices.show', $inv->id) }}" class="btn-portal-secondary" style="font-size: 11px;">
+                                                {{ __('Details') }}
+                                            </a>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            @else
                                 <tr>
                                     <td colspan="4" class="text-center py-4 text-muted">
                                         <i class="fas fa-receipt fa-2x mb-2 d-block text-secondary"></i>
                                         {{ __('No invoices pending.') }}
                                     </td>
                                 </tr>
-                            @endforelse
+                            @endif
                         </tbody>
                     </table>
                 </div>

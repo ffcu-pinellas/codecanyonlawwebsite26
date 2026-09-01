@@ -4,120 +4,133 @@
 
 @section('page-css')
 <style>
-    .chat-hero-box {
-        background: linear-gradient(135deg, #161a23 0%, #0e1117 100%);
+    .chat-top-row {
+        background: #161a23;
         border: 1px solid #28303f;
         border-radius: 12px;
-        padding: 20px 24px;
+        padding: 16px 20px;
         margin-bottom: 20px;
-        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
     }
-    .chat-console-card {
+    .client-chat-card {
         background: #161a23;
         border: 1px solid #28303f;
         border-radius: 12px;
         overflow: hidden;
-        box-shadow: 0 6px 24px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
-    .chat-console-header {
-        background: #1f2533;
-        border-bottom: 1px solid #2e3849;
-        padding: 16px 20px;
-        color: #fecc56;
-        font-weight: 700;
+    .chatwoot-docked-container {
+        position: relative !important;
+        width: 100% !important;
+        height: 680px !important;
+        min-height: 600px !important;
+        background: #0e1117;
+        overflow: hidden !important;
     }
-    .chat-live-badge {
-        background: rgba(34, 197, 94, 0.15);
-        color: #4ade80;
-        border: 1px solid rgba(34, 197, 94, 0.3);
-        border-radius: 20px;
-        padding: 3px 10px;
-        font-size: 11.5px;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
+
+    /* Force Chatwoot Holder into 100% Full-Width / Full-Height Card Area */
+    body .woot-widget-holder,
+    .woot-widget-holder,
+    .woot-widget-holder.has-unread-view,
+    .woot-widget-holder.woot-widget-holder--expanded {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        min-width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        max-height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        z-index: 10 !important;
     }
-    .chat-info-pill {
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.1);
-        color: #94a3b8;
-        padding: 5px 12px;
-        border-radius: 6px;
-        font-size: 12px;
-        margin-right: 8px;
+    .woot-widget-bubble {
+        display: none !important;
     }
 </style>
 @endsection
 
 @section('content')
-<div class="container-fluid px-0 py-3">
+<div class="container-fluid px-0">
+    <!-- Top Header Row -->
+    <div class="chat-top-row d-flex justify-content-between align-items-center">
+        <div>
+            <h4 class="text-warning font-weight-bold mb-1" style="font-size: 1.25rem;">
+                <i class="fas fa-comments mr-2"></i>{{ __('Live Chat & Counsel Support') }}
+            </h4>
+            <p class="text-muted small mb-0">{{ __('Send a message or request assistance. Your dedicated legal & CPA team is here to assist.') }}</p>
+        </div>
+        <a href="{{ route('client.dashboard') }}" class="btn btn-outline-warning btn-sm font-weight-bold px-3">
+            <i class="fas fa-arrow-left mr-1"></i> {{ __('Back to Dashboard') }}
+        </a>
+    </div>
 
-    <!-- Top Chat Banner -->
-    <div class="chat-hero-box">
-        <div class="row align-items-center">
-            <div class="col-lg-8">
-                <div class="d-flex align-items-center mb-2">
-                    <span class="chat-live-badge mr-2"><i class="fas fa-circle text-success small"></i> {{ __('Counsel Online') }}</span>
-                    <span class="chat-info-pill"><i class="fas fa-lock text-warning mr-1"></i> {{ __('256-Bit SSL Encrypted') }}</span>
-                    <span class="chat-info-pill"><i class="fas fa-history mr-1"></i> {{ __('100% Chat History Retained') }}</span>
+    <!-- Live In-Page Chat Frame -->
+    <div class="client-chat-card">
+        <div class="card-header border-bottom py-2 px-3 d-flex justify-content-between align-items-center" style="background: #1f2533; border-color: #28303f !important;">
+            <div class="d-flex align-items-center">
+                <div class="rounded-circle d-inline-flex align-items-center justify-content-center mr-2" style="width: 32px; height: 32px; background: rgba(254,204,86,0.15); color: #fecc56; border: 1px solid #fecc56;">
+                    <i class="fas fa-headset"></i>
                 </div>
-                <h4 class="font-weight-bold text-white mb-1">{{ __('Live Support & Direct Counsel Communications') }}</h4>
-                <p class="text-muted small mb-0">{{ __('Connect directly with your assigned Attorney, CPA, and dedicated case manager in real-time.') }}</p>
+                <div>
+                    <strong class="text-white d-block small" style="line-height: 1.2;">{{ __('Case Representation & CPA Advisory Line') }}</strong>
+                    <small class="text-success font-weight-bold" style="font-size: 10px;"><i class="fas fa-circle mr-1" style="font-size: 7px;"></i> {{ __('Encrypted Active Channel &bull; Direct Case Line') }}</small>
+                </div>
             </div>
-            <div class="col-lg-4 text-lg-right mt-3 mt-lg-0">
-                <button type="button" onclick="openChatwootWidget()" class="btn btn-warning font-weight-bold text-dark px-4 py-2 shadow-sm" style="background: linear-gradient(135deg, #fecc56, #f0a500); border: none; border-radius: 8px;">
-                    <i class="fas fa-comment-dots mr-1"></i> {{ __('Open Live Chat Window') }}
-                </button>
+            <div>
+                <span class="badge" style="background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); font-size: 11px;">
+                    <i class="fas fa-shield-alt mr-1"></i> {{ __('256-Bit SSL Encrypted') }}
+                </span>
+            </div>
+        </div>
+
+        <div class="card-body p-0 chatwoot-docked-container" id="chatwoot-inpage-mount">
+            <div id="chatwoot-mount-loader" class="d-flex flex-column align-items-center justify-content-center h-100 p-5 text-center" style="min-height: 600px; background: #0e1117;">
+                <div class="spinner-border text-warning mb-3" style="width: 3rem; height: 3rem;" role="status"></div>
+                <h5 class="text-white font-weight-bold mb-1">{{ __('Connecting to Live Counsel...') }}</h5>
+                <p class="text-muted small mb-3">{{ __('Initializing 256-bit encrypted messaging channel with complete chat retention.') }}</p>
             </div>
         </div>
     </div>
-
-    <!-- Main Chatwoot Interface Card -->
-    <div class="chat-console-card mb-4">
-        <div class="chat-console-header d-flex justify-content-between align-items-center">
-            <span>
-                <i class="fas fa-comments text-warning mr-2"></i> {{ __('Encrypted Live Client Communications') }}
-            </span>
-            <span class="small text-muted">
-                {{ __('Client Reference:') }} <strong class="text-warning">CLI-{{ sprintf('%05d', Auth::user()->id) }}</strong>
-            </span>
-        </div>
-        <div class="card-body p-4 text-center" style="background: #11151e; min-height: 480px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
-            <div style="background: rgba(254, 204, 86, 0.1); width: 80px; height: 80px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 20px; border: 2px solid rgba(254, 204, 86, 0.25);">
-                <i class="fas fa-headset fa-3x text-warning"></i>
-            </div>
-            <h5 class="font-weight-bold text-white mb-2">{{ __('Start a Privileged Conversation') }}</h5>
-            <p class="text-muted small mb-4" style="max-width: 520px;">
-                {{ __('Your communications are confidential and automatically synchronized with your case file. Click below to launch the live messaging assistant.') }}
-            </p>
-
-            <button type="button" onclick="openChatwootWidget()" class="btn btn-warning font-weight-bold text-dark px-5 py-3 shadow-lg" style="background: linear-gradient(135deg, #fecc56, #f0a500); border: none; border-radius: 8px; font-size: 15px; text-transform: uppercase; letter-spacing: 0.5px;">
-                <i class="fas fa-comments mr-2"></i> {{ __('Launch Live Chat Support') }}
-            </button>
-        </div>
-    </div>
-
 </div>
 @endsection
 
 @section('page-script')
 <script>
-    function openChatwootWidget() {
-        if (window.$chatwoot) {
-            window.$chatwoot.toggle();
-        } else {
-            alert('Connecting to live counsel... Please ensure live chat is enabled.');
-        }
-    }
-
     document.addEventListener("DOMContentLoaded", function () {
-        // Auto pop open the widget if directed
-        setTimeout(function() {
-            if (window.$chatwoot && !window.location.hash.includes('no-auto')) {
-                window.$chatwoot.toggle('open');
+        function attachChatwootToContainer() {
+            var holder = document.querySelector('.woot-widget-holder');
+            var container = document.getElementById('chatwoot-inpage-mount');
+            var loader = document.getElementById('chatwoot-mount-loader');
+            
+            if (holder && container) {
+                if (holder.parentElement !== container) {
+                    container.appendChild(holder);
+                }
+                holder.style.position = 'absolute';
+                holder.style.top = '0';
+                holder.style.left = '0';
+                holder.style.width = '100%';
+                holder.style.height = '100%';
+                holder.style.display = 'block';
+                if (loader) loader.style.display = 'none';
+
+                if (window.$chatwoot) {
+                    window.$chatwoot.toggle('open');
+                }
+            } else {
+                setTimeout(attachChatwootToContainer, 300);
             }
-        }, 800);
+        }
+
+        // Trigger open immediately
+        setTimeout(attachChatwootToContainer, 400);
+        setTimeout(attachChatwootToContainer, 1200);
     });
 </script>
 @endsection

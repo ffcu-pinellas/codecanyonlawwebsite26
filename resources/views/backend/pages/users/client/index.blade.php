@@ -303,61 +303,143 @@
     </div>
 </div>
 
-<!-- Modal: Send Custom Welcome Email -->
+<!-- Modal: Send Custom Welcome Email (Exact IFW 2-Column Live Preview Modal) -->
 <div class="modal fade" id="welcomeEmailModal" tabindex="-1" role="dialog" aria-labelledby="welcomeEmailModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg" role="document">
-        <div class="modal-content bg-dark text-white border-secondary">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title font-weight-bold text-warning" id="welcomeEmailModalLabel">
-                    <i class="fas fa-paper-plane mr-2"></i> {{ __('Send Customized Welcome Email & Portal Access') }}
-                </h5>
+    <div class="modal-dialog modal-xl modal-dialog-centered" role="document">
+        <div class="modal-content bg-dark text-white border-warning" style="border-radius: 14px; overflow: hidden; border: 2px solid #fecc56; box-shadow: 0 10px 40px rgba(0,0,0,0.6);">
+            <div class="modal-header border-secondary py-3 px-4 d-flex justify-content-between align-items-center" style="background: #11151e;">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-envelope-open-text text-warning fa-lg mr-3"></i>
+                    <div>
+                        <h5 class="modal-title text-warning font-weight-bold mb-0">{{ __('Send Official Welcome Email & Portal Credentials') }}</h5>
+                        <small class="text-muted">{{ __('Live visual preview with official branding and cryptographic security credentials.') }}</small>
+                    </div>
+                </div>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form action="{{ route('admin.user.client.send-welcome-email') }}" method="POST">
+            
+            <form action="{{ route('admin.user.client.send-welcome-email') }}" method="POST" id="welcomeEmailForm" onsubmit="document.getElementById('sendWelcomeBtn').innerHTML='<i class=\'fas fa-spinner fa-spin mr-2\'></i>Dispatching Email...'; document.getElementById('sendWelcomeBtn').disabled=true;">
                 @csrf
                 <input type="hidden" name="client_id" id="modal_email_client_id">
 
-                <div class="modal-body">
-                    <div class="form-group">
-                        <label class="font-weight-bold">{{ __('Recipient') }}</label>
-                        <input type="text" id="modal_email_recipient_display" class="form-control bg-secondary text-white border-0 font-weight-bold" readonly disabled>
-                    </div>
+                <div class="modal-body p-4" style="background: #0f172a;">
+                    <div class="row">
+                        <!-- Left Column: Form Controls -->
+                        <div class="col-lg-5 mb-4 mb-lg-0">
+                            <div class="p-3 rounded border border-secondary mb-3" style="background: #1a202c;">
+                                <h6 class="text-warning font-weight-bold mb-2 small text-uppercase" style="letter-spacing: 0.5px;"><i class="fas fa-user mr-2"></i>{{ __('Recipient Details') }}</h6>
+                                <div class="mb-1 d-flex justify-content-between small">
+                                    <span class="text-muted">{{ __('Client Name:') }}</span>
+                                    <strong class="text-white" id="modal_display_name">Client</strong>
+                                </div>
+                                <div class="mb-1 d-flex justify-content-between small">
+                                    <span class="text-muted">{{ __('Recipient Email:') }}</span>
+                                    <strong class="text-warning" id="modal_display_email">client@example.com</strong>
+                                </div>
+                                <div class="d-flex justify-content-between small">
+                                    <span class="text-muted">{{ __('Client Ref:') }}</span>
+                                    <span class="badge badge-secondary font-weight-bold" id="modal_display_ref">#CLI-00000</span>
+                                </div>
+                            </div>
 
-                    <div class="form-group">
-                        <label for="modal_email_subject" class="font-weight-bold">{{ __('Email Subject Line') }} <span class="text-danger">*</span></label>
-                        <input type="text" name="email_subject" id="modal_email_subject" class="form-control bg-secondary text-white border-0" required value="Welcome to {{ config('app.name', 'Your CPA Expert') }} – Confidential Legal & CPA Portal Access">
-                    </div>
+                            <div class="form-group mb-3">
+                                <label class="font-weight-bold text-white small"><i class="fas fa-heading mr-1 text-warning"></i> {{ __('Email Subject Line') }} <span class="text-danger">*</span></label>
+                                <input type="text" name="email_subject" id="modal_email_subject" class="form-control bg-dark text-white border-secondary" value="Welcome to {{ config('app.name', 'Your CPA Expert') }} — Confidential Legal & CPA Portal Access" required oninput="updateLiveEmailPreview()">
+                            </div>
 
-                    <div class="form-group">
-                        <label for="modal_email_intro" class="font-weight-bold">{{ __('Introduction Statement') }}</label>
-                        <textarea name="email_intro" id="modal_email_intro" rows="2" class="form-control bg-secondary text-white border-0">Your confidential legal & CPA file has been officially opened with our practice. You can access our secure Client Portal 24/7.</textarea>
-                    </div>
+                            <div class="form-group mb-3">
+                                <label class="font-weight-bold text-white small"><i class="fas fa-paragraph mr-1 text-warning"></i> {{ __('Introduction Statement') }}</label>
+                                <textarea name="email_intro" id="modal_email_intro" rows="2" class="form-control bg-dark text-white border-secondary" oninput="updateLiveEmailPreview()">Your confidential legal & CPA client file has been formally opened with our practice.</textarea>
+                            </div>
 
-                    <div class="form-group">
-                        <label for="modal_custom_note" class="font-weight-bold text-info">
-                            <i class="fas fa-comment-alt mr-1"></i> {{ __('Attorney & CPA Case Briefing Note (Optional Highlight Callout)') }}
-                        </label>
-                        <textarea name="custom_note" id="modal_custom_note" rows="3" class="form-control bg-secondary text-white border-0" placeholder="e.g. We have reviewed your 2024-2025 tax schedules and drafted the initial petition. Please log in to inspect the uploaded documents."></textarea>
-                    </div>
+                            <div class="form-group mb-3">
+                                <label class="font-weight-bold text-info small"><i class="fas fa-comment-alt mr-1"></i> {{ __('Attorney & CPA Case Briefing Note (Callout)') }}</label>
+                                <textarea name="custom_note" id="modal_custom_note" rows="3" class="form-control bg-dark text-white border-secondary" placeholder="e.g. Your case has been formally assigned to our Senior Lead Counsel. Initial tax analysis and regulatory filings are in progress under strict confidentiality." oninput="updateLiveEmailPreview()">Your case has been formally assigned to our Senior Lead Counsel. Initial tax analysis and regulatory filings are in progress under strict confidentiality.</textarea>
+                            </div>
 
-                    <div class="form-group">
-                        <label for="modal_email_portal_msg" class="font-weight-bold">{{ __('Portal Access Instructions') }}</label>
-                        <textarea name="email_portal_msg" id="modal_email_portal_msg" rows="2" class="form-control bg-secondary text-white border-0">You can access our 256-bit encrypted Client Portal 24/7 to review tax and case filings, inspect invoices, upload documents, and communicate directly with your assigned Attorney & CPA.</textarea>
-                    </div>
+                            <div class="form-group mb-3">
+                                <label class="font-weight-bold text-white small"><i class="fas fa-info-circle mr-1 text-warning"></i> {{ __('Portal Instructions') }}</label>
+                                <textarea name="email_portal_msg" id="modal_email_portal_msg" rows="2" class="form-control bg-dark text-white border-secondary" oninput="updateLiveEmailPreview()">You can access our 256-bit encrypted Client Portal 24/7 to review filings, inspect statements, upload documents, and communicate directly with your assigned Attorney & CPA.</textarea>
+                            </div>
 
-                    <div class="form-check p-3 rounded bg-secondary mb-0">
-                        <input type="checkbox" name="include_credentials" id="include_credentials" value="1" class="form-check-input" checked>
-                        <label for="include_credentials" class="form-check-label font-weight-bold text-warning ml-2">
-                            {{ __('Generate & Include Temporary Login Credentials & Default PIN in this Email') }}
-                        </label>
+                            <div class="p-3 rounded border border-secondary mb-3" style="background: #1a202c;">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" name="include_credentials" value="1" class="custom-control-input" id="includeCredsCheckbox" checked onchange="updateLiveEmailPreview()">
+                                    <label class="custom-control-label font-weight-bold text-warning small" for="includeCredsCheckbox">
+                                        {{ __('Include Temporary Password & PIN Credentials') }}
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Right Column: Interactive Live Email Preview -->
+                        <div class="col-lg-7">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span class="font-weight-bold text-warning small text-uppercase" style="letter-spacing: 0.5px;"><i class="fas fa-eye mr-1"></i> {{ __('Live Email Visual Preview') }}</span>
+                                <small class="text-muted">{{ __('Exact rendering sent to client inbox') }}</small>
+                            </div>
+
+                            <!-- Styled Email Container Preview -->
+                            <div class="border rounded shadow-sm" style="background: #ffffff; color: #1e293b; font-family: 'Montserrat', sans-serif; overflow: hidden; border-color: #cbd5e1 !important;">
+                                <!-- Header with Logo -->
+                                <div style="background: #111827; padding: 20px; text-align: center; border-bottom: 2px solid #fecc56;">
+                                    <h4 class="text-white font-weight-bold mb-0" style="letter-spacing: 0.5px;">{{ config('app.name', 'Your CPA Expert') }}</h4>
+                                    <div style="color: #fecc56; font-size: 10px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase;">{{ __('Privileged Legal & CPA Advisory Services') }}</div>
+                                </div>
+
+                                <!-- Email Body -->
+                                <div style="padding: 24px; font-size: 13px; line-height: 1.6; color: #334155;">
+                                    <p style="margin-top: 0; font-size: 14px;">Dear <strong id="previewClientName" style="color: #0f172a;">Client</strong>,</p>
+                                    <p style="margin-bottom: 14px;">Welcome to <strong>{{ config('app.name', 'Your CPA Expert') }}</strong>. <span id="previewIntroText">Your confidential legal & CPA client file has been formally opened with our practice.</span></p>
+
+                                    <!-- Highlight Note Block -->
+                                    <div id="previewCustomNoteBlock" style="background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 4px; padding: 12px 14px; margin: 14px 0; font-size: 12.5px; color: #1e3a8a;">
+                                        <strong>Counsel Case Briefing:</strong><br>
+                                        <span id="previewCustomNoteText">Your case has been formally assigned to our Senior Lead Counsel. Initial tax analysis and regulatory filings are in progress under strict confidentiality.</span>
+                                    </div>
+
+                                    <p id="previewPortalMsgText" style="margin-bottom: 14px;">You can access our 256-bit encrypted Client Portal 24/7 to review filings, inspect statements, upload documents, and communicate directly with your assigned Attorney & CPA.</p>
+
+                                    <!-- Credentials Box -->
+                                    <div id="previewCredsBlock" style="background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #fecc56; border-radius: 6px; padding: 14px 16px; margin: 16px 0;">
+                                        <h6 style="margin: 0 0 10px 0; color: #1e293b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: bold;">Your Confidential Portal Credentials</h6>
+                                        <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+                                            <tr>
+                                                <td style="padding: 4px 0; color: #64748b; width: 140px;"><strong>Username / Email:</strong></td>
+                                                <td style="padding: 4px 0; color: #0f172a; font-weight: bold;" id="previewEmail">client@example.com</td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 4px 0; color: #64748b;"><strong>Temporary Password:</strong></td>
+                                                <td style="padding: 4px 0;"><span style="background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 12px; font-weight: bold; padding: 2px 8px; border-radius: 4px; display: inline-block;">•••••••• (Auto-generated)</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td style="padding: 4px 0; color: #64748b;"><strong>Default Security PIN:</strong></td>
+                                                <td style="padding: 4px 0;"><span style="background: #1f1b1c; color: #fecc56; font-family: monospace; font-size: 12px; font-weight: bold; padding: 2px 8px; border-radius: 4px; display: inline-block;">1234</span></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+
+                                    <!-- CTA Button -->
+                                    <div style="text-align: center; margin: 20px 0;">
+                                        <span style="background: #fecc56; color: #1f1b1c; font-weight: bold; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; padding: 10px 24px; border-radius: 4px; display: inline-block; box-shadow: 0 4px 12px rgba(254, 204, 86, 0.4);">
+                                            ACCESS CLIENT PORTAL &rarr;
+                                        </span>
+                                    </div>
+
+                                    <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 10px 12px; margin: 14px 0; font-size: 11px; color: #92400e;">
+                                        <strong>Security Protocol:</strong> Upon first login, you will configure your permanent credentials and 4-digit Security PIN.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <div class="modal-footer border-secondary">
+                <div class="modal-footer border-secondary py-3 px-4" style="background: #11151e;">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Cancel') }}</button>
-                    <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4">
+                    <button type="submit" id="sendWelcomeBtn" class="btn btn-warning font-weight-bold text-dark px-4" style="background: linear-gradient(135deg, #fecc56, #f0a500); border: none;">
                         <i class="fas fa-paper-plane mr-1"></i> {{ __('Dispatch Welcome Email') }}
                     </button>
                 </div>
@@ -412,12 +494,57 @@
 
     window.openWelcomeEmailModal = function(clientId, name, email) {
         var idInput = document.getElementById('modal_email_client_id');
-        var dispInput = document.getElementById('modal_email_recipient_display');
+        var dispName = document.getElementById('modal_display_name');
+        var dispEmail = document.getElementById('modal_display_email');
+        var dispRef = document.getElementById('modal_display_ref');
         
         if (idInput) idInput.value = clientId;
-        if (dispInput) dispInput.value = name + ' (' + email + ')';
+        if (dispName) dispName.textContent = name;
+        if (dispEmail) dispEmail.textContent = email;
+        if (dispRef) dispRef.textContent = '#CLI-' + String(clientId).padStart(5, '0');
         
+        var prevName = document.getElementById('previewClientName');
+        var prevEmail = document.getElementById('previewEmail');
+        if (prevName) prevName.textContent = name || 'Client';
+        if (prevEmail) prevEmail.textContent = email || '';
+        
+        window.updateLiveEmailPreview();
         $('#welcomeEmailModal').modal('show');
+    };
+
+    window.updateLiveEmailPreview = function() {
+        var introInput = document.getElementById('modal_email_intro');
+        var introText = introInput ? introInput.value.trim() : '';
+        var prevIntro = document.getElementById('previewIntroText');
+        if (prevIntro) {
+            prevIntro.textContent = introText || 'Your confidential legal & CPA client file has been formally opened with our practice.';
+        }
+
+        var noteInput = document.getElementById('modal_custom_note');
+        var noteText = noteInput ? noteInput.value.trim() : '';
+        var noteBlock = document.getElementById('previewCustomNoteBlock');
+        var prevNote = document.getElementById('previewCustomNoteText');
+        if (noteBlock && prevNote) {
+            if (noteText) {
+                prevNote.textContent = noteText;
+                noteBlock.style.display = 'block';
+            } else {
+                noteBlock.style.display = 'none';
+            }
+        }
+
+        var portalInput = document.getElementById('modal_email_portal_msg');
+        var portalText = portalInput ? portalInput.value.trim() : '';
+        var prevPortal = document.getElementById('previewPortalMsgText');
+        if (prevPortal) {
+            prevPortal.textContent = portalText || 'You can access our 256-bit encrypted Client Portal 24/7 to review filings, inspect statements, upload documents, and communicate directly with your assigned Attorney & CPA.';
+        }
+
+        var credsCheckbox = document.getElementById('includeCredsCheckbox');
+        var credsBlock = document.getElementById('previewCredsBlock');
+        if (credsBlock && credsCheckbox) {
+            credsBlock.style.display = credsCheckbox.checked ? 'block' : 'none';
+        }
     };
 
     window.copyCredentialsText = function() {

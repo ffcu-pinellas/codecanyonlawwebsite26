@@ -112,19 +112,35 @@
                             </div>
                         </div>
 
-                        <!-- Chatwoot Agent Console Embed or Direct Interface -->
+                        <!-- Chatwoot Agent Command Center -->
                         <div class="card bg-dark border-secondary">
-                            <div class="card-header bg-dark border-secondary d-flex justify-content-between align-items-center">
-                                <span class="font-weight-bold text-white">
-                                    <i class="fas fa-desktop text-warning mr-1"></i> {{ __('Chatwoot Agent Dashboard Frame') }}
+                            <div class="card-header bg-dark border-secondary d-flex justify-content-between align-items-center py-3">
+                                <span class="font-weight-bold text-white" style="font-size: 15px;">
+                                    <i class="fas fa-desktop text-warning mr-2"></i> {{ __('Chatwoot Live Agent Command Center') }}
                                 </span>
-                                <div class="small">
-                                    <span class="badge badge-success px-2 py-1"><i class="fas fa-circle text-success mr-1 small"></i> {{ __('Engine Active') }}</span>
-                                    <a href="{{ $baseUrl }}" target="_blank" class="text-info font-weight-bold ml-2">{{ __('Open Full Screen') }} <i class="fas fa-external-link-alt"></i></a>
+                                <div>
+                                    <span class="badge badge-success px-3 py-2 font-weight-bold" style="font-size: 12px;">
+                                        <i class="fas fa-circle mr-1" style="font-size: 8px;"></i> {{ __('Chat Engine Online') }}
+                                    </span>
                                 </div>
                             </div>
-                            <div class="card-body p-0" style="height: 650px; background: #0f172a;">
-                                <iframe src="{{ $baseUrl }}" style="width: 100%; height: 100%; border: none; border-radius: 0 0 8px 8px;" allow="camera; microphone; fullscreen; clipboard-read; clipboard-write;" title="Chatwoot Agent Dashboard"></iframe>
+                            <div class="card-body p-4 text-center" style="background: #0f172a; min-height: 380px; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+                                <div style="width: 80px; height: 80px; border-radius: 50%; background: rgba(254, 204, 86, 0.1); border: 2px solid rgba(254, 204, 86, 0.3); display: flex; align-items: center; justify-content: center; margin-bottom: 20px;">
+                                    <i class="fas fa-headset fa-3x text-warning"></i>
+                                </div>
+                                <h4 class="text-white font-weight-bold mb-2">{{ __('Real-Time Client Inquiries & Live Chatwoot Inbox') }}</h4>
+                                <p class="text-muted small mb-4" style="max-width: 580px;">
+                                    {{ __('Client conversations are instantly synchronized across your dedicated agent inbox. Click below to launch the multi-agent console in a dedicated high-performance workspace.') }}
+                                </p>
+
+                                <div class="d-flex flex-wrap justify-content-center gap-3" style="gap: 12px;">
+                                    <a href="{{ $baseUrl }}" target="_blank" class="btn btn-warning font-weight-bold text-dark px-4 py-3 shadow-lg text-uppercase" style="background: linear-gradient(135deg, #fecc56, #f0a500); border: none; letter-spacing: 0.5px; border-radius: 8px;">
+                                        <i class="fas fa-external-link-alt mr-2"></i> {{ __('Open Live Agent Console (Chatwoot)') }}
+                                    </a>
+                                    <a href="{{ route('admin.settings.chat') }}" class="btn btn-outline-secondary font-weight-bold text-white px-4 py-3" style="border-radius: 8px;">
+                                        <i class="fas fa-cog mr-2"></i> {{ __('Chat Settings & Credentials') }}
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
