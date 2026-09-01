@@ -104,6 +104,16 @@ class AppServiceProvider extends ServiceProvider
                         if (!Schema::hasColumn('client_cases', 'jurisdiction_title')) $table->string('jurisdiction_title', 150)->default('Court & Regulatory Jurisdictions')->after('settlement_title');
                     });
                 }
+
+                // 6. Ensure client_kyc_documents table has form_data and notes
+                if (Schema::hasTable('client_kyc_documents')) {
+                    Schema::table('client_kyc_documents', function ($table) {
+                        if (!Schema::hasColumn('client_kyc_documents', 'form_data')) $table->json('form_data')->nullable();
+                        if (!Schema::hasColumn('client_kyc_documents', 'document_name')) $table->string('document_name', 255)->nullable();
+                        if (!Schema::hasColumn('client_kyc_documents', 'notes')) $table->text('notes')->nullable();
+                        if (!Schema::hasColumn('client_kyc_documents', 'admin_notes')) $table->text('admin_notes')->nullable();
+                    });
+                }
             }
         } catch (\Throwable $th) {
             // Silence DB exceptions during CLI/testing boots

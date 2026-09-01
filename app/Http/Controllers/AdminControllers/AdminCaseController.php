@@ -310,13 +310,17 @@ class AdminCaseController extends Controller
     public function documentGenerator()
     {
         try {
-            $title = __('Legal Document Builder');
+            $title = __('Case Document Vault & Builder');
             $clients = User::role('client')->orderBy('name', 'asc')->get();
             $companySettings = \App\Models\GeneralSettings::first();
             $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
             $templates = \App\Models\DocumentTemplate::where('type', 'client')->where('status', true)->orderBy('title', 'asc')->get();
 
-            return view('backend.pages.cases.doc-generator', compact('title', 'clients', 'companyName', 'templates'));
+            $vaultedDocs = \App\Models\CaseDocument::with(['client', 'clientCase'])
+                ->orderBy('id', 'desc')
+                ->get();
+
+            return view('backend.pages.cases.doc-generator', compact('title', 'clients', 'companyName', 'templates', 'vaultedDocs'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
@@ -324,131 +328,131 @@ class AdminCaseController extends Controller
 
     public function generateDocument(Request $request)
     {
-        $request->validate([
-            'template_key' => 'required|string|exists:document_templates,key',
-            'client_id' => 'required|exists:users,id',
-            'custom_clauses' => 'nullable|string',
-            'attorney_name' => 'nullable|string|max:255',
-            'effective_date' => 'nullable|date',
-            'send_email' => 'nullable|boolean',
-        ]);
-
         try {
+            // Handle Direct Vault File Upload (Tab 1)
+            if ($request->get('action_type') === 'upload') {
+                $request->validate([
+                    'vault_file' => 'required|file|max:25600',
+                    'client_id' => 'required|exists:users,id',
+                    'doc_type' => 'nullable|string|max:100',
+                ]);
+
+                $file = $request->file('vault_file');
+                $uploadPath = public_path('upload/case-documents');
+                if (!\Illuminate\Support\Facades\File::exists($uploadPath)) {
+                    \Illuminate\Support\Facades\File::makeDirectory($uploadPath, 0755, true);
+                }
+
+                $originalName = $file->getClientOriginalName();
+                $fileName = time() . '_' . uniqid() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $originalName);
+                $file->move($uploadPath, $fileName);
+                $filePath = 'upload/case-documents/' . $fileName;
+
+                $clientCase = \App\Models\ClientCase::where('client_id', $request->client_id)->orderBy('id', 'desc')->first();
+
+                \App\Models\CaseDocument::create([
+                    'case_id' => $clientCase ? $clientCase->id : null,
+                    'client_id' => $request->client_id,
+                    'document_title' => $originalName,
+                    'file_path' => $filePath,
+                    'document_type' => $request->doc_type ?: 'Standard / General Document',
+                    'requires_signature' => $request->has('requires_signature'),
+                    'is_signed' => false,
+                    'visibility' => 'client_visible',
+                ]);
+
+                ActivityLog::log('Document Uploaded to Vault', 'Uploaded ' . $originalName . ' for client #' . $request->client_id);
+                return redirect()->route('admin.document-generator')->with('success', __('Document successfully uploaded and stored in the Case Document Vault.'));
+            }
+
+            // Handle Custom Document Composer (Tab 2)
+            $request->validate([
+                'client_id' => 'required|exists:users,id',
+                'doc_title' => 'required|string|max:255',
+                'document_content' => 'required|string',
+            ]);
+
             $client = User::findOrFail($request->client_id);
-            $template = \App\Models\DocumentTemplate::where('key', $request->template_key)->firstOrFail();
-            
-            $title = $template->title;
-            $rawContent = $template->content;
-            
-            $dateStr = $request->effective_date ? \Carbon\Carbon::parse($request->effective_date)->format('F d, Y') : date('F d, Y');
-            $attorneyName = $request->attorney_name ?: config('app.name', 'Your CPA Expert');
-            
+            $title = $request->doc_title;
+            $rawContent = $request->document_content;
+            $docType = $request->doc_type ?: 'Service Agreement';
+
             $companySettings = \App\Models\GeneralSettings::first();
             $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
 
-            // Find client case (if exists) for this client, to get case_number
             $clientCase = \App\Models\ClientCase::where('client_id', $client->id)->orderBy('created_at', 'desc')->first();
-            $caseNumber = $clientCase ? $clientCase->case_number : 'N/A';
+            $caseNumber = $clientCase ? $clientCase->case_number : 'CASE-' . sprintf('%05d', $client->id);
+            $dateStr = date('F d, Y');
 
             // Replace client templates placeholders
             $placeholders = [
                 '{{client_name}}' => $client->name,
+                '@{{client_name}}' => $client->name,
                 '{{client_email}}' => $client->email,
+                '@{{client_email}}' => $client->email,
                 '{{client_phone}}' => $client->phone ?: 'N/A',
+                '@{{client_phone}}' => $client->phone ?: 'N/A',
                 '{{client_address}}' => $client->address ?: 'N/A',
+                '@{{client_address}}' => $client->address ?: 'N/A',
                 '{{company_name}}' => $companyName,
+                '@{{company_name}}' => $companyName,
                 '{{date}}' => $dateStr,
-                '{{attorney_name}}' => $attorneyName,
+                '@{{date}}' => $dateStr,
+                '{{attorney_name}}' => $companyName,
+                '@{{attorney_name}}' => $companyName,
                 '{{case_number}}' => $caseNumber,
+                '@{{case_number}}' => $caseNumber,
             ];
 
             $content = str_replace(array_keys($placeholders), array_values($placeholders), $rawContent);
 
-            if ($request->custom_clauses) {
-                $content .= "
-                    <div style='margin-top: 25px; border-top: 1px solid #ddd; padding-top: 15px;'>
-                        <h4>" . __('Special Clauses & Custom Agreements:') . "</h4>
-                        <p style='white-space: pre-line; background-color: #f8f9fa; padding: 12px; border-left: 3px solid #1e3c72; color: #333;'>" . e($request->custom_clauses) . "</p>
-                    </div>
-                ";
+            // Vault in CaseDocument
+            $vaultDoc = \App\Models\CaseDocument::create([
+                'case_id' => $clientCase ? $clientCase->id : null,
+                'client_id' => $client->id,
+                'document_title' => $title,
+                'file_path' => '',
+                'document_type' => $docType,
+                'custom_content' => $content,
+                'requires_signature' => $request->has('requires_signature'),
+                'is_signed' => false,
+                'visibility' => 'client_visible',
+            ]);
+
+            ActivityLog::log('Custom Document Composed', 'Created and vaulted document: ' . $title . ' for client ' . $client->name);
+
+            // Generate PDF
+            $isPdf = true;
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', compact('title', 'content', 'client', 'companyName', 'dateStr', 'isPdf'));
+
+            $uploadPath = public_path('upload/case-documents');
+            if (!\Illuminate\Support\Facades\File::exists($uploadPath)) {
+                \Illuminate\Support\Facades\File::makeDirectory($uploadPath, 0755, true);
             }
+            $pdfFileName = 'doc_' . time() . '_' . preg_replace('/[^a-zA-Z0-9_]/', '_', $title) . '.pdf';
+            $pdfFullPath = $uploadPath . '/' . $pdfFileName;
+            $pdf->save($pdfFullPath);
 
-            ActivityLog::log('Document Generated', 'Generated ' . $request->template_key . ' template for client ' . $client->name);
+            $vaultDoc->file_path = 'upload/case-documents/' . $pdfFileName;
+            $vaultDoc->save();
 
-            // Optional email dispatch
-            if ($request->send_email) {
-                $subject = "Agreement Draft for Review: " . $title;
-                
-                $bodyText = "Hello " . $client->name . ",\n\n"
-                    . "A legal document draft has been generated for your review by " . $companyName . ".\n\n"
-                    . "Document Title: " . $title . "\n"
-                    . "Effective Date: " . $dateStr . "\n"
-                    . "Attorney/CPA: " . $attorneyName . "\n"
-                    . "Client Name: " . $client->name . "\n"
-                    . "Client Address: " . ($client->address ?: 'N/A') . "\n";
-                if ($clientCase) {
-                    $bodyText .= "Associated Case: Case #" . $clientCase->case_number . " - " . $clientCase->title . "\n";
-                }
-                $bodyText .= "\n"
-                    . "--- CUSTOM AGREEMENT NOTE ---\n"
-                    . ($request->custom_clauses ?: "No custom clauses added.") . "\n\n"
-                    . "Please check the attached PDF for the full representation agreement details. "
-                    . "You can view, print, or download this template directly inside your Client Dashboard. Please return a signed copy to us or upload it to your secure Document Vault.\n\n"
-                    . "Best regards,\n"
-                    . "Legal Operations Team\n"
-                    . $companyName;
-
-                $trackingToken = uniqid() . bin2hex(random_bytes(8));
-
-                // Log document log
-                \App\Models\DocumentLog::create([
-                    'template_key' => $request->template_key,
-                    'template_title' => $title,
-                    'content' => $content,
-                    'client_id' => $client->id,
-                    'recipient_email' => $client->email,
-                    'sent_by' => Auth::id(),
-                    'sent_to_email' => true,
-                    'status' => 'sent',
-                    'tracking_token' => $trackingToken,
-                ]);
-
-                // Generate PDF representation of the document
-                $pdfPath = null;
+            // Email dispatch if requested
+            if ($request->has('send_email_copy')) {
                 try {
-                    $isPdf = true;
-                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', compact('title', 'content', 'client', 'companyName', 'dateStr', 'isPdf'));
-                    $pdfPath = tempnam(sys_get_temp_dir(), 'doc_') . '.pdf';
-                    $pdf->save($pdfPath);
-                } catch (\Throwable $pdfError) {
-                    // Fail silently
-                }
+                    $subject = "Legal Document Draft: " . $title;
+                    $bodyText = "Hello " . $client->name . ",\n\n"
+                        . "A legal document draft has been prepared and vaulted for your review by " . $companyName . ".\n\n"
+                        . "Document: " . $title . "\n"
+                        . "Type: " . $docType . "\n"
+                        . "Date: " . $dateStr . "\n\n"
+                        . "Please review the attached official document copy or access it via your secure client dashboard.\n\n"
+                        . "Best regards,\n" . $companyName;
 
-                $attachmentName = str_replace(' ', '_', $title) . '.pdf';
-                $this->sendEmailNotification($client->email, $subject, $bodyText, $pdfPath, $attachmentName, $trackingToken);
-
-                if ($pdfPath && file_exists($pdfPath)) {
-                    @unlink($pdfPath);
-                }
-                ActivityLog::log('Document Email Sent', 'Emailed generated ' . $request->template_key . ' agreement with PDF attachment to client ' . $client->name);
-            } else {
-                // Log generated document (but not sent to email)
-                \App\Models\DocumentLog::create([
-                    'template_key' => $request->template_key,
-                    'template_title' => $title,
-                    'content' => $content,
-                    'client_id' => $client->id,
-                    'recipient_email' => $client->email,
-                    'sent_by' => Auth::id(),
-                    'sent_to_email' => false,
-                    'status' => 'generated',
-                    'tracking_token' => uniqid() . bin2hex(random_bytes(8)),
-                ]);
+                    $this->sendEmailNotification($client->email, $subject, $bodyText, $pdfFullPath, $pdfFileName);
+                } catch (\Throwable $emailErr) {}
             }
 
-            // Hide default print-view signatures since templates have custom ones
-            $hideDefaultSignatures = true;
-            return view('backend.pages.cases.doc-print', compact('title', 'content', 'client', 'companyName', 'dateStr', 'hideDefaultSignatures'));
+            return $pdf->stream($pdfFileName);
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

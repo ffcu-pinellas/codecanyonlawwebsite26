@@ -490,47 +490,96 @@ class ClientViewController extends Controller
 
     public function kycSubmit(Request $request)
     {
-        $this->validate($request, [
-            'document_type' => ['required', 'string'],
-            'document_number' => ['nullable', 'string', 'max:100'],
-            'file' => ['required', 'file', 'mimes:pdf,docx,doc,jpeg,png,jpg', 'max:20480'],
-            'notes' => ['nullable', 'string', 'max:500'],
-        ]);
-
         try {
+            $user = Auth::user();
+            $fields = \App\Http\Controllers\AdminControllers\AdminKycController::getFields();
+            $formData = [];
+            $uploadedDocs = [];
+
             $uploadPath = public_path('upload/kyc-documents');
             if (!File::exists($uploadPath)) {
                 File::makeDirectory($uploadPath, 0755, true);
             }
 
-            $file = $request->file('file');
-            $ext = $file->getClientOriginalExtension();
-            $newFileName = 'kyc_' . Auth::id() . '_' . time() . '_' . uniqid() . '.' . $ext;
-            $file->move($uploadPath, $newFileName);
-            $newFilePath = '/upload/kyc-documents/' . $newFileName;
+            // 1. Process all text/date/number/textarea fields
+            foreach ($fields as $f) {
+                $dbName = $f['db_name'];
+                $type = strtoupper($f['type'] ?? 'TEXT');
 
-            $doc = ClientKycDocument::create([
-                'client_id' => Auth::id(),
-                'document_type' => $request->document_type,
-                'document_name' => $request->document_type . ($request->document_number ? ' (' . $request->document_number . ')' : ''),
-                'file_path' => $newFilePath,
-                'status' => 'pending',
-                'notes' => $request->notes,
-            ]);
+                if ($type === 'FILE') {
+                    if ($request->hasFile($dbName)) {
+                        $file = $request->file($dbName);
+                        $ext = $file->getClientOriginalExtension();
+                        $newFileName = 'kyc_' . $user->id . '_' . $dbName . '_' . time() . '.' . $ext;
+                        $file->move($uploadPath, $newFileName);
+                        $filePath = '/upload/kyc-documents/' . $newFileName;
 
-            \App\Models\ActivityLog::log('KYC Uploaded', 'Client ' . Auth::user()->name . ' uploaded identity verification document: ' . $doc->document_name);
+                        $doc = ClientKycDocument::create([
+                            'client_id' => $user->id,
+                            'document_type' => $f['label'],
+                            'document_name' => $f['label'],
+                            'file_title' => $f['label'],
+                            'file_path' => $filePath,
+                            'status' => 'pending',
+                            'notes' => 'Uploaded via dynamic KYC form',
+                        ]);
+                        $uploadedDocs[] = $doc;
+                        $formData[$dbName] = $filePath;
+                    }
+                } else {
+                    $val = $request->input($dbName);
+                    if ($val !== null) {
+                        $formData[$dbName] = $val;
+                    }
+                }
+            }
+
+            // Also check for direct single document upload fallback
+            if ($request->hasFile('file') && $request->has('document_type')) {
+                $file = $request->file('file');
+                $ext = $file->getClientOriginalExtension();
+                $newFileName = 'kyc_' . $user->id . '_' . time() . '_' . uniqid() . '.' . $ext;
+                $file->move($uploadPath, $newFileName);
+                $newFilePath = '/upload/kyc-documents/' . $newFileName;
+
+                $doc = ClientKycDocument::create([
+                    'client_id' => $user->id,
+                    'document_type' => $request->document_type,
+                    'document_name' => $request->document_type . ($request->document_number ? ' (' . $request->document_number . ')' : ''),
+                    'file_title' => $request->document_type,
+                    'file_path' => $newFilePath,
+                    'status' => 'pending',
+                    'notes' => $request->notes,
+                    'form_data' => $formData,
+                ]);
+                $uploadedDocs[] = $doc;
+            } elseif (!empty($formData)) {
+                // Store master KYC verification package record
+                ClientKycDocument::create([
+                    'client_id' => $user->id,
+                    'document_type' => 'Full KYC Package',
+                    'document_name' => 'Identity & Compliance Verification Package',
+                    'file_title' => 'KYC Profile Submission',
+                    'file_path' => $formData['id_front'] ?? ($formData['id_back'] ?? ''),
+                    'status' => 'pending',
+                    'notes' => $request->input('notes', 'Dynamic client identity verification submission.'),
+                    'form_data' => $formData,
+                ]);
+            }
+
+            \App\Models\ActivityLog::log('KYC Package Submitted', 'Client ' . $user->name . ' submitted full identity verification package.');
 
             // Telegram Notification
             try {
-                $clientName = Auth::user()->name;
-                $telMsg = "🪪 <b>New KYC Identity Document Submitted</b>\n\n"
-                        . "👤 <b>Client:</b> " . htmlspecialchars($clientName, ENT_QUOTES, 'UTF-8') . " (#CLI-" . sprintf('%05d', Auth::id()) . ")\n"
-                        . "📄 <b>Type:</b> " . htmlspecialchars($request->document_type, ENT_QUOTES, 'UTF-8') . "\n"
+                $telMsg = "🪪 <b>New KYC Identity Verification Package Submitted</b>\n\n"
+                        . "👤 <b>Client:</b> " . htmlspecialchars($user->name, ENT_QUOTES, 'UTF-8') . " (#CLI-" . sprintf('%05d', $user->id) . ")\n"
+                        . "📧 <b>Email:</b> " . htmlspecialchars($user->email, ENT_QUOTES, 'UTF-8') . "\n"
+                        . "📄 <b>Items:</b> " . count($formData) . " dynamic fields submitted\n"
                         . "📅 <b>Time:</b> " . now()->format('M d, Y h:i A') . "\n";
                 \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
             } catch (\Throwable $e) {}
 
-            return redirect()->back()->with('success', __('Identity verification document submitted successfully for attorney review.'));
+            return redirect()->back()->with('success', __('Your identity verification package has been submitted successfully for legal & compliance review.'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

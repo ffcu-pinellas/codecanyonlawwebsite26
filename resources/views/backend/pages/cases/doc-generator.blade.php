@@ -4,163 +4,199 @@
 
 @section('page-css')
 <style>
-    .builder-container {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 24px;
-        align-items: start;
-    }
-
-    @media (max-width: 1200px) {
-        .builder-container {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    .builder-card {
-        background: #161a24;
+    .ifw-vault-container {
+        background: #11141c;
         border: 1px solid #283244;
         border-radius: 12px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
         overflow: hidden;
+        margin-bottom: 30px;
     }
-
-    .builder-card-header {
-        background: #11151e;
-        border-bottom: 1px solid #283244;
-        padding: 16px 20px;
+    .ifw-vault-header {
+        background: #0b0d13;
+        border-bottom: 1px solid #232c3d;
+        padding: 16px 22px;
         display: flex;
         align-items: center;
         justify-content: space-between;
     }
-
-    .builder-card-header h6 {
+    .ifw-vault-title {
+        font-size: 15px;
+        font-weight: 800;
+        color: #f97316;
+        text-transform: uppercase;
+        letter-spacing: 0.8px;
         margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .ifw-vault-tabs {
+        display: flex;
+        gap: 10px;
+        padding: 16px 22px 0 22px;
+        background: #0f121a;
+        border-bottom: 1px solid #232c3d;
+    }
+    .ifw-tab-btn {
+        background: transparent;
+        border: 1px solid #283244;
+        border-bottom: none;
+        color: #94a3b8;
+        padding: 10px 22px;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        font-size: 13px;
         font-weight: 700;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.2s;
+    }
+    .ifw-tab-btn:hover {
         color: #f1f5f9;
-        font-size: 14px;
+        background: #161a24;
+    }
+    .ifw-tab-btn.active {
+        background: #161a24;
+        border-color: #f97316;
+        color: #f97316;
+        box-shadow: 0 -2px 10px rgba(249, 115, 22, 0.15);
+    }
+    .ifw-vault-body {
+        padding: 24px;
+        background: #141721;
+    }
+    .ifw-section-heading {
+        font-size: 13.5px;
+        font-weight: 800;
+        color: #f97316;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 16px;
         display: flex;
         align-items: center;
         gap: 8px;
     }
-
-    .builder-card-body {
-        padding: 22px;
-    }
-
-    .form-label-custom {
-        font-size: 12px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        color: #94a3b8;
-        margin-bottom: 6px;
-        display: block;
-    }
-
-    .form-control-custom {
-        background: #0d1017 !important;
-        border: 1px solid #283244 !important;
-        color: #f1f5f9 !important;
-        border-radius: 8px !important;
-        font-size: 13px !important;
-    }
-
-    .form-control-custom:focus {
-        border-color: #fecc56 !important;
-        box-shadow: 0 0 0 2px rgba(254, 204, 86, 0.18) !important;
-    }
-
-    .tag-badge-pill {
-        background: #1e2533;
-        border: 1px solid #374358;
-        color: #fecc56;
-        font-size: 11px;
-        padding: 3px 8px;
-        border-radius: 4px;
-        cursor: pointer;
-        display: inline-block;
-        margin: 2px;
-        transition: all 0.15s ease;
-    }
-
-    .tag-badge-pill:hover {
-        background: #2a354a;
-        border-color: #fecc56;
-        transform: translateY(-1px);
-    }
-
-    /* Live Paper Preview styling */
-    .paper-preview-container {
-        background: #ffffff;
-        color: #1a1a1a;
-        font-family: 'Georgia', serif;
-        padding: 40px 45px;
+    .ifw-box-dark {
+        background: #0b0d13;
+        border: 1px solid #232c3d;
         border-radius: 8px;
-        box-shadow: 0 8px 30px rgba(0,0,0,0.5);
-        min-height: 600px;
-        position: relative;
-        font-size: 13.5px;
-        line-height: 1.8;
-    }
-
-    .paper-header {
-        text-align: center;
-        border-bottom: 2px solid #b8860b;
-        padding-bottom: 20px;
+        padding: 18px;
         margin-bottom: 24px;
     }
-
-    .paper-header h3 {
-        font-size: 20px;
-        text-transform: uppercase;
-        letter-spacing: 1.2px;
-        color: #111;
-        margin: 0 0 6px 0;
-        font-weight: 700;
+    .ifw-input {
+        background: #10131b !important;
+        border: 1px solid #283244 !important;
+        color: #f1f5f9 !important;
+        border-radius: 6px !important;
+        font-size: 13px !important;
     }
-
-    .paper-meta {
-        font-size: 12px;
-        color: #666;
+    .ifw-input:focus {
+        border-color: #f97316 !important;
+        box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.2) !important;
     }
-
-    .paper-body {
-        margin-bottom: 30px;
-    }
-
-    .paper-signatures {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 30px;
-        margin-top: 40px;
-        border-top: 1px solid #ddd;
-        padding-top: 24px;
-    }
-
-    .sig-line-block {
-        border-bottom: 1px solid #333;
-        height: 38px;
-        margin-bottom: 6px;
-    }
-
-    .btn-gold-action {
-        background: linear-gradient(135deg, #e8820c, #c46e08);
+    .btn-ifw-orange {
+        background: linear-gradient(135deg, #f97316, #ea580c);
         color: #ffffff !important;
-        border: none;
-        border-radius: 8px;
-        padding: 10px 22px;
         font-weight: 700;
         font-size: 13px;
+        border: none;
+        border-radius: 6px;
+        padding: 9px 24px;
         cursor: pointer;
-        transition: all 0.2s ease;
+        transition: all 0.2s;
         display: inline-flex;
         align-items: center;
         gap: 6px;
     }
-
-    .btn-gold-action:hover {
+    .btn-ifw-orange:hover {
         opacity: 0.9;
         transform: translateY(-1px);
+    }
+    .ifw-table {
+        width: 100%;
+        border-collapse: collapse;
+        color: #cbd5e1;
+        font-size: 13px;
+    }
+    .ifw-table th {
+        background: #0b0d13;
+        color: #fecc56;
+        font-weight: 700;
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        padding: 12px 16px;
+        border-bottom: 1px solid #283244;
+    }
+    .ifw-table td {
+        padding: 14px 16px;
+        border-bottom: 1px solid #1e2636;
+        vertical-align: middle;
+    }
+    .ifw-table tr:hover {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    .type-pill {
+        background: #2a3447;
+        color: #e2e8f0;
+        font-size: 11px;
+        font-weight: 700;
+        padding: 4px 10px;
+        border-radius: 4px;
+        text-transform: uppercase;
+        display: inline-block;
+    }
+    .status-signed {
+        background: rgba(34, 197, 94, 0.15);
+        color: #4ade80;
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        font-weight: bold;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+    }
+    .status-standard {
+        background: #1e2533;
+        color: #94a3b8;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 11px;
+    }
+    .btn-red-del {
+        background: transparent;
+        border: none;
+        color: #f87171;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .btn-red-del:hover {
+        color: #ef4444;
+        text-decoration: underline;
+    }
+    .tag-pill {
+        display: inline-block;
+        background: #1e2533;
+        color: #fecc56;
+        border: 1px solid #2d3748;
+        padding: 2px 7px;
+        border-radius: 4px;
+        font-size: 11px;
+        cursor: pointer;
+        margin-right: 4px;
+        margin-bottom: 4px;
+        font-family: monospace;
+        transition: all 0.15s;
+    }
+    .tag-pill:hover {
+        background: #fecc56;
+        color: #000;
     }
 </style>
 @endsection
@@ -189,156 +225,228 @@
         </div>
     @endif
 
-    <div class="builder-container">
-        <!-- ── Left Column: Builder Controls ── -->
-        <div class="builder-card">
-            <div class="builder-card-header">
-                <h6><i class="fas fa-file-signature text-warning"></i> {{ __('Legal Document Builder & Form Populator') }}</h6>
-                <span class="badge badge-warning text-dark font-weight-bold px-2 py-1">{{ __('IFW Auto-Populator') }}</span>
-            </div>
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <!-- EXACT IFW CASE DOCUMENT VAULT CONTAINER WITH 2 TABS                -->
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <div class="ifw-vault-container">
+        <!-- Vault Top Header -->
+        <div class="ifw-vault-header">
+            <h6 class="ifw-vault-title">
+                <i class="fas fa-folder-open"></i> {{ __('CASE DOCUMENT VAULT') }}
+            </h6>
+        </div>
 
-            <div class="builder-card-body">
-                <form action="{{ route('admin.document-generator.generate') }}" method="POST" id="mainDocGenForm" target="_blank">
+        <!-- Two Navigation Tabs (Exact IFW replica) -->
+        <div class="ifw-vault-tabs">
+            <button type="button" class="ifw-tab-btn {{ request()->get('tab') !== 'compose' ? 'active' : '' }}" onclick="switchVaultTab('uploadTab', this)">
+                <i class="fas fa-upload"></i> {{ __('Upload File') }}
+            </button>
+            <button type="button" class="ifw-tab-btn {{ request()->get('tab') === 'compose' ? 'active' : '' }}" onclick="switchVaultTab('composeTab', this)">
+                <i class="fas fa-edit"></i> {{ __('Create Custom Document') }}
+            </button>
+        </div>
+
+        <!-- Tab 1: Upload File -->
+        <div id="uploadTab" class="ifw-vault-body" style="{{ request()->get('tab') === 'compose' ? 'display: none;' : '' }}">
+            <!-- Upload Box -->
+            <div class="ifw-box-dark">
+                <h6 class="ifw-section-heading">
+                    <i class="fas fa-upload"></i> {{ __('UPLOAD DOCUMENT TO VAULT') }}
+                </h6>
+
+                <form action="{{ route('admin.document-generator.generate') }}" method="POST" enctype="multipart/form-data">
                     @csrf
+                    <input type="hidden" name="action_type" value="upload">
 
-                    <!-- 1. Select Template -->
-                    <div class="form-group mb-3">
-                        <label class="form-label-custom">{{ __('Select Document Template') }} <span class="text-danger">*</span></label>
-                        <select name="template_key" id="templateKeySelector" class="form-control form-control-custom" required onchange="onTemplateChange(this)">
-                            <option value="">-- {{ __('Choose Template') }} --</option>
-                            @foreach($templates as $tmpl)
-                                <option value="{{ $tmpl->key }}" data-title="{{ $tmpl->title }}" data-content="{{ addslashes($tmpl->content) }}">{{ $tmpl->title }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <!-- 2. Select Client Profile -->
-                    <div class="form-group mb-3">
-                        <label class="form-label-custom">{{ __('Associate Client Profile') }} <span class="text-danger">*</span></label>
-                        <select name="client_id" id="clientSelector" class="form-control form-control-custom" required onchange="onClientChange(this)">
-                            <option value="">-- {{ __('Choose Client') }} --</option>
-                            @foreach($clients as $client)
-                                <option value="{{ $client->id }}" data-name="{{ $client->name }}" data-email="{{ $client->email }}" data-phone="{{ $client->phone ?? '' }}" data-address="{{ $client->address ?? '' }}">
-                                    {{ $client->name }} ({{ $client->email }})
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <!-- 3. Document Details Row -->
-                    <div class="row mb-3">
-                        <div class="col-md-6 form-group mb-0">
-                            <label class="form-label-custom">{{ __('Document Title') }} <span class="text-danger">*</span></label>
-                            <input type="text" name="doc_title" id="docTitleInput" class="form-control form-control-custom" value="Legal Representation Agreement" required oninput="updateLivePreview()">
+                    <div class="row align-items-center">
+                        <div class="col-md-4 form-group mb-2">
+                            <label class="small text-muted mb-1">{{ __('Select File') }} <span class="text-danger">*</span></label>
+                            <input type="file" name="vault_file" class="form-control-file text-light" required style="font-size: 12.5px;">
                         </div>
-                        <div class="col-md-6 form-group mb-0">
-                            <label class="form-label-custom">{{ __('Effective Date') }}</label>
-                            <input type="date" name="effective_date" id="effectiveDateInput" class="form-control form-control-custom" value="{{ date('Y-m-d') }}" oninput="updateLivePreview()">
-                        </div>
-                    </div>
 
-                    <!-- 4. Attorney / Officer Name -->
-                    <div class="form-group mb-3">
-                        <label class="form-label-custom">{{ __('Attorney / Authorized Officer') }}</label>
-                        <input type="text" name="attorney_name" id="attorneyNameInput" class="form-control form-control-custom" value="{{ $companyName }}" placeholder="e.g. Gary Livingston, Senior CPA & Legal Counsel" oninput="updateLivePreview()">
-                    </div>
+                        <div class="col-md-3 form-group mb-2">
+                            <label class="small text-muted mb-1">{{ __('Document Type') }}</label>
+                            <select name="doc_type" class="form-control ifw-input">
+                                <option value="Standard / General Document">Standard / General Document</option>
+                                <option value="Client Evidence">Client Evidence</option>
+                                <option value="Writ of Mandamus">Writ of Mandamus</option>
+                                <option value="Retainer & Representation Agreement">Retainer & Representation Agreement</option>
+                                <option value="Proof of Claim & Banking Records">Proof of Claim & Banking Records</option>
+                                <option value="Court Affidavit & Formal Notice">Court Affidavit & Formal Notice</option>
+                            </select>
+                        </div>
 
-                    <!-- 5. Content / Clauses Editor -->
-                    <div class="form-group mb-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <label class="form-label-custom mb-0">{{ __('Document Content & Clauses (HTML/Text)') }}</label>
-                            <small class="text-muted">{{ __('Click tags to insert') }}:</small>
+                        <div class="col-md-3 form-group mb-2">
+                            <label class="small text-muted mb-1">{{ __('Associate Client Profile') }}</label>
+                            <select name="client_id" class="form-control ifw-input" required>
+                                @foreach($clients as $c)
+                                    <option value="{{ $c->id }}">{{ $c->name }} ({{ $c->email }})</option>
+                                @endforeach
+                            </select>
                         </div>
-                        <!-- Placeholders clickable tags -->
-                        <div class="mb-2">
-                            <span class="tag-badge-pill" onclick="insertTag('@{{client_name}}')">@{{client_name}}</span>
-                            <span class="tag-badge-pill" onclick="insertTag('@{{client_email}}')">@{{client_email}}</span>
-                            <span class="tag-badge-pill" onclick="insertTag('@{{client_phone}}')">@{{client_phone}}</span>
-                            <span class="tag-badge-pill" onclick="insertTag('@{{client_address}}')">@{{client_address}}</span>
-                            <span class="tag-badge-pill" onclick="insertTag('@{{company_name}}')">@{{company_name}}</span>
-                            <span class="tag-badge-pill" onclick="insertTag('@{{date}}')">@{{date}}</span>
-                            <span class="tag-badge-pill" onclick="insertTag('@{{case_number}}')">@{{case_number}}</span>
-                        </div>
-                        <textarea name="custom_clauses" id="documentContentArea" rows="7" class="form-control form-control-custom" placeholder="Document body content and legal provisions..." oninput="updateLivePreview()"></textarea>
-                    </div>
 
-                    <!-- 6. Options Checkboxes -->
-                    <div class="mb-4 pt-2 border-top border-secondary">
-                        <div class="custom-control custom-checkbox mb-2">
-                            <input type="checkbox" name="requires_signature" id="requires_signature" class="custom-control-input" value="1" checked onchange="updateLivePreview()">
-                            <label class="custom-control-label text-light font-weight-semibold" for="requires_signature">
-                                <i class="fas fa-signature text-warning mr-1"></i> {{ __('Requires Client Digital Signature Block') }}
-                            </label>
+                        <div class="col-md-2 form-group mb-2">
+                            <div class="custom-control custom-checkbox mb-2">
+                                <input type="checkbox" name="requires_signature" id="uploadReqSig" class="custom-control-input" value="1">
+                                <label class="custom-control-label text-light small font-weight-bold" for="uploadReqSig">{{ __('Requires Signature') }}</label>
+                            </div>
+                            <button type="submit" class="btn-ifw-orange btn-block">
+                                <i class="fas fa-upload mr-1"></i> {{ __('Upload') }}
+                            </button>
                         </div>
-                        <div class="custom-control custom-checkbox">
-                            <input type="checkbox" name="send_email" id="send_email" class="custom-control-input" value="1" checked>
-                            <label class="custom-control-label text-warning font-weight-semibold" for="send_email">
-                                <i class="fas fa-paper-plane mr-1"></i> {{ __('Dispatch Certified PDF Email Copy to Client') }}
-                            </label>
-                        </div>
-                    </div>
-
-                    <!-- 7. Action Button -->
-                    <div class="d-flex" style="gap: 12px;">
-                        <button type="submit" class="btn-gold-action flex-grow-1 justify-content-center">
-                            <i class="fas fa-print"></i> {{ __('Generate, Print & Send Document') }}
-                        </button>
                     </div>
                 </form>
             </div>
+
+            <!-- Vaulted Files & Agreements List -->
+            <h6 class="ifw-section-heading">
+                <i class="fas fa-file-alt"></i> {{ __('VAULTED FILES & AGREEMENTS') }}
+            </h6>
+
+            <div class="table-responsive">
+                <table class="ifw-table">
+                    <thead>
+                        <tr>
+                            <th>{{ __('File Name') }}</th>
+                            <th>{{ __('Type') }}</th>
+                            <th>{{ __('Status') }}</th>
+                            <th>{{ __('Uploaded') }}</th>
+                            <th>{{ __('Actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($vaultedDocs ?? [] as $doc)
+                        <tr>
+                            <td>
+                                <a href="{{ asset($doc->file_path) }}" target="_blank" class="text-warning font-weight-bold text-decoration-none">
+                                    <i class="fas fa-file-pdf text-warning mr-2"></i> {{ $doc->document_title ?: basename($doc->file_path) }}
+                                </a>
+                                @if(!empty($doc->client))
+                                    <small class="text-muted d-block">{{ $doc->client->name }} ({{ $doc->client->email }})</small>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="type-pill">{{ $doc->document_type ?? 'Client Evidence' }}</span>
+                            </td>
+                            <td>
+                                @if(!empty($doc->is_signed))
+                                    <span class="status-signed"><i class="fas fa-check-circle mr-1"></i> {{ __('Signed') }}</span>
+                                @else
+                                    <span class="status-standard">{{ __('Standard View') }}</span>
+                                @endif
+                            </td>
+                            <td style="font-size: 12px; color: #94a3b8;">
+                                {{ $doc->created_at ? $doc->created_at->format('M d, Y H:i') : 'N/A' }}
+                            </td>
+                            <td>
+                                <form action="{{ route('admin.document-templates.destroy', $doc->id ?? 0) }}" method="POST" onsubmit="return confirm('Delete this vaulted document?');" class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-red-del">
+                                        <i class="fas fa-trash-alt"></i> {{ __('Delete') }}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <i class="fas fa-folder-open fa-2x mb-2 d-block text-secondary"></i>
+                                <span class="small">{{ __('No vaulted documents found.') }}</span>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
 
-        <!-- ── Right Column: Live Parchment Paper Preview ── -->
-        <div class="builder-card">
-            <div class="builder-card-header">
-                <h6><i class="fas fa-eye text-warning"></i> {{ __('Live Parchment Document Preview') }}</h6>
-                <button type="button" class="btn btn-sm btn-outline-warning" onclick="window.print()">
-                    <i class="fas fa-print mr-1"></i> {{ __('Print Preview') }}
-                </button>
-            </div>
+        <!-- Tab 2: Create Custom Document (Exact IFW Compose Screen) -->
+        <div id="composeTab" class="ifw-vault-body" style="{{ request()->get('tab') !== 'compose' ? 'display: none;' : '' }}">
+            <h6 class="ifw-section-heading">
+                <i class="fas fa-edit"></i> {{ __('COMPOSE CUSTOM DOCUMENT') }}
+            </h6>
 
-            <div class="builder-card-body" style="background: #10131b;">
-                <div class="paper-preview-container" id="paperPreviewArea">
-                    <!-- Header -->
-                    <div class="paper-header">
-                        <h3 id="prevTitle">LEGAL REPRESENTATION AGREEMENT</h3>
-                        <div class="paper-meta">
-                            <span><strong>{{ $companyName }}</strong></span> &bull;
-                            <span>Ref: <strong id="prevRef">DOC-{{ date('Ymd') }}</strong></span> &bull;
-                            <span>Date: <strong id="prevDate">{{ date('F d, Y') }}</strong></span>
-                        </div>
+            <form action="{{ route('admin.document-generator.generate') }}" method="POST" target="_blank">
+                @csrf
+                <input type="hidden" name="action_type" value="compose">
+
+                <!-- 1. Select Template -->
+                <div class="form-group mb-3">
+                    <label class="small text-muted font-weight-bold">{{ __('Select Document Template (Optional)') }}</label>
+                    <select name="template_key" id="templateKeySelector" class="form-control ifw-input" onchange="onTemplateChange(this)">
+                        <option value="">-- {{ __('Choose a standard template') }} --</option>
+                        @foreach($templates as $tmpl)
+                            <option value="{{ $tmpl->key }}" data-title="{{ $tmpl->title }}" data-content="{{ addslashes($tmpl->content) }}">{{ $tmpl->title }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- 2. Client Profile -->
+                <div class="form-group mb-3">
+                    <label class="small text-muted font-weight-bold">{{ __('Associate Client Profile') }} <span class="text-danger">*</span></label>
+                    <select name="client_id" id="clientSelector" class="form-control ifw-input" required onchange="onClientChange(this)">
+                        <option value="">-- {{ __('Choose Client') }} --</option>
+                        @foreach($clients as $client)
+                            <option value="{{ $client->id }}" data-name="{{ $client->name }}" data-email="{{ $client->email }}" data-phone="{{ $client->phone ?? '' }}" data-address="{{ $client->address ?? '' }}">
+                                {{ $client->name }} ({{ $client->email }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- 3. Document Title -->
+                <div class="form-group mb-3">
+                    <label class="small text-muted font-weight-bold">{{ __('Document Title / Name') }} <span class="text-danger">*</span></label>
+                    <input type="text" name="doc_title" id="docTitleInput" class="form-control ifw-input" placeholder="e.g. Asset Recovery Agreement - Jane Doe" required>
+                </div>
+
+                <!-- 4. Row: Dynamic Document Type & Signature Checkbox -->
+                <div class="row align-items-center mb-3">
+                    <div class="col-md-8">
+                        <label class="small text-muted font-weight-bold">{{ __('Document Type (Dynamic)') }}</label>
+                        <input type="text" name="doc_type" class="form-control ifw-input" placeholder="e.g. Service Agreement, Custom NDA, Recovery Mandate">
                     </div>
-
-                    <!-- Client Summary Banner -->
-                    <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 12px 16px; margin-bottom: 20px; font-size: 12.5px;">
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                            <div><strong>Client:</strong> <span id="prevClientName">Select a client profile</span></div>
-                            <div><strong>Email:</strong> <span id="prevClientEmail">N/A</span></div>
-                            <div><strong>Phone:</strong> <span id="prevClientPhone">N/A</span></div>
-                            <div><strong>Address:</strong> <span id="prevClientAddress">N/A</span></div>
-                        </div>
-                    </div>
-
-                    <!-- Body Content -->
-                    <div class="paper-body" id="prevContent">
-                        <p>Select a legal document template on the left to load the standard legal stipulations, clauses, and terms of representation.</p>
-                    </div>
-
-                    <!-- Signature Blocks -->
-                    <div class="paper-signatures" id="prevSignatures">
-                        <div>
-                            <div style="font-size: 11px; text-transform: uppercase; color: #666; margin-bottom: 6px;">Authorized Legal Counsel</div>
-                            <div class="sig-line-block"></div>
-                            <div style="font-size: 12px; font-weight: bold;" id="prevAttorneySigner">{{ $companyName }}</div>
-                        </div>
-                        <div>
-                            <div style="font-size: 11px; text-transform: uppercase; color: #666; margin-bottom: 6px;">Client / Grantor Signature</div>
-                            <div class="sig-line-block"></div>
-                            <div style="font-size: 12px; font-weight: bold;" id="prevClientSigner">Client Name</div>
+                    <div class="col-md-4 pt-4">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" name="requires_signature" id="composeReqSig" class="custom-control-input" value="1" checked>
+                            <label class="custom-control-label text-light small font-weight-bold" for="composeReqSig">{{ __('Requires Client Signature') }}</label>
                         </div>
                     </div>
                 </div>
-            </div>
+
+                <!-- 5. Content Editor with Quick Insert Tags -->
+                <div class="form-group mb-3">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="small text-muted font-weight-bold mb-0">{{ __('Document Content (HTML / Text Allowed)') }}</label>
+                        <small class="text-muted">{{ __('Click tags to insert') }}:</small>
+                    </div>
+                    <div class="mb-2">
+                        <span class="tag-pill" onclick="insertTag('@{{client_name}}')">@{{client_name}}</span>
+                        <span class="tag-pill" onclick="insertTag('@{{client_email}}')">@{{client_email}}</span>
+                        <span class="tag-pill" onclick="insertTag('@{{client_address}}')">@{{client_address}}</span>
+                        <span class="tag-pill" onclick="insertTag('@{{company_name}}')">@{{company_name}}</span>
+                        <span class="tag-pill" onclick="insertTag('@{{case_number}}')">@{{case_number}}</span>
+                        <span class="tag-pill" onclick="insertTag('@{{date}}')">@{{date}}</span>
+                    </div>
+                    <textarea name="document_content" id="documentContentArea" rows="8" class="form-control ifw-input" placeholder="Write your document content here. You can use standard HTML formatting tags like <b>, <i>, <ul>, <p>, etc."></textarea>
+                </div>
+
+                <!-- Bottom Actions -->
+                <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" name="send_email_copy" id="sendEmailCopy" class="custom-control-input" value="1" checked>
+                        <label class="custom-control-label text-warning small font-weight-bold" for="sendEmailCopy">
+                            <i class="fas fa-envelope mr-1"></i> {{ __('Dispatch Signed PDF Copy to Client via Email') }}
+                        </label>
+                    </div>
+                    <div style="gap: 10px;" class="d-flex">
+                        <button type="submit" name="generate_pdf" value="1" class="btn-ifw-orange">
+                            <i class="fas fa-file-pdf"></i> {{ __('Generate PDF & Vault') }}
+                        </button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -346,36 +454,19 @@
 
 @section('page-script')
 <script>
-var clientData = {};
-var currentTemplateContent = '';
-
-function onTemplateChange(sel) {
-    var opt = sel.options[sel.selectedIndex];
-    if (opt && opt.value) {
-        var rawContent = opt.getAttribute('data-content') || '';
-        rawContent = rawContent.replace(/\\n/g, "\n").replace(/\\t/g, "\t").replace(/\\"/g, '"').replace(/\\'/g, "'");
-        document.getElementById('documentContentArea').value = rawContent;
-        currentTemplateContent = rawContent;
-
-        var title = opt.getAttribute('data-title') || opt.text;
-        document.getElementById('docTitleInput').value = title;
-    }
-    updateLivePreview();
+function switchVaultTab(tabId, btn) {
+    document.getElementById('uploadTab').style.display = (tabId === 'uploadTab') ? 'block' : 'none';
+    document.getElementById('composeTab').style.display = (tabId === 'composeTab') ? 'block' : 'none';
+    document.querySelectorAll('.ifw-tab-btn').forEach(function(b) { b.classList.remove('active'); });
+    btn.classList.add('active');
 }
 
-function onClientChange(sel) {
-    var opt = sel.options[sel.selectedIndex];
-    if (opt && opt.value) {
-        clientData = {
-            name: opt.getAttribute('data-name') || 'Client',
-            email: opt.getAttribute('data-email') || 'N/A',
-            phone: opt.getAttribute('data-phone') || 'N/A',
-            address: opt.getAttribute('data-address') || 'N/A'
-        };
-    } else {
-        clientData = {};
+function onTemplateChange(select) {
+    var opt = select.options[select.selectedIndex];
+    if (opt.value) {
+        document.getElementById('docTitleInput').value = opt.getAttribute('data-title') || '';
+        document.getElementById('documentContentArea').value = opt.getAttribute('data-content') || '';
     }
-    updateLivePreview();
 }
 
 function insertTag(tag) {
@@ -386,49 +477,10 @@ function insertTag(tag) {
     textarea.value = val.substring(0, start) + tag + val.substring(end);
     textarea.focus();
     textarea.selectionStart = textarea.selectionEnd = start + tag.length;
-    updateLivePreview();
 }
 
-function updateLivePreview() {
-    var title = document.getElementById('docTitleInput').value || 'Legal Representation Document';
-    var attorney = document.getElementById('attorneyNameInput').value || '{{ $companyName }}';
-    var dateVal = document.getElementById('effectiveDateInput').value;
-    var content = document.getElementById('documentContentArea').value;
-    var reqSig = document.getElementById('requires_signature').checked;
-
-    document.getElementById('prevTitle').textContent = title.toUpperCase();
-    document.getElementById('prevAttorneySigner').textContent = attorney;
-    if (dateVal) {
-        var d = new Date(dateVal);
-        document.getElementById('prevDate').textContent = d.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    }
-
-    if (clientData.name) {
-        document.getElementById('prevClientName').textContent = clientData.name;
-        document.getElementById('prevClientEmail').textContent = clientData.email;
-        document.getElementById('prevClientPhone').textContent = clientData.phone;
-        document.getElementById('prevClientAddress').textContent = clientData.address;
-        document.getElementById('prevClientSigner').textContent = clientData.name;
-    }
-
-    // Replace live placeholders in content
-    var cName = clientData.name || '[Client Name]';
-    var cEmail = clientData.email || '[Client Email]';
-    var cPhone = clientData.phone || '[Client Phone]';
-    var cAddr = clientData.address || '[Client Address]';
-
-    var previewHtml = (content || '')
-        .replace(/@?\{\{client_name\}\}/g, cName)
-        .replace(/@?\{\{client_email\}\}/g, cEmail)
-        .replace(/@?\{\{client_phone\}\}/g, cPhone)
-        .replace(/@?\{\{client_address\}\}/g, cAddr)
-        .replace(/@?\{\{company_name\}\}/g, attorney)
-        .replace(/@?\{\{attorney_name\}\}/g, attorney)
-        .replace(/@?\{\{case_number\}\}/g, 'CASE-001')
-        .replace(/@?\{\{date\}\}/g, document.getElementById('prevDate').textContent);
-
-    document.getElementById('prevContent').innerHTML = previewHtml ? previewHtml.replace(/\n/g, '<br>') : '<p class="text-muted">Type or select a template to preview content...</p>';
-    document.getElementById('prevSignatures').style.display = reqSig ? 'grid' : 'none';
+function onClientChange(select) {
+    // Client associated
 }
 </script>
 @endsection
