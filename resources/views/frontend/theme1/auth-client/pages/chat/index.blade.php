@@ -13,7 +13,8 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        min-height: 560px;
+        height: calc(100vh - 170px);
+        min-height: 580px;
         position: relative;
     }
     .chat-portal-header {
@@ -23,100 +24,63 @@
         flex-shrink: 0;
         z-index: 20;
     }
-    .btn-gold {
-        background: linear-gradient(135deg, #fecc56, #f0a500);
-        color: #000 !important;
-        font-weight: 700;
-        border: none;
-        border-radius: 8px;
-        padding: 10px 20px;
-        transition: all 0.2s;
-    }
-    .btn-gold:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 14px rgba(254,204,86,0.45);
-    }
-    .chat-live-cta {
+    .chatwoot-docked-container {
+        position: relative !important;
         flex: 1;
+        width: 100% !important;
+        height: 100% !important;
+        overflow: hidden !important;
+        background: #0a0c10;
+    }
+    
+    /* DOCKED CHATWOOT OVERRIDES */
+    .woot--bubble-holder, .woot-widget-bubble {
+        display: none !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+    }
+    .woot-widget-holder {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        height: 100% !important;
+        max-height: 100% !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: none !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        transform: none !important;
+        z-index: 15 !important;
+        display: block !important;
+    }
+    .woot-widget-holder iframe,
+    #chatwoot_live_chat_widget {
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 100% !important;
+        border: none !important;
+        border-radius: 0 !important;
+        display: block !important;
+        background: #0a0c10 !important;
+    }
+
+    #chatwootLoadingPh {
+        position: absolute;
+        inset: 0;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        padding: 50px 30px;
-        text-align: center;
-        background: radial-gradient(ellipse at center, rgba(254,204,86,0.04) 0%, transparent 70%);
-    }
-    .chat-pulsing-ring {
-        width: 100px;
-        height: 100px;
-        border-radius: 50%;
-        background: rgba(254,204,86,0.12);
-        border: 2px solid #fecc56;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 38px;
-        color: #fecc56;
-        margin: 0 auto 24px;
-        position: relative;
-        animation: pulseGlow 2s ease-in-out infinite;
-    }
-    @keyframes pulseGlow {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(254,204,86,0.4); }
-        50% { box-shadow: 0 0 0 20px rgba(254,204,86,0); }
-    }
-    .status-live-badge {
-        background: rgba(34,197,94,0.15);
-        color: #4ade80;
-        border: 1px solid rgba(34,197,94,0.3);
-        font-weight: 700;
-        font-size: 11px;
-        padding: 5px 14px;
-        border-radius: 20px;
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        margin-bottom: 20px;
-    }
-    .status-live-badge::before {
-        content: '';
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        background: #4ade80;
-        animation: blink 1.2s ease-in-out infinite;
-    }
-    @keyframes blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.25; }
-    }
-    .chat-feature-row {
-        display: flex;
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 16px;
-        margin-top: 30px;
-        max-width: 560px;
-    }
-    .chat-feature-item {
-        background: #161a23;
-        border: 1px solid #28303f;
-        border-radius: 10px;
-        padding: 14px 18px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-size: 12.5px;
-        color: #94a3b8;
-        flex: 1;
-        min-width: 160px;
-    }
-    .chat-feature-item i {
-        color: #fecc56;
-        font-size: 16px;
+        background: #0a0c10;
+        z-index: 10;
     }
 
-    /* Native Fallback Messages */
+    /* NATIVE FALLBACK */
     .chat-messages-body {
         flex: 1;
         overflow-y: auto;
@@ -161,6 +125,16 @@
         justify-content: flex-end;
         color: #5a4200;
     }
+    .chat-attachment-box {
+        background: rgba(0,0,0,0.25);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 6px;
+        padding: 6px 10px;
+        margin-top: 6px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
     .chat-footer-native {
         background: #161a23;
         border-top: 1px solid #28303f;
@@ -179,8 +153,21 @@
         border-color: #fecc56 !important;
         box-shadow: 0 0 0 2px rgba(254,204,86,0.2) !important;
     }
-
-    /* Light Mode */
+    .btn-gold {
+        background: linear-gradient(135deg, #fecc56, #f0a500);
+        color: #000 !important;
+        font-weight: 700;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 20px;
+        transition: all 0.2s;
+    }
+    .btn-gold:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(254,204,86,0.45);
+    }
+    
+    /* Light Mode Overrides */
     body.light-mode .chat-portal-card, html.light-mode .chat-portal-card {
         background: #ffffff !important;
         border-color: #e2e8f0 !important;
@@ -189,13 +176,14 @@
         background: #f8fafc !important;
         border-bottom-color: #e2e8f0 !important;
     }
-    body.light-mode .chat-live-cta, html.light-mode .chat-live-cta {
-        background: radial-gradient(ellipse at center, rgba(245,158,11,0.06) 0%, transparent 70%) !important;
-    }
-    body.light-mode .chat-feature-item, html.light-mode .chat-feature-item {
+    body.light-mode .chatwoot-docked-container, html.light-mode .chatwoot-docked-container {
         background: #f8fafc !important;
-        border-color: #e2e8f0 !important;
-        color: #475569 !important;
+    }
+    body.light-mode #chatwootLoadingPh, html.light-mode #chatwootLoadingPh {
+        background: #f8fafc !important;
+    }
+    body.light-mode .woot-widget-holder iframe, html.light-mode .woot-widget-holder iframe {
+        background: #ffffff !important;
     }
     body.light-mode .chat-messages-body, html.light-mode .chat-messages-body {
         background: #f8fafc !important;
@@ -214,9 +202,14 @@
         color: #0f172a !important;
         border-color: #cbd5e1 !important;
     }
+
     @media (max-width: 768px) {
-        .chat-feature-item { min-width: 130px; }
-        .chat-pulsing-ring { width: 80px; height: 80px; font-size: 28px; }
+        .chat-portal-card {
+            height: calc(100dvh - 140px);
+            border-radius: 0 !important;
+            min-height: 0;
+        }
+        .chat-bubble { max-width: 92%; }
     }
 </style>
 @endsection
@@ -231,6 +224,11 @@
     $u              = Auth::user();
     $clientName     = $u->name ?: 'Client #'.$u->id;
     $clientEmail    = $u->email;
+    $clientPhone    = $u->phone ?? '';
+    $avatarUrl      = $u->profile_photo_url ?? '';
+    if ($avatarUrl && !str_starts_with($avatarUrl, 'http')) { $avatarUrl = url($avatarUrl); }
+    $cwId           = 'client_'.$u->id;
+    $cwHmac         = $hmacHash ?? (!empty($chatSettings['hmac_key']) ? hash_hmac('sha256', $cwId, $chatSettings['hmac_key']) : '');
     $counselName    = ($counsel->name ?? null) ?: 'Gary Livingston, Senior CPA & Legal Counsel';
 @endphp
 
@@ -250,7 +248,7 @@
             <span class="text-success font-weight-bold" style="font-size:11px;"><i class="fas fa-circle mr-1" style="font-size:8px;"></i>{{ __('Counsel Online') }}</span>
             <span class="text-muted">&bull;</span>
             <span class="text-warning font-weight-bold" style="font-size:11px;">CLI-{{ sprintf('%05d', $u->id) }}</span>
-            @if($provider==='chatwoot' && !empty($chatwootToken))
+            @if($provider==='chatwoot')
               <span class="text-muted">&bull;</span>
               <span class="text-muted" style="font-size:11px;"><i class="fas fa-shield-alt text-success mr-1"></i>Chatwoot Live</span>
             @endif
@@ -268,97 +266,126 @@
       </div>
     </div>
 
-    {{-- CHATWOOT: Open floating bubble --}}
-    @if($provider==='chatwoot' && !empty($chatwootToken))
-      <div class="chat-live-cta">
-        <div class="chat-pulsing-ring">
-          <i class="fas fa-headset"></i>
-        </div>
-        <div class="status-live-badge">
-          {{ __('Live Support Activated') }}
-        </div>
-        <h4 class="font-weight-bold text-white mb-2" style="font-size: 1.4rem;">{{ __('Your Secure Live Case Line is Ready') }}</h4>
-        <p class="text-muted mb-4" style="max-width: 440px; line-height: 1.65; font-size: 13.5px;">
-          {{ __('Your dedicated legal counsel is available to discuss your case, review documents, and provide immediate secure legal advice through our Chatwoot-encrypted messaging system.') }}
-        </p>
-
-        <button id="openChatwootBtn" type="button" class="btn-gold px-5 py-3" style="font-size:15px; border-radius: 10px;" onclick="launchChatwootWidget()">
-          <i class="fas fa-comments mr-2"></i>{{ __('Launch Live Counsel Chat') }}
-        </button>
-
-        <div class="chat-feature-row">
-          <div class="chat-feature-item">
-            <i class="fas fa-clock"></i>
-            <div>
-              <strong class="text-white d-block" style="font-size: 12.5px;">{{ __('24/7 Case Line') }}</strong>
-              <span style="font-size: 11px;">{{ __('Always available') }}</span>
-            </div>
-          </div>
-          <div class="chat-feature-item">
-            <i class="fas fa-shield-alt"></i>
-            <div>
-              <strong class="text-white d-block" style="font-size: 12.5px;">{{ __('256-Bit Encrypted') }}</strong>
-              <span style="font-size: 11px;">{{ __('End-to-end secure') }}</span>
-            </div>
-          </div>
-          <div class="chat-feature-item">
-            <i class="fas fa-file-contract"></i>
-            <div>
-              <strong class="text-white d-block" style="font-size: 12.5px;">{{ __('Case-Linked') }}</strong>
-              <span style="font-size: 11px;">{{ __('Full case context') }}</span>
-            </div>
+    {{-- CHATWOOT OFFICIAL SDK (IFW DOCKED ENGINE) --}}
+    @if($provider==='chatwoot')
+      @if(!empty($chatwootToken))
+        <div class="chatwoot-docked-container" id="chatwootMountContainer">
+          <div id="chatwootLoadingPh">
+            <i class="fas fa-spinner fa-spin text-warning mb-3" style="font-size:3rem;"></i>
+            <h5 class="text-warning font-weight-bold">{{ __('Connecting to Secure Case Line...') }}</h5>
+            <p class="text-muted small mb-0">{{ __('Synchronizing credentials & loading conversation history.') }}</p>
           </div>
         </div>
-      </div>
 
-      <script>
-        function launchChatwootWidget() {
-          // Make sure SDK is loaded
-          if (window.$chatwoot) {
-            window.$chatwoot.toggle('open');
-          } else {
-            // SDK not yet ready — wait for ready event then open
-            window.addEventListener('chatwoot:ready', function() {
-              if (window.$chatwoot) {
-                window.$chatwoot.toggle('open');
-              }
-            }, { once: true });
+        <script>
+        (function() {
+          var BASE = @json($chatwootBase);
+          var TOK  = @json($chatwootToken);
+          var CID  = @json($cwId);
+          var HMAC = @json($cwHmac);
+          var NM   = @json($clientName);
+          var EM   = @json($clientEmail);
+          var PH   = @json($clientPhone);
+          var AV   = @json($avatarUrl);
+          var UID  = {{ (int)$u->id }};
+
+          function isLight() {
+            return document.documentElement.classList.contains('light-mode') || document.body.classList.contains('light-mode');
           }
-        }
 
-        // Auto-open the chat widget when this page loads
-        document.addEventListener('DOMContentLoaded', function() {
-          // Give the SDK a moment to initialize if not yet ready
-          var attempts = 0;
-          var autoOpen = setInterval(function() {
-            attempts++;
-            if (window.$chatwoot) {
-              window.$chatwoot.toggle('open');
-              clearInterval(autoOpen);
+          function dockWidget() {
+            var mount = document.getElementById('chatwootMountContainer');
+            var holder = document.querySelector('.woot-widget-holder');
+            if (mount && holder) {
+              if (holder.parentNode !== mount) {
+                mount.appendChild(holder);
+              }
+              var loader = document.getElementById('chatwootLoadingPh');
+              if (loader) {
+                loader.style.display = 'none';
+              }
             }
-            if (attempts >= 25) {
-              clearInterval(autoOpen); // give up after 5s
+          }
+
+          window.chatwootSettings = {
+            hideMessageBubble: true,
+            position: 'right',
+            locale: 'en',
+            type: 'expanded_bubble',
+            darkMode: isLight() ? 'light' : 'dark'
+          };
+
+          (function(d, t) {
+            var g = d.createElement(t), s = d.getElementsByTagName(t)[0];
+            g.src = BASE + '/packs/js/sdk.js';
+            g.async = true;
+            g.defer = true;
+            s.parentNode.insertBefore(g, s);
+            g.onload = function() {
+              if (window.chatwootSDK) {
+                window.chatwootSDK.run({ websiteToken: TOK, baseUrl: BASE });
+              }
+            };
+            g.onerror = function() {
+              var ph = document.getElementById('chatwootLoadingPh');
+              if (ph) {
+                ph.innerHTML = '<i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i><h5 class="text-warning">Chat Server Offline</h5><p class="text-muted small">Unable to reach chat server. Please contact counsel by email.</p>';
+              }
+            };
+          })(document, 'script');
+
+          window.addEventListener('chatwoot:ready', function() {
+            if (!window.$chatwoot) return;
+            var ud = { name: NM, email: EM, avatar_url: AV, phone_number: PH };
+            if (HMAC) ud.identifier_hash = HMAC;
+            window.$chatwoot.setUser(CID, ud);
+            window.$chatwoot.setCustomAttributes({
+              client_id: String(UID),
+              portal: '{{ config("app.name", "Your CPA Expert") }} Client Portal',
+              account_type: 'Legal & CPA Client'
+            });
+
+            if (isLight()) {
+              try { window.$chatwoot.setDarkMode('light'); } catch(e) {}
+            } else {
+              try { window.$chatwoot.setDarkMode('dark'); } catch(e) {}
             }
-          }, 200);
-        });
-      </script>
+
+            window.$chatwoot.toggle('open');
+            dockWidget();
+            setTimeout(dockWidget, 300);
+            setTimeout(dockWidget, 1000);
+          });
+
+          var intervalDock = setInterval(dockWidget, 250);
+          setTimeout(function() { clearInterval(intervalDock); }, 8000);
+        })();
+        </script>
+      @else
+        <div class="flex-fill d-flex align-items-center justify-content-center p-5 text-center">
+          <div>
+            <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
+            <h5 class="text-warning">{{ __('Chatwoot Not Configured') }}</h5>
+            <p class="text-muted small">{{ __('Go to Admin → Settings → Live Chat to enter your Chatwoot Website Token.') }}</p>
+          </div>
+        </div>
+      @endif
 
     {{-- TAWK.TO --}}
-    @elseif(in_array($provider, ['tawkto','tawk']))
+    @elseif(in_array($provider,['tawkto','tawk']))
       @php
-        $tk = trim(preg_replace(['/^.*tawk\.to\/chat\//i','/^.*embed\.tawk\.to\//i'],['',$tawktoId],''), " \t\n\r;'\"/");
-        $tParts = explode('/', $tk); $tProp = $tParts[0] ?? ''; $tHash = $tParts[1] ?? 'default';
+        $tk=trim(preg_replace(['/^.*tawk\.to\/chat\//i','/^.*embed\.tawk\.to\//i'],['',$tawktoId],''), " \t\n\r;'\"/");
+        $tParts=explode('/',$tk); $tProp=$tParts[0]??''; $tHash=$tParts[1]??'default';
       @endphp
       @if($tProp)
         <div class="flex-fill" style="position:relative;">
           <iframe src="https://tawk.to/chat/{{ $tProp }}/{{ $tHash }}"
-                  style="width:100%;height:100%;min-height:520px;border:none;display:block;"
+                  style="width:100%;height:100%;min-height:580px;border:none;display:block;background:#000;"
                   allow="camera;microphone;autoplay;encrypted-media;" title="{{ __('Live Support') }}"></iframe>
         </div>
       @else
-        <div class="chat-live-cta">
-          <i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i>
-          <h5 class="text-warning">{{ __('Tawk.to Not Configured') }}</h5>
+        <div class="flex-fill d-flex align-items-center justify-content-center p-5 text-center">
+          <div><i class="fas fa-exclamation-triangle text-warning fa-3x mb-3"></i><h5 class="text-warning">{{ __('Tawk.to Not Configured') }}</h5></div>
         </div>
       @endif
 
@@ -367,19 +394,13 @@
       <div class="chat-messages-body" id="chatMessagesStream">
         @forelse($messages??[] as $msg)
           @php $mine=($msg->user_id===Auth::id()); @endphp
-          <div class="chat-bubble {{ $mine?'chat-bubble-out':'chat-bubble-in' }}">
+          <div class="chat-bubble {{ $mine?'chat-bubble-out':'chat-bubble-in' }}" id="msg-item-{{ $msg->id }}" data-msg-id="{{ $msg->id }}">
             @if(!$mine)<div class="font-weight-bold text-warning small mb-1" style="font-size:11px;">{{ $msg->user->name??'Assigned Counsel' }}</div>@endif
             @if(!empty($msg->text))<div>{{ $msg->text }}</div>@endif
             @if(!empty($msg->file))
-              <div class="d-flex align-items-center mt-1">
-                <i class="fas fa-file-alt text-warning mr-2"></i>
-                <a href="{{ asset($msg->file) }}" target="_blank" class="text-white small font-weight-bold text-decoration-none">{{ $msg->file_name??__('Attachment') }}</a>
-              </div>
+              <div class="chat-attachment-box"><i class="fas fa-file-alt text-warning"></i><a href="{{ asset($msg->file) }}" target="_blank" class="text-white small font-weight-bold text-decoration-none">{{ $msg->file_name??__('Attachment') }}</a></div>
             @endif
-            <div class="chat-bubble-time">
-              <span>{{ $msg->created_at->format('h:i A') }}</span>
-              @if($mine)<i class="fas fa-check-double text-warning ml-1" style="font-size:9px;"></i>@endif
-            </div>
+            <div class="chat-bubble-time"><span>{{ $msg->created_at->format('h:i A') }}</span>@if($mine)<i class="fas fa-check-double text-warning ml-1" style="font-size:9px;"></i>@endif</div>
           </div>
         @empty
           <div class="text-center py-5 my-auto text-muted">
@@ -394,11 +415,11 @@
         <form action="{{ route('client.conversation.store') }}" method="POST" enctype="multipart/form-data" class="d-flex align-items-center" style="gap:10px;">
           @csrf
           <input type="text" name="message" class="form-control chat-input-control flex-grow-1" placeholder="{{ __('Type your message here...') }}" required autocomplete="off">
-          <label class="btn btn-sm btn-outline-secondary text-light mb-0" style="cursor:pointer;padding:10px 14px;border-color:#374151;" title="{{ __('Attach File') }}">
+          <label class="btn btn-portal-secondary mb-0" style="cursor:pointer;padding:10px 14px;" title="{{ __('Attach File') }}">
             <i class="fas fa-paperclip"></i>
             <input type="file" name="attachment" class="d-none" onchange="this.form.submit()">
           </label>
-          <button type="submit" class="btn-gold"><i class="fas fa-paper-plane mr-1"></i> {{ __('Send') }}</button>
+          <button type="submit" class="btn btn-gold"><i class="fas fa-paper-plane mr-1"></i> {{ __('Send') }}</button>
         </form>
       </div>
     @endif
