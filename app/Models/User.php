@@ -32,6 +32,7 @@ class User extends Authenticatable
         'name', 'email', 'password', 'phone', 'address',
         'pin_hash', 'is_temp_password', 'is_first_login',
         'assigned_attorney_id', 'preferred_currency', 'device_history',
+        'two_factor_enabled', 'otp_code', 'otp_expires_at', 'otp_method',
     ];
 
     /**
@@ -42,6 +43,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'pin_hash',
+        'otp_code',
         'remember_token',
         'two_factor_recovery_codes',
         'two_factor_secret',
@@ -53,7 +55,12 @@ class User extends Authenticatable
      * @var array
      */
     protected $casts = [
-        'email_verified_at' => 'datetime',
+        'email_verified_at'  => 'datetime',
+        'otp_expires_at'     => 'datetime',
+        'two_factor_enabled' => 'boolean',
+        'is_first_login'     => 'boolean',
+        'is_temp_password'   => 'boolean',
+        'device_history'     => 'array',
     ];
 
     /**

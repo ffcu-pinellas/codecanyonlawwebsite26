@@ -229,6 +229,11 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client',
     Route::post('/security-wizard', [ClientSecurityController::class, 'processSecurityWizard'])->withoutMiddleware(['security.setup'])->name('security.wizard.process');
     Route::get('/security/2fa-gate', [ClientSecurityController::class, 'show2faGate'])->withoutMiddleware(['security.setup'])->name('security.2fa-gate');
     Route::post('/security/2fa-gate', [ClientSecurityController::class, 'verify2faGate'])->withoutMiddleware(['security.setup'])->name('security.2fa-gate.verify');
+    Route::get('/security/verify-otp', [ClientSecurityController::class, 'show2faGate'])->withoutMiddleware(['security.setup'])->name('security.verify-otp');
+    Route::post('/security/verify-otp/check', [ClientSecurityController::class, 'verifyOtp'])->withoutMiddleware(['security.setup'])->name('security.verify-otp.check');
+    Route::post('/security/verify-otp/resend', [ClientSecurityController::class, 'resendOtp'])->withoutMiddleware(['security.setup'])->name('security.verify-otp.resend');
+    Route::post('/security/lock-session', [ClientSecurityController::class, 'lockSession'])->name('security.lock-session');
+    Route::post('/security/unlock-session', [ClientSecurityController::class, 'unlockSession'])->name('security.unlock-session');
 
     // Identity Verification (KYC Hub)
     Route::get('/kyc', [ClientViewController::class, 'kycHub'])->name('kyc.hub');

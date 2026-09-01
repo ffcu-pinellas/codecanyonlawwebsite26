@@ -8,6 +8,7 @@
     <div id="wrapper" class="wrapper-left-fixed wrapper-header-fixed bg-dark">
         <!------------------------------------------------------------------------------------------------>
         @include('backend.layouts.pre-loader')
+        @include('components.session-timeout-modal')
         <!------------------------------------------------------------------------------------------------>
         @include('backend.menus.header-menu')
         <!------------------------------------------------------------------------------------------------>

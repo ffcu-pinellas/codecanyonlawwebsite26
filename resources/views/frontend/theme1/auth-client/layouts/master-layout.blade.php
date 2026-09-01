@@ -4,6 +4,7 @@
 @include('frontend.theme1.auth-client.layouts.head')
 <body id="body" class="dark-mode" style="background-color: #0a0c10 !important; color: #f1f5f9; min-height: 100vh; overflow-x: hidden;">
 @include('components.impersonation-bar')
+@include('components.session-timeout-modal')
 @include('frontend.theme1.auth-client.layouts.pre-loader')
 
 <!-- Google Translate Container (Hidden Engine) -->

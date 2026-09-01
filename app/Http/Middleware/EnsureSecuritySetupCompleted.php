@@ -25,8 +25,12 @@ class EnsureSecuritySetupCompleted
                     return redirect()->route('client.security.wizard');
                 }
             } elseif ($user->two_factor_enabled && !session('two_factor_verified')) {
-                if (!$request->routeIs('client.security.2fa-gate*') && !$request->routeIs('client.stop-impersonation') && !$request->routeIs('logout')) {
-                    return redirect()->route('client.security.2fa-gate');
+                // Allow the verify-otp routes through without redirect loop
+                $allow = ['client.security.verify-otp', 'client.security.verify-otp.send', 'client.security.verify-otp.resend', 'client.security.verify-otp.check', 'client.stop-impersonation', 'logout'];
+                $passes = false;
+                foreach ($allow as $r) { if ($request->routeIs($r)) { $passes = true; break; } }
+                if (!$passes) {
+                    return redirect()->route('client.security.verify-otp');
                 }
             }
         }
