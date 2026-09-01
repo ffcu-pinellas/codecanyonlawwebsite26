@@ -228,18 +228,45 @@
         transform: translateY(-1px);
         box-shadow: 0 4px 14px rgba(254,204,86,0.45);
     }
-    .btn-portal-secondary {
-        background: #262e3d;
-        border: 1px solid #374151;
-        color: #e2e8f0;
-        font-weight: 600;
-        border-radius: 6px;
-        font-size: 12px;
-        padding: 6px 12px;
-    }
-    .btn-portal-secondary:hover {
-        background: #333d4e;
-        color: #fff;
+    /* MOBILE RESPONSIVENESS (100% FLUID - ZERO HORIZONTAL SCROLL) */
+    @media (max-width: 991px) {
+        .portal-hero { padding: 18px 16px; margin-bottom: 16px; }
+        .stat-card-luxury { padding: 14px 16px; margin-bottom: 12px; }
+        .stat-card-luxury .stat-value { font-size: 1.4rem; }
+        .progress-track-container { padding: 16px 12px; overflow-x: auto; }
+        .progress-track { min-width: 540px; padding-bottom: 6px; }
+        
+        .table-portal thead { display: none; }
+        .table-portal, .table-portal tbody, .table-portal tr, .table-portal td { display: block; width: 100%; }
+        .table-portal tbody tr {
+            margin-bottom: 14px;
+            border: 1px solid #28303f;
+            border-radius: 10px;
+            padding: 12px 14px;
+            background: #161a23;
+        }
+        .table-portal td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #1f2533;
+            text-align: right;
+        }
+        .table-portal td:last-child {
+            border-bottom: none;
+            padding-top: 10px;
+            justify-content: flex-end;
+        }
+        .table-portal td[data-label]::before {
+            content: attr(data-label);
+            font-weight: 700;
+            color: #94a3b8;
+            font-size: 11px;
+            text-transform: uppercase;
+            text-align: left;
+            margin-right: 12px;
+        }
     }
 </style>
 @endsection

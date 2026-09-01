@@ -61,6 +61,30 @@
         border-color: #fecc56 !important;
         box-shadow: 0 0 0 2px rgba(254, 204, 86, 0.2) !important;
     }
+    @media (max-width: 991px) {
+        .table-portal thead { display: none; }
+        .table-portal, .table-portal tbody, .table-portal tr, .table-portal td { display: block; width: 100%; }
+        .table-portal tbody tr {
+            margin-bottom: 14px;
+            border: 1px solid #28303f;
+            border-radius: 10px;
+            padding: 12px 14px;
+            background: #161a23;
+        }
+        .table-portal td {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px solid #1f2533;
+            text-align: right;
+        }
+        .table-portal td:last-child {
+            border-bottom: none;
+            padding-top: 10px;
+            justify-content: flex-end;
+        }
+    }
 </style>
 @endsection
 

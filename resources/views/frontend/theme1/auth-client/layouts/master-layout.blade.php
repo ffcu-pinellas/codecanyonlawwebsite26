@@ -127,56 +127,52 @@
         background-color: #1f2533 !important;
         color: #ffffff !important;
     }
-    @media (max-width: 991px) {
-        .client-navigation {
-            position: fixed;
-            top: 0;
-            left: -280px;
-            width: 270px;
-            height: 100vh;
-            z-index: 1050;
-            background: #11151e !important;
-            transition: left 0.3s ease;
-            overflow-y: auto;
-        }
-        .client-navigation.active {
-            left: 0;
-        }
-        .sidebar-overlay.active {
-            display: block;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0,0,0,0.7);
-            z-index: 1040;
-        }
+    .sidebar-overlay {
+        display: none;
+    }
+    .sidebar-overlay.active {
+        display: block;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.75);
+        backdrop-filter: blur(2px);
+        z-index: 1050;
     }
 </style>
 
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const toggleBtn = document.getElementById('clientDashboardMenuBtn');
-        const sidebar = document.querySelector('.client-navigation');
+        const sidebar = document.getElementById('ifwClientSidebar');
         const overlay = document.getElementById('sidebarOverlay');
         const closeBtn = document.getElementById('mobileCloseSidebar');
 
-        if (toggleBtn && sidebar && overlay) {
-            toggleBtn.addEventListener('click', function() {
-                sidebar.classList.toggle('active');
-                overlay.classList.toggle('active');
+        function openSidebar() {
+            if (sidebar) sidebar.classList.add('active');
+            if (overlay) overlay.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeSidebar() {
+            if (sidebar) sidebar.classList.remove('active');
+            if (overlay) overlay.classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                openSidebar();
             });
-            overlay.addEventListener('click', function() {
-                sidebar.classList.remove('active');
-                overlay.classList.remove('active');
-            });
-            if (closeBtn) {
-                closeBtn.addEventListener('click', function() {
-                    sidebar.classList.remove('active');
-                    overlay.classList.remove('active');
-                });
-            }
+        }
+        if (overlay) {
+            overlay.addEventListener('click', closeSidebar);
+        }
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeSidebar);
         }
     });
 </script>
