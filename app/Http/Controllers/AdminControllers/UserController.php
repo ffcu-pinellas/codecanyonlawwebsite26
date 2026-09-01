@@ -143,6 +143,7 @@ class UserController extends Controller
                     return response()->json(['error' => __('User not found')], 404);
                 }
                 $attorneys = User::role(['attorney', 'admin'])->get();
+                $roles = Role::all();
                 $userRoleName = $user->roles->isNotEmpty() ? $user->roles->pluck('name')[0] : '';
 
                 $data = '

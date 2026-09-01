@@ -19,11 +19,14 @@
             <!-- SIDEBAR PROFILE -->
             <div class="sidebar-profile border-fade">
                 <div class="d-flex align-items-center">
-                    @if (Laravel\Jetstream\Jetstream::managesProfilePhotos())
-                        <img src="{{ Storage::url(Auth::user()?->profile_photo_path) }}" alt="{{ Auth::user()?->name }}"
+                    @if (Laravel\Jetstream\Jetstream::managesProfilePhotos() && Auth::user()?->profile_photo_path)
+                        <img src="{{ Storage::url(Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()?->name }}"
+                            class="img-fluid img-thumbnail sidebar-profile-img" />
+                    @elseif(Auth::user()?->profile_photo_url)
+                        <img src="{{ Auth::user()->profile_photo_url }}" alt="{{ Auth::user()?->name }}"
                             class="img-fluid img-thumbnail sidebar-profile-img" />
                     @else
-                        <img src="{{ Auth::user()->gender == 'male' ? asset('backend/assets/img/profile/male.jpg') : (Auth::user()->gender == 'female' ? asset('backend/assets/img/profile/female.jpg') : asset('backend/assets/img/profile/other.png')) }}"
+                        <img src="{{ Auth::user()?->gender == 'male' ? asset('backend/assets/img/profile/male.jpg') : (Auth::user()?->gender == 'female' ? asset('backend/assets/img/profile/female.jpg') : asset('backend/assets/img/profile/other.png')) }}"
                             class="img-fluid img-thumbnail sidebar-profile-img" />
                     @endif
                 </div>

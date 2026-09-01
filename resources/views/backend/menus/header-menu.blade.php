@@ -105,14 +105,16 @@
                 <a class="nav-link dropdown-toggle no-caret d-flex align-items-center" href="javascript:void(0);"
                    id="settings" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 
-                    @if (Laravel\Jetstream\Jetstream::managesProfilePhotos())
-
-                        <img class="rounded-circle" width="32px" src="{{ Storage::url(Auth::user()?->profile_photo_path) }}"
+                    @if (Laravel\Jetstream\Jetstream::managesProfilePhotos() && Auth::user()?->profile_photo_path)
+                        <img class="rounded-circle" width="32px" src="{{ Storage::url(Auth::user()->profile_photo_path) }}"
+                             alt="{{ Auth::user()?->name }}"/>
+                    @elseif(Auth::user()?->profile_photo_url)
+                        <img class="rounded-circle" width="32px" src="{{ Auth::user()->profile_photo_url }}"
                              alt="{{ Auth::user()?->name }}"/>
                     @else
                         <img
-                            src="{{ Auth::user()->gender == 'male' ? asset('backend/assets/img/profile/male.jpg'):(Auth::user()->gender == 'female' ? asset('backend/assets/img/profile/female.jpg'):asset('backend/assets/img/profile/other.png'))  }}"
-                            class="rounded-circle " width="32px">
+                            src="{{ Auth::user()?->gender == 'male' ? asset('backend/assets/img/profile/male.jpg'):(Auth::user()?->gender == 'female' ? asset('backend/assets/img/profile/female.jpg'):asset('backend/assets/img/profile/other.png')) }}"
+                            class="rounded-circle" width="32px">
                     @endif
 
                 </a>

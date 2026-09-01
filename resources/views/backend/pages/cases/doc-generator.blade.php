@@ -112,8 +112,26 @@
         gap: 6px;
     }
     .btn-ifw-orange:hover {
-        opacity: 0.9;
+        opacity: 0.92;
         transform: translateY(-1px);
+    }
+    .btn-outline-orange {
+        background: transparent;
+        border: 1.5px solid #f97316;
+        color: #f97316 !important;
+        font-weight: 700;
+        font-size: 13px;
+        border-radius: 6px;
+        padding: 8px 20px;
+        cursor: pointer;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+    .btn-outline-orange:hover {
+        background: rgba(249, 115, 22, 0.15);
+        color: #ffffff !important;
     }
     .ifw-table {
         width: 100%;
@@ -197,6 +215,18 @@
     .tag-pill:hover {
         background: #fecc56;
         color: #000;
+    }
+
+    /* Live Preview Parchment Paper */
+    .parchment-paper-preview {
+        background: #fffdfa;
+        color: #1a1a1a;
+        padding: 40px;
+        border-radius: 6px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        font-family: 'Times New Roman', Georgia, serif;
+        min-height: 500px;
+        line-height: 1.6;
     }
 </style>
 @endsection
@@ -367,7 +397,7 @@
                 <i class="fas fa-edit"></i> {{ __('COMPOSE CUSTOM DOCUMENT') }}
             </h6>
 
-            <form action="{{ route('admin.document-generator.generate') }}" method="POST" target="_blank">
+            <form action="{{ route('admin.document-generator.generate') }}" method="POST" id="composeDocForm" target="_blank">
                 @csrf
                 <input type="hidden" name="action_type" value="compose">
 
@@ -405,7 +435,7 @@
                 <div class="row align-items-center mb-3">
                     <div class="col-md-8">
                         <label class="small text-muted font-weight-bold">{{ __('Document Type (Dynamic)') }}</label>
-                        <input type="text" name="doc_type" class="form-control ifw-input" placeholder="e.g. Service Agreement, Custom NDA, Recovery Mandate">
+                        <input type="text" name="doc_type" id="docTypeInput" class="form-control ifw-input" placeholder="e.g. Service Agreement, Custom NDA, Recovery Mandate">
                     </div>
                     <div class="col-md-4 pt-4">
                         <div class="custom-control custom-checkbox">
@@ -432,21 +462,151 @@
                     <textarea name="document_content" id="documentContentArea" rows="8" class="form-control ifw-input" placeholder="Write your document content here. You can use standard HTML formatting tags like <b>, <i>, <ul>, <p>, etc."></textarea>
                 </div>
 
-                <!-- Bottom Actions -->
-                <div class="d-flex justify-content-between align-items-center pt-3 border-top border-secondary">
-                    <div class="custom-control custom-checkbox">
-                        <input type="checkbox" name="send_email_copy" id="sendEmailCopy" class="custom-control-input" value="1" checked>
-                        <label class="custom-control-label text-warning small font-weight-bold" for="sendEmailCopy">
-                            <i class="fas fa-envelope mr-1"></i> {{ __('Dispatch Signed PDF Copy to Client via Email') }}
-                        </label>
-                    </div>
-                    <div style="gap: 10px;" class="d-flex">
-                        <button type="submit" name="generate_pdf" value="1" class="btn-ifw-orange">
-                            <i class="fas fa-file-pdf"></i> {{ __('Generate PDF & Vault') }}
-                        </button>
-                    </div>
+                <!-- Action Buttons: Live Preview Document (Outline) + Create & Send (Solid) -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <button type="button" class="btn-outline-orange" onclick="openLivePreviewModal()">
+                        <i class="fas fa-eye"></i> {{ __('Live Preview Document') }}
+                    </button>
+
+                    <button type="submit" name="generate_pdf" value="1" class="btn-ifw-orange">
+                        {{ __('Create & Send to Client') }}
+                    </button>
                 </div>
             </form>
+
+            <hr class="border-secondary my-4">
+
+            <!-- Bottom Section: VAULTED FILES & AGREEMENTS on this tab as well (Exact IFW layout) -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="ifw-section-heading mb-0">
+                    <i class="fas fa-file-alt"></i> {{ __('VAULTED FILES & AGREEMENTS') }}
+                </h6>
+            </div>
+
+            <div class="table-responsive mb-4">
+                <table class="ifw-table">
+                    <thead>
+                        <tr>
+                            <th>{{ __('File Name') }}</th>
+                            <th>{{ __('Type') }}</th>
+                            <th>{{ __('Status') }}</th>
+                            <th>{{ __('Uploaded') }}</th>
+                            <th>{{ __('Actions') }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($vaultedDocs ?? [] as $doc)
+                        <tr>
+                            <td>
+                                <a href="{{ asset($doc->file_path) }}" target="_blank" class="text-warning font-weight-bold text-decoration-none">
+                                    <i class="fas fa-file-pdf text-warning mr-2"></i> {{ $doc->document_title ?: basename($doc->file_path) }}
+                                </a>
+                                @if(!empty($doc->client))
+                                    <small class="text-muted d-block">{{ $doc->client->name }} ({{ $doc->client->email }})</small>
+                                @endif
+                            </td>
+                            <td>
+                                <span class="type-pill">{{ $doc->document_type ?? 'Client Evidence' }}</span>
+                            </td>
+                            <td>
+                                @if(!empty($doc->is_signed))
+                                    <span class="status-signed"><i class="fas fa-check-circle mr-1"></i> {{ __('Signed') }}</span>
+                                @else
+                                    <span class="status-standard">{{ __('Standard View') }}</span>
+                                @endif
+                            </td>
+                            <td style="font-size: 12px; color: #94a3b8;">
+                                {{ $doc->created_at ? $doc->created_at->format('M d, Y H:i') : 'N/A' }}
+                            </td>
+                            <td>
+                                <form action="{{ route('admin.document-templates.destroy', $doc->id ?? 0) }}" method="POST" onsubmit="return confirm('Delete this vaulted document?');" class="d-inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn-red-del">
+                                        <i class="fas fa-trash-alt"></i> {{ __('Delete') }}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        @empty
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">
+                                <span class="small">{{ __('No documents vaulted for this client.') }}</span>
+                            </td>
+                        </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="text-right">
+                <a href="{{ route('admin.dashboard') }}" class="btn btn-secondary btn-sm px-4">
+                    {{ __('Close') }}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- LIVE PREVIEW PARCHMENT PAPER MODAL                                  -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div class="modal fade" id="liveDocPreviewModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title font-weight-bold text-warning">
+                    <i class="fas fa-eye mr-2"></i> {{ __('Live Parchment Document Preview') }}
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body p-4" style="background: #11141c;">
+                <div class="parchment-paper-preview" id="modalParchmentPaper">
+                    <!-- Letterhead -->
+                    <div class="text-center border-bottom pb-3 mb-4" style="border-color: #d1c7b7 !important;">
+                        <h3 style="margin: 0; font-weight: 800; color: #1e293b; letter-spacing: 1px;">{{ strtoupper($companyName) }}</h3>
+                        <div style="font-size: 13px; color: #64748b; font-style: italic;">Legal Counsel & Forensic Financial Practice</div>
+                    </div>
+
+                    <!-- Title & Reference -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h4 style="margin: 0; font-weight: bold; color: #0f172a;" id="prevModalDocTitle">LEGAL REPRESENTATION AGREEMENT</h4>
+                        <span style="font-size: 12px; color: #64748b;" id="prevModalDocDate">{{ date('F d, Y') }}</span>
+                    </div>
+
+                    <!-- Client Details Box -->
+                    <div style="background: #f8f6f0; border-left: 3px solid #f97316; padding: 12px 16px; margin-bottom: 20px; font-size: 13.5px;">
+                        <div><strong>Prepared For:</strong> <span id="prevModalClientName">[Client Name]</span></div>
+                        <div><strong>Email:</strong> <span id="prevModalClientEmail">[Client Email]</span></div>
+                        <div><strong>Address:</strong> <span id="prevModalClientAddress">[Client Address]</span></div>
+                    </div>
+
+                    <!-- Body Clauses -->
+                    <div id="prevModalContent" style="font-size: 14px; margin-bottom: 30px;">
+                        <p class="text-muted">Enter document content to preview...</p>
+                    </div>
+
+                    <!-- Signatures -->
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 40px; padding-top: 20px; border-top: 1px dashed #d1c7b7;">
+                        <div>
+                            <div style="border-bottom: 1px solid #000; height: 35px; margin-bottom: 6px;"></div>
+                            <small style="color: #64748b;">Authorized Legal/CPA Signer</small>
+                            <div style="font-weight: bold; font-size: 13px;">{{ $companyName }}</div>
+                        </div>
+                        <div>
+                            <div style="border-bottom: 1px solid #000; height: 35px; margin-bottom: 6px;"></div>
+                            <small style="color: #64748b;">Client Signature / Acceptance</small>
+                            <div style="font-weight: bold; font-size: 13px;" id="prevModalClientSigner">[Client Name]</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">{{ __('Close Preview') }}</button>
+                <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark" onclick="window.printModalPreview()">
+                    <i class="fas fa-print mr-1"></i> {{ __('Print Draft') }}
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -454,6 +614,8 @@
 
 @section('page-script')
 <script>
+var selectedClientData = {};
+
 function switchVaultTab(tabId, btn) {
     document.getElementById('uploadTab').style.display = (tabId === 'uploadTab') ? 'block' : 'none';
     document.getElementById('composeTab').style.display = (tabId === 'composeTab') ? 'block' : 'none';
@@ -469,6 +631,20 @@ function onTemplateChange(select) {
     }
 }
 
+function onClientChange(select) {
+    var opt = select.options[select.selectedIndex];
+    if (opt.value) {
+        selectedClientData = {
+            name: opt.getAttribute('data-name') || '',
+            email: opt.getAttribute('data-email') || '',
+            phone: opt.getAttribute('data-phone') || '',
+            address: opt.getAttribute('data-address') || ''
+        };
+    } else {
+        selectedClientData = {};
+    }
+}
+
 function insertTag(tag) {
     var textarea = document.getElementById('documentContentArea');
     var start = textarea.selectionStart;
@@ -479,8 +655,42 @@ function insertTag(tag) {
     textarea.selectionStart = textarea.selectionEnd = start + tag.length;
 }
 
-function onClientChange(select) {
-    // Client associated
+function openLivePreviewModal() {
+    var title = document.getElementById('docTitleInput').value || 'Legal Representation Document';
+    var content = document.getElementById('documentContentArea').value || '';
+    var clientName = selectedClientData.name || '[Client Name]';
+    var clientEmail = selectedClientData.email || '[Client Email]';
+    var clientAddress = selectedClientData.address || '[Client Address]';
+    var attorney = '{{ $companyName }}';
+
+    document.getElementById('prevModalDocTitle').textContent = title.toUpperCase();
+    document.getElementById('prevModalClientName').textContent = clientName;
+    document.getElementById('prevModalClientEmail').textContent = clientEmail;
+    document.getElementById('prevModalClientAddress').textContent = clientAddress;
+    document.getElementById('prevModalClientSigner').textContent = clientName;
+
+    var previewHtml = content
+        .replace(/@?\{\{client_name\}\}/g, clientName)
+        .replace(/@?\{\{client_email\}\}/g, clientEmail)
+        .replace(/@?\{\{client_phone\}\}/g, selectedClientData.phone || 'N/A')
+        .replace(/@?\{\{client_address\}\}/g, clientAddress)
+        .replace(/@?\{\{company_name\}\}/g, attorney)
+        .replace(/@?\{\{attorney_name\}\}/g, attorney)
+        .replace(/@?\{\{case_number\}\}/g, 'CASE-001')
+        .replace(/@?\{\{date\}\}/g, '{{ date('F d, Y') }}');
+
+    document.getElementById('prevModalContent').innerHTML = previewHtml ? previewHtml.replace(/\n/g, '<br>') : '<p class="text-muted">No content written yet.</p>';
+
+    $('#liveDocPreviewModal').modal('show');
 }
+
+window.printModalPreview = function() {
+    var printContents = document.getElementById('modalParchmentPaper').innerHTML;
+    var originalContents = document.body.innerHTML;
+    document.body.innerHTML = printContents;
+    window.print();
+    document.body.innerHTML = originalContents;
+    window.location.reload();
+};
 </script>
 @endsection
