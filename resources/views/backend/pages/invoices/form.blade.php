@@ -140,36 +140,55 @@
                                 </div>
                             </div>
 
-                            <!-- Specific Payment Instructions & Late Fee Schedule (IFW Replica) -->
-                            <div class="border border-secondary rounded p-3 mb-4 mt-2">
-                                <h6 class="text-warning font-weight-bold mb-3"><i class="fas fa-money-bill-wave mr-2"></i>{{ __('Depository Instructions & Late Fee Policy (Optional Override)') }}</h6>
+                            <!-- Penalty Settings / Late Fees (IFW EXACT REPLICA) -->
+                            <div class="bg-dark p-3 rounded mb-4 border border-warning">
+                                <h6 class="text-warning font-weight-bold mb-3"><i class="fas fa-exclamation-triangle mr-2"></i>{{ __('Overdue Penalty / Late Fee Settings') }}</h6>
                                 
-                                <div class="row">
-                                    <div class="col-md-6 form-group mb-3">
-                                        <label class="small text-light font-weight-bold">{{ __('Custom Wire / Crypto Payment Instructions (Overrides Default):') }}</label>
-                                        <textarea name="payment_instructions" class="form-control form-control-sm bg-dark text-white border-secondary" rows="3" placeholder="Leave blank to use default Escrow Depository, or specify custom Wire / Crypto details...">{{ old('payment_instructions', $invoice ? ($invoice->payment_instructions ?? '') : '') }}</textarea>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="small text-light font-weight-bold mb-2">{{ __('Late Fee & Surcharge Terms:') }}</label>
-                                        <div class="row">
-                                            <div class="col-6 form-group mb-2">
-                                                <label class="small text-muted">{{ __('Late Surcharge (%):') }}</label>
-                                                <input type="number" name="late_fee_rate" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="e.g. 5" value="{{ old('late_fee_rate', $invoice ? ($invoice->late_fee_rate ?? 5) : 5) }}" min="0" max="100">
-                                            </div>
-                                            <div class="col-6 form-group mb-2">
-                                                <label class="small text-muted">{{ __('Grace Period (Days):') }}</label>
-                                                <input type="number" name="grace_period_days" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="e.g. 7" value="{{ old('grace_period_days', $invoice ? ($invoice->grace_period_days ?? 7) : 7) }}" min="0" max="60">
-                                            </div>
+                                <div class="mb-3 d-flex align-items-center" style="gap: 8px;">
+                                    <input type="checkbox" id="lateFeeEnabled" name="late_fee_enabled" value="1" onchange="toggleLateFeeSection(this)" style="width: 18px; height: 18px; cursor: pointer; accent-color: #fecc56;" {{ old('late_fee_enabled', $invoice ? $invoice->late_fee_enabled : 0) ? 'checked' : '' }}>
+                                    <label class="text-white font-weight-bold mb-0" for="lateFeeEnabled" style="cursor: pointer;">{{ __('Enable Automated Late Fee Penalty') }}</label>
+                                </div>
+                                
+                                <div id="lateFeeOptions" style="{{ old('late_fee_enabled', $invoice ? $invoice->late_fee_enabled : 0) ? '' : 'display: none;' }}">
+                                    <div class="row">
+                                        <div class="col-md-3 mb-2">
+                                            <label class="small text-light font-weight-bold">{{ __('Interval Type') }}</label>
+                                            <select name="late_fee_type" class="form-control form-control-sm bg-dark text-white border-secondary">
+                                                <option value="hourly" {{ old('late_fee_type', $invoice ? $invoice->late_fee_type : 'daily') === 'hourly' ? 'selected' : '' }}>{{ __('Hourly Penalty') }}</option>
+                                                <option value="daily" {{ old('late_fee_type', $invoice ? $invoice->late_fee_type : 'daily') === 'daily' ? 'selected' : '' }}>{{ __('Daily Penalty') }}</option>
+                                                <option value="weekly" {{ old('late_fee_type', $invoice ? $invoice->late_fee_type : 'daily') === 'weekly' ? 'selected' : '' }}>{{ __('Weekly Penalty') }}</option>
+                                                <option value="monthly" {{ old('late_fee_type', $invoice ? $invoice->late_fee_type : 'daily') === 'monthly' ? 'selected' : '' }}>{{ __('Monthly Penalty') }}</option>
+                                            </select>
                                         </div>
-                                        <div class="custom-control custom-checkbox mt-2">
-                                            <input type="checkbox" name="apply_late_fee" id="apply_late_fee" class="custom-control-input" value="1" {{ old('apply_late_fee', $invoice ? ($invoice->apply_late_fee ?? 1) : 1) ? 'checked' : '' }}>
-                                            <label class="custom-control-label text-warning small font-weight-bold" for="apply_late_fee">
-                                                {{ __('Apply automated late penalty notice after grace period expires') }}
-                                            </label>
+                                        <div class="col-md-3 mb-2">
+                                            <label class="small text-light font-weight-bold">{{ __('Value Type') }}</label>
+                                            <select name="late_fee_is_percentage" class="form-control form-control-sm bg-dark text-white border-secondary">
+                                                <option value="0" {{ old('late_fee_is_percentage', $invoice ? $invoice->late_fee_is_percentage : 0) == 0 ? 'selected' : '' }}>{{ __('Fixed Amount ($)') }}</option>
+                                                <option value="1" {{ old('late_fee_is_percentage', $invoice ? $invoice->late_fee_is_percentage : 0) == 1 ? 'selected' : '' }}>{{ __('Percentage (%)') }}</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <label class="small text-light font-weight-bold">{{ __('Penalty Value (Rate)') }}</label>
+                                            <input type="number" name="late_fee_amount" step="0.01" value="{{ old('late_fee_amount', $invoice ? $invoice->late_fee_amount : 50.00) }}" class="form-control form-control-sm bg-dark text-white border-secondary">
+                                        </div>
+                                        <div class="col-md-3 mb-2">
+                                            <label class="small text-light font-weight-bold">{{ __('Penalty Start Date') }}</label>
+                                            <input type="date" name="late_fee_start_date" class="form-control form-control-sm bg-dark text-white border-secondary" value="{{ old('late_fee_start_date', $invoice && $invoice->late_fee_start_date ? $invoice->late_fee_start_date->format('Y-m-d') : ($invoice && $invoice->due_date ? $invoice->due_date->format('Y-m-d') : date('Y-m-d', strtotime('+14 days')))) }}">
+                                            <small class="text-muted" style="font-size:9px;">{{ __('Defaults to due date if left blank.') }}</small>
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="mt-3 pt-2 border-top border-secondary">
+                                    <label class="small text-light font-weight-bold">{{ __('Custom Wire / Crypto Payment Instructions (Optional Override):') }}</label>
+                                    <textarea name="payment_info" class="form-control form-control-sm bg-dark text-white border-secondary" rows="2" placeholder="Leave blank to use default Escrow Depository, or specify custom Wire / Crypto details...">{{ old('payment_info', $invoice ? ($invoice->payment_info ?? '') : '') }}</textarea>
+                                </div>
                             </div>
+                            <script>
+                            function toggleLateFeeSection(el) {
+                                document.getElementById('lateFeeOptions').style.display = el.checked ? 'block' : 'none';
+                            }
+                            </script>
 
                             <!-- Hidden Textarea that stores formatted description -->
                             <input type="hidden" name="description" id="description" value="{{ old('description', $invoice ? $invoice->description : '') }}">

@@ -85,6 +85,12 @@ class AdminInvoiceController extends Controller
                 'due_date' => $request->due_date,
                 'status' => $request->status,
                 'description' => $request->description,
+                'late_fee_enabled' => $request->has('late_fee_enabled') ? 1 : 0,
+                'late_fee_type' => $request->late_fee_type ?: 'daily',
+                'late_fee_is_percentage' => $request->late_fee_is_percentage ? 1 : 0,
+                'late_fee_amount' => $request->late_fee_amount ?: 0,
+                'late_fee_start_date' => $request->late_fee_start_date ?: $request->due_date,
+                'payment_info' => $request->payment_info,
             ]);
 
             ActivityLog::log('Invoice Created', 'Generated invoice ' . $invoice->invoice_number . ' for client ' . $invoice->client->name);
@@ -177,6 +183,12 @@ class AdminInvoiceController extends Controller
                 'due_date' => $request->due_date,
                 'status' => $request->status,
                 'description' => $request->description,
+                'late_fee_enabled' => $request->has('late_fee_enabled') ? 1 : 0,
+                'late_fee_type' => $request->late_fee_type ?: 'daily',
+                'late_fee_is_percentage' => $request->late_fee_is_percentage ? 1 : 0,
+                'late_fee_amount' => $request->late_fee_amount ?: 0,
+                'late_fee_start_date' => $request->late_fee_start_date ?: $request->due_date,
+                'payment_info' => $request->payment_info,
             ]);
 
             ActivityLog::log('Invoice Updated', 'Updated invoice ' . $invoice->invoice_number);
