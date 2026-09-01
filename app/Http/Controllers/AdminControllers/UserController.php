@@ -416,16 +416,16 @@ class UserController extends Controller
                         
                         <div style='background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; padding: 14px 18px; margin: 18px 0; font-size: 14px; color: #991b1b;'>
                             <strong>Account Protection Notice:</strong><br>
-                            Our cybersecurity monitoring system flagged anomalous sign-in attempts / unfamiliar device activity on your client profile. To safeguard your privileged case files, financial schedules, and personal records, our team has proactively rotated your credentials.
+                            Our Security System flagged suspicious sign-in attempts or unfamiliar device activity on your account. To safeguard your account, we have reset your credentials.
                         </div>
 
-                        <p style='font-size: 14px;'>New temporary credentials have been generated to ensure uninterrupted and secure access to your Client Portal:</p>
+                        <p style='font-size: 14px;'>New temporary credentials have been generated to ensure uninterrupted and secure access to your account:</p>
 
                         <div style='background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #f59e0b; border-radius: 6px; padding: 18px 20px; margin: 20px 0;'>
                             <h4 style='margin: 0 0 12px 0; color: #0f172a; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;'>Updated Portal Access</h4>
                             <table style='width: 100%; border-collapse: collapse; font-size: 14px;'>
                                 <tr>
-                                    <td style='padding: 6px 0; color: #64748b; width: 160px;'><strong>Portal URL:</strong></td>
+                                    <td style='padding: 6px 0; color: #64748b; width: 160px;'><strong>Login Now</strong></td>
                                     <td style='padding: 6px 0;'><a href='{$loginUrl}' style='color: #2563eb;'>{$loginUrl}</a></td>
                                 </tr>
                                 <tr>

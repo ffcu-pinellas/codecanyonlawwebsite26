@@ -60,12 +60,12 @@
         <ul class="nav nav-tabs chat-nav-tabs border-bottom-0" id="chatTabs" role="tablist">
             <li class="nav-item">
                 <a class="nav-link active" id="chatwoot-tab" data-toggle="tab" href="#tab-chatwoot" role="tab" aria-controls="tab-chatwoot" aria-selected="true">
-                    <i class="fas fa-comments text-warning mr-1"></i> {{ __('Chatwoot Live Support Console') }}
+                    <i class="fas fa-comments text-warning mr-1"></i> {{ __('Live Support') }}
                 </a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" id="archive-tab" data-toggle="tab" href="#tab-archive" role="tab" aria-controls="tab-archive" aria-selected="false">
-                    <i class="fas fa-history mr-1"></i> {{ __('Internal Message Archive') }}
+                    <i class="fas fa-history mr-1"></i> {{ __('Internal Message') }}
                 </a>
             </li>
         </ul>
@@ -91,7 +91,7 @@
                                         </div>
                                         <div>
                                             <h4 class="font-weight-bold text-white mb-1">{{ __('Real-Time Client Live Chat & Messaging') }}</h4>
-                                            <p class="text-muted mb-0 small">{{ __('Connected to Chatwoot omnichannel suite with 100% conversation retention, HMAC cryptographic verification, and multi-agent support.') }}</p>
+                                            <p class="text-muted mb-0 small">{{ __('Connected to secure omnichannel suite with 100% conversation retention, cryptographic verification, and multi-agent support.') }}</p>
                                         </div>
                                     </div>
                                     <div class="d-flex flex-wrap mb-2">
