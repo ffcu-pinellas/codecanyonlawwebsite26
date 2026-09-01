@@ -1,4 +1,4 @@
-﻿@extends('frontend.theme1.auth-client.layouts.master-layout')
+@extends('frontend.theme1.auth-client.layouts.master-layout')
 
 @section('title', config('app.name', 'Your CPA Expert') . ' | Live Support & Chat')
 
@@ -123,14 +123,14 @@
         </div>
         <script>
         (function(){
-          var BASE = {{ Js::from($chatwootBase) }};
-          var TOK  = {{ Js::from($chatwootToken) }};
-          var CID  = {{ Js::from($cwId) }};
-          var HMAC = {{ Js::from($cwHmac) }};
-          var NM   = {{ Js::from($clientName) }};
-          var EM   = {{ Js::from($clientEmail) }};
-          var PH   = {{ Js::from($clientPhone) }};
-          var AV   = {{ Js::from($avatarUrl) }};
+          var BASE = @json($chatwootBase);
+          var TOK  = @json($chatwootToken);
+          var CID  = @json($cwId);
+          var HMAC = @json($cwHmac);
+          var NM   = @json($clientName);
+          var EM   = @json($clientEmail);
+          var PH   = @json($clientPhone);
+          var AV   = @json($avatarUrl);
           var UID  = {{ (int)$u->id }};
 
           function isLight(){ return document.documentElement.classList.contains('light-mode')||document.body.classList.contains('light-mode'); }

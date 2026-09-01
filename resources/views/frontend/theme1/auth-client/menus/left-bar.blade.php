@@ -9,7 +9,7 @@
     </div>
 
     <!-- Client Profile Identity Widget -->
-    <div class="p-3 text-center border-bottom" style="border-color: #28303f !important; background: #11151e;">
+    <div class="p-3 text-center border-bottom ifw-sidebar-user-card" style="border-color: #28303f !important; background: #11151e;">
         <div class="mb-2">
             @if(Auth::user()->profile_photo_path)
                 <img src="{{ Storage::url(Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()->name }}" class="rounded-circle img-thumbnail" style="width: 56px; height: 56px; object-fit: cover; border-color: #fecc56;">
@@ -19,7 +19,7 @@
                 </div>
             @endif
         </div>
-        <h6 class="font-weight-bold text-white mb-0" style="font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ Auth::user()->name }}</h6>
+        <h6 class="font-weight-bold text-white mb-0 ifw-sidebar-user-name" style="font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ Auth::user()->name }}</h6>
         <div class="badge mt-1 font-weight-bold" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 11px;">
             <i class="fas fa-check-circle mr-1"></i> {{ __('Verified Client') }}
         </div>
@@ -81,13 +81,12 @@
                 <span class="nav-text">{{ __('Security & PIN') }}</span>
             </a>
         </li>
-        <li class="border-top mt-2 pt-2" style="border-color: #28303f !important;">
+        <li class="border-top mt-2 pt-2 px-3 pb-1" style="border-color: #28303f !important;">
             <form action="{{ route('logout') }}" method="POST" id="logoutFormClientSidebar">
                 @csrf
-                <a href="javascript:void(0)" onclick="document.getElementById('logoutFormClientSidebar').submit();" class="text-danger">
-                    <i class="fas fa-sign-out-alt nav-icon text-danger"></i>
-                    <span class="nav-text text-danger">{{ __('Sign Out') }}</span>
-                </a>
+                <button type="submit" class="btn btn-outline-danger btn-sm btn-block font-weight-bold d-flex align-items-center justify-content-center py-2" style="border-radius: 8px; font-size: 12.5px;">
+                    <i class="fas fa-sign-out-alt mr-2"></i> {{ __('Sign Out') }}
+                </button>
             </form>
         </li>
     </ul>
@@ -157,6 +156,35 @@
         line-height: 1.3 !important;
         display: inline-block !important;
         white-space: nowrap !important;
+    }
+
+    /* Light Mode */
+    body.light-mode .ifw-client-sidebar, html.light-mode .ifw-client-sidebar {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+    }
+    body.light-mode .ifw-sidebar-user-card, html.light-mode .ifw-sidebar-user-card {
+        background: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .ifw-sidebar-user-name, html.light-mode .ifw-sidebar-user-name {
+        color: #0f172a !important;
+    }
+    body.light-mode .ifw-client-sidebar ul.ifw-nav-list > li > a,
+    html.light-mode .ifw-client-sidebar ul.ifw-nav-list > li > a {
+        color: #475569 !important;
+    }
+    body.light-mode .ifw-client-sidebar ul.ifw-nav-list > li > a:hover,
+    html.light-mode .ifw-client-sidebar ul.ifw-nav-list > li > a:hover {
+        background: #f1f5f9 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .ifw-client-sidebar ul.ifw-nav-list > li.active > a,
+    html.light-mode .ifw-client-sidebar ul.ifw-nav-list > li.active > a {
+        background: rgba(254,204,86,0.15) !important;
+        color: #b45309 !important;
+        border-left-color: #fecc56 !important;
     }
 
     /* Mobile Drawer */

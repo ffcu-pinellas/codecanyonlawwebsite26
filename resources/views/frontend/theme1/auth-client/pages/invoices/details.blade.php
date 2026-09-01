@@ -40,6 +40,9 @@
         font-size: 13px;
         transition: all 0.2s;
         box-shadow: 0 2px 8px rgba(254,204,86,0.25);
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
     }
     .btn-gold:hover {
         transform: translateY(-1px);
@@ -68,6 +71,31 @@
         margin-bottom: 24px;
         overflow: hidden;
     }
+
+    /* Light Mode */
+    body.light-mode .invoice-container, html.light-mode .invoice-container {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        color: #0f172a !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+    }
+    body.light-mode .invoice-header, html.light-mode .invoice-header {
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .invoice-container .table thead th {
+        background: #f8fafc !important;
+        color: #b45309 !important;
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .invoice-container .table td {
+        border-color: #e2e8f0 !important;
+        color: #334155 !important;
+    }
+    body.light-mode .portal-card, html.light-mode .portal-card {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+    }
+    
     @media print {
         body * { visibility: hidden; }
         .invoice-container, .invoice-container * { visibility: visible; }
@@ -78,15 +106,32 @@
 @endsection
 
 @section('content')
+@php
+    $invAmount = $invoice->total_amount ?: $invoice->amount;
+    $isPaid = strtolower($invoice->status) === 'paid';
+    $isPending = strtolower($invoice->status) === 'pending';
+@endphp
+
 <div class="container-fluid px-0">
-    <!-- Back & Print Navigation Bar -->
-    <div class="d-flex justify-content-between align-items-center mb-4 d-print-none">
-        <a href="{{ route('client.invoices.index') }}" class="btn btn-sm btn-outline-secondary text-light font-weight-bold px-3" style="border-color: #3b4252;">
+    <!-- Back, Print & Pay Action Bar -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap d-print-none" style="gap:10px;">
+        <a href="{{ route('client.invoices.index') }}" class="btn btn-sm btn-outline-secondary text-light font-weight-bold px-3">
             <i class="fas fa-arrow-left mr-1"></i> {{ __('Back to Invoices') }}
         </a>
-        <button class="btn btn-gold btn-sm px-4" onclick="window.print()">
-            <i class="fas fa-print mr-1"></i> {{ __('Print Official Statement') }}
-        </button>
+        <div class="d-flex flex-wrap" style="gap: 8px;">
+            <button class="btn btn-outline-secondary btn-sm px-3 text-light font-weight-bold" onclick="window.print()">
+                <i class="fas fa-print mr-1"></i> {{ __('Print / PDF') }}
+            </button>
+            @if(!$isPaid)
+                <a href="#payment-section" class="btn btn-gold btn-sm px-4">
+                    <i class="fas fa-credit-card mr-1"></i> {{ __('Pay Balance Due ($' . number_format($invAmount, 2) . ')') }}
+                </a>
+            @else
+                <span class="badge badge-success font-weight-bold px-3 py-2" style="font-size:13px;">
+                    <i class="fas fa-check-circle mr-1"></i> {{ __('Paid in Full ($0.00 Due)') }}
+                </span>
+            @endif
+        </div>
     </div>
 
     @if(session('success'))
@@ -106,8 +151,8 @@
                     @endif
                     <span class="company-logo-text d-block">{{ $companyName }}</span>
                     <div class="text-muted small mt-2">
-                        <p class="mb-1 text-light"><strong>{{ __('Practice Office:') }}</strong> {{ $companyAddress }}</p>
-                        <p class="mb-0 text-light"><strong>{{ __('Phone:') }}</strong> {{ $companyPhone }} &bull; <strong>{{ __('Email:') }}</strong> {{ $companyEmail }}</p>
+                        <p class="mb-1"><strong>{{ __('Practice Office:') }}</strong> {{ $companyAddress }}</p>
+                        <p class="mb-0"><strong>{{ __('Phone:') }}</strong> {{ $companyPhone }} &bull; <strong>{{ __('Email:') }}</strong> {{ $companyEmail }}</p>
                     </div>
                 </div>
                 <div class="col-md-6 text-center text-md-right">
@@ -130,10 +175,10 @@
             </div>
             <div class="col-md-6 text-md-right">
                 <h6 class="text-uppercase font-weight-bold text-warning mb-2" style="font-size: 0.75rem; letter-spacing: 1px;">{{ __('Statement Details') }}</h6>
-                <p class="text-muted small mb-1"><strong>{{ __('Issue Date:') }}</strong> <span class="text-white">{{ $invoice->created_at->format('M d, Y') }}</span></p>
+                <p class="text-muted small mb-1"><strong>{{ __('Issue Date:') }}</strong> <span>{{ $invoice->created_at->format('M d, Y') }}</span></p>
                 <p class="text-muted small mb-1"><strong>{{ __('Due Date:') }}</strong> <span class="text-warning font-weight-bold">{{ $invoice->due_date ? $invoice->due_date->format('M d, Y') : 'Due on Receipt' }}</span></p>
                 @if($invoice->clientCase)
-                    <p class="text-muted small mb-0"><strong>{{ __('Matter Ref:') }}</strong> <span class="text-white">{{ $invoice->clientCase->case_number }} ({{ $invoice->clientCase->title }})</span></p>
+                    <p class="text-muted small mb-0"><strong>{{ __('Matter Ref:') }}</strong> <span>{{ $invoice->clientCase->case_number }} ({{ $invoice->clientCase->title }})</span></p>
                 @endif
             </div>
         </div>
@@ -164,7 +209,7 @@
                             </div>
                         </td>
                         <td class="text-right align-middle font-weight-bold text-warning" style="font-size: 1.15rem;">
-                            ${{ number_format($invoice->total_amount ?: $invoice->amount, 2) }}
+                            ${{ number_format($invAmount, 2) }}
                         </td>
                     </tr>
                 </tbody>
@@ -176,7 +221,7 @@
             <div class="col-md-5 text-right">
                 <div class="py-2 border-top" style="border-color: #28303f !important;">
                     <span class="text-muted font-weight-bold small mr-4">{{ __('Subtotal:') }}</span>
-                    <span class="font-weight-bold text-white">${{ number_format($invoice->total_amount ?: $invoice->amount, 2) }}</span>
+                    <span class="font-weight-bold text-white">${{ number_format($invAmount, 2) }}</span>
                 </div>
                 <div class="py-2 border-top" style="border-color: #28303f !important;">
                     <span class="text-muted font-weight-bold small mr-4">{{ __('Taxes / Surcharges (0%):') }}</span>
@@ -184,7 +229,7 @@
                 </div>
                 <div class="py-3 border-top mt-2" style="border-color: #fecc56 !important; font-size: 1.25rem;">
                     <span class="font-weight-bold text-white mr-4">{{ __('Total Due:') }}</span>
-                    <span class="font-weight-bold text-warning">${{ number_format($invoice->total_amount ?: $invoice->amount, 2) }}</span>
+                    <span class="font-weight-bold text-warning">${{ number_format($isPaid ? 0.00 : $invAmount, 2) }}</span>
                 </div>
             </div>
         </div>
@@ -196,67 +241,102 @@
         </div>
     </div>
 
-    <!-- Offline Payment / Proof Section -->
-    @if(strtolower($invoice->status) === 'unpaid' || strtolower($invoice->status) === 'due')
-        <div class="portal-card p-4 d-print-none">
-            <h5 class="font-weight-bold text-white mb-2"><i class="fas fa-receipt text-warning mr-2"></i> {{ __('Bank Wire / Payment Proof Submission') }}</h5>
-            <p class="text-muted small mb-4">{{ __('If you have settled this retainer statement via bank wire transfer or direct check deposit, submit your transaction receipt below for immediate attorney confirmation.') }}</p>
-            
-            <form action="{{ route('client.invoices.submit-proof', $invoice->id) }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <div class="row">
-                    <div class="col-md-6 form-group mb-3">
-                        <label class="font-weight-bold text-white small">{{ __('Payment Method Used') }} <span class="text-danger">*</span></label>
-                        <select name="payment_method" class="form-control" style="background: #11151e; border: 1px solid #28303f; color: #ffffff;" required>
-                            <option value="bank_transfer">{{ __('Bank Wire Transfer') }}</option>
-                            <option value="check_deposit">{{ __('Check Deposit') }}</option>
-                            <option value="direct_deposit">{{ __('Direct ACH Deposit') }}</option>
-                        </select>
+    <!-- PAYMENT SETTLEMENT HUB (IFW REPLICA) -->
+    <div id="payment-section">
+        @if(!$isPaid && !$isPending)
+            <div class="portal-card p-4 d-print-none mb-4">
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap" style="gap:8px;">
+                    <h5 class="font-weight-bold text-white mb-0">
+                        <i class="fas fa-university text-warning mr-2"></i> {{ __('Official Escrow & Retainer Settlement Depository') }}
+                    </h5>
+                    <span class="badge badge-success px-3 py-1 font-weight-bold" style="font-size:11px;">
+                        <i class="fas fa-shield-alt mr-1"></i> {{ __('VERIFIED TRUST ACCOUNT') }}
+                    </span>
+                </div>
+                
+                <!-- Banking Wire Details -->
+                <div class="p-3 rounded mb-4" style="background: #11151e; border: 1px solid #28303f;">
+                    <div class="row small">
+                        <div class="col-sm-6 mb-2">
+                            <span class="text-muted d-block">{{ __('Beneficiary Name:') }}</span>
+                            <strong class="text-white">{{ config('app.name', 'Your CPA Expert') }} Trust & Escrow LLC</strong>
+                        </div>
+                        <div class="col-sm-6 mb-2">
+                            <span class="text-muted d-block">{{ __('Bank Name:') }}</span>
+                            <strong class="text-white">JPMorgan Chase Bank, N.A.</strong>
+                        </div>
+                        <div class="col-sm-6 mb-2">
+                            <span class="text-muted d-block">{{ __('Routing (ABA) / SWIFT Code:') }}</span>
+                            <strong class="text-warning">CHASUS33 / 021000021</strong>
+                        </div>
+                        <div class="col-sm-6 mb-2">
+                            <span class="text-muted d-block">{{ __('Settlement Reference:') }}</span>
+                            <strong class="text-warning">{{ $invoice->invoice_number }} &bull; {{ Auth::user()->email }}</strong>
+                        </div>
                     </div>
-                    <div class="col-md-6 form-group mb-3">
-                        <label class="font-weight-bold text-white small">{{ __('Transaction ID / Reference Number') }}</label>
-                        <input type="text" name="payment_reference" class="form-control" style="background: #11151e; border: 1px solid #28303f; color: #ffffff;" placeholder="e.g. WIRE-98327189 or Check #1204">
+                </div>
+
+                <h6 class="font-weight-bold text-warning mb-2"><i class="fas fa-receipt mr-1"></i> {{ __('Submit Transaction Proof / Bank Wire Receipt') }}</h6>
+                <p class="text-muted small mb-3">{{ __('Upload your transfer confirmation slip or check receipt below for immediate accounting clearance.') }}</p>
+                
+                <form action="{{ route('client.invoices.submit-proof', $invoice->id) }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="row">
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-white small">{{ __('Payment Method Used') }} <span class="text-danger">*</span></label>
+                            <select name="payment_method" class="form-control" style="background: #11151e; border: 1px solid #28303f; color: #ffffff;" required>
+                                <option value="bank_transfer">{{ __('Bank Wire Transfer') }}</option>
+                                <option value="check_deposit">{{ __('Check Deposit') }}</option>
+                                <option value="crypto_usdt">{{ __('Crypto (USDT / BTC Deposit)') }}</option>
+                                <option value="direct_deposit">{{ __('Direct ACH Deposit') }}</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 form-group mb-3">
+                            <label class="font-weight-bold text-white small">{{ __('Transaction ID / Wire Reference') }}</label>
+                            <input type="text" name="payment_reference" class="form-control" style="background: #11151e; border: 1px solid #28303f; color: #ffffff;" placeholder="e.g. WIRE-98327189 or TXID">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group mb-3">
+                        <label class="font-weight-bold text-white small">{{ __('Upload Bank Receipt / Deposit Slip') }} <span class="text-danger">*</span></label>
+                        <input type="file" name="payment_slip" class="form-control-file text-white" required>
+                        <small class="text-muted d-block mt-1">{{ __('Supported formats: PDF, PNG, JPG, JPEG (Max 10MB)') }}</small>
+                    </div>
+
+                    <div class="form-group mb-4">
+                        <label class="font-weight-bold text-white small">{{ __('Additional Remarks (Optional)') }}</label>
+                        <textarea name="payment_notes" rows="2" class="form-control" style="background: #11151e; border: 1px solid #28303f; color: #ffffff;" placeholder="Remitting bank name, branch, or date details..."></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-gold font-weight-bold px-4"><i class="fas fa-upload mr-1"></i> {{ __('Submit Payment Proof for Verification') }}</button>
+                </form>
+            </div>
+        @elseif($isPending)
+            <div class="portal-card p-4 d-print-none">
+                <div class="d-flex align-items-center mb-3">
+                    <i class="fas fa-clock text-warning fa-2x mr-3"></i>
+                    <div>
+                        <h5 class="font-weight-bold text-white mb-0">{{ __('Payment Proof Submitted - Under Legal Verification') }}</h5>
+                        <p class="text-muted small mb-0">{{ __('Our accounting department is verifying your deposit slip. Invoice status will update to Paid upon verification.') }}</p>
                     </div>
                 </div>
                 
-                <div class="form-group mb-3">
-                    <label class="font-weight-bold text-white small">{{ __('Upload Bank Receipt / Deposit Slip') }} <span class="text-danger">*</span></label>
-                    <input type="file" name="payment_slip" class="form-control-file text-white" required>
-                    <small class="text-muted d-block mt-1">{{ __('Supported formats: PDF, PNG, JPG, JPEG (Max 10MB)') }}</small>
-                </div>
-
-                <div class="form-group mb-4">
-                    <label class="font-weight-bold text-white small">{{ __('Additional Remarks (Optional)') }}</label>
-                    <textarea name="payment_notes" rows="2" class="form-control" style="background: #11151e; border: 1px solid #28303f; color: #ffffff;" placeholder="Remitting bank name, branch, or date details..."></textarea>
-                </div>
-
-                <button type="submit" class="btn btn-gold font-weight-bold px-4"><i class="fas fa-upload mr-1"></i> {{ __('Submit Payment Proof') }}</button>
-            </form>
-        </div>
-    @elseif(strtolower($invoice->status) === 'pending')
-        <div class="portal-card p-4 d-print-none">
-            <div class="d-flex align-items-center mb-3">
-                <i class="fas fa-clock text-warning fa-2x mr-3"></i>
-                <div>
-                    <h5 class="font-weight-bold text-white mb-0">{{ __('Payment Proof Submitted - Under Legal Verification') }}</h5>
-                    <p class="text-muted small mb-0">{{ __('Our accounting department is verifying your deposit slip. Invoice status will update to Paid upon verification.') }}</p>
-                </div>
-            </div>
-            
-            <div class="border-top pt-3 mt-3" style="border-color: #28303f !important;">
-                <div class="row text-white small">
-                    <div class="col-md-4 mb-2">
-                        <strong>{{ __('Payment Method:') }}</strong> {{ ucwords(str_replace('_', ' ', $invoice->payment_method)) }}
-                    </div>
-                    <div class="col-md-4 mb-2">
-                        <strong>{{ __('Reference Number:') }}</strong> {{ $invoice->payment_reference ?: __('N/A') }}
-                    </div>
-                    <div class="col-md-4 mb-2">
-                        <strong>{{ __('Date Submitted:') }}</strong> {{ $invoice->payment_submitted_at ? $invoice->payment_submitted_at->format('M d, Y h:i A') : __('N/A') }}
+                <div class="border-top pt-3 mt-3" style="border-color: #28303f !important;">
+                    <div class="row text-white small">
+                        <div class="col-md-4 mb-2">
+                            <strong>{{ __('Payment Method:') }}</strong> {{ ucwords(str_replace('_', ' ', $invoice->payment_method)) }}
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <strong>{{ __('Reference Number:') }}</strong> {{ $invoice->payment_reference ?: __('N/A') }}
+                        </div>
+                        <div class="col-md-4 mb-2">
+                            <strong>{{ __('Date Submitted:') }}</strong> {{ $invoice->payment_submitted_at ? $invoice->payment_submitted_at->format('M d, Y h:i A') : __('N/A') }}
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    @endif
+        @endif
+    </div>
 </div>
 @endsection
+

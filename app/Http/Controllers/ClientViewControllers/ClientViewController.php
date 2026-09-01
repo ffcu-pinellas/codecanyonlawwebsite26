@@ -67,10 +67,15 @@ class ClientViewController extends Controller
             try {
                 $invoices = Invoice::where('client_id', $user->id)->latest()->get();
                 $invoicesCount = $invoices->count();
-            } catch (\Throwable $e) {}
+                $invoicesTotalAmount = (float)$invoices->sum(fn($i) => $i->total_amount ?: $i->amount);
+                $invoicesUnpaidAmount = (float)$invoices->whereNotIn('status', ['paid', 'cancelled'])->sum(fn($i) => $i->total_amount ?: $i->amount);
+            } catch (\Throwable $e) {
+                $invoicesTotalAmount = 0.00;
+                $invoicesUnpaidAmount = 0.00;
+            }
 
             try {
-                $documentsCount = CaseDocument::where('user_id', $user->id)->count() + \App\Models\KycDocument::where('user_id', $user->id)->count();
+                $documentsCount = CaseDocument::where('user_id', $user->id)->count() + \App\Models\KycDocument::where('user_id', $user->id)->count() + \App\Models\LegalDocumentTemplate::where('user_id', $user->id)->count();
             } catch (\Throwable $e) {}
 
             try { $recentAppointments = Appointment::where('email', $user->email)->latest()->take(5)->get(); } catch (\Throwable $e) {}
@@ -91,7 +96,7 @@ class ClientViewController extends Controller
             // Log main errors if needed
         }
 
-        return view('frontend.theme1.auth-client.pages.dashboard', compact('title', 'page', 'pageContent', 'cases', 'casesCount', 'latestCases', 'invoices', 'invoicesCount', 'documentsCount', 'recentAppointments', 'conversationCount', 'unreadMessageCount'));
+        return view('frontend.theme1.auth-client.pages.dashboard', compact('title', 'page', 'pageContent', 'cases', 'casesCount', 'latestCases', 'invoices', 'invoicesCount', 'invoicesTotalAmount', 'invoicesUnpaidAmount', 'documentsCount', 'recentAppointments', 'conversationCount', 'unreadMessageCount'));
     }
 
     public function profile()
@@ -144,6 +149,36 @@ class ClientViewController extends Controller
 
             return $this->backWithSuccess($user->name . '\'s personal information has been updated successfully');
         } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function profileInfoUpdate(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            if ($request->filled('preferred_currency')) {
+                $user->preferred_currency = strtoupper(trim($request->preferred_currency));
+            }
+            if ($request->filled('name')) {
+                $user->name = $request->name;
+            }
+            if ($request->filled('phone')) {
+                $user->phone = $request->phone;
+            }
+            if ($request->filled('address')) {
+                $user->address = $request->address;
+            }
+            $user->save();
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => true, 'currency' => $user->preferred_currency]);
+            }
+            return $this->backWithSuccess('Profile updated successfully.');
+        } catch (\Throwable $e) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['error' => $e->getMessage()], 500);
+            }
             return redirect()->back()->with('error', $e->getMessage());
         }
     }

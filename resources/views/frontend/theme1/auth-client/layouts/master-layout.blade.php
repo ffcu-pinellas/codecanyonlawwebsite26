@@ -375,17 +375,32 @@
     // Currency Switcher Logic
     function changePortalCurrency(curr) {
         localStorage.setItem('portal_currency', curr);
-        document.getElementById('currentCurrencyLabel').innerText = curr;
-        // Optionally save to user profile
-        $.post("{{ route('client.profile-info') }}", {
-            _token: '{{ csrf_token() }}',
-            name: '{{ Auth::user()->name }}',
-            phone: '{{ Auth::user()->phone }}',
-            address: '{{ Auth::user()->address }}',
-            preferred_currency: curr
+        var label = document.getElementById('currentCurrencyLabel');
+        if (label) label.innerText = curr;
+        
+        $.ajax({
+            url: "{{ route('client.profile-info') }}",
+            type: "POST",
+            data: {
+                _token: '{{ csrf_token() }}',
+                preferred_currency: curr
+            },
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
         }).always(function() {
-            location.reload();
+            setTimeout(function() {
+                location.reload();
+            }, 100);
         });
+    }
+
+    function initPortalCurrency() {
+        var savedCurrency = localStorage.getItem('portal_currency');
+        if (savedCurrency) {
+            var label = document.getElementById('currentCurrencyLabel');
+            if (label) label.innerText = savedCurrency;
+        }
     }
 
     // Google Translate Logic
@@ -430,6 +445,7 @@
 
     document.addEventListener("DOMContentLoaded", function() {
         initThemeMode();
+        initPortalCurrency();
         initPortalLanguage();
 
         // Mobile drawer controls

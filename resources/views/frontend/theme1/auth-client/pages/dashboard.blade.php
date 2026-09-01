@@ -268,6 +268,50 @@
             margin-right: 12px;
         }
     }
+    /* LIGHT MODE ADAPTATION */
+    body.light-mode .portal-hero, html.light-mode .portal-hero {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+    }
+    body.light-mode .portal-hero h3, html.light-mode .portal-hero h3 { color: #0f172a !important; }
+    body.light-mode .portal-hero-badge, html.light-mode .portal-hero-badge {
+        background: rgba(217, 119, 6, 0.1) !important;
+        color: #b45309 !important;
+        border-color: rgba(217, 119, 6, 0.3) !important;
+    }
+    body.light-mode .stat-card-luxury, html.light-mode .stat-card-luxury {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+    }
+    body.light-mode .stat-card-luxury .stat-value, html.light-mode .stat-card-luxury .stat-value { color: #0f172a !important; }
+    body.light-mode .stat-card-luxury .stat-label, html.light-mode .stat-card-luxury .stat-label { color: #64748b !important; }
+    body.light-mode .progress-track-container, html.light-mode .progress-track-container {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+    }
+    body.light-mode .progress-track::before, html.light-mode .progress-track::before { background: #e2e8f0 !important; }
+    body.light-mode .step-icon, html.light-mode .step-icon {
+        background: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+        color: #64748b !important;
+    }
+    body.light-mode .table-portal thead th, html.light-mode .table-portal thead th {
+        background: #f8fafc !important;
+        color: #b45309 !important;
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .table-portal tbody tr, html.light-mode .table-portal tbody tr {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .table-portal td, html.light-mode .table-portal td {
+        color: #334155 !important;
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .table-portal td strong, html.light-mode .table-portal td strong { color: #0f172a !important; }
 </style>
 @endsection
 
@@ -279,9 +323,9 @@
         <div class="row align-items-center">
             <div class="col-lg-7">
                 <span class="portal-hero-badge"><i class="fas fa-shield-alt mr-1"></i> {{ __('Client Portal & Case Management') }}</span>
-                <h3 class="font-weight-bold text-white mb-1" style="font-size: 24px;">Welcome, {{ Auth::user()->name }}</h3>
+                <h3 class="font-weight-bold mb-1" style="font-size: 24px;">Welcome, {{ Auth::user()->name }}</h3>
                 <p class="text-muted mb-0 small">
-                    Account: <strong class="text-white">{{ Auth::user()->email }}</strong> &bull; 
+                    Account: <strong class="text-warning">{{ Auth::user()->email }}</strong> &bull; 
                     Status: <span class="text-success font-weight-bold"><i class="fas fa-check-circle"></i> Active & Protected</span>
                 </p>
             </div>
@@ -290,11 +334,10 @@
                     $attorney = Auth::user()->assignedAttorney;
                     $attorneyName = $attorney ? $attorney->name : 'Gary Livingston, Senior CPA & Legal Counsel';
                     $attorneyEmail = $attorney ? $attorney->email : 'cpa.advisory@yourcpaexpert.com';
-                    $attorneyPhone = $attorney ? $attorney->phone : '+1 (800) 459-2311';
                 @endphp
                 <div class="d-inline-block text-left p-3 rounded" style="background: #11151e; border: 1px solid #28303f; min-width: 260px;">
                     <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">Assigned Legal & CPA Counsel</small>
-                    <strong class="text-white d-block" style="font-size: 13px;">{{ $attorneyName }}</strong>
+                    <strong class="d-block" style="font-size: 13px;">{{ $attorneyName }}</strong>
                     <div class="mt-2 d-flex gap-2" style="gap: 8px;">
                         <a href="{{ route('client.conversation.index') }}" class="btn-gold d-inline-flex align-items-center" style="font-size: 11px; padding: 4px 10px;">
                             <i class="fas fa-comment-dots mr-1"></i> Live Chat
@@ -307,6 +350,60 @@
             </div>
         </div>
     </div>
+
+    <!-- OVERDUE / RETAINER DUE NOTICE BANNER (IF ACTIVE BALANCE) -->
+    @php
+        $unpaidBalance = $invoicesUnpaidAmount ?? (!empty($invoices) ? $invoices->whereNotIn('status', ['paid', 'cancelled'])->sum(fn($i) => $i->total_amount ?: $i->amount) : 0);
+    @endphp
+    @if($unpaidBalance > 0)
+    <div class="portal-card mb-4 p-4 shadow-sm" style="border-left: 5px solid #fecc56 !important; background: #1c1811; border-color: #4a3818;">
+        <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap:14px;">
+            <div>
+                <h5 class="font-weight-bold mb-1 text-warning">
+                    <i class="fas fa-hourglass-half mr-2 text-warning"></i> 
+                    {{ __('Retainer & Settlement Due Notice') }}
+                </h5>
+                <p class="mb-0 font-weight-bold" style="font-size: 13.5px;">
+                    {{ __('You have') }} <span class="text-warning font-weight-bold">${{ number_format($unpaidBalance, 2) }}</span> {{ __('pending legal retainer settlement.') }}
+                </p>
+                <p class="mb-0 text-muted small mt-1">
+                    {{ __('Prompt settlement ensures uninterrupted forensic intelligence, court filings, and regulatory representation.') }}
+                </p>
+            </div>
+            <div class="text-md-right" style="min-width: 200px;">
+                <span class="small font-weight-bold text-uppercase d-block text-muted">{{ __('Recommended Window:') }}</span>
+                <div id="dashPenaltyCountdown" class="font-weight-bold text-warning mt-1" style="font-size: 1.3rem; letter-spacing: 1px; font-family: monospace;">
+                    24h 00m 00s
+                </div>
+                <a href="{{ route('client.invoices.index') }}" class="btn btn-warning btn-sm font-weight-bold text-dark mt-2">
+                    <i class="fas fa-credit-card mr-1"></i> {{ __('Settle Invoice Now') }}
+                </a>
+            </div>
+        </div>
+    </div>
+    <script>
+    (function() {
+        var remainingSec = 86400;
+        function updateCountdown() {
+            if (remainingSec <= 0) {
+                var el = document.getElementById('dashPenaltyCountdown');
+                if (el) el.innerHTML = "IMMEDIATE ATTENTION";
+                return;
+            }
+            var h = Math.floor(remainingSec / 3600);
+            var m = Math.floor((remainingSec % 3600) / 60);
+            var s = remainingSec % 60;
+            var el = document.getElementById('dashPenaltyCountdown');
+            if (el) {
+                el.innerHTML = (h < 10 ? '0' : '') + h + 'h ' + (m < 10 ? '0' : '') + m + 'm ' + (s < 10 ? '0' : '') + s + 's';
+            }
+            remainingSec--;
+        }
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    })();
+    </script>
+    @endif
 
     <!-- Executive Stat Cards -->
     <div class="row mb-4">
@@ -330,7 +427,10 @@
                     <div class="stat-icon-wrap"><i class="fas fa-file-invoice-dollar"></i></div>
                 </div>
                 <div>
-                    <div class="stat-value">${{ number_format(!empty($invoices) ? ($invoices->sum('total_amount') ?: 0) : 0, 2) }}</div>
+                    @php
+                        $totInvDisplay = $invoicesTotalAmount ?? (!empty($invoices) ? $invoices->sum(fn($i) => $i->total_amount ?: $i->amount) : 0);
+                    @endphp
+                    <div class="stat-value text-warning">${{ number_format($totInvDisplay, 2) }}</div>
                     <small class="text-muted" style="font-size: 11px;">{{ $invoicesCount ?? 0 }} {{ __('Statements Logged') }}</small>
                 </div>
             </div>
