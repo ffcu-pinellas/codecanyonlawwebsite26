@@ -101,11 +101,12 @@ class AdminCaseController extends Controller
                 abort(403, 'Unauthorized access.');
             }
 
-            $title = __('Edit Case #') . $case->case_number;
-            $clients = User::role('client')->orderBy('name', 'asc')->get();
+            $title     = __('Edit Case #') . $case->case_number;
+            $clients   = User::role('client')->orderBy('name', 'asc')->get();
             $attorneys = User::role(['admin', 'attorney'])->orderBy('name', 'asc')->get();
+            $templates = \App\Models\DocumentTemplate::where('type', 'client')->where('status', true)->orderBy('title', 'asc')->get();
 
-            return view('backend.pages.cases.form', compact('title', 'clients', 'attorneys', 'case'));
+            return view('backend.pages.cases.form', compact('title', 'clients', 'attorneys', 'case', 'templates'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
@@ -167,9 +168,11 @@ class AdminCaseController extends Controller
     public function uploadDocument(Request $request, $id)
     {
         $request->validate([
-            'title' => 'nullable|string|max:255',
-            'files' => 'required|array',
-            'files.*' => 'file|mimes:pdf,png,jpg,jpeg,doc,docx,xlsx|max:20480',
+            'title'             => 'nullable|string|max:255',
+            'files'             => 'required|array',
+            'files.*'           => 'file|mimes:pdf,png,jpg,jpeg,doc,docx,xlsx|max:20480',
+            'document_type'     => 'nullable|string|max:100',
+            'requires_signature'=> 'nullable|boolean',
         ]);
 
         try {
@@ -201,13 +204,15 @@ class AdminCaseController extends Controller
                 }
 
                 $document = CaseDocument::create([
-                    'case_id' => $case->id,
-                    'user_id' => Auth::id(),
-                    'title' => $fileTitle ?: 'Case Document',
-                    'file_path' => $newFilePath,
-                    'file_type' => $fileExtension,
-                    'file_size' => file_exists(public_path($newFilePath)) ? filesize(public_path($newFilePath)) : 0,
+                    'case_id'            => $case->id,
+                    'user_id'            => Auth::id(),
+                    'title'              => $fileTitle ?: 'Case Document',
+                    'file_path'          => $newFilePath,
+                    'file_type'          => $fileExtension,
+                    'file_size'          => file_exists(public_path($newFilePath)) ? filesize(public_path($newFilePath)) : 0,
                     'is_client_uploaded' => false,
+                    'document_type'      => $request->document_type ?: 'Standard / General Document',
+                    'requires_signature' => (bool)$request->requires_signature,
                 ]);
 
                 ActivityLog::log('Document Uploaded', 'Uploaded document "' . $document->title . '" for case ' . $case->case_number);
@@ -450,6 +455,98 @@ class AdminCaseController extends Controller
     }
 
     /**
+     * Generate and store a custom document directly into the case vault
+     */
+    public function generateDocumentForCase(Request $request, $id)
+    {
+        $request->validate([
+            'doc_title'          => 'required|string|max:255',
+            'doc_type_custom'    => 'nullable|string|max:100',
+            'doc_content'        => 'required|string',
+            'requires_signature' => 'nullable|boolean',
+            'template_key'       => 'nullable|string|exists:document_templates,key',
+        ]);
+
+        try {
+            $case   = ClientCase::with('client')->findOrFail($id);
+            $client = $case->client;
+
+            if (!Auth::user()->hasRole('admin') && $case->attorney_id !== Auth::id()) {
+                abort(403, 'Unauthorized access.');
+            }
+
+            $content = $request->doc_content;
+
+            // Substitute client placeholders if template was used
+            $companySettings = \App\Models\GeneralSettings::first();
+            $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+            $clientCase = $case;
+            $caseNumber = $clientCase->case_number;
+
+            if ($client) {
+                $placeholders = [
+                    '{{client_name}}'    => $client->name,
+                    '{{client_email}}'   => $client->email,
+                    '{{client_phone}}'   => $client->phone ?: 'N/A',
+                    '{{client_address}}' => $client->address ?: 'N/A',
+                    '{{company_name}}'   => $companyName,
+                    '{{date}}'           => now()->format('F d, Y'),
+                    '{{case_number}}'    => $caseNumber,
+                ];
+                $content = str_replace(array_keys($placeholders), array_values($placeholders), $content);
+            }
+
+            // Save as a vault document (no physical file – custom_content stores HTML)
+            $doc = CaseDocument::create([
+                'case_id'            => $case->id,
+                'user_id'            => Auth::id(),
+                'title'              => $request->doc_title,
+                'file_path'          => null,
+                'file_type'          => 'custom',
+                'file_size'          => 0,
+                'is_client_uploaded' => false,
+                'document_type'      => $request->doc_type_custom ?: 'Custom Document',
+                'requires_signature' => (bool)$request->requires_signature,
+                'custom_content'     => $content,
+                'visibility'         => 'client_visible',
+            ]);
+
+            ActivityLog::log('Custom Document Created', 'Created custom document "' . $doc->title . '" for case ' . $case->case_number);
+
+            return redirect()->back()->with('success', __('Custom document created and added to vault successfully.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->withInput()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * View a custom-generated document (HTML) from the vault
+     */
+    public function viewCustomDocument($doc_id)
+    {
+        try {
+            $document = CaseDocument::with('clientCase')->findOrFail($doc_id);
+            $case = $document->clientCase;
+
+            if (!Auth::user()->hasRole('admin') && $case->attorney_id !== Auth::id()) {
+                abort(403, 'Unauthorized access.');
+            }
+
+            if ($document->file_type !== 'custom' || empty($document->custom_content)) {
+                abort(404, 'Custom document content not found.');
+            }
+
+            return response()->view('backend.pages.cases.view-custom-doc', [
+                'document' => $document,
+                'case'     => $case,
+                'content'  => $document->custom_content,
+            ]);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
      * Add milestone to legal case
      */
     public function addMilestone(Request $request, $id)
@@ -461,19 +558,21 @@ class AdminCaseController extends Controller
         }
 
         $request->validate([
-            'title' => 'required|string|max:255',
-            'description' => 'nullable|string',
-            'status' => 'required|in:pending,active,completed',
+            'title'          => 'required|string|max:255',
+            'description'    => 'nullable|string',
+            'status'         => 'required|in:pending,active,completed',
             'milestone_date' => 'nullable|date',
+            'visibility'     => 'nullable|in:client_visible,internal',
         ]);
 
         try {
             \App\Models\CaseMilestone::create([
-                'case_id' => $case->id,
-                'title' => $request->title,
-                'description' => $request->description,
-                'status' => $request->status,
+                'case_id'        => $case->id,
+                'title'          => $request->title,
+                'description'    => $request->description,
+                'status'         => $request->status,
                 'milestone_date' => $request->milestone_date,
+                'visibility'     => $request->visibility ?: 'client_visible',
             ]);
 
             ActivityLog::log('Case Milestone Added', 'Added milestone "' . $request->title . '" to case ' . $case->case_number);

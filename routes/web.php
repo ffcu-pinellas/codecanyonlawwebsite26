@@ -530,8 +530,10 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         Route::post('/update/{id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'update'])->name('update');
         Route::delete('/destroy/{id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'destroy'])->name('destroy');
         Route::post('/{id}/upload-document', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'uploadDocument'])->name('upload-document');
+        Route::post('/{id}/generate-document', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'generateDocumentForCase'])->name('generate-document');
         Route::delete('/document/{doc_id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'destroyDocument'])->name('destroy-document');
         Route::get('/document/preview/{doc_id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'previewDocument'])->name('document.preview');
+        Route::get('/document/view/{doc_id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'viewCustomDocument'])->name('document.view');
         Route::post('/{id}/milestones', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'addMilestone'])->name('add-milestone');
         Route::delete('/milestones/{milestone_id}', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'destroyMilestone'])->name('destroy-milestone');
     });

@@ -19,6 +19,19 @@ class CaseDocument extends Model
         'file_type',
         'file_size',
         'is_client_uploaded',
+        'document_type',
+        'requires_signature',
+        'is_signed',
+        'signed_at',
+        'custom_content',
+        'visibility',
+    ];
+
+    protected $casts = [
+        'requires_signature' => 'boolean',
+        'is_signed'          => 'boolean',
+        'is_client_uploaded' => 'boolean',
+        'signed_at'          => 'datetime',
     ];
 
     public function clientCase()
