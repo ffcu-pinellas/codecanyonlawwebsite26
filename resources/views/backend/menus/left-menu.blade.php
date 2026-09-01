@@ -141,18 +141,6 @@
                                 <span class="link-text">{{ __('Sent & Tracking History') }}</span>
                             </a>
                         </li>
-                        <li>
-                            <a href="{{ route('admin.kyc.submissions') }}" class="nav-link">
-                                <i class="material-icons">chevron_right</i>
-                                <span class="link-text">{{ __('KYC Submissions') }}</span>
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{{ route('admin.kyc.config') }}" class="nav-link">
-                                <i class="material-icons">chevron_right</i>
-                                <span class="link-text">{{ __('KYC Form Config') }}</span>
-                            </a>
-                        </li>
                         @role('admin')
                         <li>
                             <a href="{{ route('admin.activity-logs') }}" class="nav-link">

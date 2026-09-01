@@ -564,6 +564,7 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
     // KYC Form Configuration & Submissions (IFW Replica)
     Route::prefix('kyc')->as('kyc.')->group(function () {
         Route::get('/', [App\Http\Controllers\AdminControllers\AdminKycController::class, 'index'])->name('index');
+        Route::get('/config', [App\Http\Controllers\AdminControllers\AdminKycController::class, 'index'])->name('config');
         Route::get('/submissions', [App\Http\Controllers\AdminControllers\AdminKycController::class, 'index'])->name('submissions');
         Route::post('/field/add', [App\Http\Controllers\AdminControllers\AdminKycController::class, 'addField'])->name('field.add');
         Route::post('/field/update', [App\Http\Controllers\AdminControllers\AdminKycController::class, 'updateField'])->name('field.update');
