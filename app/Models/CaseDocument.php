@@ -14,7 +14,9 @@ class CaseDocument extends Model
     protected $fillable = [
         'case_id',
         'user_id',
+        'client_id',
         'title',
+        'document_title',
         'file_path',
         'file_type',
         'file_size',
@@ -37,6 +39,11 @@ class CaseDocument extends Model
     public function clientCase()
     {
         return $this->belongsTo(ClientCase::class, 'case_id');
+    }
+
+    public function client()
+    {
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function uploader()

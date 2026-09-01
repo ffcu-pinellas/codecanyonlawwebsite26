@@ -375,7 +375,22 @@
         }, { passive: true });
     });
 
-    // Start timer
-    startIdleWatchdog();
+    // Check if session was already locked server-side on initial page load
+    var isServerLocked = {{ session('session_locked') ? 'true' : 'false' }};
+    if (isServerLocked) {
+        if (warningView) warningView.style.display = 'none';
+        if (lockedView) lockedView.style.display = 'block';
+        if (backdrop) backdrop.style.display = 'flex';
+        if (pinInput) {
+            setTimeout(function() { pinInput.focus(); }, 200);
+        }
+    } else {
+        startIdleWatchdog();
+    }
+
+    // Expose preview function for testing
+    window.testSessionTimeoutWarning = function() {
+        showWarningModal();
+    };
 })();
 </script>
