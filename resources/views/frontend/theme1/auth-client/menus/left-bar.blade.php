@@ -19,10 +19,23 @@
                 </div>
             @endif
         </div>
-        <h6 class="font-weight-bold text-white mb-0 ifw-sidebar-user-name" style="font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ Auth::user()->name }}</h6>
-        <div class="badge mt-1 font-weight-bold" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 11px;">
-            <i class="fas fa-check-circle mr-1"></i> {{ __('Verified Client') }}
-        </div>
+        @php
+            $uKycApproved = (Auth::user()->kyc_verified_at || (Auth::user()->kycDocuments && Auth::user()->kycDocuments->where('status', 'approved')->count() > 0));
+            $uKycPending = (!$uKycApproved && Auth::user()->kycDocuments && Auth::user()->kycDocuments->whereIn('status', ['pending', 'submitted', 'under_review'])->count() > 0);
+        @endphp
+        @if($uKycApproved)
+            <div class="badge mt-1 font-weight-bold" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 11px;">
+                <i class="fas fa-check-circle mr-1"></i> {{ __('Verified Client') }}
+            </div>
+        @elseif($uKycPending)
+            <div class="badge mt-1 font-weight-bold" style="background: rgba(254, 204, 86, 0.15); color: #fecc56; border: 1px solid rgba(254, 204, 86, 0.3); font-size: 11px;">
+                <i class="fas fa-clock mr-1"></i> {{ __('KYC Under Review') }}
+            </div>
+        @else
+            <a href="{{ route('client.kyc.index') }}" class="badge mt-1 font-weight-bold d-inline-block text-decoration-none" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); font-size: 10.5px;">
+                <i class="fas fa-user-clock mr-1"></i> {{ __('KYC Required') }}
+            </a>
+        @endif
     </div>
 
     <!-- Navigation List -->

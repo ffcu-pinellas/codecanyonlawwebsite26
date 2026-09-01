@@ -53,14 +53,14 @@
 .portal-card-header { background: #1f2533; border-bottom: 1px solid #2e3849; color: #fecc56; font-weight: 700; border-radius: 12px 12px 0 0 !important; }
 
 /* TABLE & MOBILE CARDS */
-.table-portal-wrap { border: 1px solid #28303f; border-radius: 10px; width: 100%; background: #161a23; overflow-x: auto; }
+.table-portal-wrap { border: 1px solid #28303f; border-radius: 10px; width: 100%; background: #161a23; overflow: hidden; }
 .table-portal { width: 100%; border-collapse: separate; border-spacing: 0; color: #f1f5f9; margin-bottom: 0; }
 .table-portal thead th { background: #1f2533 !important; color: #fecc56 !important; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-top: none; border-bottom: 2px solid #333d4e !important; padding: 12px 14px; white-space: nowrap; }
 .table-portal tbody tr { background: #161a23; transition: background 0.15s; }
 .table-portal tbody tr:hover { background: #1e2430 !important; }
 .table-portal td { padding: 12px 14px; border-top: 1px solid #262e3d; vertical-align: middle; color: #f1f5f9; font-size: 13px; }
 .table-portal td strong { color: #ffffff !important; font-weight: 700; }
-.table-portal td:last-child, .table-portal th:last-child { text-align: right; white-space: nowrap; }
+.table-portal td:last-child, .table-portal th:last-child { text-align: right; }
 
 .pay-btn { background: linear-gradient(135deg,#fecc56,#f0a500); color:#000 !important; border:none; font-weight:700; border-radius: 6px; padding: 6px 14px; transition:all .2s; box-shadow: 0 2px 8px rgba(254,204,86,0.3); font-size: 12px; display: inline-flex; align-items: center; justify-content: center; text-decoration: none; cursor: pointer; }
 .pay-btn:hover { transform:translateY(-1px); box-shadow:0 4px 16px rgba(254,204,86,.5); color:#000 !important; }
@@ -95,6 +95,7 @@ body.light-mode #payNowModal #paymentInfoBlock, html.light-mode #payNowModal #pa
 body.light-mode #payNowModal #cryptoPaymentDetailsBox, html.light-mode #payNowModal #cryptoPaymentDetailsBox { background: #f8fafc !important; border-color: #fecc56 !important; }
 body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-light { color: #334155 !important; }
 
+/* MOBILE ZERO-SCROLL STACKED CARDS */
 @media (max-width: 991px) {
     .table-portal-wrap { border: none !important; background: transparent !important; }
     .table-portal { min-width: 0 !important; width: 100% !important; display: block !important; }
@@ -129,7 +130,21 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
     .table-portal td:last-child {
         border-bottom: none !important;
         padding-top: 12px !important;
-        justify-content: flex-end !important;
+        display: flex !important;
+        width: 100% !important;
+        justify-content: stretch !important;
+    }
+    .table-portal td:last-child .d-inline-flex {
+        width: 100% !important;
+        display: flex !important;
+        gap: 8px !important;
+    }
+    .table-portal td:last-child .pay-btn,
+    .table-portal td:last-child .btn-portal-secondary {
+        flex: 1 !important;
+        text-align: center !important;
+        justify-content: center !important;
+        padding: 8px 12px !important;
     }
     .table-portal td[data-label]::before {
         content: attr(data-label);
@@ -148,6 +163,9 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
 
 @section('content')
 @php
+    use App\Helpers\CurrencyHelper;
+    $clientCurr = CurrencyHelper::clientCurrency();
+
     $settPath = storage_path('settings.json');
     $paySettings = [];
     if (file_exists($settPath)) {
@@ -172,28 +190,28 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
         . "USDT (TRC-20): " . $globalUsdt . "\n"
         . "Bitcoin (BTC): " . $globalBtc;
 
-    $totalInvoiced = 0;
-    $totalPaid = 0;
-    $totalOutstanding = 0;
+    $totalInvoicedUsd = 0;
+    $totalPaidUsd = 0;
+    $totalOutstandingUsd = 0;
     $activePenaltyInvoices = 0;
-    $totalAccumulatedPenalty = 0;
+    $totalAccumulatedPenaltyUsd = 0;
     $primaryPenaltyInvoice = null;
     $firstUnpaid = null;
 
     foreach ($invoices as $inv) {
         $lateDetails = $inv->late_fee_details;
-        $totalInvoiced += $lateDetails->total_billed;
+        $totalInvoicedUsd += $lateDetails->total_billed;
         $isPaid = strtolower($inv->status) === 'paid';
         if ($isPaid) {
-            $totalPaid += $lateDetails->total_billed;
+            $totalPaidUsd += $lateDetails->total_billed;
         } else {
-            $totalOutstanding += $lateDetails->total_billed;
+            $totalOutstandingUsd += $lateDetails->total_billed;
             if (!$firstUnpaid) {
                 $firstUnpaid = $inv;
             }
             if ($lateDetails->is_active && $lateDetails->late_fee > 0) {
                 $activePenaltyInvoices++;
-                $totalAccumulatedPenalty += $lateDetails->late_fee;
+                $totalAccumulatedPenaltyUsd += $lateDetails->late_fee;
                 if (!$primaryPenaltyInvoice) {
                     $primaryPenaltyInvoice = $inv;
                 }
@@ -230,7 +248,7 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
     </div>
 @endif
 
-<!-- FINANCIAL METRICS OVERVIEW -->
+<!-- FINANCIAL METRICS OVERVIEW (DYNAMIC MULTI-CURRENCY) -->
 <div class="row mb-4">
     <div class="col-6 col-lg-3 mb-3">
         <div class="billing-stat-card">
@@ -238,21 +256,23 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
                 <div class="stat-title">{{ __('Total Invoiced') }}</div>
                 <div class="stat-icon"><i class="fas fa-file-invoice"></i></div>
             </div>
-            <div class="stat-num text-white">${{ number_format($totalInvoiced, 2) }}</div>
-            <small class="text-muted" style="font-size:11px;">{{ $invoices->count() }} {{ __('Total Issued Records') }}</small>
+            <div class="stat-num text-white">
+                {!! CurrencyHelper::format($totalInvoicedUsd) !!}
+            </div>
+            <small class="text-muted" style="font-size:11px;">{{ $invoices->count() }} {{ __('Total Records') }}</small>
         </div>
     </div>
     <div class="col-6 col-lg-3 mb-3">
-        <div class="billing-stat-card" style="{{ $totalOutstanding > 0 ? 'border-color: rgba(239, 68, 68, 0.4);' : '' }}">
+        <div class="billing-stat-card" style="{{ $totalOutstandingUsd > 0 ? 'border-color: rgba(239, 68, 68, 0.4);' : '' }}">
             <div class="d-flex justify-content-between align-items-start mb-2">
                 <div class="stat-title">{{ __('Balance Outstanding') }}</div>
                 <div class="stat-icon" style="background:rgba(239,68,68,0.1); color:#ef4444; border-color:rgba(239,68,68,0.2);"><i class="fas fa-clock"></i></div>
             </div>
-            <div class="stat-num {{ $totalOutstanding > 0 ? 'text-danger' : 'text-success' }}">
-                ${{ number_format($totalOutstanding, 2) }}
+            <div class="stat-num {{ $totalOutstandingUsd > 0 ? 'text-danger' : 'text-success' }}">
+                {!! CurrencyHelper::format($totalOutstandingUsd) !!}
             </div>
-            <small class="{{ $totalOutstanding > 0 ? 'text-danger font-weight-bold' : 'text-success' }}" style="font-size:11px;">
-                {{ $totalOutstanding > 0 ? __('Payment Required') : __('Account in Good Standing') }}
+            <small class="{{ $totalOutstandingUsd > 0 ? 'text-danger font-weight-bold' : 'text-success' }}" style="font-size:11px;">
+                {{ $totalOutstandingUsd > 0 ? __('Payment Required') : __('Account in Good Standing') }}
             </small>
         </div>
     </div>
@@ -262,24 +282,26 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
                 <div class="stat-title">{{ __('Confirmed Cleared') }}</div>
                 <div class="stat-icon" style="background:rgba(34,197,94,0.1); color:#22c55e; border-color:rgba(34,197,94,0.2);"><i class="fas fa-check-circle"></i></div>
             </div>
-            <div class="stat-num text-success">${{ number_format($totalPaid, 2) }}</div>
+            <div class="stat-num text-success">
+                {!! CurrencyHelper::format($totalPaidUsd) !!}
+            </div>
             <small class="text-muted" style="font-size:11px;">{{ __('Verified Disbursements') }}</small>
         </div>
     </div>
     <div class="col-6 col-lg-3 mb-3">
         <div class="billing-stat-card">
             <div class="d-flex justify-content-between align-items-start mb-2">
-                <div class="stat-title">{{ __('Currency') }}</div>
+                <div class="stat-title">{{ __('Preferred Currency') }}</div>
                 <div class="stat-icon"><i class="fas fa-globe"></i></div>
             </div>
-            <div class="stat-num text-warning">{{ Auth::user()->preferred_currency ?: 'USD ($)' }}</div>
-            <small class="text-muted" style="font-size:11px;">{{ __('Primary settlement unit') }}</small>
+            <div class="stat-num text-warning">{{ $clientCurr }}</div>
+            <small class="text-muted" style="font-size:11px;">{{ __('Active settlement unit') }}</small>
         </div>
     </div>
 </div>
 
 <!-- DUE COUNTDOWN / OVERDUE PENALTY BANNER (IFW EXACT REPLICA) -->
-@if($totalOutstanding > 0)
+@if($totalOutstandingUsd > 0)
     @php
         $hasActivePenalty = ($primaryPenaltyInvoice && $primaryPenaltyInvoice->late_fee_details->is_active);
         $primDetails = $primaryPenaltyInvoice ? $primaryPenaltyInvoice->late_fee_details : null;
@@ -302,11 +324,11 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
                         {{ __('is accumulating') }} <span class="badge badge-danger text-uppercase px-2">{{ $primDetails->fee_type }}</span>.
                     </p>
                     <p class="mb-0 text-muted small mt-1">
-                        {{ __('Total Accumulated Overdue Penalties:') }} <strong class="text-danger">${{ number_format($totalAccumulatedPenalty, 2) }} USD</strong> {{ __('across') }} {{ $activePenaltyInvoices }} {{ __('invoice(s).') }}
+                        {{ __('Total Accumulated Overdue Penalties:') }} <strong class="text-danger">${{ number_format($totalAccumulatedPenaltyUsd, 2) }} USD</strong> {{ __('across') }} {{ $activePenaltyInvoices }} {{ __('invoice(s).') }}
                     </p>
                 @else
                     <p class="mb-0 text-white font-weight-bold" style="font-size: 13.5px;">
-                        {{ __('You have') }} <span class="text-warning font-weight-bold">${{ number_format($totalOutstanding, 2) }}</span> {{ __('pending legal retainer settlement across') }} {{ $invoices->whereNotIn('status', ['paid', 'cancelled'])->count() }} {{ __('invoice(s).') }}
+                        {{ __('You have') }} <span class="text-warning font-weight-bold">{!! CurrencyHelper::format($totalOutstandingUsd) !!}</span> {{ __('pending legal retainer settlement across') }} {{ $invoices->whereNotIn('status', ['paid', 'cancelled'])->count() }} {{ __('invoice(s).') }}
                     </p>
                     <p class="mb-0 text-muted small mt-1">
                         {{ __('Prompt settlement ensures uninterrupted forensic intelligence, attorney court filings, and regulatory representation.') }}
@@ -347,7 +369,7 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
     </script>
 @endif
 
-<!-- INVOICES TABLE (IFW REPLICA) -->
+<!-- INVOICES TABLE (IFW REPLICA + RESPONSIVE ZERO-SCROLL) -->
 <div class="portal-card mb-4 shadow-sm">
     <div class="portal-card-header py-3 px-4 d-flex justify-content-between align-items-center flex-wrap" style="gap: 8px;">
         <h5 class="mb-0 font-weight-bold text-warning"><i class="fas fa-file-invoice mr-2"></i>{{ __('Official Invoices & Retainers') }}</h5>
@@ -384,6 +406,7 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
                                 $isPending = strtolower($inv->status) === 'pending';
                                 $isCancelled = strtolower($inv->status) === 'cancelled';
                                 $customPayInfo = $inv->payment_info ?: $defaultPaymentInfo;
+                                $prefAmount = CurrencyHelper::convert($lateDetails->total_billed, $clientCurr);
                             @endphp
                             <tr>
                                 <td data-label="{{ __('Invoice #') }}">
@@ -393,13 +416,13 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
                                 <td data-label="{{ __('Description') }}">
                                     <span class="text-light font-weight-bold">{{ $inv->description ?: ($inv->clientCase ? ('Representation for Case #' . $inv->clientCase->case_number) : __('Professional Legal & CPA Retainer Statement')) }}</span>
                                     @if($lateDetails->late_fee > 0 && !$isPaid)
-                                        <br><small class="text-danger font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i>{{ __('Late fee: +$') }}{{ number_format($lateDetails->late_fee, 2) }}</small>
+                                        <br><small class="text-danger font-weight-bold"><i class="fas fa-exclamation-circle mr-1"></i>{{ __('Late fee: +$') }}{{ number_format($lateDetails->late_fee, 2) }} USD</small>
                                     @endif
                                 </td>
                                 <td data-label="{{ __('Amount & Due') }}">
-                                    <strong class="text-warning" style="font-size: 1.05rem;">${{ number_format($lateDetails->total_billed, 2) }}</strong>
+                                    {!! CurrencyHelper::format($lateDetails->total_billed) !!}
                                     @if($lateDetails->late_fee > 0 && !$isPaid)
-                                        <br><small class="text-muted" style="font-size: 10.5px;">(Base: ${{ number_format($lateDetails->base_amount, 2) }} + Fee: ${{ number_format($lateDetails->late_fee, 2) }})</small>
+                                        <small class="text-muted d-block" style="font-size: 10.5px;">(Base: ${{ number_format($lateDetails->base_amount, 2) }} + Fee: ${{ number_format($lateDetails->late_fee, 2) }})</small>
                                     @endif
                                 </td>
                                 <td data-label="{{ __('Due Date') }}">
@@ -417,12 +440,12 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
                                     @endif
                                 </td>
                                 <td data-label="{{ __('Action') }}">
-                                    <div class="d-inline-flex" style="gap: 6px;">
+                                    <div class="d-inline-flex">
                                         <a href="{{ route('client.invoices.show', $inv->id) }}" class="btn btn-sm btn-portal-secondary" title="{{ __('View & Print Invoice') }}">
                                             <i class="fas fa-eye mr-1"></i> {{ __('View') }}
                                         </a>
                                         @if(!$isPaid)
-                                            <button type="button" class="pay-btn" onclick="showPayModal({{ $inv->id }}, '{{ addslashes($inv->invoice_number) }}', {{ $lateDetails->total_billed }}, 'USD', {{ json_encode($customPayInfo) }})">
+                                            <button type="button" class="pay-btn" onclick="showPayModal({{ $inv->id }}, '{{ addslashes($inv->invoice_number) }}', {{ $lateDetails->total_billed }}, 'USD', {{ json_encode($customPayInfo) }}, '{{ $clientCurr }}', {{ $prefAmount }})">
                                                 <i class="fas fa-credit-card mr-1"></i> {{ __('Pay Now') }}
                                             </button>
                                         @endif
@@ -453,6 +476,7 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
                         <div>
                             <div class="small text-muted font-weight-bold text-uppercase">{{ __('Invoice Reference:') }} <span id="payInvoiceRef" class="text-white"></span></div>
                             <div class="font-weight-bold text-warning" style="font-size: 1.75rem;" id="payAmount"></div>
+                            <div class="small text-muted" id="payPrefEquivalent" style="font-size: 12px;"></div>
                         </div>
                         <div class="text-right">
                             <span class="badge badge-danger px-3 py-2 font-weight-bold" style="font-size: 12px;">{{ __('Action Required') }}</span>
@@ -491,7 +515,7 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
                             </div>
                         </div>
 
-                        <!-- DYNAMIC CRYPTO DETAILS & QR BOX (IFW REPLICA) -->
+                        <!-- DYNAMIC CRYPTO DETAILS & QR BOX -->
                         <div id="cryptoPaymentDetailsBox" class="p-3 mb-3 rounded border border-warning" style="display: none; background: #12151e;">
                             <div class="d-flex flex-wrap align-items-center justify-content-between" style="gap: 12px;">
                                 <div class="mr-3 mb-2 text-center" style="min-width: 130px;">
@@ -539,12 +563,20 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
 <script>
 var globalUsdtAddress = "{{ $globalUsdt }}";
 var globalBtcAddress = "{{ $globalBtc }}";
+var clientCurrency = "{{ $clientCurr }}";
 
-function showPayModal(invoiceId, ref, balanceDue, currency, paymentInfo) {
+function showPayModal(invoiceId, ref, balanceDueUsd, currency, paymentInfo, prefCurrency, prefBalance) {
     document.getElementById('payInvoiceId').value = invoiceId;
     document.getElementById('payInvoiceRef').textContent = ref;
-    document.getElementById('payAmount').textContent = '$' + parseFloat(balanceDue).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    document.getElementById('payAmountInput').value = parseFloat(balanceDue).toFixed(2);
+    document.getElementById('payAmount').textContent = '$' + parseFloat(balanceDueUsd).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' USD';
+    document.getElementById('payAmountInput').value = parseFloat(balanceDueUsd).toFixed(2);
+    
+    if (prefCurrency && prefCurrency !== 'USD' && prefBalance) {
+        document.getElementById('payPrefEquivalent').textContent = '≈ ' + parseFloat(prefBalance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ' + prefCurrency + ' (Exchange Rate Estimate)';
+    } else {
+        document.getElementById('payPrefEquivalent').textContent = '';
+    }
+
     document.getElementById('paymentInfoBlock').textContent = paymentInfo || 'Please contact your assigned counsel for payment details.';
     
     document.getElementById('payNowSubmitForm').action = "/client/invoices/" + invoiceId + "/submit-proof";
@@ -594,13 +626,16 @@ function openQuickPayment() {
         @php
             $fDetails = $firstUnpaid->late_fee_details;
             $fInfo = $firstUnpaid->payment_info ?: $defaultPaymentInfo;
+            $fPref = CurrencyHelper::convert($fDetails->total_billed, $clientCurr);
         @endphp
         showPayModal(
             {{ $firstUnpaid->id }},
             '{{ addslashes($firstUnpaid->invoice_number) }}',
             {{ $fDetails->total_billed }},
             'USD',
-            {!! json_encode($fInfo) !!}
+            {!! json_encode($fInfo) !!},
+            '{{ $clientCurr }}',
+            {{ $fPref }}
         );
     @else
         showPayModal(
@@ -608,7 +643,9 @@ function openQuickPayment() {
             'Direct Retainer / Settlement Wire',
             0.00,
             'USD',
-            {!! json_encode($defaultPaymentInfo) !!}
+            {!! json_encode($defaultPaymentInfo) !!},
+            '{{ $clientCurr }}',
+            0.00
         );
     @endif
 }

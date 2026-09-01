@@ -257,9 +257,7 @@
         color: #f1f5f9;
     }
 
-    /* =========================================================================
-       EXPLICIT LIGHT MODE RULES (DESKTOP & MOBILE - ZERO CONFLICTS)
-       ========================================================================= */
+    /* EXPLICIT LIGHT MODE RULES (ZERO CONFLICTS) */
     body.light-mode .portal-card, html.light-mode .portal-card {
         background: #ffffff !important;
         border-color: #e2e8f0 !important;
@@ -345,12 +343,20 @@
         .progress-track-container { padding: 14px 10px !important; overflow-x: auto !important; }
         .progress-track { min-width: 480px !important; }
         .table-responsive { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; width: 100% !important; }
+        .table-portal td:last-child {
+            display: flex !important;
+            justify-content: flex-end !important;
+            padding-right: 12px !important;
+        }
     }
 </style>
 @endsection
 
 @section('content')
 @php
+    use App\Helpers\CurrencyHelper;
+    $clientCurr = CurrencyHelper::clientCurrency();
+
     $settPath = storage_path('settings.json');
     $paySettings = [];
     if (file_exists($settPath)) {
@@ -375,9 +381,9 @@
         . "USDT (TRC-20): " . $globalUsdt . "\n"
         . "Bitcoin (BTC): " . $globalBtc;
 
-    $totalOutstanding = 0;
+    $totalOutstandingUsd = 0;
     $activePenaltyInvoices = 0;
-    $totalAccumulatedPenalty = 0;
+    $totalAccumulatedPenaltyUsd = 0;
     $primaryPenaltyInvoice = null;
     $firstUnpaid = null;
 
@@ -386,13 +392,13 @@
             $lateDetails = $inv->late_fee_details;
             $isPaid = strtolower($inv->status) === 'paid';
             if (!$isPaid && strtolower($inv->status) !== 'cancelled') {
-                $totalOutstanding += $lateDetails->total_billed;
+                $totalOutstandingUsd += $lateDetails->total_billed;
                 if (!$firstUnpaid) {
                     $firstUnpaid = $inv;
                 }
                 if ($lateDetails->is_active && $lateDetails->late_fee > 0) {
                     $activePenaltyInvoices++;
-                    $totalAccumulatedPenalty += $lateDetails->late_fee;
+                    $totalAccumulatedPenaltyUsd += $lateDetails->late_fee;
                     if (!$primaryPenaltyInvoice) {
                         $primaryPenaltyInvoice = $inv;
                     }
@@ -440,7 +446,7 @@
     </div>
 
     <!-- OVERDUE PENALTY / RETAINER DUE NOTICE BANNER (IFW EXACT REPLICA) -->
-    @if($totalOutstanding > 0)
+    @if($totalOutstandingUsd > 0)
         @php
             $hasActivePenalty = ($primaryPenaltyInvoice && $primaryPenaltyInvoice->late_fee_details->is_active);
             $primDetails = $primaryPenaltyInvoice ? $primaryPenaltyInvoice->late_fee_details : null;
@@ -463,11 +469,11 @@
                             {{ __('is accumulating') }} <span class="badge badge-danger text-uppercase px-2">{{ $primDetails->fee_type }}</span>.
                         </p>
                         <p class="mb-0 text-muted small mt-1">
-                            {{ __('Total Accumulated Overdue Penalties:') }} <strong class="text-danger">${{ number_format($totalAccumulatedPenalty, 2) }} USD</strong> {{ __('across') }} {{ $activePenaltyInvoices }} {{ __('invoice(s).') }}
+                            {{ __('Total Accumulated Overdue Penalties:') }} <strong class="text-danger">${{ number_format($totalAccumulatedPenaltyUsd, 2) }} USD</strong> {{ __('across') }} {{ $activePenaltyInvoices }} {{ __('invoice(s).') }}
                         </p>
                     @else
                         <p class="mb-0 text-white font-weight-bold" style="font-size: 13.5px;">
-                            {{ __('You have') }} <span class="text-warning font-weight-bold">${{ number_format($totalOutstanding, 2) }}</span> {{ __('pending legal retainer settlement.') }}
+                            {{ __('You have') }} <span class="text-warning font-weight-bold">{!! CurrencyHelper::format($totalOutstandingUsd) !!}</span> {{ __('pending legal retainer settlement.') }}
                         </p>
                         <p class="mb-0 text-muted small mt-1">
                             {{ __('Prompt settlement ensures uninterrupted forensic intelligence, court filings, and regulatory representation.') }}
@@ -509,7 +515,7 @@
         </script>
     @endif
 
-    <!-- Executive Stat Cards (Desktop Only - Hidden on Mobile like IFW) -->
+    <!-- Executive Stat Cards (Desktop Only) -->
     <div class="row mb-4 d-none d-md-flex">
         <div class="col-md-3 col-sm-6 mb-3">
             <div class="stat-card-luxury">
@@ -534,7 +540,7 @@
                     @php
                         $totInvDisplay = $invoicesTotalAmount ?? (!empty($invoices) ? $invoices->sum(fn($i) => $i->late_fee_details->total_billed) : 0);
                     @endphp
-                    <div class="stat-value text-warning">${{ number_format($totInvDisplay, 2) }}</div>
+                    <div class="stat-value text-warning">{!! CurrencyHelper::format($totInvDisplay) !!}</div>
                     <small class="text-muted" style="font-size: 11px;">{{ $invoicesCount ?? 0 }} {{ __('Statements Logged') }}</small>
                 </div>
             </div>
@@ -719,6 +725,7 @@
                                         $lateDetails = $inv->late_fee_details;
                                         $isPaid = strtolower($inv->status) === 'paid';
                                         $customPayInfo = $inv->payment_info ?: $defaultPaymentInfo;
+                                        $prefAmount = CurrencyHelper::convert($lateDetails->total_billed, $clientCurr);
                                     @endphp
                                     <tr>
                                         <td>
@@ -726,9 +733,9 @@
                                             <small class="text-muted d-block">{{ $inv->due_date ? date('M d, Y', strtotime($inv->due_date)) : '' }}</small>
                                         </td>
                                         <td>
-                                            <strong class="text-warning">${{ number_format($lateDetails->total_billed, 2) }}</strong>
+                                            {!! CurrencyHelper::format($lateDetails->total_billed) !!}
                                             @if($lateDetails->late_fee > 0 && !$isPaid)
-                                                <br><small class="text-danger font-weight-bold" style="font-size: 10px;">+${{ number_format($lateDetails->late_fee, 2) }} fee</small>
+                                                <small class="text-danger font-weight-bold d-block" style="font-size: 10px;">+${{ number_format($lateDetails->late_fee, 2) }} fee</small>
                                             @endif
                                         </td>
                                         <td>
@@ -740,7 +747,7 @@
                                         </td>
                                         <td>
                                             @if(!$isPaid)
-                                                <button type="button" class="btn-gold" style="font-size: 11px; padding: 4px 10px;" onclick="showPayModalDashboard({{ $inv->id }}, '{{ addslashes($inv->invoice_number) }}', {{ $lateDetails->total_billed }}, 'USD', {{ json_encode($customPayInfo) }})">
+                                                <button type="button" class="btn-gold" style="font-size: 11px; padding: 4px 10px;" onclick="showPayModalDashboard({{ $inv->id }}, '{{ addslashes($inv->invoice_number) }}', {{ $lateDetails->total_billed }}, 'USD', {{ json_encode($customPayInfo) }}, '{{ $clientCurr }}', {{ $prefAmount }})">
                                                     {{ __('Pay') }}
                                                 </button>
                                             @else
@@ -783,6 +790,7 @@
                         <div>
                             <div class="small text-muted font-weight-bold text-uppercase">{{ __('Invoice Reference:') }} <span id="payInvoiceRef" class="text-white"></span></div>
                             <div class="font-weight-bold text-warning" style="font-size: 1.75rem;" id="payAmount"></div>
+                            <div class="small text-muted" id="payPrefEquivalentDashboard" style="font-size: 12px;"></div>
                         </div>
                         <div class="text-right">
                             <span class="badge badge-danger px-3 py-2 font-weight-bold" style="font-size: 12px;">{{ __('Action Required') }}</span>
@@ -869,12 +877,20 @@
 <script>
 var globalUsdtAddress = "{{ $globalUsdt }}";
 var globalBtcAddress = "{{ $globalBtc }}";
+var clientCurrency = "{{ $clientCurr }}";
 
-function showPayModalDashboard(invoiceId, ref, balanceDue, currency, paymentInfo) {
+function showPayModalDashboard(invoiceId, ref, balanceDueUsd, currency, paymentInfo, prefCurrency, prefBalance) {
     document.getElementById('payInvoiceIdDashboard').value = invoiceId;
     document.getElementById('payInvoiceRef').textContent = ref;
-    document.getElementById('payAmount').textContent = '$' + parseFloat(balanceDue).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
-    document.getElementById('payAmountInputDashboard').value = parseFloat(balanceDue).toFixed(2);
+    document.getElementById('payAmount').textContent = '$' + parseFloat(balanceDueUsd).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' USD';
+    document.getElementById('payAmountInputDashboard').value = parseFloat(balanceDueUsd).toFixed(2);
+    
+    if (prefCurrency && prefCurrency !== 'USD' && prefBalance) {
+        document.getElementById('payPrefEquivalentDashboard').textContent = '≈ ' + parseFloat(prefBalance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' ' + prefCurrency + ' (Exchange Rate Estimate)';
+    } else {
+        document.getElementById('payPrefEquivalentDashboard').textContent = '';
+    }
+
     document.getElementById('paymentInfoBlock').textContent = paymentInfo || 'Please contact your assigned counsel for payment details.';
     
     document.getElementById('payNowSubmitFormDashboard').action = "/client/invoices/" + invoiceId + "/submit-proof";
@@ -924,13 +940,16 @@ function openQuickPaymentDashboard() {
         @php
             $fDetails = $firstUnpaid->late_fee_details;
             $fInfo = $firstUnpaid->payment_info ?: $defaultPaymentInfo;
+            $fPref = CurrencyHelper::convert($fDetails->total_billed, $clientCurr);
         @endphp
         showPayModalDashboard(
             {{ $firstUnpaid->id }},
             '{{ addslashes($firstUnpaid->invoice_number) }}',
             {{ $fDetails->total_billed }},
             'USD',
-            {!! json_encode($fInfo) !!}
+            {!! json_encode($fInfo) !!},
+            '{{ $clientCurr }}',
+            {{ $fPref }}
         );
     @else
         showPayModalDashboard(
@@ -938,7 +957,9 @@ function openQuickPaymentDashboard() {
             'Direct Retainer / Settlement Wire',
             0.00,
             'USD',
-            {!! json_encode($defaultPaymentInfo) !!}
+            {!! json_encode($defaultPaymentInfo) !!},
+            '{{ $clientCurr }}',
+            0.00
         );
     @endif
 }

@@ -77,7 +77,7 @@ class AdminInvoiceController extends Controller
                 $invoiceNumber = 'INV-' . rand(100000, 999999);
             } while (Invoice::where('invoice_number', $invoiceNumber)->exists());
 
-            $invoice = Invoice::create([
+            $invoiceData = [
                 'invoice_number' => $invoiceNumber,
                 'client_id' => $request->client_id,
                 'case_id' => $request->case_id,
@@ -85,13 +85,29 @@ class AdminInvoiceController extends Controller
                 'due_date' => $request->due_date,
                 'status' => $request->status,
                 'description' => $request->description,
-                'late_fee_enabled' => $request->has('late_fee_enabled') ? 1 : 0,
-                'late_fee_type' => $request->late_fee_type ?: 'daily',
-                'late_fee_is_percentage' => $request->late_fee_is_percentage ? 1 : 0,
-                'late_fee_amount' => $request->late_fee_amount ?: 0,
-                'late_fee_start_date' => $request->late_fee_start_date ?: $request->due_date,
-                'payment_info' => $request->payment_info,
-            ]);
+            ];
+
+            // Ensure columns exist on the fly
+            if (Schema::hasColumn('invoices', 'late_fee_enabled')) {
+                $invoiceData['late_fee_enabled'] = $request->has('late_fee_enabled') ? 1 : 0;
+            }
+            if (Schema::hasColumn('invoices', 'late_fee_type')) {
+                $invoiceData['late_fee_type'] = $request->late_fee_type ?: 'daily';
+            }
+            if (Schema::hasColumn('invoices', 'late_fee_is_percentage')) {
+                $invoiceData['late_fee_is_percentage'] = $request->late_fee_is_percentage ? 1 : 0;
+            }
+            if (Schema::hasColumn('invoices', 'late_fee_amount')) {
+                $invoiceData['late_fee_amount'] = $request->late_fee_amount ?: 0;
+            }
+            if (Schema::hasColumn('invoices', 'late_fee_start_date')) {
+                $invoiceData['late_fee_start_date'] = $request->late_fee_start_date ?: $request->due_date;
+            }
+            if (Schema::hasColumn('invoices', 'payment_info')) {
+                $invoiceData['payment_info'] = $request->payment_info;
+            }
+
+            $invoice = Invoice::create($invoiceData);
 
             ActivityLog::log('Invoice Created', 'Generated invoice ' . $invoice->invoice_number . ' for client ' . $invoice->client->name);
             $this->sendSlackNotification('🧾 New Invoice Generated: ' . $invoice->invoice_number . ' - $' . number_format($invoice->amount, 2) . ' for ' . $invoice->client->name);
@@ -176,20 +192,35 @@ class AdminInvoiceController extends Controller
         ]);
 
         try {
-            $invoice->update([
+            $invoiceData = [
                 'client_id' => $request->client_id,
                 'case_id' => $request->case_id,
                 'amount' => $request->amount,
                 'due_date' => $request->due_date,
                 'status' => $request->status,
                 'description' => $request->description,
-                'late_fee_enabled' => $request->has('late_fee_enabled') ? 1 : 0,
-                'late_fee_type' => $request->late_fee_type ?: 'daily',
-                'late_fee_is_percentage' => $request->late_fee_is_percentage ? 1 : 0,
-                'late_fee_amount' => $request->late_fee_amount ?: 0,
-                'late_fee_start_date' => $request->late_fee_start_date ?: $request->due_date,
-                'payment_info' => $request->payment_info,
-            ]);
+            ];
+
+            if (Schema::hasColumn('invoices', 'late_fee_enabled')) {
+                $invoiceData['late_fee_enabled'] = $request->has('late_fee_enabled') ? 1 : 0;
+            }
+            if (Schema::hasColumn('invoices', 'late_fee_type')) {
+                $invoiceData['late_fee_type'] = $request->late_fee_type ?: 'daily';
+            }
+            if (Schema::hasColumn('invoices', 'late_fee_is_percentage')) {
+                $invoiceData['late_fee_is_percentage'] = $request->late_fee_is_percentage ? 1 : 0;
+            }
+            if (Schema::hasColumn('invoices', 'late_fee_amount')) {
+                $invoiceData['late_fee_amount'] = $request->late_fee_amount ?: 0;
+            }
+            if (Schema::hasColumn('invoices', 'late_fee_start_date')) {
+                $invoiceData['late_fee_start_date'] = $request->late_fee_start_date ?: $request->due_date;
+            }
+            if (Schema::hasColumn('invoices', 'payment_info')) {
+                $invoiceData['payment_info'] = $request->payment_info;
+            }
+
+            $invoice->update($invoiceData);
 
             ActivityLog::log('Invoice Updated', 'Updated invoice ' . $invoice->invoice_number);
 

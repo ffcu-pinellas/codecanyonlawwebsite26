@@ -172,9 +172,28 @@ body.light-mode .profile-card-body, html.light-mode .profile-card-body {
                         </div>
 
                         <h5 class="font-weight-bold text-white mb-1">{{ $user->name }}</h5>
-                        <span class="badge badge-success px-3 py-1 font-weight-bold mb-3" style="font-size: 11px;">
-                            <i class="fas fa-shield-alt mr-1"></i> {{ __('Verified Client Account') }}
-                        </span>
+                        @php
+                            $kycApproved = ($user->kyc_verified_at || ($user->kycDocuments && $user->kycDocuments->where('status', 'approved')->count() > 0));
+                            $kycPending = (!$kycApproved && $user->kycDocuments && $user->kycDocuments->whereIn('status', ['pending', 'submitted', 'under_review'])->count() > 0);
+                        @endphp
+                        @if($kycApproved)
+                            <span class="badge badge-success px-3 py-1 font-weight-bold mb-3" style="font-size: 11px;">
+                                <i class="fas fa-shield-alt mr-1"></i> {{ __('Verified Client Account') }}
+                            </span>
+                        @elseif($kycPending)
+                            <span class="badge badge-warning text-dark px-3 py-1 font-weight-bold mb-3" style="font-size: 11px;">
+                                <i class="fas fa-clock mr-1"></i> {{ __('KYC Under Review') }}
+                            </span>
+                        @else
+                            <span class="badge badge-secondary px-3 py-1 font-weight-bold mb-2 d-inline-block" style="font-size: 11px; background: rgba(148,163,184,0.2); color: #94a3b8; border: 1px solid rgba(148,163,184,0.3);">
+                                <i class="fas fa-user-clock mr-1"></i> {{ __('Unverified Client (KYC Required)') }}
+                            </span>
+                            <div class="mb-3">
+                                <a href="{{ route('client.kyc.index') }}" class="btn btn-sm btn-outline-warning font-weight-bold" style="font-size: 11px;">
+                                    <i class="fas fa-id-card mr-1"></i> {{ __('Submit KYC Proof') }} &rarr;
+                                </a>
+                            </div>
+                        @endif
 
                         <!-- Avatar Upload Form -->
                         <form action="{{ route('user-profile-information.update') }}" method="POST" enctype="multipart/form-data" class="p-3 rounded text-left mb-3" style="background: #11151e; border: 1px solid #28303f;">
