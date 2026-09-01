@@ -12,7 +12,11 @@
     <div class="p-3 text-center border-bottom ifw-sidebar-user-card" style="border-color: #28303f !important; background: #11151e;">
         <div class="mb-2">
             @if(Auth::user()->profile_photo_path)
-                <img src="{{ Storage::url(Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()->name }}" class="rounded-circle img-thumbnail" style="width: 56px; height: 56px; object-fit: cover; border-color: #fecc56;">
+                @php
+                    $uPhoto = Auth::user()->profile_photo_path;
+                    $uSrc = str_starts_with($uPhoto, 'assets/') || str_starts_with($uPhoto, 'http') || str_starts_with($uPhoto, '/assets') ? asset($uPhoto) : Storage::url($uPhoto);
+                @endphp
+                <img src="{{ $uSrc }}" alt="{{ Auth::user()->name }}" class="rounded-circle img-thumbnail" style="width: 56px; height: 56px; object-fit: cover; border-color: #fecc56;">
             @else
                 <div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 56px; height: 56px; background: rgba(254,204,86,0.15); color: #fecc56; font-size: 20px; font-weight: bold; border: 2px solid #fecc56;">
                     {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
@@ -88,10 +92,16 @@
                 <span class="nav-text">{{ __('Open New Case') }}</span>
             </a>
         </li>
+        <li class="{{ request()->is('client/security*') ? 'active' : '' }}">
+            <a href="{{ route('client.security.index') }}">
+                <i class="fas fa-shield-alt nav-icon"></i>
+                <span class="nav-text">{{ __('Security & Sessions') }}</span>
+            </a>
+        </li>
         <li class="{{ request()->is('client/profile*') ? 'active' : '' }}">
             <a href="{{ route('client.profile') }}">
-                <i class="fas fa-shield-alt nav-icon"></i>
-                <span class="nav-text">{{ __('Security & PIN') }}</span>
+                <i class="fas fa-user-cog nav-icon"></i>
+                <span class="nav-text">{{ __('Profile & Settings') }}</span>
             </a>
         </li>
         <li class="border-top mt-2 pt-2 px-3 pb-1" style="border-color: #28303f !important;">

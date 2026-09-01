@@ -153,6 +153,32 @@ class ClientViewController extends Controller
         }
     }
 
+    public function profilePresetAvatar(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $preset = $request->input('preset');
+            
+            if ($preset === 'male') {
+                $user->profile_photo_path = 'assets/images/avatars/male.svg';
+                $user->save();
+            } elseif ($preset === 'female') {
+                $user->profile_photo_path = 'assets/images/avatars/female.svg';
+                $user->save();
+            } elseif ($preset === 'neutral') {
+                $user->profile_photo_path = 'assets/images/avatars/neutral.svg';
+                $user->save();
+            } elseif ($preset === 'delete') {
+                $user->profile_photo_path = null;
+                $user->save();
+            }
+
+            return $this->backWithSuccess(__('Profile avatar updated successfully.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
     public function profileInfoUpdate(Request $request)
     {
         try {
@@ -799,6 +825,33 @@ class ClientViewController extends Controller
             $companyEmail = env('COMPANY_EMAIL') ?: ($emailInfo ? $emailInfo->line_one : 'support@yourcpaexpert.com');
 
             return view('frontend.theme1.auth-client.pages.invoices.details', compact('title', 'invoice', 'companyName', 'companyAddress', 'companyPhone', 'companyEmail'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    public function invoiceReceipt($id)
+    {
+        try {
+            $invoice = Invoice::with(['clientCase.attorney'])->findOrFail($id);
+
+            if ($invoice->client_id !== Auth::id()) {
+                abort(403, 'Unauthorized access.');
+            }
+
+            $title = __('Official Settlement & Payment Receipt #') . $invoice->invoice_number;
+            $companySettings = \App\Models\GeneralSettings::first();
+            $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+
+            $contactPage = \App\Models\PageSettings::where('name', 'contact')->first();
+            $contactInfo = $contactPage ? $contactPage->sections()->where('name', 'contact_info')->first() : null;
+            $emailInfo = $contactPage ? $contactPage->sections()->where('name', 'email')->first() : null;
+
+            $companyAddress = env('COMPANY_ADDRESS') ?: ($contactInfo ? implode(', ', array_filter([$contactInfo->line_one, $contactInfo->line_two])) : '582 Professional Way, Financial District, DC');
+            $companyPhone = env('COMPANY_PHONE') ?: ($contactInfo && $contactInfo->line_two && preg_match('/[0-9]/', $contactInfo->line_two) ? $contactInfo->line_two : '(216) 230-1837');
+            $companyEmail = env('COMPANY_EMAIL') ?: ($emailInfo ? $emailInfo->line_one : 'support@yourcpaexpert.com');
+
+            return view('frontend.theme1.auth-client.pages.invoices.receipt', compact('title', 'invoice', 'companyName', 'companyAddress', 'companyPhone', 'companyEmail'));
         } catch (\Throwable $e) {
             return $this->backWithError($e->getMessage());
         }

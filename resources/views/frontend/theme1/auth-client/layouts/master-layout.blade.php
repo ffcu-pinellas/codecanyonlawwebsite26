@@ -473,5 +473,47 @@
     });
 </script>
 
+@php
+    $chatSettingsGlobal = \App\Services\ChatwootService::getSettings();
+    $cwTokenGlobal = $chatSettingsGlobal['website_token'] ?? '';
+    $cwBaseGlobal = rtrim($chatSettingsGlobal['base_url'] ?? 'https://app.chatwoot.com', '/');
+    $uAuth = Auth::user();
+@endphp
+@if(($chatSettingsGlobal['provider'] ?? '') === 'chatwoot' && !empty($cwTokenGlobal))
+<script>
+  (function(d,t) {
+    var BASE_URL = @json($cwBaseGlobal);
+    var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
+    g.src=BASE_URL+"/packs/js/sdk.js";
+    g.async = true;
+    s.parentNode.insertBefore(g,s);
+    g.onload=function(){
+      if (window.chatwootSDK) {
+        window.chatwootSDK.run({
+          websiteToken: @json($cwTokenGlobal),
+          baseUrl: BASE_URL
+        });
+      }
+    }
+  })(document,"script");
+
+  window.addEventListener('chatwoot:ready', function () {
+    @if($uAuth)
+      if (window.$chatwoot) {
+        window.$chatwoot.setUser('client_{{ $uAuth->id }}', {
+          name: @json($uAuth->name ?: 'Client #'.$uAuth->id),
+          email: @json($uAuth->email),
+          phone_number: @json($uAuth->phone ?? '')
+        });
+        window.$chatwoot.setCustomAttributes({
+          client_id: '{{ $uAuth->id }}',
+          portal: '{{ config("app.name", "Your CPA Expert") }}'
+        });
+      }
+    @endif
+  });
+</script>
+@endif
+
 </body>
 </html>

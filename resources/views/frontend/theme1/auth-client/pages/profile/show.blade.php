@@ -160,7 +160,11 @@ body.light-mode .profile-card-body, html.light-mode .profile-card-body {
                     <div class="profile-card text-center p-4">
                         <div class="position-relative d-inline-block mb-3">
                             @if($user->profile_photo_path)
-                                <img src="{{ Storage::url($user->profile_photo_path) }}" class="profile-avatar-box">
+                                @php
+                                    $pPath = $user->profile_photo_path;
+                                    $pSrc = str_starts_with($pPath, 'assets/') || str_starts_with($pPath, 'http') || str_starts_with($pPath, '/assets') ? asset($pPath) : Storage::url($pPath);
+                                @endphp
+                                <img src="{{ $pSrc }}" class="profile-avatar-box">
                             @else
                                 <div class="profile-avatar-box d-flex align-items-center justify-content-center" style="background: rgba(254,204,86,0.15); color: #fecc56; font-size: 30px; font-weight: bold;">
                                     {{ strtoupper(substr($user->name, 0, 1)) }}
@@ -195,22 +199,69 @@ body.light-mode .profile-card-body, html.light-mode .profile-card-body {
                             </div>
                         @endif
 
-                        <!-- Avatar Upload Form -->
-                        <form action="{{ route('user-profile-information.update') }}" method="POST" enctype="multipart/form-data" class="p-3 rounded text-left mb-3" style="background: #11151e; border: 1px solid #28303f;">
-                            @csrf
-                            @method('PUT')
-                            <input type="hidden" name="name" value="{{ $user->name }}">
-                            <input type="hidden" name="email" value="{{ $user->email }}">
-                            <input type="hidden" name="phone" value="{{ $user->phone }}">
-                            <input type="hidden" name="address" value="{{ $user->address }}">
-                            <label class="small font-weight-bold text-warning mb-2 d-block">
-                                <i class="fas fa-camera mr-1"></i> {{ __('Update Profile Photo') }}
-                            </label>
-                            <input type="file" name="photo" class="form-control-file form-control-sm text-muted mb-2" required accept="image/*">
-                            <button type="submit" class="btn btn-warning btn-sm btn-block font-weight-bold text-dark">
-                                <i class="fas fa-upload mr-1"></i> {{ __('Upload Photo') }}
-                            </button>
-                        </form>
+                        <!-- Avatar Upload Form (IFW EXACT REPLICA WITH PRESETS) -->
+                        <div class="p-3 rounded text-left mb-3" style="background: #11151e; border: 1px solid #28303f;">
+                            <form action="{{ route('user-profile-information.update') }}" method="POST" enctype="multipart/form-data" class="mb-3">
+                                @csrf
+                                @method('PUT')
+                                <input type="hidden" name="name" value="{{ $user->name }}">
+                                <input type="hidden" name="email" value="{{ $user->email }}">
+                                <input type="hidden" name="phone" value="{{ $user->phone }}">
+                                <input type="hidden" name="address" value="{{ $user->address }}">
+                                
+                                <label class="small font-weight-bold text-warning mb-2 d-block">
+                                    <i class="fas fa-camera mr-1"></i> {{ __('Update Profile Picture') }}
+                                </label>
+                                
+                                <div class="custom-file mb-2">
+                                    <input type="file" name="photo" class="custom-file-input" id="profilePhotoFile" required accept="image/*" onchange="document.getElementById('profilePhotoLabel').textContent = this.files[0] ? this.files[0].name : 'Choose photo...'">
+                                    <label class="custom-file-label bg-dark text-white border-secondary small" for="profilePhotoFile" id="profilePhotoLabel" style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ __('Choose photo...') }}</label>
+                                </div>
+                                
+                                <button type="submit" class="btn btn-warning btn-sm btn-block font-weight-bold text-dark py-2">
+                                    <i class="fas fa-upload mr-1"></i> {{ __('Upload Photo') }}
+                                </button>
+                            </form>
+
+                            <!-- PRESETS ROW (IFW EXACT REPLICA) -->
+                            <div class="pt-2 border-top border-secondary d-flex align-items-center justify-content-between flex-wrap">
+                                <span class="small text-muted font-weight-bold" style="font-size: 11px;">{{ __('Presets:') }}</span>
+                                <div class="d-flex align-items-center" style="gap: 8px;">
+                                    <!-- Male Preset -->
+                                    <form action="{{ route('client.profile.preset-avatar') }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <input type="hidden" name="preset" value="male">
+                                        <button type="submit" class="btn btn-sm btn-dark p-1 border-secondary" title="{{ __('Male Preset Avatar') }}" style="width: 32px; height: 32px; border-radius: 6px;">
+                                            <img src="{{ asset('assets/images/avatars/male.svg') }}" style="width: 22px; height: 22px;">
+                                        </button>
+                                    </form>
+                                    <!-- Female Preset -->
+                                    <form action="{{ route('client.profile.preset-avatar') }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <input type="hidden" name="preset" value="female">
+                                        <button type="submit" class="btn btn-sm btn-dark p-1 border-secondary" title="{{ __('Female Preset Avatar') }}" style="width: 32px; height: 32px; border-radius: 6px;">
+                                            <img src="{{ asset('assets/images/avatars/female.svg') }}" style="width: 22px; height: 22px;">
+                                        </button>
+                                    </form>
+                                    <!-- Neutral Preset -->
+                                    <form action="{{ route('client.profile.preset-avatar') }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <input type="hidden" name="preset" value="neutral">
+                                        <button type="submit" class="btn btn-sm btn-dark p-1 border-secondary" title="{{ __('Executive / Corporate Preset') }}" style="width: 32px; height: 32px; border-radius: 6px;">
+                                            <img src="{{ asset('assets/images/avatars/neutral.svg') }}" style="width: 22px; height: 22px;">
+                                        </button>
+                                    </form>
+                                    <!-- Delete / Reset -->
+                                    <form action="{{ route('client.profile.preset-avatar') }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <input type="hidden" name="preset" value="delete">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger p-1" title="{{ __('Remove Photo / Reset to Default') }}" style="width: 32px; height: 32px; border-radius: 6px;">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 

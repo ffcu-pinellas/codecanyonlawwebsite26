@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="femGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2d3748"/>
+      <stop offset="100%" stop-color="#1a202c"/>
+    </linearGradient>
+    <linearGradient id="femAcc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fecc56"/>
+      <stop offset="100%" stop-color="#f0a500"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="58" fill="url(#femGrad)" stroke="#fecc56" stroke-width="3"/>
+  <!-- Head -->
+  <circle cx="60" cy="46" r="20" fill="#e2e8f0"/>
+  <!-- Hair -->
+  <path d="M35 50 C33 28 44 20 60 20 C76 20 87 28 85 50 C89 65 83 75 78 78 C76 60 76 40 60 40 C44 40 44 60 42 78 C37 75 31 65 35 50 Z" fill="#4a5568"/>
+  <!-- Headband / Accent -->
+  <path d="M41 33 C45 27 55 24 60 24 C65 24 75 27 79 33" stroke="url(#femAcc)" stroke-width="3" fill="none"/>
+  <!-- Suit / Blouse -->
+  <path d="M24 105 C26 78 44 72 60 72 C76 72 94 78 96 105 Z" fill="#2d3748"/>
+  <path d="M48 72 L60 90 L72 72 Z" fill="#ffffff"/>
+  <circle cx="60" cy="94" r="3" fill="url(#femAcc)"/>
+</svg>

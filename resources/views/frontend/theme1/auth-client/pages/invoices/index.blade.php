@@ -442,9 +442,13 @@ body.light-mode #payNowModal .text-light, html.light-mode #payNowModal .text-lig
                                 <td data-label="{{ __('Action') }}">
                                     <div class="d-inline-flex">
                                         <a href="{{ route('client.invoices.show', $inv->id) }}" class="btn btn-sm btn-portal-secondary" title="{{ __('View & Print Invoice') }}">
-                                            <i class="fas fa-eye mr-1"></i> {{ __('View') }}
+                                            <i class="fas fa-file-invoice mr-1"></i> {{ __('View') }}
                                         </a>
-                                        @if(!$isPaid)
+                                        @if($isPaid)
+                                            <a href="{{ route('client.invoices.receipt', $inv->id) }}" class="btn btn-sm btn-outline-success font-weight-bold" style="border-radius: 6px; padding: 6px 12px; font-size: 12px; text-decoration: none; display: inline-flex; align-items: center;" title="{{ __('Official Settlement Receipt') }}">
+                                                <i class="fas fa-receipt mr-1"></i> {{ __('Receipt') }}
+                                            </a>
+                                        @else
                                             <button type="button" class="pay-btn" onclick="showPayModal({{ $inv->id }}, '{{ addslashes($inv->invoice_number) }}', {{ $lateDetails->total_billed }}, 'USD', {{ json_encode($customPayInfo) }}, '{{ $clientCurr }}', {{ $prefAmount }})">
                                                 <i class="fas fa-credit-card mr-1"></i> {{ __('Pay Now') }}
                                             </button>

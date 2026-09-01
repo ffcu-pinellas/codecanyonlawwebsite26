@@ -216,13 +216,19 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client',
     Route::get('/profile', [ClientViewController::class, 'profile'])->name('profile');
     Route::post('/profile', [ClientViewController::class, 'profileUpdate'])->name('profile-update');
     Route::post('/profile-info', [ClientViewController::class, 'profileInfoUpdate'])->name('profile-info');
+    Route::post('/profile/preset-avatar', [ClientViewController::class, 'profilePresetAvatar'])->name('profile.preset-avatar');
     Route::post('/password-update', [UpdateUserPassword::class, 'updateAdminPassword'])->name('password-update');
 
-    // Security Wizard & PIN setup
-    Route::get('/security-wizard', [ClientSecurityController::class, 'showSecurityWizard'])->withoutMiddleware(['security.setup'])->name('security.wizard');
-    Route::post('/security-wizard', [ClientSecurityController::class, 'processSecurityWizard'])->withoutMiddleware(['security.setup'])->name('security.wizard.process');
+    // Security & Authentication Desk (IFW EXACT REPLICA)
+    Route::get('/security', [ClientSecurityController::class, 'index'])->name('security.index');
+    Route::post('/security/logout-all-devices', [ClientSecurityController::class, 'logoutAllOtherDevices'])->name('security.logout-all-devices');
+    Route::post('/security/toggle-2fa', [ClientSecurityController::class, 'toggle2fa'])->name('security.toggle-2fa');
     Route::post('/security/set-pin', [ClientSecurityController::class, 'setPin'])->name('security.set-pin');
     Route::post('/security/verify-pin-challenge', [ClientSecurityController::class, 'verifyPinChallenge'])->name('security.verify-pin-challenge');
+    Route::get('/security-wizard', [ClientSecurityController::class, 'showSecurityWizard'])->withoutMiddleware(['security.setup'])->name('security.wizard');
+    Route::post('/security-wizard', [ClientSecurityController::class, 'processSecurityWizard'])->withoutMiddleware(['security.setup'])->name('security.wizard.process');
+    Route::get('/security/2fa-gate', [ClientSecurityController::class, 'show2faGate'])->withoutMiddleware(['security.setup'])->name('security.2fa-gate');
+    Route::post('/security/2fa-gate', [ClientSecurityController::class, 'verify2faGate'])->withoutMiddleware(['security.setup'])->name('security.2fa-gate.verify');
 
     // Identity Verification (KYC Hub)
     Route::get('/kyc', [ClientViewController::class, 'kycHub'])->name('kyc.hub');
@@ -260,6 +266,7 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client',
     // client invoices
     Route::get('/invoices', [ClientViewController::class, 'invoicesIndex'])->name('invoices.index');
     Route::get('/invoices/{id}', [ClientViewController::class, 'invoiceShow'])->name('invoices.show');
+    Route::get('/invoices/{id}/receipt', [ClientViewController::class, 'invoiceReceipt'])->name('invoices.receipt');
     Route::post('/invoices/{id}/submit-proof', [ClientViewController::class, 'submitPaymentProof'])->name('invoices.submit-proof');
 
     // client document center

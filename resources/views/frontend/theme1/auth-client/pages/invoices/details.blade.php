@@ -127,6 +127,9 @@
                     <i class="fas fa-credit-card mr-1"></i> {{ __('Pay Balance Due ($' . number_format($invAmount, 2) . ')') }}
                 </a>
             @else
+                <a href="{{ route('client.invoices.receipt', $invoice->id) }}" class="btn btn-success btn-sm px-3 font-weight-bold">
+                    <i class="fas fa-receipt mr-1"></i> {{ __('Official Receipt') }}
+                </a>
                 <span class="badge badge-success font-weight-bold px-3 py-2" style="font-size:13px;">
                     <i class="fas fa-check-circle mr-1"></i> {{ __('Paid in Full ($0.00 Due)') }}
                 </span>
