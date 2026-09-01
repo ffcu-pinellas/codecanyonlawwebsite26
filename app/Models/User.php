@@ -151,6 +151,14 @@ class User extends Authenticatable
         return $this->belongsTo(User::class, 'assigned_attorney_id');
     }
 
+    public function getAssignedCounselAttribute()
+    {
+        if ($this->assigned_attorney_id && $this->assignedAttorney) {
+            return $this->assignedAttorney;
+        }
+        return User::role(['attorney', 'admin'])->first();
+    }
+
     public function kycDocuments()
     {
         return $this->hasMany(ClientKycDocument::class, 'client_id');

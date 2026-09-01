@@ -105,7 +105,10 @@
         (function($) {
             "use strict";
             $(document).ready(function() {
-                $('.bapric_table').DataTable({
+                if ($.fn.DataTable.isDataTable('#historyTable')) {
+                    $('#historyTable').DataTable().destroy();
+                }
+                $('#historyTable').DataTable({
                     order: [[7, 'desc']]
                 });
             });

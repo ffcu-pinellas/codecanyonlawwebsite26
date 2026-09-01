@@ -1,16 +1,18 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark-mode">
 
 @include('frontend.theme1.auth-client.layouts.head')
-<body id="body" style="background-color: #0a0c10 !important; color: #f1f5f9; min-height: 100vh; overflow-x: hidden;">
+<body id="body" class="dark-mode" style="background-color: #0a0c10 !important; color: #f1f5f9; min-height: 100vh; overflow-x: hidden;">
 @include('components.impersonation-bar')
-
 @include('frontend.theme1.auth-client.layouts.pre-loader')
 
-<!-- Dedicated Executive App Navigation Header -->
+<!-- Google Translate Container (Hidden Engine) -->
+<div id="google_translate_element" style="display:none;"></div>
+
+<!-- Dedicated Executive App Navigation Header (IFW Replica) -->
 <header class="client-portal-navbar py-2 px-3 px-lg-4" style="background: #11151e; border-bottom: 1px solid #28303f; position: sticky; top: 0; z-index: 1020; box-shadow: 0 4px 16px rgba(0,0,0,0.4);">
     <div class="container-fluid px-0 d-flex justify-content-between align-items-center">
-        <!-- Brand & Toggle -->
+        <!-- Brand & Mobile Toggle -->
         <div class="d-flex align-items-center">
             <button type="button" class="btn btn-dark text-warning p-2 mr-3 d-lg-none" id="clientDashboardMenuBtn" style="border: 1px solid #28303f; background: #161a23;">
                 <i class="fas fa-bars fa-lg"></i>
@@ -27,30 +29,93 @@
         </div>
 
         <!-- Center Status Badge -->
-        <div class="d-none d-md-flex align-items-center">
+        <div class="d-none d-xl-flex align-items-center">
             <span class="badge px-3 py-2" style="background: rgba(254, 204, 86, 0.1); color: #fecc56; border: 1px solid rgba(254, 204, 86, 0.3); font-size: 11.5px; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 700;">
                 <i class="fas fa-shield-alt mr-1"></i> {{ __('Privileged Legal & CPA File') }} &bull; CLI-{{ sprintf('%05d', Auth::user()->id) }}
             </span>
         </div>
 
-        <!-- Right User & Counsel Area -->
-        <div class="d-flex align-items-center" style="gap: 12px;">
-            <!-- Live Support Link -->
-            <a href="{{ route('client.conversation.index') }}" class="btn btn-sm btn-dark text-warning d-none d-sm-inline-flex align-items-center font-weight-bold" style="background: #161a23; border: 1px solid rgba(254,204,86,0.3); border-radius: 6px; padding: 6px 12px; font-size: 12px;">
-                <i class="fas fa-comment-dots mr-1"></i> {{ __('Live Counsel Support') }}
-            </a>
+        <!-- Right Header Utility Controls (Dark/Light, Currency, Language, Profile) -->
+        <div class="d-flex align-items-center" style="gap: 8px;">
 
-            <!-- User Avatar & Dropdown -->
+            <!-- 1. Dark / Light Mode Switcher -->
+            <button type="button" id="themeModeToggle" class="btn btn-sm btn-outline-secondary font-weight-bold d-flex align-items-center" onclick="toggleThemeMode()" title="Toggle Dark / Light Mode" style="border-radius: 20px; padding: 4px 10px; font-size: 11.5px; border-color: #3b4252; color: #cbd5e1; background: #161a23;">
+                <i class="fas fa-sun text-warning" id="themeModeIcon"></i>
+                <span id="themeModeText" class="d-none d-sm-inline ml-1">Light Mode</span>
+            </button>
+
+            <!-- 2. Currency Switcher Dropdown -->
+            @php
+                $userCurrency = Auth::user()->preferred_currency ?: 'USD';
+                $currencies = [
+                    'USD' => ['sym' => '$', 'name' => 'USD ($)'],
+                    'EUR' => ['sym' => '€', 'name' => 'EUR (€)'],
+                    'GBP' => ['sym' => '£', 'name' => 'GBP (£)'],
+                    'CAD' => ['sym' => '$', 'name' => 'CAD ($)'],
+                    'AUD' => ['sym' => '$', 'name' => 'AUD ($)'],
+                ];
+            @endphp
             <div class="dropdown">
+                <button class="btn btn-sm btn-dark dropdown-toggle font-weight-bold text-light px-2 py-1" type="button" id="currencyDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background: #161a23; border: 1px solid #28303f; border-radius: 6px; font-size: 11.5px;">
+                    <i class="fas fa-dollar-sign text-warning mr-1"></i> <span id="currentCurrencyLabel">{{ $userCurrency }}</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right shadow-lg p-1" aria-labelledby="currencyDropdown" style="background: #161a23; border: 1px solid #28303f; min-width: 120px;">
+                    @foreach($currencies as $code => $cData)
+                        <a class="dropdown-item py-1 px-2 text-light rounded d-flex justify-content-between align-items-center" href="javascript:void(0);" onclick="changePortalCurrency('{{ $code }}')" style="font-size: 12px;">
+                            <span>{{ $code }}</span>
+                            <span class="text-warning font-weight-bold">{{ $cData['sym'] }}</span>
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+
+            <!-- 3. Language Switcher Dropdown -->
+            <div class="dropdown">
+                <button class="btn btn-sm btn-dark dropdown-toggle font-weight-bold text-light px-2 py-1" type="button" id="languageDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background: #161a23; border: 1px solid #28303f; border-radius: 6px; font-size: 11.5px;">
+                    <span id="currentLangFlag">🇺🇸</span> <span id="currentLangShort" class="d-none d-sm-inline">EN</span>
+                </button>
+                <div class="dropdown-menu dropdown-menu-right shadow-lg p-2" aria-labelledby="languageDropdown" style="background: #161a23; border: 1px solid #28303f; min-width: 170px; max-height: 280px; overflow-y: auto;">
+                    <a class="dropdown-item py-1 px-2 text-light rounded d-flex align-items-center" href="javascript:void(0);" onclick="setPortalLanguage('en', 'English', '🇺🇸')" style="font-size: 12px;">
+                        <span class="mr-2">🇺🇸</span> <span>English</span>
+                    </a>
+                    <a class="dropdown-item py-1 px-2 text-light rounded d-flex align-items-center" href="javascript:void(0);" onclick="setPortalLanguage('es', 'Español', '🇪🇸')" style="font-size: 12px;">
+                        <span class="mr-2">🇪🇸</span> <span>Español</span>
+                    </a>
+                    <a class="dropdown-item py-1 px-2 text-light rounded d-flex align-items-center" href="javascript:void(0);" onclick="setPortalLanguage('fr', 'Français', '🇫🇷')" style="font-size: 12px;">
+                        <span class="mr-2">🇫🇷</span> <span>Français</span>
+                    </a>
+                    <a class="dropdown-item py-1 px-2 text-light rounded d-flex align-items-center" href="javascript:void(0);" onclick="setPortalLanguage('de', 'Deutsch', '🇩🇪')" style="font-size: 12px;">
+                        <span class="mr-2">🇩🇪</span> <span>Deutsch</span>
+                    </a>
+                    <a class="dropdown-item py-1 px-2 text-light rounded d-flex align-items-center" href="javascript:void(0);" onclick="setPortalLanguage('it', 'Italiano', '🇮🇹')" style="font-size: 12px;">
+                        <span class="mr-2">🇮🇹</span> <span>Italiano</span>
+                    </a>
+                    <a class="dropdown-item py-1 px-2 text-light rounded d-flex align-items-center" href="javascript:void(0);" onclick="setPortalLanguage('pt', 'Português', '🇵🇹')" style="font-size: 12px;">
+                        <span class="mr-2">🇵🇹</span> <span>Português</span>
+                    </a>
+                    <a class="dropdown-item py-1 px-2 text-light rounded d-flex align-items-center" href="javascript:void(0);" onclick="setPortalLanguage('ar', 'العربية', '🇸🇦')" style="font-size: 12px;">
+                        <span class="mr-2">🇸🇦</span> <span>العربية</span>
+                    </a>
+                    <a class="dropdown-item py-1 px-2 text-light rounded d-flex align-items-center" href="javascript:void(0);" onclick="setPortalLanguage('zh-CN', '中文', '🇨🇳')" style="font-size: 12px;">
+                        <span class="mr-2">🇨🇳</span> <span>中文</span>
+                    </a>
+                    <a class="dropdown-item py-1 px-2 text-light rounded d-flex align-items-center" href="javascript:void(0);" onclick="setPortalLanguage('ru', 'Русский', '🇷🇺')" style="font-size: 12px;">
+                        <span class="mr-2">🇷🇺</span> <span>Русский</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- 4. User Profile Dropdown -->
+            <div class="dropdown ml-1">
                 <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-white" id="userMenuDropdown" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     @if(Auth::user()->profile_photo_path)
-                        <img src="{{ Storage::url(Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()->name }}" class="rounded-circle" style="width: 36px; height: 36px; object-fit: cover; border: 2px solid #fecc56;">
+                        <img src="{{ Storage::url(Auth::user()->profile_photo_path) }}" alt="{{ Auth::user()->name }}" class="rounded-circle" style="width: 34px; height: 34px; object-fit: cover; border: 2px solid #fecc56;">
                     @else
-                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: rgba(254,204,86,0.15); color: #fecc56; font-size: 14px; font-weight: bold; border: 2px solid #fecc56;">
+                        <div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 34px; height: 34px; background: rgba(254,204,86,0.15); color: #fecc56; font-size: 13px; font-weight: bold; border: 2px solid #fecc56;">
                             {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
                         </div>
                     @endif
-                    <div class="d-none d-xl-block text-left ml-2">
+                    <div class="d-none d-lg-block text-left ml-2">
                         <strong class="text-white d-block small mb-0" style="line-height: 1.2;">{{ Auth::user()->name }}</strong>
                         <small class="text-warning font-weight-bold" style="font-size: 10px;">CLI-{{ sprintf('%05d', Auth::user()->id) }}</small>
                     </div>
@@ -62,6 +127,9 @@
                     </div>
                     <a class="dropdown-item text-light py-2 rounded" href="{{ route('client.profile') }}" style="font-size: 13px;">
                         <i class="fas fa-user-shield text-warning mr-2"></i> {{ __('Security & PIN Settings') }}
+                    </a>
+                    <a class="dropdown-item text-light py-2 rounded" href="{{ route('client.kyc.hub') }}" style="font-size: 13px;">
+                        <i class="fas fa-id-card text-warning mr-2"></i> {{ __('Identity Verification (KYC)') }}
                     </a>
                     <a class="dropdown-item text-light py-2 rounded" href="{{ route('client.kyc.index') }}" style="font-size: 13px;">
                         <i class="fas fa-file-upload text-warning mr-2"></i> {{ __('Upload Documents') }}
@@ -75,6 +143,7 @@
                     </form>
                 </div>
             </div>
+
         </div>
     </div>
 </header>
@@ -84,8 +153,8 @@
 <main class="client-portal-wrapper py-4" style="background-color: #0a0c10; min-height: calc(100vh - 120px);">
     <div class="container-fluid px-3 px-lg-4">
         <div class="row">
-            <!-- Sidebar Column -->
-            <div class="col-lg-3 col-xl-2 mb-4 mb-lg-0">
+            <!-- Sidebar Column (Wide 250px) -->
+            <div class="col-lg-3 col-xl-2 mb-4 mb-lg-0" style="min-width: 250px;">
                 @include('frontend.theme1.auth-client.menus.left-bar')
             </div>
 
@@ -100,13 +169,13 @@
 </main>
 
 <!-- Minimal App Footer -->
-<footer class="py-3 px-4 border-top text-center" style="background: #0d1017; border-color: #28303f !important; color: #64748b; font-size: 12px;">
+<footer class="py-3 px-4 border-top text-center" style="background: #0d1017; border-color: #28303f !important; color: #94a3b8; font-size: 12px;">
     <div class="container-fluid d-flex flex-column flex-sm-row justify-content-between align-items-center">
-        <div>
+        <div class="text-white">
             &copy; {{ date('Y') }} {{ config('app.name', 'Your CPA Expert') }}. {{ __('All rights reserved. Privileged & Confidential Legal File.') }}
         </div>
         <div class="mt-2 mt-sm-0">
-            <span class="badge" style="background: rgba(34,197,94,0.1); color: #4ade80; border: 1px solid rgba(34,197,94,0.25);">
+            <span class="badge" style="background: rgba(34,197,94,0.15); color: #4ade80; border: 1px solid rgba(34,197,94,0.3); padding: 5px 10px;">
                 <i class="fas fa-lock mr-1"></i> {{ __('256-Bit SSL Encrypted Session') }}
             </span>
         </div>
@@ -115,18 +184,75 @@
 
 @include('frontend.theme1.auth-client.layouts.script')
 @include('backend.layouts.toster-script')
-@include('components.chatwoot-widget')
 
 <style>
-    /* Executive Client App Overrides */
+    /* EXECUTIVE IFW RECOVERY THEME SYSTEM */
     body {
         font-family: 'Montserrat', sans-serif !important;
         background-color: #0a0c10 !important;
+        color: #ffffff !important;
+    }
+    h1, h2, h3, h4, h5, h6, .card-title, strong, b {
+        color: #ffffff !important;
+    }
+    p, span, td, th {
+        color: #f1f5f9;
+    }
+    .text-muted {
+        color: #94a3b8 !important;
+    }
+    .dropdown-item {
+        color: #e2e8f0 !important;
     }
     .dropdown-item:hover {
         background-color: #1f2533 !important;
-        color: #ffffff !important;
+        color: #fecc56 !important;
     }
+
+    /* LIGHT MODE STYLES */
+    html.light-mode,
+    body.light-mode {
+        background-color: #f8fafc !important;
+        color: #0f172a !important;
+    }
+    body.light-mode header.client-portal-navbar {
+        background: #ffffff !important;
+        border-bottom-color: #e2e8f0 !important;
+    }
+    body.light-mode .client-content-container,
+    body.light-mode .portal-card,
+    body.light-mode .ifw-client-sidebar {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+    }
+    body.light-mode h1, body.light-mode h2, body.light-mode h3, body.light-mode h4, body.light-mode h5, body.light-mode h6,
+    body.light-mode .font-weight-bold.text-white {
+        color: #0f172a !important;
+    }
+    body.light-mode p, body.light-mode td, body.light-mode th {
+        color: #334155 !important;
+    }
+    body.light-mode footer {
+        background: #f1f5f9 !important;
+        border-top-color: #e2e8f0 !important;
+    }
+    body.light-mode footer .text-white {
+        color: #475569 !important;
+    }
+    body.light-mode .ifw-client-sidebar ul.ifw-nav-list > li > a {
+        color: #475569 !important;
+    }
+    body.light-mode .ifw-client-sidebar ul.ifw-nav-list > li > a:hover {
+        background: #f1f5f9 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .ifw-client-sidebar ul.ifw-nav-list > li.active > a {
+        background: rgba(254,204,86,0.15) !important;
+        color: #b45309 !important;
+    }
+
+    /* Mobile Drawer */
     .sidebar-overlay {
         display: none;
     }
@@ -138,13 +264,106 @@
         width: 100vw;
         height: 100vh;
         background: rgba(0,0,0,0.75);
-        backdrop-filter: blur(2px);
+        backdrop-filter: blur(3px);
         z-index: 1050;
     }
 </style>
 
+<!-- Google Translate Engine Loader -->
+<script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
 <script>
+    // Theme Switcher Logic
+    function toggleThemeMode() {
+        var isLight = document.documentElement.classList.contains('light-mode') || document.body.classList.contains('light-mode');
+        var targetMode = isLight ? 'dark' : 'light';
+        
+        if (targetMode === 'light') {
+            document.documentElement.classList.add('light-mode');
+            document.body.classList.add('light-mode');
+            document.getElementById('themeModeIcon').className = 'fas fa-moon text-warning';
+            document.getElementById('themeModeText').innerText = 'Dark Mode';
+            localStorage.setItem('portal_theme', 'light');
+        } else {
+            document.documentElement.classList.remove('light-mode');
+            document.body.classList.remove('light-mode');
+            document.getElementById('themeModeIcon').className = 'fas fa-sun text-warning';
+            document.getElementById('themeModeText').innerText = 'Light Mode';
+            localStorage.setItem('portal_theme', 'dark');
+        }
+    }
+
+    function initThemeMode() {
+        var savedTheme = localStorage.getItem('portal_theme') || 'dark';
+        if (savedTheme === 'light') {
+            document.documentElement.classList.add('light-mode');
+            document.body.classList.add('light-mode');
+            if (document.getElementById('themeModeIcon')) document.getElementById('themeModeIcon').className = 'fas fa-moon text-warning';
+            if (document.getElementById('themeModeText')) document.getElementById('themeModeText').innerText = 'Dark Mode';
+        }
+    }
+
+    // Currency Switcher Logic
+    function changePortalCurrency(curr) {
+        localStorage.setItem('portal_currency', curr);
+        document.getElementById('currentCurrencyLabel').innerText = curr;
+        // Optionally save to user profile
+        $.post("{{ route('client.profile-info') }}", {
+            _token: '{{ csrf_token() }}',
+            name: '{{ Auth::user()->name }}',
+            phone: '{{ Auth::user()->phone }}',
+            address: '{{ Auth::user()->address }}',
+            preferred_currency: curr
+        }).always(function() {
+            location.reload();
+        });
+    }
+
+    // Google Translate Logic
+    function googleTranslateElementInit() {
+        new google.translate.TranslateElement({
+            pageLanguage: 'en',
+            autoDisplay: false,
+            layout: google.translate.TranslateElement.InlineLayout.SIMPLE
+        }, 'google_translate_element');
+    }
+
+    function setPortalLanguage(langCode, langName, langFlag) {
+        localStorage.setItem('portal_lang', langCode);
+        localStorage.setItem('portal_lang_flag', langFlag);
+        
+        var flag = document.getElementById('currentLangFlag');
+        var shortLabel = document.getElementById('currentLangShort');
+        if (flag) flag.textContent = langFlag;
+        if (shortLabel) shortLabel.textContent = langCode.toUpperCase().slice(0, 2);
+
+        var host = window.location.hostname;
+        document.cookie = "googtrans=/en/" + langCode + "; path=/; domain=" + host;
+        document.cookie = "googtrans=/en/" + langCode + "; path=/;";
+
+        var combo = document.querySelector('.goog-te-combo');
+        if (combo) {
+            combo.value = langCode;
+            combo.dispatchEvent(new Event('change'));
+        } else {
+            location.reload();
+        }
+    }
+
+    function initPortalLanguage() {
+        var savedFlag = localStorage.getItem('portal_lang_flag') || '🇺🇸';
+        var savedLang = localStorage.getItem('portal_lang') || 'en';
+        var flag = document.getElementById('currentLangFlag');
+        var shortLabel = document.getElementById('currentLangShort');
+        if (flag) flag.textContent = savedFlag;
+        if (shortLabel) shortLabel.textContent = savedLang.toUpperCase().slice(0, 2);
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
+        initThemeMode();
+        initPortalLanguage();
+
+        // Mobile drawer controls
         const toggleBtn = document.getElementById('clientDashboardMenuBtn');
         const sidebar = document.getElementById('ifwClientSidebar');
         const overlay = document.getElementById('sidebarOverlay');
@@ -162,18 +381,9 @@
             document.body.style.overflow = '';
         }
 
-        if (toggleBtn) {
-            toggleBtn.addEventListener('click', function(e) {
-                e.preventDefault();
-                openSidebar();
-            });
-        }
-        if (overlay) {
-            overlay.addEventListener('click', closeSidebar);
-        }
-        if (closeBtn) {
-            closeBtn.addEventListener('click', closeSidebar);
-        }
+        if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
+        if (overlay) overlay.addEventListener('click', closeSidebar);
+        if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
     });
 </script>
 

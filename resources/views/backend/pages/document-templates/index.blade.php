@@ -90,7 +90,9 @@
         (function($) {
             "use strict";
             $(document).ready(function() {
-                $('.bapric_table').DataTable();
+                if (!$.fn.DataTable.isDataTable('.bapric_table')) {
+                    $('.bapric_table').DataTable();
+                }
 
                 $(document).on('click', '.delete-template-btn', function(e) {
                     e.preventDefault();

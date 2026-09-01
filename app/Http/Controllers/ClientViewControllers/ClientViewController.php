@@ -273,75 +273,204 @@ class ClientViewController extends Controller
     public function getConversation($attorneys = [])
     {
         try {
-            $title = 'Live Support & Attorney Chat';
-            $conversations = $this->conversationView(Auth::user()->conversation);
-            $autoSuggestions = Attorney::all('name');
-            
-            $chatSettings = \App\Services\ChatwootService::getSettings();
+            $title = 'Live Counsel & Attorney Support';
             $client = Auth::user();
+            $counsel = $client->assigned_counsel ?: User::role(['attorney', 'admin'])->first();
+            
+            // Find or create direct client-to-counsel conversation
+            $conversation = null;
+            if ($client->conversation && $client->conversation->count() > 0) {
+                $conversation = $client->conversation->first();
+            }
+            
+            if (!$conversation && $counsel) {
+                $conversation = Conversation::create([
+                    'name' => $client->name . ' vs ' . $counsel->name,
+                    'slug' => 'chat_' . $client->id . '_' . $counsel->id . '_' . time(),
+                ]);
+                $conversation->user()->sync([$client->id, $counsel->id]);
+            }
+
+            $messages = $conversation ? $conversation->messages()->with('user')->orderBy('id', 'asc')->get() : collect();
+
+            // Mark counsel messages as read
+            if ($conversation) {
+                $conversation->messages()->where('user_id', '!=', $client->id)->where('read', false)->update(['read' => true]);
+            }
+
+            $chatSettings = \App\Services\ChatwootService::getSettings();
             $identifier = 'client_' . $client->id;
             $hmacHash = !empty($chatSettings['hmac_key']) ? hash_hmac('sha256', $identifier, $chatSettings['hmac_key']) : '';
 
-            return view('frontend.theme1.auth-client.pages.chat.index', compact('title', 'conversations', 'autoSuggestions', 'attorneys', 'chatSettings', 'identifier', 'hmacHash'));
+            return view('frontend.theme1.auth-client.pages.chat.index', compact('title', 'conversation', 'messages', 'counsel', 'chatSettings', 'identifier', 'hmacHash'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
-    public function searchAttorney(Request $request)
+    public function sendChatMessage(Request $request, $slug)
+    {
+        $request->validate([
+            'text' => 'nullable|string',
+            'file' => 'nullable|file|mimes:pdf,docx,doc,jpeg,png,jpg,xlsx|max:15360',
+        ]);
+        
+        try {
+            $conversation = Conversation::where('slug', $slug)->firstOrFail();
+            $filePath = null;
+            $fileName = null;
+            
+            if ($request->hasFile('file')) {
+                $file = $request->file('file');
+                $fileName = $file->getClientOriginalName();
+                $ext = $file->getClientOriginalExtension();
+                $newFileName = time() . '_' . uniqid() . '.' . $ext;
+                $uploadPath = public_path('upload/chat-attachments');
+                if (!File::exists($uploadPath)) {
+                    File::makeDirectory($uploadPath, 0755, true);
+                }
+                $file->move($uploadPath, $newFileName);
+                $filePath = '/upload/chat-attachments/' . $newFileName;
+            }
+            
+            if (empty($request->text) && empty($filePath)) {
+                return response()->json(['error' => 'Message or attachment required.'], 422);
+            }
+            
+            $message = Message::create([
+                'conversation_id' => $conversation->id,
+                'user_id' => Auth::id(),
+                'text' => $request->text ?: '',
+                'file' => $filePath,
+                'file_name' => $fileName,
+                'read' => false,
+            ]);
+            
+            // Telegram Alert
+            try {
+                $clientName = Auth::user()->name;
+                $msgPreview = $request->text ?: "[Attached: {$fileName}]";
+                $telMsg = "💬 <b>Live Client Message Received</b>\n\n"
+                        . "👤 <b>Client:</b> " . htmlspecialchars($clientName, ENT_QUOTES, 'UTF-8') . " (#CLI-" . sprintf('%05d', Auth::id()) . ")\n"
+                        . "💬 <b>Message:</b> " . htmlspecialchars($msgPreview, ENT_QUOTES, 'UTF-8') . "\n"
+                        . "📅 <b>Time:</b> " . now()->format('M d, Y h:i A') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
+            
+            return response()->json([
+                'success' => true,
+                'message' => [
+                    'id' => $message->id,
+                    'text' => $message->text,
+                    'file' => $message->file,
+                    'file_name' => $message->file_name,
+                    'is_sender' => true,
+                    'time' => $message->created_at->format('h:i A'),
+                    'date' => $message->created_at->format('M d'),
+                ]
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    public function pollChatMessages(Request $request, $slug)
     {
         try {
-            $attorneys = Attorney::where('name', 'LIKE', '%' . $request->search . '%')
+            $conversation = Conversation::where('slug', $slug)->firstOrFail();
+            $lastId = (int)$request->input('last_id', 0);
+            
+            $newMessages = $conversation->messages()
+                ->where('id', '>', $lastId)
+                ->with('user')
+                ->orderBy('id', 'asc')
                 ->get();
-            return $this->getConversation($attorneys);
+                
+            $conversation->messages()
+                ->where('id', '>', $lastId)
+                ->where('user_id', '!=', Auth::id())
+                ->update(['read' => true]);
+                
+            $formatted = $newMessages->map(function ($msg) {
+                return [
+                    'id' => $msg->id,
+                    'user_id' => $msg->user_id,
+                    'user_name' => $msg->user ? $msg->user->name : 'Counsel',
+                    'text' => $msg->text,
+                    'file' => $msg->file,
+                    'file_name' => $msg->file_name,
+                    'is_sender' => ($msg->user_id === Auth::id()),
+                    'time' => $msg->created_at->format('h:i A'),
+                    'date' => $msg->created_at->format('M d'),
+                ];
+            });
+            
+            return response()->json(['messages' => $formatted]);
+        } catch (\Throwable $e) {
+            return response()->json(['messages' => []]);
+        }
+    }
+
+    public function kycHub()
+    {
+        try {
+            $title = 'Identity Verification & Compliance';
+            $client = Auth::user();
+            $kycDocs = $client->kycDocuments()->orderBy('id', 'desc')->get();
+            $verifiedCount = $kycDocs->where('status', 'approved')->count();
+            $pendingCount = $kycDocs->where('status', 'pending')->count();
+            
+            return view('frontend.theme1.auth-client.pages.kyc.hub', compact('title', 'client', 'kycDocs', 'verifiedCount', 'pendingCount'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
-    public function createConversation(User $user)
+    public function kycSubmit(Request $request)
     {
+        $this->validate($request, [
+            'document_type' => ['required', 'string'],
+            'document_number' => ['nullable', 'string', 'max:100'],
+            'file' => ['required', 'file', 'mimes:pdf,docx,doc,jpeg,png,jpg', 'max:20480'],
+            'notes' => ['nullable', 'string', 'max:500'],
+        ]);
+
         try {
-            $host = Auth::user();
-            $conversations = $host->conversation;
-            if ($conversations->count() != 0) {
-                foreach ($conversations as $conversation) {
-                    if ($conversation->user->count() == 2) {
-                        $matchCount = 0;
-                        foreach ($conversation->user as $person) {
-                            if ($person->id === $host->id) {
-                                $matchCount += 1;
-                            } elseif ($person->id === $user->id) {
-                                $matchCount += 1;
-                            }
-                        }
-                        if ($matchCount === 2) {
-                            return $this->getMessage($conversation->slug);
-                        }
-                    }
-                }
-                //                return $this->backWithError('No conversation is not match....');
-            }
-            $conversation = new Conversation();
-            $conversation->name = $host->name . ' vs ' . $user->name;
-            $conversation->slug = time() . str_replace(' ', '_', $host->name) . 'vs' . str_replace(' ', '_', $user->name);
-            $conversation->save();
-            $conversation->user()->sync([$host->id, $user->id]);
-
-            $persons = explode('vs', $conversation->name);
-            $title = '';
-            foreach ($persons as $key => $person) {
-                if ($person != Auth::user()->name) {
-                    $title = $title . $person;
-                    if (count($persons) != ($key + 1)) {
-                        $title = $title . ', ';
-                    }
-                }
+            $uploadPath = public_path('upload/kyc-documents');
+            if (!File::exists($uploadPath)) {
+                File::makeDirectory($uploadPath, 0755, true);
             }
 
-            return view('frontend.theme1.auth-client.pages.chat.messages', compact('title', 'conversation'));
-        } catch (\Throwable $th) {
-            return $this->backWithError($th->getMessage());
+            $file = $request->file('file');
+            $ext = $file->getClientOriginalExtension();
+            $newFileName = 'kyc_' . Auth::id() . '_' . time() . '_' . uniqid() . '.' . $ext;
+            $file->move($uploadPath, $newFileName);
+            $newFilePath = '/upload/kyc-documents/' . $newFileName;
+
+            $doc = ClientKycDocument::create([
+                'client_id' => Auth::id(),
+                'document_type' => $request->document_type,
+                'document_name' => $request->document_type . ($request->document_number ? ' (' . $request->document_number . ')' : ''),
+                'file_path' => $newFilePath,
+                'status' => 'pending',
+                'notes' => $request->notes,
+            ]);
+
+            \App\Models\ActivityLog::log('KYC Uploaded', 'Client ' . Auth::user()->name . ' uploaded identity verification document: ' . $doc->document_name);
+
+            // Telegram Notification
+            try {
+                $clientName = Auth::user()->name;
+                $telMsg = "🪪 <b>New KYC Identity Document Submitted</b>\n\n"
+                        . "👤 <b>Client:</b> " . htmlspecialchars($clientName, ENT_QUOTES, 'UTF-8') . " (#CLI-" . sprintf('%05d', Auth::id()) . ")\n"
+                        . "📄 <b>Type:</b> " . htmlspecialchars($request->document_type, ENT_QUOTES, 'UTF-8') . "\n"
+                        . "📅 <b>Time:</b> " . now()->format('M d, Y h:i A') . "\n";
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+            } catch (\Throwable $e) {}
+
+            return redirect()->back()->with('success', __('Identity verification document submitted successfully for attorney review.'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 

@@ -45,6 +45,12 @@
                 <span class="nav-text">{{ __('My Cases') }}</span>
             </a>
         </li>
+        <li class="{{ request()->is('client/kyc') ? 'active' : '' }}">
+            <a href="{{ route('client.kyc.hub') }}">
+                <i class="fas fa-id-card nav-icon"></i>
+                <span class="nav-text">{{ __('Identity Verification (KYC)') }}</span>
+            </a>
+        </li>
         <li class="{{ request()->is('client/kyc-documents*') ? 'active' : '' }}">
             <a href="{{ route('client.kyc.index') }}">
                 <i class="fas fa-file-upload nav-icon"></i>

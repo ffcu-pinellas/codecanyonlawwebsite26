@@ -142,40 +142,72 @@ class UserController extends Controller
                 if (!$user) {
                     return response()->json(['error' => __('User not found')], 404);
                 }
-                $roles = Role::all();
+                $attorneys = User::role(['attorney', 'admin'])->get();
                 $userRoleName = $user->roles->isNotEmpty() ? $user->roles->pluck('name')[0] : '';
 
                 $data = '
-                    <div class="form-group">
-                        <label for="modal_name">' . __('Full Name') . ' <span class="text-danger">*</span></label>
-                        <input type="text" name="name" id="modal_name" class="form-control" value="' . e($user->name) . '" required>
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="modal_name">' . __('Full Legal Name') . ' <span class="text-danger">*</span></label>
+                            <input type="text" name="name" id="modal_name" class="form-control" value="' . e($user->name) . '" required>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="modal_email">' . __('Email Address') . ' <span class="text-danger">*</span></label>
+                            <input type="email" name="email" id="modal_email" class="form-control" value="' . e($user->email) . '" required>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="modal_phone">' . __('Phone Number') . '</label>
+                            <input type="text" name="phone" id="modal_phone" class="form-control" value="' . e($user->phone) . '">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="modal_currency">' . __('Preferred Currency') . '</label>
+                            <select name="preferred_currency" id="modal_currency" class="form-control">
+                                <option value="USD" ' . ($user->preferred_currency == 'USD' ? 'selected' : '') . '>USD ($)</option>
+                                <option value="EUR" ' . ($user->preferred_currency == 'EUR' ? 'selected' : '') . '>EUR (€)</option>
+                                <option value="GBP" ' . ($user->preferred_currency == 'GBP' ? 'selected' : '') . '>GBP (£)</option>
+                                <option value="CAD" ' . ($user->preferred_currency == 'CAD' ? 'selected' : '') . '>CAD ($)</option>
+                                <option value="AUD" ' . ($user->preferred_currency == 'AUD' ? 'selected' : '') . '>AUD ($)</option>
+                            </select>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label for="modal_email">' . __('Email Address') . ' <span class="text-danger">*</span></label>
-                        <input type="email" name="email" id="modal_email" class="form-control" value="' . e($user->email) . '" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="modal_phone">' . __('Phone Number') . '</label>
-                        <input type="text" name="phone" id="modal_phone" class="form-control" value="' . e($user->phone) . '">
-                    </div>
-                    <div class="form-group">
-                        <label for="modal_address">' . __('Residential Address') . '</label>
+                        <label for="modal_address">' . __('Residential / Corporate Address') . '</label>
                         <input type="text" name="address" id="modal_address" class="form-control" value="' . e($user->address) . '">
                     </div>
-                    <div class="form-group">
-                        <label for="modal_role">' . __('Role') . ' <span class="text-danger">*</span></label>
-                        <select name="role" id="modal_role" class="form-control" required>
-                            <option value="">' . __('Select') . '</option>';
-                foreach ($roles as $role) {
-                    $selected = ($role->name === $userRoleName) ? 'selected' : '';
-                    $data .= '<option ' . $selected . ' value="' . e($role->name) . '">' . e($role->name) . '</option>';
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="modal_attorney">' . __('Assigned Attorney / CPA Counsel') . '</label>
+                            <select name="assigned_attorney_id" id="modal_attorney" class="form-control">
+                                <option value="">-- ' . __('Default Firm Lead Counsel') . ' --</option>';
+                foreach ($attorneys as $atty) {
+                    $selected = ($user->assigned_attorney_id == $atty->id) ? 'selected' : '';
+                    $data .= '<option ' . $selected . ' value="' . $atty->id . '">' . e($atty->name) . ' (' . e($atty->email) . ')</option>';
                 }
                 $data .= '
-                        </select>
+                            </select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="modal_role">' . __('Account Role') . ' <span class="text-danger">*</span></label>
+                            <select name="role" id="modal_role" class="form-control" required>';
+                foreach ($roles as $role) {
+                    $selected = ($role->name === $userRoleName) ? 'selected' : '';
+                    $data .= '<option ' . $selected . ' value="' . e($role->name) . '">' . e(ucfirst($role->name)) . '</option>';
+                }
+                $data .= '
+                            </select>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="modal_password">' . __('Password') . ' <small class="text-muted">(' . __('Leave blank to keep current') . ')</small></label>
-                        <input type="password" name="password" id="modal_password" class="form-control" placeholder="' . __('Enter new password') . '">
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label for="modal_password">' . __('New Password') . ' <small class="text-muted">(' . __('Leave blank to keep') . ')</small></label>
+                            <input type="password" name="password" id="modal_password" class="form-control" placeholder="' . __('Enter new password') . '">
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label for="modal_pin">' . __('4-Digit Security PIN') . ' <small class="text-muted">(' . __('Leave blank to keep') . ')</small></label>
+                            <input type="text" name="pin" id="modal_pin" class="form-control" maxlength="4" placeholder="' . __('e.g. 1234') . '">
+                        </div>
                     </div>
                     <input type="hidden" name="id" value="' . $user->id . '">
                 ';
@@ -200,8 +232,11 @@ class UserController extends Controller
             'email' => 'required|string|email|max:255|unique:users,email,' . $request->id,
             'phone' => 'nullable|string|max:50',
             'address' => 'nullable|string|max:255',
+            'assigned_attorney_id' => 'nullable|exists:users,id',
+            'preferred_currency' => 'nullable|string|in:USD,EUR,GBP,CAD,AUD',
             'role' => 'required|exists:roles,name',
-            'password' => 'nullable|string|min:8',
+            'password' => 'nullable|string|min:6',
+            'pin' => 'nullable|digits:4',
         ]);
 
         try {
@@ -212,16 +247,25 @@ class UserController extends Controller
                 'email' => $request->email,
                 'phone' => $request->phone ?: '',
                 'address' => $request->address ?: '',
+                'assigned_attorney_id' => $request->assigned_attorney_id ?: null,
+                'preferred_currency' => $request->preferred_currency ?: ($user->preferred_currency ?: 'USD'),
             ];
 
             if ($request->filled('password')) {
                 $userData['password'] = \Illuminate\Support\Facades\Hash::make($request->password);
+                $userData['is_temp_password'] = false;
+            }
+
+            if ($request->filled('pin')) {
+                $userData['pin_hash'] = \Illuminate\Support\Facades\Hash::make($request->pin);
             }
 
             $user->update($userData);
             $user->syncRoles($request->role);
 
-            return $this->backWithSuccess(__('User details updated successfully.'));
+            \App\Models\SystemAuditLog::logAction('USER_UPDATED', "Staff updated profile data for user #{$user->id} ({$user->email}).", auth()->id(), 'admin');
+
+            return $this->backWithSuccess(__('User profile and assigned counsel updated successfully.'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

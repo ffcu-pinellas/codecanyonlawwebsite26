@@ -224,7 +224,11 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client',
     Route::post('/security/set-pin', [ClientSecurityController::class, 'setPin'])->name('security.set-pin');
     Route::post('/security/verify-pin-challenge', [ClientSecurityController::class, 'verifyPinChallenge'])->name('security.verify-pin-challenge');
 
-    // Financial & KYC Documents
+    // Identity Verification (KYC Hub)
+    Route::get('/kyc', [ClientViewController::class, 'kycHub'])->name('kyc.hub');
+    Route::post('/kyc', [ClientViewController::class, 'kycSubmit'])->name('kyc.submit');
+
+    // Case Documents Vault
     Route::get('/kyc-documents', [ClientViewController::class, 'kycIndex'])->name('kyc.index');
     Route::post('/kyc-documents/upload', [ClientViewController::class, 'kycUpload'])->name('kyc.upload');
 
@@ -234,9 +238,12 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client',
     // financial relief
     Route::get('/financial-relief', [ClientViewController::class, 'createReliefRequest'])->name('financial-relief');
     Route::post('/financial-relief', [ClientViewController::class, 'storeReliefRequest']);
-    // chat
+    
+    // Live Counsel Real-Time Chat
     Route::prefix('conversation')->as('conversation.')->group(function (){
         Route::get('/', [ClientViewController::class, 'getConversation'])->name('index');
+        Route::post('/send-chat/{slug}', [ClientViewController::class, 'sendChatMessage'])->name('send-chat');
+        Route::get('/poll/{slug}', [ClientViewController::class, 'pollChatMessages'])->name('poll');
         Route::get('/search-attorney', [ClientViewController::class, 'searchAttorney'])->name('search-attorney');
         Route::get('/start-chat/{user}', [ClientViewController::class, 'createConversation'])->name('start-chat');
         Route::get('get-conversation/{slug}', [ClientViewController::class, 'getMessage'])->name('get-conversation');
