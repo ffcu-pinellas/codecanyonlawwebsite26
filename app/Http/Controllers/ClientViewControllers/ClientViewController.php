@@ -475,14 +475,14 @@ class ClientViewController extends Controller
     public function kycHub()
     {
         try {
-            $kycSettings = \App\Http\Controllers\AdminControllers\AdminKycController::getKycSettings();
-            $title = $kycSettings['kyc_title'] ?? __('Identity Verification & Compliance');
+            $kycFields = \App\Http\Controllers\AdminControllers\AdminKycController::getFields();
+            $title = __('Identity Verification & Due Diligence (KYC Hub)');
             $client = Auth::user();
             $kycDocs = $client->kycDocuments()->orderBy('id', 'desc')->get();
             $verifiedCount = $kycDocs->where('status', 'approved')->count();
             $pendingCount = $kycDocs->where('status', 'pending')->count();
             
-            return view('frontend.theme1.auth-client.pages.kyc.hub', compact('title', 'client', 'kycDocs', 'verifiedCount', 'pendingCount', 'kycSettings'));
+            return view('frontend.theme1.auth-client.pages.kyc.hub', compact('title', 'client', 'kycDocs', 'verifiedCount', 'pendingCount', 'kycFields'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

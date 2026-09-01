@@ -412,18 +412,19 @@ function updateLivePreview() {
     }
 
     // Replace live placeholders in content
-    var cName = clientData.name || '{{client_name}}';
-    var cEmail = clientData.email || '{{client_email}}';
-    var cPhone = clientData.phone || '{{client_phone}}';
-    var cAddr = clientData.address || '{{client_address}}';
+    var cName = clientData.name || '[Client Name]';
+    var cEmail = clientData.email || '[Client Email]';
+    var cPhone = clientData.phone || '[Client Phone]';
+    var cAddr = clientData.address || '[Client Address]';
 
-    var previewHtml = content
+    var previewHtml = (content || '')
         .replace(/@?\{\{client_name\}\}/g, cName)
         .replace(/@?\{\{client_email\}\}/g, cEmail)
         .replace(/@?\{\{client_phone\}\}/g, cPhone)
         .replace(/@?\{\{client_address\}\}/g, cAddr)
         .replace(/@?\{\{company_name\}\}/g, attorney)
         .replace(/@?\{\{attorney_name\}\}/g, attorney)
+        .replace(/@?\{\{case_number\}\}/g, 'CASE-001')
         .replace(/@?\{\{date\}\}/g, document.getElementById('prevDate').textContent);
 
     document.getElementById('prevContent').innerHTML = previewHtml ? previewHtml.replace(/\n/g, '<br>') : '<p class="text-muted">Type or select a template to preview content...</p>';

@@ -81,7 +81,15 @@
                 </li>
                 @endrole
 
-                <!-- 3. LEGAL & CPA CASE OPERATIONS -->
+                <!-- 3. KYC VERIFICATION (IFW REPLICA) -->
+                <li class="nav-item {{ request()->is('admin/kyc*') ? 'active' : '' }}">
+                    <a href="{{ route('admin.kyc.index') }}" class="nav-link">
+                        <i class="fas fa-id-card text-warning"></i>
+                        <span class="link-text">{{ __('KYC Verification') }}</span>
+                    </a>
+                </li>
+
+                <!-- 4. LEGAL & CPA CASE OPERATIONS -->
                 <li class="nav-item has-dropdown {{ (request()->is('admin/cases*') || request()->is('admin/invoices*') || request()->is('admin/financial-relief*') || request()->is('admin/document*') || request()->is('admin/activity-logs*')) ? 'active' : '' }}">
                     <a href="javascript:void(0);" class="nav-link">
                         <i class="fas fa-briefcase text-warning"></i>
