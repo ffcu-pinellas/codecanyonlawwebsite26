@@ -380,6 +380,10 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         Route::get('chat', [AppSettingsController::class, 'getChatSettings'])->name('chat');
         Route::post('chat', [AppSettingsController::class, 'saveChatSettings'])->name('chat-save');
 
+        // Escrow & Payment Depository
+        Route::get('payment', [AppSettingsController::class, 'getPaymentSettings'])->name('payment');
+        Route::post('payment', [AppSettingsController::class, 'savePaymentSettings'])->name('payment-save');
+
     });
 
     // menu settings

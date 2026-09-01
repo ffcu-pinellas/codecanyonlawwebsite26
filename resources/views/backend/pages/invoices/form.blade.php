@@ -140,6 +140,37 @@
                                 </div>
                             </div>
 
+                            <!-- Specific Payment Instructions & Late Fee Schedule (IFW Replica) -->
+                            <div class="border border-secondary rounded p-3 mb-4 mt-2">
+                                <h6 class="text-warning font-weight-bold mb-3"><i class="fas fa-money-bill-wave mr-2"></i>{{ __('Depository Instructions & Late Fee Policy (Optional Override)') }}</h6>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 form-group mb-3">
+                                        <label class="small text-light font-weight-bold">{{ __('Custom Wire / Crypto Payment Instructions (Overrides Default):') }}</label>
+                                        <textarea name="payment_instructions" class="form-control form-control-sm bg-dark text-white border-secondary" rows="3" placeholder="Leave blank to use default Escrow Depository, or specify custom Wire / Crypto details...">{{ old('payment_instructions', $invoice ? ($invoice->payment_instructions ?? '') : '') }}</textarea>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="small text-light font-weight-bold mb-2">{{ __('Late Fee & Surcharge Terms:') }}</label>
+                                        <div class="row">
+                                            <div class="col-6 form-group mb-2">
+                                                <label class="small text-muted">{{ __('Late Surcharge (%):') }}</label>
+                                                <input type="number" name="late_fee_rate" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="e.g. 5" value="{{ old('late_fee_rate', $invoice ? ($invoice->late_fee_rate ?? 5) : 5) }}" min="0" max="100">
+                                            </div>
+                                            <div class="col-6 form-group mb-2">
+                                                <label class="small text-muted">{{ __('Grace Period (Days):') }}</label>
+                                                <input type="number" name="grace_period_days" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="e.g. 7" value="{{ old('grace_period_days', $invoice ? ($invoice->grace_period_days ?? 7) : 7) }}" min="0" max="60">
+                                            </div>
+                                        </div>
+                                        <div class="custom-control custom-checkbox mt-2">
+                                            <input type="checkbox" name="apply_late_fee" id="apply_late_fee" class="custom-control-input" value="1" {{ old('apply_late_fee', $invoice ? ($invoice->apply_late_fee ?? 1) : 1) ? 'checked' : '' }}>
+                                            <label class="custom-control-label text-warning small font-weight-bold" for="apply_late_fee">
+                                                {{ __('Apply automated late penalty notice after grace period expires') }}
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- Hidden Textarea that stores formatted description -->
                             <input type="hidden" name="description" id="description" value="{{ old('description', $invoice ? $invoice->description : '') }}">
 

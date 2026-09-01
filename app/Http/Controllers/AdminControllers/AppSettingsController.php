@@ -443,4 +443,61 @@ class AppSettingsController extends Controller
             return redirect()->back()->with('error', $th->getMessage());
         }
     }
+
+    public function getPaymentSettings()
+    {
+        try {
+            $title = 'Escrow & Payment Depository Settings';
+            $settPath = storage_path('settings.json');
+            $paymentSettings = [
+                'bank_name' => 'JPMorgan Chase Bank, N.A.',
+                'beneficiary' => config('app.name', 'Your CPA Expert') . ' Trust & Escrow LLC',
+                'account_number' => '987654321098',
+                'routing_number' => '021000021',
+                'swift_code' => 'CHASUS33',
+                'wire_instructions' => 'Please include invoice number in the wire memo.',
+                'crypto_usdt_address' => 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE',
+                'crypto_btc_address' => 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+                'ach_details' => 'JPMorgan Chase ACH / Direct Deposit - Routing: 021000021',
+                'late_fee_enabled' => 1,
+                'late_fee_percent' => 5,
+                'grace_period_days' => 7,
+            ];
+            if (file_exists($settPath)) {
+                $all = json_decode(file_get_contents($settPath), true);
+                if (!empty($all['payment'])) {
+                    $paymentSettings = array_merge($paymentSettings, $all['payment']);
+                }
+            }
+            return view('backend.pages.settings.payment', compact('title', 'paymentSettings'));
+        } catch (\Throwable $th) {
+            return redirect()->back()->with('error', $th->getMessage());
+        }
+    }
+
+    public function savePaymentSettings(Request $request)
+    {
+        try {
+            $settPath = storage_path('settings.json');
+            $all = file_exists($settPath) ? json_decode(file_get_contents($settPath), true) : [];
+            $all['payment'] = [
+                'bank_name' => $request->bank_name,
+                'beneficiary' => $request->beneficiary,
+                'account_number' => $request->account_number,
+                'routing_number' => $request->routing_number,
+                'swift_code' => $request->swift_code,
+                'wire_instructions' => $request->wire_instructions,
+                'crypto_usdt_address' => $request->crypto_usdt_address,
+                'crypto_btc_address' => $request->crypto_btc_address,
+                'ach_details' => $request->ach_details,
+                'late_fee_enabled' => $request->has('late_fee_enabled') ? 1 : 0,
+                'late_fee_percent' => $request->late_fee_percent ?: 5,
+                'grace_period_days' => $request->grace_period_days ?: 7,
+            ];
+            file_put_contents($settPath, json_encode($all, JSON_PRETTY_PRINT));
+            return $this->backWithSuccess('Escrow & Payment Depository settings saved successfully.');
+        } catch (\Throwable $th) {
+            return redirect()->back()->with('error', $th->getMessage());
+        }
+    }
 }

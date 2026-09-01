@@ -323,14 +323,15 @@
     .sidebar-overlay.active {
         display: block; position: fixed; top: 0; left: 0;
         width: 100vw; height: 100vh;
-        background: rgba(0,0,0,0.75); backdrop-filter: blur(3px); z-index: 1050;
+        background: rgba(0,0,0,0.75); backdrop-filter: blur(3px); z-index: 1080;
     }
     /* Mobile: show sidebar as drawer, stack layout vertically */
     @media (max-width: 991px) {
-        .client-portal-wrapper { flex-direction: column !important; }
-        .client-sidebar-col { display: none !important; }
-        .client-content-col { padding: 12px 10px !important; }
-        .client-content-container { min-height: 60vh !important; }
+        html, body { overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
+        .client-portal-wrapper { flex-direction: column !important; width: 100% !important; max-width: 100vw !important; overflow-x: hidden !important; }
+        .client-sidebar-col { width: 0 !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+        .client-content-col { padding: 12px 10px !important; width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; overflow-x: hidden !important; }
+        .client-content-container { min-height: 60vh !important; max-width: 100% !important; overflow-x: hidden !important; }
     }
 </style>
 

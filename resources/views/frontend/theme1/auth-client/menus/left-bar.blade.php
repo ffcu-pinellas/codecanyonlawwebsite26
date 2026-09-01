@@ -196,7 +196,7 @@
             width: 280px !important;
             max-width: 85vw !important;
             height: 100vh !important;
-            z-index: 1060 !important;
+            z-index: 1099 !important;
             border-radius: 0 !important;
             transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
             overflow-y: auto !important;

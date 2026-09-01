@@ -297,6 +297,46 @@
         background: #f1f5f9 !important;
         border-color: #cbd5e1 !important;
         color: #64748b !important;
+    .counsel-badge-card {
+        background: #11151e;
+        border: 1px solid #28303f;
+        min-width: 260px;
+        border-radius: 8px;
+        color: #f1f5f9;
+    }
+    body.light-mode .counsel-badge-card, html.light-mode .counsel-badge-card {
+        background: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .counsel-badge-card strong, html.light-mode .counsel-badge-card strong {
+        color: #0f172a !important;
+    }
+    body.light-mode .counsel-badge-card small, html.light-mode .counsel-badge-card small {
+        color: #64748b !important;
+    }
+    body.light-mode .portal-card, html.light-mode .portal-card {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+    }
+    body.light-mode .portal-hero, html.light-mode .portal-hero {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .portal-hero h3, html.light-mode .portal-hero h3 {
+        color: #0f172a !important;
+    }
+    body.light-mode .portal-hero-badge, html.light-mode .portal-hero-badge {
+        background: rgba(180,83,9,0.1) !important;
+        border-color: rgba(180,83,9,0.25) !important;
+        color: #b45309 !important;
+    }
+    body.light-mode .portal-card-header, html.light-mode .portal-card-header {
+        background: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+        color: #b45309 !important;
     }
     body.light-mode .table-portal thead th, html.light-mode .table-portal thead th {
         background: #f8fafc !important;
@@ -312,6 +352,16 @@
         border-color: #e2e8f0 !important;
     }
     body.light-mode .table-portal td strong, html.light-mode .table-portal td strong { color: #0f172a !important; }
+
+    /* Mobile Zero Horizontal Scrolling & Responsive Overrides */
+    @media (max-width: 768px) {
+        .portal-hero { padding: 16px !important; }
+        .portal-hero h3 { font-size: 20px !important; }
+        .counsel-badge-card { min-width: 100% !important; margin-top: 10px !important; }
+        .progress-track-container { padding: 14px 10px !important; overflow-x: auto !important; }
+        .progress-track { min-width: 480px !important; }
+        .table-responsive { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; width: 100% !important; }
+    }
 </style>
 @endsection
 
@@ -335,9 +385,9 @@
                     $attorneyName = $attorney ? $attorney->name : 'Gary Livingston, Senior CPA & Legal Counsel';
                     $attorneyEmail = $attorney ? $attorney->email : 'cpa.advisory@yourcpaexpert.com';
                 @endphp
-                <div class="d-inline-block text-left p-3 rounded" style="background: #11151e; border: 1px solid #28303f; min-width: 260px;">
+                <div class="d-inline-block text-left p-3 rounded counsel-badge-card">
                     <small class="text-muted d-block text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">Assigned Legal & CPA Counsel</small>
-                    <strong class="d-block" style="font-size: 13px;">{{ $attorneyName }}</strong>
+                    <strong class="d-block text-white" style="font-size: 13px;">{{ $attorneyName }}</strong>
                     <div class="mt-2 d-flex gap-2" style="gap: 8px;">
                         <a href="{{ route('client.conversation.index') }}" class="btn-gold d-inline-flex align-items-center" style="font-size: 11px; padding: 4px 10px;">
                             <i class="fas fa-comment-dots mr-1"></i> Live Chat
@@ -405,8 +455,8 @@
     </script>
     @endif
 
-    <!-- Executive Stat Cards -->
-    <div class="row mb-4">
+    <!-- Executive Stat Cards (Desktop Only - Hidden on Mobile like IFW) -->
+    <div class="row mb-4 d-none d-md-flex">
         <div class="col-md-3 col-sm-6 mb-3">
             <div class="stat-card-luxury">
                 <div class="stat-top">
