@@ -372,7 +372,7 @@
             </div>
             <div class="text-md-right" style="min-width: 200px;">
                 <span class="small font-weight-bold text-uppercase d-block text-muted">{{ __('Recommended Window:') }}</span>
-                <div id="dashPenaltyCountdown" class="font-weight-bold text-warning mt-1" style="font-size: 1.3rem; letter-spacing: 1px; font-family: monospace;">
+                <div id="dashPenaltyCountdown" class="font-weight-bold text-danger mt-1" style="font-size: 1.35rem; letter-spacing: 1.5px; font-family: monospace; color: #ef4444 !important; text-shadow: 0 0 10px rgba(239,68,68,0.4);">
                     24h 00m 00s
                 </div>
                 <a href="{{ route('client.invoices.index') }}" class="btn btn-warning btn-sm font-weight-bold text-dark mt-2">
@@ -428,7 +428,7 @@
                 </div>
                 <div>
                     @php
-                        $totInvDisplay = $invoicesTotalAmount ?? (!empty($invoices) ? $invoices->sum(fn($i) => $i->total_amount ?: $i->amount) : 0);
+                        $totInvDisplay = $invoicesTotalAmount ?? (!empty($invoices) ? $invoices->sum(fn($i) => $i->amount ?: $i->total_amount) : 0);
                     @endphp
                     <div class="stat-value text-warning">${{ number_format($totInvDisplay, 2) }}</div>
                     <small class="text-muted" style="font-size: 11px;">{{ $invoicesCount ?? 0 }} {{ __('Statements Logged') }}</small>
@@ -560,7 +560,15 @@
                                             <small class="text-muted">{{ $c->created_at ? $c->created_at->format('M d, Y') : '' }}</small>
                                         </td>
                                         <td>
-                                            <span class="badge badge-success px-2 py-1">{{ ucfirst($c->status) }}</span>
+                                            @if(strtolower($c->status) === 'pending')
+                                                <span class="badge badge-warning text-dark font-weight-bold px-2 py-1" style="background: #fecc56; color: #000;">{{ __('Pending') }}</span>
+                                            @elseif(strtolower($c->status) === 'active' || strtolower($c->status) === 'in_progress')
+                                                <span class="badge badge-success px-2 py-1">{{ __('Active') }}</span>
+                                            @elseif(strtolower($c->status) === 'closed' || strtolower($c->status) === 'resolved')
+                                                <span class="badge badge-secondary px-2 py-1">{{ ucfirst($c->status) }}</span>
+                                            @else
+                                                <span class="badge badge-info px-2 py-1">{{ ucfirst($c->status) }}</span>
+                                            @endif
                                         </td>
                                         <td>
                                             <a href="{{ route('client.cases.details', $c->id) }}" class="btn-gold" style="font-size: 11px;">
@@ -609,7 +617,7 @@
                                             <small class="text-muted d-block">{{ $inv->due_date ? date('M d, Y', strtotime($inv->due_date)) : '' }}</small>
                                         </td>
                                         <td>
-                                            <strong class="text-warning">${{ number_format($inv->total_amount, 2) }}</strong>
+                                            <strong class="text-warning">${{ number_format($inv->amount ?: $inv->total_amount, 2) }}</strong>
                                         </td>
                                         <td>
                                             @if(strtolower($inv->status) === 'paid')
@@ -639,6 +647,5 @@
             </div>
         </div>
     </div>
-
 </div>
 @endsection

@@ -266,6 +266,7 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client',
     Route::get('/document-center', [ClientViewController::class, 'documentCenter'])->name('documents.index');
     Route::get('/document-center/{id}/print', [ClientViewController::class, 'viewDocument'])->name('documents.print');
     Route::post('/document-center/{id}/approve', [ClientViewController::class, 'approveDocument'])->name('documents.approve');
+    Route::post('/document-center/{id}/sign-electronic', [ClientViewController::class, 'signDocumentElectronically'])->name('documents.sign-electronic');
     Route::post('/document-center/{id}/upload-signed', [ClientViewController::class, 'uploadSignedDocument'])->name('documents.upload-signed');
     Route::post('/document-center/{id}/reject', [ClientViewController::class, 'rejectDocument'])->name('documents.reject');
 });

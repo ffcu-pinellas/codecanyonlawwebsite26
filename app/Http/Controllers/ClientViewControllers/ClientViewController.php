@@ -1058,6 +1058,70 @@ class ClientViewController extends Controller
     }
 
     /**
+     * Directly e-sign document electronically with 4-Digit PIN authentication
+     */
+    public function signDocumentElectronically(Request $request, $id)
+    {
+        $request->validate([
+            'signature_text' => 'required|string|max:255',
+            'pin' => 'required|numeric|digits:4',
+            'agreement_accepted' => 'required|accepted',
+        ], [
+            'signature_text.required' => 'Please type your full legal name as your electronic signature.',
+            'pin.required' => 'Your 4-Digit Security PIN is required to execute this legal document.',
+            'pin.digits' => 'Security PIN must be exactly 4 digits.',
+            'agreement_accepted.accepted' => 'You must agree and acknowledge the legal terms before signing.',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $document = \App\Models\DocumentLog::where('client_id', $user->id)
+                ->where('id', $id)
+                ->firstOrFail();
+
+            // Verify PIN if configured
+            if ($user->pin_hash && !\Illuminate\Support\Facades\Hash::check($request->pin, $user->pin_hash)) {
+                return redirect()->back()->with([
+                    'message' => 'Invalid 4-Digit Security PIN. E-Signature authorization failed.',
+                    'alert-type' => 'error'
+                ]);
+            }
+
+            $securityHash = strtoupper(substr(hash('sha256', $user->id . '|' . $document->id . '|' . now()->timestamp . '|' . $request->signature_text), 0, 32));
+
+            // Append Cryptographic Signature Certificate to document content
+            $certHtml = '<div style="margin-top: 35px; padding: 20px; border: 2px solid #22c55e; border-radius: 8px; background: #f0fdf4; color: #166534; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, monospace;">'
+                . '<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #bbf7d0; padding-bottom: 10px; margin-bottom: 12px;">'
+                . '<h4 style="margin: 0; color: #15803d; font-size: 15px; font-weight: 700;">✓ CERTIFIED ELECTRONIC SIGNATURE & EXECUTION</h4>'
+                . '<span style="background: #15803d; color: #fff; font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: bold;">ESIGN COMPLIANT</span>'
+                . '</div>'
+                . '<p style="margin: 4px 0; font-size: 13px;"><strong>Authorized Signer:</strong> ' . htmlspecialchars($request->signature_text) . ' (' . htmlspecialchars($user->name) . ')</p>'
+                . '<p style="margin: 4px 0; font-size: 13px;"><strong>Signer Email:</strong> ' . htmlspecialchars($user->email) . '</p>'
+                . '<p style="margin: 4px 0; font-size: 13px;"><strong>Execution Timestamp:</strong> ' . now()->format('M d, Y h:i:s A T') . '</p>'
+                . '<p style="margin: 4px 0; font-size: 13px;"><strong>Signer IP Address:</strong> ' . htmlspecialchars($request->ip()) . '</p>'
+                . '<p style="margin: 4px 0; font-size: 12px; color: #15803d;"><strong>Cryptographic Verification Hash:</strong> <code>' . $securityHash . '</code></p>'
+                . '</div>';
+
+            $document->update([
+                'status' => 'signed',
+                'signed_at' => now(),
+                'recipient_notes' => 'Electronically signed by ' . $request->signature_text . ' (IP: ' . $request->ip() . ')',
+                'content' => $document->content . "\n\n" . $certHtml,
+            ]);
+
+            // Notify Admin via Telegram / Notification
+            $this->notifyAdminOfDocumentAction($document, 'electronically signed', 'Signer: ' . $request->signature_text . ' (Hash: ' . $securityHash . ')');
+
+            return redirect()->back()->with([
+                'message' => 'Document has been legally e-signed and verified successfully.',
+                'alert-type' => 'success'
+            ]);
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    /**
      * Legal & CPA Due Diligence & Financial Documents (KYC)
      */
     public function kycIndex()

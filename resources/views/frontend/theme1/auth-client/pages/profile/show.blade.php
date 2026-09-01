@@ -220,18 +220,18 @@ body.light-mode .profile-card-body, html.light-mode .profile-card-body {
                     <p class="text-muted small mb-3">
                         {{ __('Your 4-digit security PIN is required for authorizing settlement disbursements, signing legal engagement letters, and executing confidential document transactions.') }}
                     </p>
-                    <form action="{{ route('client.pin.update') }}" method="POST">
+                    <form action="{{ route('client.security.set-pin') }}" method="POST">
                         @csrf
                         <div class="row">
-                            @if($user->pin_hash)
-                                <div class="col-md-4 form-group mb-3">
-                                    <label class="small font-weight-bold text-light">{{ __('Current PIN') }} <span class="text-danger">*</span></label>
-                                    <input type="password" name="current_pin" maxlength="4" class="form-control text-center font-weight-bold" placeholder="••••" required inputmode="numeric">
-                                </div>
-                            @endif
+                            <div class="col-md-4 form-group mb-3">
+                                <label class="small font-weight-bold text-light">{{ __('Current Password') }} <span class="text-danger">*</span></label>
+                                <input type="password" name="current_password" class="form-control" placeholder="••••••••" required>
+                                @error('current_password') <span class="text-danger small">{{ $message }}</span> @enderror
+                            </div>
                             <div class="col-md-4 form-group mb-3">
                                 <label class="small font-weight-bold text-light">{{ __('New 4-Digit PIN') }} <span class="text-danger">*</span></label>
                                 <input type="password" name="pin" maxlength="4" class="form-control text-center font-weight-bold" placeholder="••••" required inputmode="numeric">
+                                @error('pin') <span class="text-danger small">{{ $message }}</span> @enderror
                             </div>
                             <div class="col-md-4 form-group mb-3">
                                 <label class="small font-weight-bold text-light">{{ __('Confirm New PIN') }} <span class="text-danger">*</span></label>

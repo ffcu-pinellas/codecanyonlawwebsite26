@@ -242,55 +242,104 @@
                                     </div>
                                 @endif
 
-                                <!-- Action Section: Upload Signed Copy -->
-                                @if($doc->action_required === 'sign_upload' && $doc->status !== 'rejected')
+                                <!-- Action Section: Electronic E-Signature / File Upload -->
+                                @if(($doc->action_required === 'sign_upload' || $doc->action_required === 'sign_pin') && $doc->status !== 'rejected')
                                     @if($doc->status !== 'signed')
                                         <div class="w-100 border rounded p-3 text-left mt-2" style="background: #11151e; border-color: #28303f !important;">
-                                            <form action="{{ route('client.documents.upload-signed', $doc->id) }}" method="POST" enctype="multipart/form-data">
-                                                @csrf
-                                                <span class="small font-weight-bold text-warning d-block mb-2"><i class="fas fa-file-upload mr-1"></i> Upload Signed PDF/Image:</span>
-                                                <input type="file" name="signed_file" class="form-control-file form-control-sm mb-2 text-white" required>
-                                                
-                                                <div class="form-group mb-2">
-                                                    <label class="small font-weight-bold text-white mb-1">Add Note / Comment (Optional):</label>
-                                                    <textarea name="recipient_notes" class="form-control form-control-sm" rows="2" style="background: #161a23; border: 1px solid #28303f; color: #ffffff;" placeholder="e.g. Uploaded executed copy."></textarea>
+                                            <!-- Tab switcher between Electronic Sign and File Upload -->
+                                            <ul class="nav nav-pills nav-fill mb-3" style="gap: 6px;">
+                                                <li class="nav-item">
+                                                    <a class="nav-link active py-1 px-2 font-weight-bold" id="tab-esign-{{ $doc->id }}" data-toggle="pill" href="#pane-esign-{{ $doc->id }}" style="font-size: 11.5px; border-radius: 6px;">
+                                                        <i class="fas fa-fingerprint mr-1"></i> {{ __('Quick E-Sign Now') }}
+                                                    </a>
+                                                </li>
+                                                <li class="nav-item">
+                                                    <a class="nav-link py-1 px-2 font-weight-bold" id="tab-upload-{{ $doc->id }}" data-toggle="pill" href="#pane-upload-{{ $doc->id }}" style="font-size: 11.5px; border-radius: 6px;">
+                                                        <i class="fas fa-file-upload mr-1"></i> {{ __('Upload Signed File') }}
+                                                    </a>
+                                                </li>
+                                            </ul>
+
+                                            <div class="tab-content">
+                                                <!-- PANE 1: DIRECT ELECTRONIC E-SIGNATURE -->
+                                                <div class="tab-pane fade show active" id="pane-esign-{{ $doc->id }}">
+                                                    <form action="{{ route('client.documents.sign-electronic', $doc->id) }}" method="POST">
+                                                        @csrf
+                                                        <div class="form-group mb-2">
+                                                            <label class="small font-weight-bold text-white mb-1">{{ __('Full Legal Name (Electronic Signature):') }} <span class="text-danger">*</span></label>
+                                                            <input type="text" name="signature_text" class="form-control form-control-sm font-weight-bold" style="background: #161a23; border: 1px solid #28303f; color: #fecc56;" value="{{ Auth::user()->name }}" placeholder="Type your full legal name" required>
+                                                        </div>
+
+                                                        <div class="form-group mb-2">
+                                                            <label class="small font-weight-bold text-white mb-1">{{ __('4-Digit Security PIN:') }} <span class="text-danger">*</span></label>
+                                                            <input type="password" name="pin" maxlength="4" class="form-control form-control-sm text-center font-weight-bold" style="background: #161a23; border: 1px solid #28303f; color: #fecc56; letter-spacing: 4px;" placeholder="••••" required inputmode="numeric">
+                                                        </div>
+
+                                                        <div class="custom-control custom-checkbox mb-3">
+                                                            <input type="checkbox" name="agreement_accepted" class="custom-control-input" id="agree-{{ $doc->id }}" value="1" required>
+                                                            <label class="custom-control-label small text-muted font-weight-semibold" for="agree-{{ $doc->id }}">
+                                                                {{ __('I certify that I have reviewed this agreement and agree that my typed signature and PIN constitute a legally binding execution.') }}
+                                                            </label>
+                                                        </div>
+
+                                                        <div class="d-flex" style="gap: 8px;">
+                                                            <button type="submit" class="btn btn-warning btn-sm flex-grow-1 font-weight-bold text-dark" style="background: linear-gradient(135deg, #fecc56, #f0a500); border: none;">
+                                                                <i class="fas fa-file-signature mr-1"></i> {{ __('Authorize & Sign Electronically') }}
+                                                            </button>
+                                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="$('#reject-form-{{ $doc->id }}').toggle();">
+                                                                <i class="fas fa-times mr-1"></i> {{ __('Reject') }}
+                                                            </button>
+                                                        </div>
+                                                    </form>
                                                 </div>
-                                                
-                                                <div class="d-flex" style="gap: 8px;">
-                                                    <button type="submit" class="btn btn-gold btn-sm flex-grow-1 font-weight-bold">
-                                                        <i class="fas fa-upload mr-1"></i> {{ __('Upload Signed Copy') }}
-                                                    </button>
-                                                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="$('#reject-form-{{ $doc->id }}').toggle();">
-                                                        <i class="fas fa-times mr-1"></i> {{ __('Reject') }}
-                                                    </button>
+
+                                                <!-- PANE 2: FILE UPLOAD OPTION -->
+                                                <div class="tab-pane fade" id="pane-upload-{{ $doc->id }}">
+                                                    <form action="{{ route('client.documents.upload-signed', $doc->id) }}" method="POST" enctype="multipart/form-data">
+                                                        @csrf
+                                                        <span class="small font-weight-bold text-warning d-block mb-2"><i class="fas fa-file-upload mr-1"></i> {{ __('Upload Signed PDF/Image:') }}</span>
+                                                        <input type="file" name="signed_file" class="form-control-file form-control-sm mb-2 text-white" required>
+                                                        
+                                                        <div class="form-group mb-2">
+                                                            <label class="small font-weight-bold text-white mb-1">{{ __('Add Note / Comment (Optional):') }}</label>
+                                                            <textarea name="recipient_notes" class="form-control form-control-sm" rows="2" style="background: #161a23; border: 1px solid #28303f; color: #ffffff;" placeholder="e.g. Uploaded executed copy."></textarea>
+                                                        </div>
+                                                        
+                                                        <div class="d-flex" style="gap: 8px;">
+                                                            <button type="submit" class="btn btn-gold btn-sm flex-grow-1 font-weight-bold">
+                                                                <i class="fas fa-upload mr-1"></i> {{ __('Upload Signed Copy') }}
+                                                            </button>
+                                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="$('#reject-form-{{ $doc->id }}').toggle();">
+                                                                <i class="fas fa-times mr-1"></i> {{ __('Reject') }}
+                                                            </button>
+                                                        </div>
+                                                    </form>
                                                 </div>
-                                            </form>
+                                            </div>
 
                                             <div id="reject-form-{{ $doc->id }}" style="display:none;" class="mt-2 pt-2 border-top" style="border-color: #28303f !important;">
                                                 <form action="{{ route('client.documents.reject', $doc->id) }}" method="POST">
                                                     @csrf
-                                                    <span class="small font-weight-bold text-danger d-block mb-1">Reason for Rejection (Required):</span>
+                                                    <span class="small font-weight-bold text-danger d-block mb-1">{{ __('Reason for Rejection (Required):') }}</span>
                                                     <textarea name="recipient_notes" class="form-control form-control-sm mb-2" rows="2" style="background: #161a23; border: 1px solid #28303f; color: #ffffff;" placeholder="Explain rejection reason..." required></textarea>
-                                                    <button type="submit" class="btn btn-danger btn-sm btn-block">Confirm Rejection</button>
+                                                    <button type="submit" class="btn btn-danger btn-sm btn-block">{{ __('Confirm Rejection') }}</button>
                                                 </form>
                                             </div>
                                         </div>
                                     @else
                                         <div class="d-flex flex-wrap justify-content-md-end mt-1 w-100" style="gap: 6px;">
-                                            <a href="{{ asset($doc->signed_path) }}" target="_blank" class="btn btn-success btn-sm">
-                                                <i class="fas fa-file-download mr-1"></i> {{ __('Download Signed') }}
+                                            @if($doc->signed_path)
+                                                <a href="{{ asset($doc->signed_path) }}" target="_blank" class="btn btn-success btn-sm">
+                                                    <i class="fas fa-file-download mr-1"></i> {{ __('Download Signed Copy') }}
+                                                </a>
+                                            @else
+                                                <span class="badge badge-success px-3 py-2 font-weight-bold">
+                                                    <i class="fas fa-check-circle mr-1"></i> {{ __('Digitally Executed') }}
+                                                </span>
+                                            @endif
+                                            <a href="{{ route('client.documents.print', $doc->id) }}" target="_blank" class="btn btn-portal-secondary btn-sm">
+                                                <i class="fas fa-certificate mr-1"></i> {{ __('View Certificate') }}
                                             </a>
-                                            <button type="button" class="btn btn-portal-secondary btn-sm" onclick="$('#reupload-form-{{ $doc->id }}').toggle();">
-                                                <i class="fas fa-sync mr-1"></i> {{ __('Replace') }}
-                                            </button>
-                                        </div>
-                                        <div id="reupload-form-{{ $doc->id }}" style="display:none;" class="w-100 border rounded p-3 text-left mt-2" style="background: #11151e; border-color: #28303f !important;">
-                                            <form action="{{ route('client.documents.upload-signed', $doc->id) }}" method="POST" enctype="multipart/form-data">
-                                                @csrf
-                                                <span class="small font-weight-bold text-warning d-block mb-2">{{ __('Upload New Signed Version:') }}</span>
-                                                <input type="file" name="signed_file" class="form-control-file form-control-sm mb-2 text-white" required>
-                                                <button type="submit" class="btn btn-gold btn-sm btn-block">{{ __('Submit Replacement') }}</button>
-                                            </form>
                                         </div>
                                     @endif
                                 @endif

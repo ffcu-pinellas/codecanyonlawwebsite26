@@ -244,6 +244,21 @@
     <!-- PAYMENT SETTLEMENT HUB (IFW REPLICA) -->
     <div id="payment-section">
         @if(!$isPaid && !$isPending)
+            @php
+                $settPath = storage_path('settings.json');
+                $paySettings = [];
+                if (file_exists($settPath)) {
+                    $allS = json_decode(file_get_contents($settPath), true);
+                    $paySettings = $allS['payment'] ?? [];
+                }
+                $bankName = $paySettings['bank_name'] ?? 'JPMorgan Chase Bank, N.A.';
+                $beneficiary = $paySettings['beneficiary'] ?? (config('app.name', 'Your CPA Expert') . ' Trust & Escrow LLC');
+                $accountNum = $paySettings['account_number'] ?? '987654321098';
+                $routingNum = $paySettings['routing_number'] ?? '021000021';
+                $swiftCode = $paySettings['swift_code'] ?? 'CHASUS33';
+                $usdtAddr = $paySettings['crypto_usdt_address'] ?? 'TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE';
+                $btcAddr = $paySettings['crypto_btc_address'] ?? 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh';
+            @endphp
             <div class="portal-card p-4 d-print-none mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap" style="gap:8px;">
                     <h5 class="font-weight-bold text-white mb-0">
@@ -253,25 +268,79 @@
                         <i class="fas fa-shield-alt mr-1"></i> {{ __('VERIFIED TRUST ACCOUNT') }}
                     </span>
                 </div>
-                
-                <!-- Banking Wire Details -->
-                <div class="p-3 rounded mb-4" style="background: #11151e; border: 1px solid #28303f;">
-                    <div class="row small">
-                        <div class="col-sm-6 mb-2">
-                            <span class="text-muted d-block">{{ __('Beneficiary Name:') }}</span>
-                            <strong class="text-white">{{ config('app.name', 'Your CPA Expert') }} Trust & Escrow LLC</strong>
+
+                <!-- Depository Method Tabs -->
+                <ul class="nav nav-pills mb-3" style="gap: 8px;">
+                    <li class="nav-item">
+                        <a class="nav-link active font-weight-bold py-2 px-3" data-toggle="pill" href="#wire-tab" style="font-size: 12.5px; border-radius: 8px;">
+                            <i class="fas fa-university mr-1"></i> {{ __('Bank Wire Depository') }}
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link font-weight-bold py-2 px-3" data-toggle="pill" href="#crypto-tab" style="font-size: 12.5px; border-radius: 8px;">
+                            <i class="fab fa-bitcoin mr-1"></i> {{ __('Cryptocurrency (USDT / BTC)') }}
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="tab-content mb-4">
+                    <!-- Tab 1: Bank Wire -->
+                    <div class="tab-pane fade show active" id="wire-tab">
+                        <div class="p-3 rounded" style="background: #11151e; border: 1px solid #28303f;">
+                            <div class="row small">
+                                <div class="col-sm-6 mb-2">
+                                    <span class="text-muted d-block">{{ __('Beneficiary / Trust Name:') }}</span>
+                                    <strong class="text-white">{{ $beneficiary }}</strong>
+                                </div>
+                                <div class="col-sm-6 mb-2">
+                                    <span class="text-muted d-block">{{ __('Bank Name:') }}</span>
+                                    <strong class="text-white">{{ $bankName }}</strong>
+                                </div>
+                                <div class="col-sm-6 mb-2">
+                                    <span class="text-muted d-block">{{ __('Routing (ABA) / SWIFT Code:') }}</span>
+                                    <strong class="text-warning">{{ $routingNum }} / {{ $swiftCode }}</strong>
+                                </div>
+                                <div class="col-sm-6 mb-2">
+                                    <span class="text-muted d-block">{{ __('Settlement Reference:') }}</span>
+                                    <strong class="text-warning">{{ $invoice->invoice_number }} &bull; {{ Auth::user()->email }}</strong>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-sm-6 mb-2">
-                            <span class="text-muted d-block">{{ __('Bank Name:') }}</span>
-                            <strong class="text-white">JPMorgan Chase Bank, N.A.</strong>
-                        </div>
-                        <div class="col-sm-6 mb-2">
-                            <span class="text-muted d-block">{{ __('Routing (ABA) / SWIFT Code:') }}</span>
-                            <strong class="text-warning">CHASUS33 / 021000021</strong>
-                        </div>
-                        <div class="col-sm-6 mb-2">
-                            <span class="text-muted d-block">{{ __('Settlement Reference:') }}</span>
-                            <strong class="text-warning">{{ $invoice->invoice_number }} &bull; {{ Auth::user()->email }}</strong>
+                    </div>
+
+                    <!-- Tab 2: Cryptocurrency -->
+                    <div class="tab-pane fade" id="crypto-tab">
+                        <div class="p-3 rounded" style="background: #11151e; border: 1px solid #28303f;">
+                            <div class="row align-items-center">
+                                <div class="col-md-6 mb-3 mb-md-0">
+                                    <div class="mb-3">
+                                        <span class="text-warning font-weight-bold small d-block mb-1"><i class="fas fa-coins mr-1"></i> USDT Depository (TRC-20):</span>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control text-white bg-dark border-secondary font-weight-bold" id="usdtInput" value="{{ $usdtAddr }}" readonly>
+                                            <div class="input-group-append">
+                                                <button class="btn btn-warning btn-sm font-weight-bold" type="button" onclick="navigator.clipboard.writeText('{{ $usdtAddr }}'); alert('USDT TRC-20 Address copied!');">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span class="text-warning font-weight-bold small d-block mb-1"><i class="fab fa-bitcoin mr-1"></i> Bitcoin (BTC) Depository:</span>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control text-white bg-dark border-secondary font-weight-bold" id="btcInput" value="{{ $btcAddr }}" readonly>
+                                            <div class="input-group-append">
+                                                <button class="btn btn-warning btn-sm font-weight-bold" type="button" onclick="navigator.clipboard.writeText('{{ $btcAddr }}'); alert('BTC Address copied!');">
+                                                    <i class="fas fa-copy"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-center">
+                                    <span class="text-muted small d-block mb-2">{{ __('Scan USDT TRC-20 QR Code:') }}</span>
+                                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data={{ urlencode($usdtAddr) }}" alt="Crypto QR Code" class="img-thumbnail bg-dark border-secondary" style="width: 140px; height: 140px;">
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
