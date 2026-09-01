@@ -481,6 +481,13 @@
 @endphp
 @if(($chatSettingsGlobal['provider'] ?? '') === 'chatwoot' && !empty($cwTokenGlobal))
 <script>
+  window.chatwootSettings = {
+    hideMessageBubble: false,
+    position: 'right',
+    locale: 'en',
+    darkMode: 'auto'
+  };
+
   (function(d,t) {
     var BASE_URL = @json($cwBaseGlobal);
     var g=d.createElement(t),s=d.getElementsByTagName(t)[0];
