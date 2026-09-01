@@ -419,13 +419,7 @@ class AppSettingsController extends Controller
         ]);
 
         try {
-            $settingsPath = storage_path('settings.json');
-            $data = [];
-            if (file_exists($settingsPath)) {
-                $data = json_decode(file_get_contents($settingsPath), true) ?: [];
-            }
-
-            $data['chat'] = [
+            $chatData = [
                 'provider' => $request->provider,
                 'website_token' => $request->website_token,
                 'base_url' => rtrim($request->base_url ?: 'https://app.chatwoot.com', '/'),
@@ -434,6 +428,20 @@ class AppSettingsController extends Controller
                 'tawkto_property_id' => $request->tawkto_property_id,
             ];
 
+            // 1. Save to Database (Permanent & immune to Git reset)
+            $general = \App\Models\GeneralSettings::first();
+            if ($general) {
+                $general->chat_settings = $chatData;
+                $general->save();
+            }
+
+            // 2. Save to settings.json
+            $settingsPath = storage_path('settings.json');
+            $data = [];
+            if (file_exists($settingsPath)) {
+                $data = json_decode(file_get_contents($settingsPath), true) ?: [];
+            }
+            $data['chat'] = $chatData;
             file_put_contents($settingsPath, json_encode($data, JSON_PRETTY_PRINT));
 
             \App\Models\SystemAuditLog::logAction('CHAT_SETTINGS_UPDATED', 'Updated Chatwoot and live chat integration settings.', auth()->id(), 'admin');
@@ -448,7 +456,6 @@ class AppSettingsController extends Controller
     {
         try {
             $title = 'Escrow & Payment Depository Settings';
-            $settPath = storage_path('settings.json');
             $paymentSettings = [
                 'bank_name' => 'JPMorgan Chase Bank, N.A.',
                 'beneficiary' => config('app.name', 'Your CPA Expert') . ' Trust & Escrow LLC',
@@ -463,12 +470,24 @@ class AppSettingsController extends Controller
                 'late_fee_percent' => 5,
                 'grace_period_days' => 7,
             ];
-            if (file_exists($settPath)) {
-                $all = json_decode(file_get_contents($settPath), true);
-                if (!empty($all['payment'])) {
-                    $paymentSettings = array_merge($paymentSettings, $all['payment']);
+
+            // DB first
+            $general = \App\Models\GeneralSettings::first();
+            if ($general && !empty($general->payment_settings)) {
+                $dbPay = is_array($general->payment_settings) ? $general->payment_settings : json_decode($general->payment_settings, true);
+                if (!empty($dbPay) && is_array($dbPay)) {
+                    $paymentSettings = array_merge($paymentSettings, $dbPay);
+                }
+            } else {
+                $settPath = storage_path('settings.json');
+                if (file_exists($settPath)) {
+                    $all = json_decode(file_get_contents($settPath), true);
+                    if (!empty($all['payment'])) {
+                        $paymentSettings = array_merge($paymentSettings, $all['payment']);
+                    }
                 }
             }
+
             return view('backend.pages.settings.payment', compact('title', 'paymentSettings'));
         } catch (\Throwable $th) {
             return redirect()->back()->with('error', $th->getMessage());
@@ -478,9 +497,7 @@ class AppSettingsController extends Controller
     public function savePaymentSettings(Request $request)
     {
         try {
-            $settPath = storage_path('settings.json');
-            $all = file_exists($settPath) ? json_decode(file_get_contents($settPath), true) : [];
-            $all['payment'] = [
+            $paymentData = [
                 'bank_name' => $request->bank_name,
                 'beneficiary' => $request->beneficiary,
                 'account_number' => $request->account_number,
@@ -494,7 +511,20 @@ class AppSettingsController extends Controller
                 'late_fee_percent' => $request->late_fee_percent ?: 5,
                 'grace_period_days' => $request->grace_period_days ?: 7,
             ];
+
+            // Save to DB
+            $general = \App\Models\GeneralSettings::first();
+            if ($general) {
+                $general->payment_settings = $paymentData;
+                $general->save();
+            }
+
+            // Save to file
+            $settPath = storage_path('settings.json');
+            $all = file_exists($settPath) ? json_decode(file_get_contents($settPath), true) : [];
+            $all['payment'] = $paymentData;
             file_put_contents($settPath, json_encode($all, JSON_PRETTY_PRINT));
+
             return $this->backWithSuccess('Escrow & Payment Depository settings saved successfully.');
         } catch (\Throwable $th) {
             return redirect()->back()->with('error', $th->getMessage());

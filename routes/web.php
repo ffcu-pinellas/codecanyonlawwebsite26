@@ -561,6 +561,14 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
     Route::get('/document-generator', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'documentGenerator'])->name('document-generator');
     Route::post('/document-generator/generate', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'generateDocument'])->name('document-generator.generate');
 
+    // KYC Form Configuration & Submissions (IFW Replica)
+    Route::prefix('kyc')->as('kyc.')->group(function () {
+        Route::get('/config', [App\Http\Controllers\AdminControllers\AdminKycController::class, 'config'])->name('config');
+        Route::post('/config', [App\Http\Controllers\AdminControllers\AdminKycController::class, 'saveConfig'])->name('config.save');
+        Route::get('/submissions', [App\Http\Controllers\AdminControllers\AdminKycController::class, 'submissions'])->name('submissions');
+        Route::post('/status/{id}', [App\Http\Controllers\AdminControllers\AdminKycController::class, 'updateStatus'])->name('status');
+    });
+
     // System Activity Logs
     Route::get('/activity-logs', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'activityLogs'])->name('activity-logs');
 

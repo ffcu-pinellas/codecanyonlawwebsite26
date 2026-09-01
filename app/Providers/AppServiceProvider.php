@@ -27,6 +27,12 @@ class AppServiceProvider extends ServiceProvider
         try {
             if (env('DB_USERNAME') != null) {
                 if (Schema::hasTable('general_settings')) {
+                    Schema::table('general_settings', function ($table) {
+                        if (!Schema::hasColumn('general_settings', 'chat_settings')) $table->json('chat_settings')->nullable();
+                        if (!Schema::hasColumn('general_settings', 'payment_settings')) $table->json('payment_settings')->nullable();
+                        if (!Schema::hasColumn('general_settings', 'kyc_settings')) $table->json('kyc_settings')->nullable();
+                    });
+
                     $generalSettings = \App\Models\GeneralSettings::first();
                     if ($generalSettings && $generalSettings?->site_name) {
                         \Illuminate\Support\Facades\Config::set('app.name', $generalSettings?->site_name);

@@ -475,13 +475,14 @@ class ClientViewController extends Controller
     public function kycHub()
     {
         try {
-            $title = 'Identity Verification & Compliance';
+            $kycSettings = \App\Http\Controllers\AdminControllers\AdminKycController::getKycSettings();
+            $title = $kycSettings['kyc_title'] ?? __('Identity Verification & Compliance');
             $client = Auth::user();
             $kycDocs = $client->kycDocuments()->orderBy('id', 'desc')->get();
             $verifiedCount = $kycDocs->where('status', 'approved')->count();
             $pendingCount = $kycDocs->where('status', 'pending')->count();
             
-            return view('frontend.theme1.auth-client.pages.kyc.hub', compact('title', 'client', 'kycDocs', 'verifiedCount', 'pendingCount'));
+            return view('frontend.theme1.auth-client.pages.kyc.hub', compact('title', 'client', 'kycDocs', 'verifiedCount', 'pendingCount', 'kycSettings'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
@@ -1180,12 +1181,13 @@ class ClientViewController extends Controller
     public function kycIndex()
     {
         try {
-            $title = __('Client Financial & Legal Document Intake');
+            $kycSettings = \App\Http\Controllers\AdminControllers\AdminKycController::getKycSettings();
+            $title = $kycSettings['kyc_title'] ?? __('Client Financial & Legal Document Intake');
             $user = Auth::user();
             $documents = \App\Models\ClientKycDocument::where('client_id', $user->id)->orderBy('id', 'desc')->get();
             $cases = $user->clientCases()->get();
 
-            return view('frontend.theme1.auth-client.pages.kyc.index', compact('title', 'user', 'documents', 'cases'));
+            return view('frontend.theme1.auth-client.pages.kyc.index', compact('title', 'user', 'documents', 'cases', 'kycSettings'));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

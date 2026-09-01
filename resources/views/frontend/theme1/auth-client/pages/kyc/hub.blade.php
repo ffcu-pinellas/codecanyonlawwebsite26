@@ -143,11 +143,17 @@
                         <div class="form-group mb-3">
                             <label class="font-weight-bold text-white small">{{ __('Government Document Type') }} <span class="text-danger">*</span></label>
                             <select name="document_type" class="form-control" style="background: #11151e; border: 1px solid #28303f; color: #ffffff;" required>
-                                <option value="Passport">{{ __('International Passport') }}</option>
-                                <option value="Driver License">{{ __('State Driver\'s License (Front & Back)') }}</option>
-                                <option value="National Identity Card">{{ __('National ID Card') }}</option>
-                                <option value="Residence Permit">{{ __('Permanent Residence Card') }}</option>
-                                <option value="Proof of Address">{{ __('Proof of Address (Utility Bill / Bank Statement)') }}</option>
+                                @if(!empty($kycSettings['document_types']))
+                                    @foreach($kycSettings['document_types'] as $dt)
+                                        <option value="{{ $dt['name'] }}">{{ $dt['name'] }} @if(!empty($dt['case_types']) && $dt['case_types'] !== 'All Cases') ({{ $dt['case_types'] }}) @endif</option>
+                                    @endforeach
+                                @else
+                                    <option value="Passport">{{ __('International Passport') }}</option>
+                                    <option value="Driver License">{{ __('State Driver\'s License (Front & Back)') }}</option>
+                                    <option value="National Identity Card">{{ __('National ID Card') }}</option>
+                                    <option value="Residence Permit">{{ __('Permanent Residence Card') }}</option>
+                                    <option value="Proof of Address">{{ __('Proof of Address (Utility Bill / Bank Statement)') }}</option>
+                                @endif
                             </select>
                             @error('document_type') <span class="text-danger small">{{ $message }}</span> @enderror
                         </div>

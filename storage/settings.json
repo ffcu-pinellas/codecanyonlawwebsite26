@@ -1,9 +1,9 @@
 {
     "chat": {
-        "account_id": "180927",
-        "website_token": "uHR3DJPM8AZ2Lpo8tDdJ5tei",
+        "account_id": "",
+        "website_token": "",
         "provider": "chatwoot",
-        "hmac_key": "6q99KLZgjCtHCd1fvQpQTp2F",
+        "hmac_key": "",
         "tawkto_property_id": "",
         "base_url": "https://app.chatwoot.com"
     },

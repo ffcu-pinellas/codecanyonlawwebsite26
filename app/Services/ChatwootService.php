@@ -11,19 +11,34 @@ class ChatwootService
      */
     public static function getSettings(): array
     {
-        $settingsPath = storage_path('settings.json');
         $data = [];
-        if (file_exists($settingsPath)) {
-            $json = json_decode(file_get_contents($settingsPath), true);
-            $data = $json['chat'] ?? [];
+
+        // 1. Prioritize Database (Permanent & Immune to Git resets)
+        try {
+            $generalSettings = \App\Models\GeneralSettings::first();
+            if ($generalSettings && !empty($generalSettings->chat_settings)) {
+                $dbData = is_array($generalSettings->chat_settings) ? $generalSettings->chat_settings : json_decode($generalSettings->chat_settings, true);
+                if (!empty($dbData) && is_array($dbData)) {
+                    $data = $dbData;
+                }
+            }
+        } catch (\Throwable $th) {}
+
+        // 2. Fallback to settings.json
+        if (empty($data)) {
+            $settingsPath = storage_path('settings.json');
+            if (file_exists($settingsPath)) {
+                $json = json_decode(file_get_contents($settingsPath), true);
+                $data = $json['chat'] ?? [];
+            }
         }
 
         return [
             'provider' => $data['provider'] ?? 'chatwoot',
-            'website_token' => $data['website_token'] ?? 'uHR3DJPM8AZ2Lpo8tDdJ5tei',
+            'website_token' => $data['website_token'] ?? '',
             'base_url' => rtrim($data['base_url'] ?? 'https://app.chatwoot.com', '/'),
-            'account_id' => $data['account_id'] ?? '180927',
-            'hmac_key' => $data['hmac_key'] ?? '6q99KLZgjCtHCd1fvQpQTp2F',
+            'account_id' => $data['account_id'] ?? '',
+            'hmac_key' => $data['hmac_key'] ?? '',
             'tawkto_property_id' => $data['tawkto_property_id'] ?? '',
         ];
     }

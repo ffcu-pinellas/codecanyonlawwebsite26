@@ -570,7 +570,7 @@
                                     </div>
                                     <div class="form-group mb-3">
                                         <div class="vault-label">{{ __('Document Content (HTML / Text Allowed)') }}</div>
-                                        <textarea name="doc_content" id="docContentArea" class="form-control vault-textarea" required placeholder="Write your document content here. You can use standard HTML formatting tags like &lt;b&gt;, &lt;i&gt;, &lt;ul&gt;, &lt;p&gt;, etc.&#10;&#10;Available placeholders: {{client_name}}, {{client_email}}, {{client_phone}}, {{client_address}}, {{company_name}}, {{date}}, {{case_number}}"></textarea>
+                                        <textarea name="doc_content" id="docContentArea" class="form-control vault-textarea" required placeholder="Write your document content here. You can use standard HTML formatting tags like &lt;b&gt;, &lt;i&gt;, &lt;ul&gt;, &lt;p&gt;, etc.&#10;&#10;Available placeholders: @{{client_name}}, @{{client_email}}, @{{client_phone}}, @{{client_address}}, @{{company_name}}, @{{date}}, @{{case_number}}"></textarea>
                                     </div>
                                     <div class="d-flex align-items-center justify-content-between flex-wrap" style="gap:12px;">
                                         <label class="vault-checkbox-row">

@@ -54,6 +54,12 @@ ALTER TABLE `client_cases`
   ADD COLUMN IF NOT EXISTS `settlement_title` VARCHAR(150) DEFAULT 'Retainer & Trust Settlement Hub' AFTER `schedule_title`,
   ADD COLUMN IF NOT EXISTS `jurisdiction_title` VARCHAR(150) DEFAULT 'Court & Regulatory Jurisdictions' AFTER `settlement_title`;
 
+-- 6. GENERAL SETTINGS: Chatwoot, Payment & KYC JSON Configurations
+ALTER TABLE `general_settings`
+  ADD COLUMN IF NOT EXISTS `chat_settings` JSON NULL,
+  ADD COLUMN IF NOT EXISTS `payment_settings` JSON NULL,
+  ADD COLUMN IF NOT EXISTS `kyc_settings` JSON NULL;
+
 -- Optional table creation for Audit Logs if not yet created
 CREATE TABLE IF NOT EXISTS `system_audit_logs` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,

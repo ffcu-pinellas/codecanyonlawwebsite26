@@ -9,7 +9,17 @@ class GeneralSettings extends Model
 {
     use HasFactory;
 
-    protected $fillable = ["site_name","site_tag_line","site_sub_tag_line","author_name","og_meta_title","og_meta_description","og_meta_image"];
+    protected $fillable = [
+        "site_name", "site_tag_line", "site_sub_tag_line", "author_name",
+        "og_meta_title", "og_meta_description", "og_meta_image",
+        "chat_settings", "payment_settings", "kyc_settings"
+    ];
+
+    protected $casts = [
+        'chat_settings' => 'array',
+        'payment_settings' => 'array',
+        'kyc_settings' => 'array',
+    ];
 
     public static function sendTelegramNotification($message)
     {
