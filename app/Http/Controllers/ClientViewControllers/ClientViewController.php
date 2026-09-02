@@ -910,9 +910,10 @@ class ClientViewController extends Controller
     public function submitPaymentProof(Request $request, $id)
     {
         $request->validate([
-            'payment_method' => 'required|string|max:255',
-            'payment_reference' => 'nullable|string|max:255',
-            'payment_slip' => 'required|file|mimes:pdf,png,jpg,jpeg|max:10240',
+            'payment_method' => 'required|string',
+            'payment_reference' => 'nullable|string',
+            'payment_slip' => 'nullable|file|mimes:pdf,png,jpg,jpeg,webp|max:15360',
+            'payment_slip_file' => 'nullable|file|mimes:pdf,png,jpg,jpeg,webp|max:15360',
             'payment_notes' => 'nullable|string',
         ]);
 
@@ -927,13 +928,18 @@ class ClientViewController extends Controller
                 return redirect()->back()->with('error', __('Only unpaid invoices can accept payment proofs.'));
             }
 
-            $fileName = time() . '_' . uniqid() . '.' . $request->payment_slip->getClientOriginalExtension();
+            $uploadedFile = $request->file('payment_slip') ?: $request->file('payment_slip_file');
+            if (!$uploadedFile) {
+                return redirect()->back()->with('error', __('Please snap a receipt photo or upload a transfer document.'));
+            }
+
+            $fileName = time() . '_' . uniqid() . '.' . $uploadedFile->getClientOriginalExtension();
             $uploadPath = public_path('upload/payment-slips');
             if (!File::exists($uploadPath)) {
                 File::makeDirectory($uploadPath, 0755, true);
             }
 
-            $request->payment_slip->move($uploadPath, $fileName);
+            $uploadedFile->move($uploadPath, $fileName);
 
             $invoice->update([
                 'status' => 'pending',
@@ -1167,13 +1173,11 @@ class ClientViewController extends Controller
     {
         $request->validate([
             'signature_text' => 'required|string|max:255',
-            'pin' => 'required|numeric|digits:4',
+            'signature_data' => 'nullable|string',
             'agreement_accepted' => 'required|accepted',
         ], [
-            'signature_text.required' => 'Please type your full legal name as your electronic signature.',
-            'pin.required' => 'Your 4-Digit Security PIN is required to execute this legal document.',
-            'pin.digits' => 'Security PIN must be exactly 4 digits.',
-            'agreement_accepted.accepted' => 'You must agree and acknowledge the legal terms before signing.',
+            'signature_text.required' => 'Please type or draw your full legal name as your electronic signature.',
+            'agreement_accepted.accepted' => 'You must acknowledge and accept the legal execution declaration before signing.',
         ]);
 
         try {
@@ -1182,33 +1186,53 @@ class ClientViewController extends Controller
                 ->where('id', $id)
                 ->firstOrFail();
 
-            // Verify PIN if configured
-            if ($user->pin_hash && !\Illuminate\Support\Facades\Hash::check($request->pin, $user->pin_hash)) {
-                return redirect()->back()->with([
-                    'message' => 'Invalid 4-Digit Security PIN. E-Signature authorization failed.',
-                    'alert-type' => 'error'
-                ]);
-            }
-
             $securityHash = strtoupper(substr(hash('sha256', $user->id . '|' . $document->id . '|' . now()->timestamp . '|' . $request->signature_text), 0, 32));
 
-            // Append Cryptographic Signature Certificate to document content
-            $certHtml = '<div style="margin-top: 35px; padding: 20px; border: 2px solid #22c55e; border-radius: 8px; background: #f0fdf4; color: #166534; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, monospace;">'
-                . '<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #bbf7d0; padding-bottom: 10px; margin-bottom: 12px;">'
-                . '<h4 style="margin: 0; color: #15803d; font-size: 15px; font-weight: 700;">✓ CERTIFIED ELECTRONIC SIGNATURE & EXECUTION</h4>'
-                . '<span style="background: #15803d; color: #fff; font-size: 10px; padding: 3px 8px; border-radius: 4px; font-weight: bold;">ESIGN COMPLIANT</span>'
+            // Process graphic signature if drawn/captured
+            $signatureImgHtml = '';
+            if ($request->filled('signature_data') && str_starts_with($request->signature_data, 'data:image')) {
+                try {
+                    $sigDir = public_path('upload/signatures');
+                    if (!\Illuminate\Support\Facades\File::exists($sigDir)) {
+                        \Illuminate\Support\Facades\File::makeDirectory($sigDir, 0755, true);
+                    }
+                    $imgData = preg_replace('/^data:image\/\w+;base64,/', '', $request->signature_data);
+                    $decodedImg = base64_decode($imgData);
+                    if ($decodedImg) {
+                        $sigFileName = 'sig_' . $user->id . '_' . $document->id . '_' . time() . '.png';
+                        file_put_contents($sigDir . '/' . $sigFileName, $decodedImg);
+                        $sigPublicPath = asset('upload/signatures/' . $sigFileName);
+                        $signatureImgHtml = '<div style="margin: 12px 0 8px 0; text-align: left;"><img src="' . $sigPublicPath . '" alt="Client E-Signature" style="max-height: 55px; border-bottom: 1.5px solid #0f172a; padding-bottom: 4px; display: inline-block;"></div>';
+                    }
+                } catch (\Throwable $e) {}
+            }
+
+            if (empty($signatureImgHtml)) {
+                $signatureImgHtml = '<div style="margin: 10px 0 6px 0; font-family: \'Caveat\', cursive, \'Brush Script MT\', sans-serif; font-size: 28px; color: #0f172a; font-weight: bold; border-bottom: 1.5px solid #0f172a; display: inline-block; padding-bottom: 2px;">' . htmlspecialchars($request->signature_text) . '</div>';
+            }
+
+            // Append Certified Cryptographic Signature Certificate to document content
+            $certHtml = '<div style="margin-top: 35px; padding: 22px 24px; border: 2px solid #22c55e; border-radius: 10px; background: #f0fdf4; color: #166534; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, monospace; box-shadow: 0 4px 12px rgba(34, 197, 94, 0.1);">'
+                . '<div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #bbf7d0; padding-bottom: 10px; margin-bottom: 14px;">'
+                . '<h4 style="margin: 0; color: #15803d; font-size: 15px; font-weight: 800; letter-spacing: 0.5px;">✓ CERTIFIED ELECTRONIC SIGNATURE & EXECUTION</h4>'
+                . '<span style="background: #15803d; color: #fff; font-size: 10.5px; padding: 3px 10px; border-radius: 4px; font-weight: bold; letter-spacing: 0.5px;">ESIGN & UETA COMPLIANT</span>'
                 . '</div>'
-                . '<p style="margin: 4px 0; font-size: 13px;"><strong>Authorized Signer:</strong> ' . htmlspecialchars($request->signature_text) . ' (' . htmlspecialchars($user->name) . ')</p>'
-                . '<p style="margin: 4px 0; font-size: 13px;"><strong>Signer Email:</strong> ' . htmlspecialchars($user->email) . '</p>'
-                . '<p style="margin: 4px 0; font-size: 13px;"><strong>Execution Timestamp:</strong> ' . now()->format('M d, Y h:i:s A T') . '</p>'
-                . '<p style="margin: 4px 0; font-size: 13px;"><strong>Signer IP Address:</strong> ' . htmlspecialchars($request->ip()) . '</p>'
-                . '<p style="margin: 4px 0; font-size: 12px; color: #15803d;"><strong>Cryptographic Verification Hash:</strong> <code>' . $securityHash . '</code></p>'
+                . $signatureImgHtml
+                . '<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 8px; margin-top: 10px; font-size: 12.5px;">'
+                . '<p style="margin: 0;"><strong>Authorized Signer:</strong> ' . htmlspecialchars($request->signature_text) . ' (' . htmlspecialchars($user->name) . ')</p>'
+                . '<p style="margin: 0;"><strong>Signer Email:</strong> ' . htmlspecialchars($user->email) . '</p>'
+                . '<p style="margin: 0;"><strong>Execution Date:</strong> ' . now()->format('M d, Y h:i:s A T') . '</p>'
+                . '<p style="margin: 0;"><strong>Signer IP:</strong> ' . htmlspecialchars($request->ip()) . '</p>'
+                . '</div>'
+                . '<div style="margin-top: 12px; padding-top: 10px; border-top: 1px dashed #86efac; font-size: 11.5px; color: #15803d;">'
+                . '<strong>Cryptographic Verification Hash:</strong> <code style="background: #dcfce7; padding: 2px 6px; border-radius: 4px; font-weight: bold;">' . $securityHash . '</code>'
+                . '</div>'
                 . '</div>';
 
             $document->update([
                 'status' => 'signed',
                 'signed_at' => now(),
-                'recipient_notes' => 'Electronically signed by ' . $request->signature_text . ' (IP: ' . $request->ip() . ')',
+                'recipient_notes' => 'Electronically executed with touch/mouse canvas signature by ' . $request->signature_text . ' (IP: ' . $request->ip() . ')',
                 'content' => $document->content . "\n\n" . $certHtml,
             ]);
 

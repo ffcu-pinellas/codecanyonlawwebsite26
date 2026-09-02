@@ -3,6 +3,7 @@
 @section('title', config('app.name', 'Your CPA Expert') . ' | ' . $title)
 
 @section('page-css')
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Dancing+Script:wght@700&display=swap" rel="stylesheet">
 <style>
     .portal-card {
         background: #161a23;
@@ -23,7 +24,7 @@
     .doc-item {
         background: #161a23;
         border-bottom: 1px solid #232a38;
-        padding: 20px 22px;
+        padding: 22px 24px;
         transition: background 0.15s;
     }
     .doc-item:hover {
@@ -51,12 +52,13 @@
         font-weight: 700;
         border: none;
         border-radius: 6px;
-        padding: 6px 14px;
-        font-size: 12px;
+        padding: 7px 16px;
+        font-size: 12.5px;
         transition: all 0.2s;
         display: inline-flex;
         align-items: center;
         text-decoration: none;
+        gap: 6px;
     }
     .btn-gold:hover {
         transform: translateY(-1px);
@@ -94,6 +96,50 @@
         text-transform: uppercase;
         display: inline-block;
     }
+
+    /* DocuSign Style Signature Pad */
+    .signature-pad-container {
+        background: #ffffff;
+        border: 2px dashed #94a3b8;
+        border-radius: 8px;
+        position: relative;
+        touch-action: none;
+        cursor: crosshair;
+        margin-bottom: 8px;
+    }
+    .signature-canvas {
+        width: 100%;
+        height: 160px;
+        display: block;
+        border-radius: 6px;
+    }
+    .signature-pad-placeholder {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        color: #94a3b8;
+        font-size: 13px;
+        pointer-events: none;
+        user-select: none;
+        font-style: italic;
+    }
+    .sig-type-preview {
+        font-family: 'Caveat', 'Dancing Script', cursive;
+        font-size: 38px;
+        color: #0f172a;
+        min-height: 90px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 10px;
+        letter-spacing: 1px;
+    }
+
     body.light-mode .doc-item { background: #ffffff !important; border-color: #e2e8f0 !important; }
     body.light-mode .doc-item:hover { background: #f8fafc !important; }
 </style>
@@ -164,13 +210,9 @@
                                     </span>
                                     <span class="text-muted">&bull;</span>
                                     <!-- Action Required Badge -->
-                                    @if($doc->action_required === 'sign_upload')
+                                    @if($doc->action_required === 'sign_upload' || $doc->action_required === 'sign_pin')
                                         <span class="badge-action text-warning border border-warning" style="background: rgba(254,204,86,0.1);">
-                                            <i class="fas fa-signature mr-1"></i> {{ __('Signature & Upload Required') }}
-                                        </span>
-                                    @elseif($doc->action_required === 'sign_pin')
-                                        <span class="badge-action text-warning border border-warning" style="background: rgba(254,204,86,0.1);">
-                                            <i class="fas fa-fingerprint mr-1"></i> {{ __('PIN e-Signature Required') }}
+                                            <i class="fas fa-signature mr-1"></i> {{ __('E-Signature Required') }}
                                         </span>
                                     @elseif($doc->action_required === 'approve')
                                         <span class="badge-action text-info border border-info" style="background: rgba(56,189,248,0.1);">
@@ -242,15 +284,15 @@
                                     </div>
                                 @endif
 
-                                <!-- Action Section: Electronic E-Signature / File Upload -->
+                                <!-- Action Section: DocuSign In-Portal Touch/Mouse E-Signature -->
                                 @if(($doc->action_required === 'sign_upload' || $doc->action_required === 'sign_pin') && $doc->status !== 'rejected')
                                     @if($doc->status !== 'signed')
                                         <div class="w-100 border rounded p-3 text-left mt-2" style="background: #11151e; border-color: #28303f !important;">
-                                            <!-- Tab switcher between Electronic Sign and File Upload -->
+                                            <!-- Tab switcher between Touch/Mouse E-Sign and File Upload -->
                                             <ul class="nav nav-pills nav-fill mb-3" style="gap: 6px;">
                                                 <li class="nav-item">
                                                     <a class="nav-link active py-1 px-2 font-weight-bold" id="tab-esign-{{ $doc->id }}" data-toggle="pill" href="#pane-esign-{{ $doc->id }}" style="font-size: 11.5px; border-radius: 6px;">
-                                                        <i class="fas fa-fingerprint mr-1"></i> {{ __('Quick E-Sign Now') }}
+                                                        <i class="fas fa-signature mr-1"></i> {{ __('DocuSign Touch/Mouse E-Sign') }}
                                                     </a>
                                                 </li>
                                                 <li class="nav-item">
@@ -261,30 +303,60 @@
                                             </ul>
 
                                             <div class="tab-content">
-                                                <!-- PANE 1: DIRECT ELECTRONIC E-SIGNATURE -->
+                                                <!-- PANE 1: DOCUSIGN REPLICA E-SIGNATURE (TOUCH / MOUSE DRAW OR CURSIVE TYPE) -->
                                                 <div class="tab-pane fade show active" id="pane-esign-{{ $doc->id }}">
-                                                    <form action="{{ route('client.documents.sign-electronic', $doc->id) }}" method="POST">
+                                                    <form action="{{ route('client.documents.sign-electronic', $doc->id) }}" method="POST" id="sigForm-{{ $doc->id }}" onsubmit="return handleSignatureSubmit({{ $doc->id }});">
                                                         @csrf
-                                                        <div class="form-group mb-2">
-                                                            <label class="small font-weight-bold text-white mb-1">{{ __('Full Legal Name (Electronic Signature):') }} <span class="text-danger">*</span></label>
-                                                            <input type="text" name="signature_text" class="form-control form-control-sm font-weight-bold" style="background: #161a23; border: 1px solid #28303f; color: #fecc56;" value="{{ Auth::user()->name }}" placeholder="Type your full legal name" required>
+                                                        <input type="hidden" name="signature_data" id="sigDataInput-{{ $doc->id }}">
+
+                                                        <!-- Mode Selector: Draw vs Type -->
+                                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                                            <label class="small font-weight-bold text-white mb-0">{{ __('Adopt Signature:') }}</label>
+                                                            <div class="btn-group btn-group-sm" role="group">
+                                                                <button type="button" class="btn btn-outline-warning active btn-sm font-weight-bold" id="drawModeBtn-{{ $doc->id }}" onclick="setSignatureMode({{ $doc->id }}, 'draw')">
+                                                                    <i class="fas fa-pen-nib mr-1"></i> {{ __('Draw') }}
+                                                                </button>
+                                                                <button type="button" class="btn btn-outline-warning btn-sm font-weight-bold" id="typeModeBtn-{{ $doc->id }}" onclick="setSignatureMode({{ $doc->id }}, 'type')">
+                                                                    <i class="fas fa-keyboard mr-1"></i> {{ __('Type') }}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Draw Mode Canvas -->
+                                                        <div id="drawSection-{{ $doc->id }}">
+                                                            <div class="signature-pad-container" id="sigContainer-{{ $doc->id }}">
+                                                                <canvas id="sigCanvas-{{ $doc->id }}" class="signature-canvas"></canvas>
+                                                                <span class="signature-pad-placeholder" id="sigPlaceholder-{{ $doc->id }}">{{ __('Sign here with finger or mouse') }}</span>
+                                                            </div>
+                                                            <div class="d-flex justify-content-end mb-2">
+                                                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 11px;" onclick="clearSignatureCanvas({{ $doc->id }})">
+                                                                    <i class="fas fa-eraser mr-1"></i> {{ __('Clear Signature') }}
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Type Mode Input & Live Cursive Preview -->
+                                                        <div id="typeSection-{{ $doc->id }}" style="display: none;">
+                                                            <div class="sig-type-preview" id="typeSigPreview-{{ $doc->id }}">
+                                                                {{ Auth::user()->name }}
+                                                            </div>
                                                         </div>
 
                                                         <div class="form-group mb-2">
-                                                            <label class="small font-weight-bold text-white mb-1">{{ __('4-Digit Security PIN:') }} <span class="text-danger">*</span></label>
-                                                            <input type="password" name="pin" maxlength="4" class="form-control form-control-sm text-center font-weight-bold" style="background: #161a23; border: 1px solid #28303f; color: #fecc56; letter-spacing: 4px;" placeholder="••••" required inputmode="numeric">
+                                                            <label class="small font-weight-bold text-white mb-1">{{ __('Full Legal Signer Name:') }} <span class="text-danger">*</span></label>
+                                                            <input type="text" name="signature_text" id="sigTextInput-{{ $doc->id }}" class="form-control form-control-sm font-weight-bold" style="background: #161a23; border: 1px solid #28303f; color: #fecc56;" value="{{ Auth::user()->name }}" placeholder="Type your full legal name" required oninput="updateTypePreview({{ $doc->id }}, this.value)">
                                                         </div>
 
                                                         <div class="custom-control custom-checkbox mb-3">
                                                             <input type="checkbox" name="agreement_accepted" class="custom-control-input" id="agree-{{ $doc->id }}" value="1" required>
                                                             <label class="custom-control-label small text-muted font-weight-semibold" for="agree-{{ $doc->id }}">
-                                                                {{ __('I certify that I have reviewed this agreement and agree that my typed signature and PIN constitute a legally binding execution.') }}
+                                                                {{ __('I certify that my signature above constitutes an authorized, legally binding electronic execution under the federal ESIGN & UETA Acts.') }}
                                                             </label>
                                                         </div>
 
                                                         <div class="d-flex" style="gap: 8px;">
                                                             <button type="submit" class="btn btn-warning btn-sm flex-grow-1 font-weight-bold text-dark" style="background: linear-gradient(135deg, #fecc56, #f0a500); border: none;">
-                                                                <i class="fas fa-file-signature mr-1"></i> {{ __('Authorize & Sign Electronically') }}
+                                                                <i class="fas fa-signature mr-1"></i> {{ __('Adopt & Execute Document') }}
                                                             </button>
                                                             <button type="button" class="btn btn-outline-danger btn-sm" onclick="$('#reject-form-{{ $doc->id }}').toggle();">
                                                                 <i class="fas fa-times mr-1"></i> {{ __('Reject') }}
@@ -357,4 +429,137 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('page-script')
+<script>
+var canvasMap = {};
+var isDrawingMap = {};
+var hasDrawnMap = {};
+var modeMap = {};
+
+function initSignatureCanvas(docId) {
+    var canvas = document.getElementById('sigCanvas-' + docId);
+    if (!canvas || canvasMap[docId]) return;
+
+    var ctx = canvas.getContext('2d');
+    var rect = canvas.getBoundingClientRect();
+    canvas.width = canvas.offsetWidth || 360;
+    canvas.height = 160;
+
+    ctx.strokeStyle = '#0f172a';
+    ctx.lineWidth = 2.5;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    canvasMap[docId] = { canvas: canvas, ctx: ctx };
+    isDrawingMap[docId] = false;
+    hasDrawnMap[docId] = false;
+    modeMap[docId] = 'draw';
+
+    function getPos(e) {
+        var cRect = canvas.getBoundingClientRect();
+        var clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        var clientY = e.touches ? e.touches[0].clientY : e.clientY;
+        return {
+            x: (clientX - cRect.left) * (canvas.width / cRect.width),
+            y: (clientY - cRect.top) * (canvas.height / cRect.height)
+        };
+    }
+
+    function startDraw(e) {
+        e.preventDefault();
+        isDrawingMap[docId] = true;
+        hasDrawnMap[docId] = true;
+        var placeholder = document.getElementById('sigPlaceholder-' + docId);
+        if (placeholder) placeholder.style.display = 'none';
+
+        var pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+    }
+
+    function moveDraw(e) {
+        if (!isDrawingMap[docId]) return;
+        e.preventDefault();
+        var pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+    }
+
+    function endDraw(e) {
+        if (isDrawingMap[docId]) {
+            isDrawingMap[docId] = false;
+            ctx.closePath();
+        }
+    }
+
+    canvas.addEventListener('mousedown', startDraw);
+    canvas.addEventListener('mousemove', moveDraw);
+    window.addEventListener('mouseup', endDraw);
+
+    canvas.addEventListener('touchstart', startDraw, { passive: false });
+    canvas.addEventListener('touchmove', moveDraw, { passive: false });
+    canvas.addEventListener('touchend', endDraw);
+}
+
+function clearSignatureCanvas(docId) {
+    if (canvasMap[docId]) {
+        var c = canvasMap[docId].canvas;
+        var ctx = canvasMap[docId].ctx;
+        ctx.clearRect(0, 0, c.width, c.height);
+        hasDrawnMap[docId] = false;
+        var placeholder = document.getElementById('sigPlaceholder-' + docId);
+        if (placeholder) placeholder.style.display = 'block';
+    }
+}
+
+function setSignatureMode(docId, mode) {
+    modeMap[docId] = mode;
+    var drawSec = document.getElementById('drawSection-' + docId);
+    var typeSec = document.getElementById('typeSection-' + docId);
+    var drawBtn = document.getElementById('drawModeBtn-' + docId);
+    var typeBtn = document.getElementById('typeModeBtn-' + docId);
+
+    if (mode === 'draw') {
+        if (drawSec) drawSec.style.display = 'block';
+        if (typeSec) typeSec.style.display = 'none';
+        if (drawBtn) drawBtn.classList.add('active');
+        if (typeBtn) typeBtn.classList.remove('active');
+        initSignatureCanvas(docId);
+    } else {
+        if (drawSec) drawSec.style.display = 'none';
+        if (typeSec) typeSec.style.display = 'block';
+        if (drawBtn) drawBtn.classList.remove('active');
+        if (typeBtn) typeBtn.classList.add('active');
+    }
+}
+
+function updateTypePreview(docId, val) {
+    var preview = document.getElementById('typeSigPreview-' + docId);
+    if (preview) {
+        preview.textContent = val || 'Your Signature';
+    }
+}
+
+function handleSignatureSubmit(docId) {
+    var mode = modeMap[docId] || 'draw';
+    var dataInput = document.getElementById('sigDataInput-' + docId);
+
+    if (mode === 'draw' && canvasMap[docId] && hasDrawnMap[docId]) {
+        dataInput.value = canvasMap[docId].canvas.toDataURL('image/png');
+    } else {
+        dataInput.value = '';
+    }
+    return true;
+}
+
+$(document).ready(function() {
+    @foreach($documents as $doc)
+        @if(($doc->action_required === 'sign_upload' || $doc->action_required === 'sign_pin') && $doc->status !== 'signed')
+            initSignatureCanvas({{ $doc->id }});
+        @endif
+    @endforeach
+});
+</script>
 @endsection
