@@ -220,7 +220,7 @@
             <tr>
                 <td style="width: 50%; vertical-align: top;">
                     <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
-                        {{ __('Authorized Client / Principal Signatory') }}
+                        {{ __('For the Firm') }}
                     </div>
                     <div class="signature-line">
                         <strong>{{ isset($client) ? $client->name : 'Client Signatory' }}</strong><br>
