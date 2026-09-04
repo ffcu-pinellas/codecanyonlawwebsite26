@@ -680,23 +680,57 @@ class UserController extends Controller
     public function impersonateClient($id)
     {
         try {
-            $client = User::findOrFail($id);
+            $user = User::findOrFail($id);
 
-            // Save admin session state
+            $currentAdmin = Auth::user();
+
+            // Store original admin session state if not already impersonating
+            if (!session()->has('impersonator_admin')) {
+                if (!$currentAdmin || ($currentAdmin->hasRole('client') && !$currentAdmin->hasAnyRole(['admin', 'attorney', 'staff']))) {
+                    abort(403, 'Unauthorized action.');
+                }
+
+                session([
+                    'impersonator_admin' => [
+                        'id' => $currentAdmin->id,
+                        'name' => $currentAdmin->name,
+                        'email' => $currentAdmin->email,
+                        'role' => $currentAdmin->roles->first()?->name ?? 'admin',
+                    ]
+                ]);
+            }
+
+            $adminId = session('impersonator_admin.id');
+            $adminName = session('impersonator_admin.name');
+
+            // Replicate frontfield-remodel bypass and impersonation keys
             session([
-                'impersonator_admin' => [
-                    'id' => auth()->id(),
-                    'name' => auth()->user()->name,
-                    'email' => auth()->user()->email,
-                    'role' => auth()->user()->roles->first()?->name ?? 'admin',
-                ]
+                'admin_login_as_bypass' => true,
+                'impersonated_by' => $adminId,
+                'two_factor_verified' => true,
             ]);
+            session()->forget('session_locked');
 
-            \App\Models\SystemAuditLog::logAction('IMPERSONATE_CLIENT', "Staff started impersonating client #{$client->id} ({$client->email}).", auth()->id(), 'admin');
+            // Ensure client role is present if target is a client
+            if (!$user->hasRole('client') && !$user->hasAnyRole(['admin', 'attorney'])) {
+                $user->assignRole('client');
+            }
 
-            \Illuminate\Support\Facades\Auth::loginUsingId($client->id);
+            // Ensure email_verified_at is set so Laravel's verified middleware never blocks
+            if (is_null($user->email_verified_at)) {
+                $user->email_verified_at = now();
+                $user->save();
+            }
 
-            return redirect()->route('client.dashboard')->with('success', __('You are now viewing the portal as ') . $client->name);
+            \App\Models\SystemAuditLog::logAction('IMPERSONATE_CLIENT', "Staff member ({$adminName}) started viewing portal as user #{$user->id} ({$user->email}).", $adminId, 'admin');
+
+            Auth::loginUsingId($user->id);
+
+            if ($user->hasRole('staff') && !$user->hasRole('client')) {
+                return redirect()->route('staff.dashboard')->with('success', __('You are now viewing the portal as ') . $user->name);
+            }
+
+            return redirect()->route('client.dashboard')->with('success', __('You are now viewing the portal as ') . $user->name);
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
@@ -705,20 +739,25 @@ class UserController extends Controller
     public function stopImpersonation()
     {
         try {
-            if (session()->has('impersonator_admin')) {
-                $adminId = session('impersonator_admin.id');
-                session()->forget('impersonator_admin');
+            $adminId = session('impersonator_admin.id') ?? session('impersonated_by');
 
-                \Illuminate\Support\Facades\Auth::loginUsingId($adminId);
+            if ($adminId) {
+                session()->forget(['impersonator_admin', 'impersonated_by', 'admin_login_as_bypass', 'session_locked']);
+
+                Auth::loginUsingId($adminId);
 
                 \App\Models\SystemAuditLog::logAction('EXIT_IMPERSONATION', "Staff exited impersonation session.", $adminId, 'admin');
 
-                return redirect()->route('admin.user.client.index')->with('success', __('Exited impersonation session successfully.'));
+                return redirect()->route('admin.user.client.index')->with('success', __('Exited impersonation session successfully. Returned to Admin Portal.'));
             }
 
-            return redirect()->route('login');
+            if (Auth::check() && !Auth::user()->hasRole('client')) {
+                return redirect()->route('admin.dashboard');
+            }
+
+            return redirect()->route('admin.login');
         } catch (\Throwable $e) {
-            return redirect()->route('login');
+            return redirect()->route('admin.login');
         }
     }
 }

@@ -185,9 +185,9 @@
                                                 </button>
                                             </form>
 
-                                            <!-- Impersonate Client -->
-                                            <a href="{{ route('admin.user.client.impersonate', $client->id) }}" class="btn btn-xs btn-info font-weight-bold" title="{{ __('View Portal as Client') }}" target="_blank">
-                                                <i class="fas fa-user-secret"></i> {{ __('View Portal') }}
+                                            <!-- Sign In As Client (Frontfield-remodel replica) -->
+                                            <a href="{{ route('admin.user.login', $client->id) }}" class="btn btn-xs btn-info font-weight-bold" title="{{ __('Sign In As Client') }}">
+                                                <i class="fas fa-user-secret mr-1"></i> {{ __('Sign In As') }}
                                             </a>
 
                                             <!-- Edit Modal Button -->

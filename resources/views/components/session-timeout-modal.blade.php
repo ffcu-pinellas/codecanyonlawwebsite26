@@ -251,6 +251,11 @@
 (function() {
     "use strict";
 
+    @if(session()->has('impersonator_admin') || session()->has('impersonated_by') || session()->has('admin_login_as_bypass'))
+        // Bypassed during admin impersonation session
+        return;
+    @endif
+
     var INACTIVITY_LIMIT_MS = 10 * 60 * 1000; // 10 minutes idle triggers warning
     var COUNTDOWN_SECONDS = 60; // 60 seconds warning countdown
 

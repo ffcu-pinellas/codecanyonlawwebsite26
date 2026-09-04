@@ -281,9 +281,11 @@ Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client',
     Route::post('/document-center/{id}/sign-electronic', [ClientViewController::class, 'signDocumentElectronically'])->name('documents.sign-electronic');
     Route::post('/document-center/{id}/upload-signed', [ClientViewController::class, 'uploadSignedDocument'])->name('documents.upload-signed');
     Route::post('/document-center/{id}/reject', [ClientViewController::class, 'rejectDocument'])->name('documents.reject');
+    Route::get('/stop-impersonation', [UserController::class, 'stopImpersonation'])->name('stop-impersonation');
 });
 
-
+// Global Fallback Exit Impersonation Route (accessible regardless of session role)
+Route::get('/stop-impersonation', [UserController::class, 'stopImpersonation'])->name('stop-impersonation');
 
 // Admin & Staff Authentication Portal
 Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
@@ -325,8 +327,14 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
             Route::post('/{id}/generate-credentials', [UserController::class, 'generateCredentials'])->name('generate-credentials');
             Route::post('/send-welcome-email', [UserController::class, 'sendCustomWelcomeEmail'])->name('send-welcome-email');
             Route::get('/{id}/impersonate', [UserController::class, 'impersonateClient'])->name('impersonate');
+            Route::get('/login-as/{id}', [UserController::class, 'impersonateClient'])->name('login');
             Route::get('/stop-impersonation', [UserController::class, 'stopImpersonation'])->name('stop-impersonation');
         });
+
+        // Frontfield-remodel replica: admin.user.login route
+        Route::get('/login/{id}', [UserController::class, 'impersonateClient'])->name('login');
+        Route::get('/login-as/{id}', [UserController::class, 'impersonateClient'])->name('login-as');
+        Route::get('/stop-impersonation', [UserController::class, 'stopImpersonation'])->name('stop-impersonation');
 
         Route::get('/', [UserController::class, 'userIndex'])->name('index');
         Route::post('/save', [UserController::class, 'userIndexSave'])->name('save');
