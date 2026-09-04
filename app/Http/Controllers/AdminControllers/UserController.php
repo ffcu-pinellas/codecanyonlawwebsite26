@@ -682,28 +682,39 @@ class UserController extends Controller
         try {
             $user = User::findOrFail($id);
 
-            $currentAdmin = Auth::user();
+            $currentAdmin = Auth::guard('admin')->user() ?: Auth::user();
 
-            // Store original admin session state if not already impersonating
-            if (!session()->has('impersonator_admin')) {
-                if (!$currentAdmin || ($currentAdmin->hasRole('client') && !$currentAdmin->hasAnyRole(['admin', 'attorney', 'staff']))) {
-                    abort(403, 'Unauthorized action.');
-                }
-
-                session([
-                    'impersonator_admin' => [
-                        'id' => $currentAdmin->id,
-                        'name' => $currentAdmin->name,
-                        'email' => $currentAdmin->email,
-                        'role' => $currentAdmin->roles->first()?->name ?? 'admin',
-                    ]
-                ]);
+            if (!$currentAdmin && !session()->has('impersonator_admin')) {
+                abort(403, 'Unauthorized action.');
             }
 
-            $adminId = session('impersonator_admin.id');
-            $adminName = session('impersonator_admin.name');
+            $adminRoles = $currentAdmin ? $currentAdmin->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray() : [];
+            $isAuthorized = in_array('admin', $adminRoles) || in_array('attorney', $adminRoles) || in_array('staff', $adminRoles) || ($currentAdmin && $currentAdmin->id === 1) || session()->has('impersonator_admin');
 
-            // Replicate frontfield-remodel bypass and impersonation keys
+            if (!$isAuthorized) {
+                abort(403, 'Unauthorized action.');
+            }
+
+            // Keep the admin logged in under guard('admin') so admin tabs never get kicked out
+            if ($currentAdmin) {
+                Auth::guard('admin')->login($currentAdmin);
+
+                if (!session()->has('impersonator_admin')) {
+                    session([
+                        'impersonator_admin' => [
+                            'id' => $currentAdmin->id,
+                            'name' => $currentAdmin->name,
+                            'email' => $currentAdmin->email,
+                            'role' => $adminRoles[0] ?? 'admin',
+                        ]
+                    ]);
+                }
+            }
+
+            $adminId = session('impersonator_admin.id') ?? ($currentAdmin ? $currentAdmin->id : 1);
+            $adminName = session('impersonator_admin.name') ?? ($currentAdmin ? $currentAdmin->name : 'Administrator');
+
+            // Set bypass flags for 2FA, session timeout, and security wizard
             session([
                 'admin_login_as_bypass' => true,
                 'impersonated_by' => $adminId,
@@ -711,12 +722,7 @@ class UserController extends Controller
             ]);
             session()->forget('session_locked');
 
-            // Ensure client role is present if target is a client
-            if (!$user->hasRole('client') && !$user->hasAnyRole(['admin', 'attorney'])) {
-                $user->assignRole('client');
-            }
-
-            // Ensure email_verified_at is set so Laravel's verified middleware never blocks
+            // Ensure email_verified_at is set so Laravel verified middleware never blocks
             if (is_null($user->email_verified_at)) {
                 $user->email_verified_at = now();
                 $user->save();
@@ -724,9 +730,11 @@ class UserController extends Controller
 
             \App\Models\SystemAuditLog::logAction('IMPERSONATE_CLIENT', "Staff member ({$adminName}) started viewing portal as user #{$user->id} ({$user->email}).", $adminId, 'admin');
 
-            Auth::loginUsingId($user->id);
+            // Log into default web guard as the client/user
+            Auth::guard('web')->loginUsingId($user->id);
 
-            if ($user->hasRole('staff') && !$user->hasRole('client')) {
+            $targetRoles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+            if (in_array('staff', $targetRoles) && !in_array('client', $targetRoles)) {
                 return redirect()->route('staff.dashboard')->with('success', __('You are now viewing the portal as ') . $user->name);
             }
 
@@ -739,20 +747,30 @@ class UserController extends Controller
     public function stopImpersonation()
     {
         try {
-            $adminId = session('impersonator_admin.id') ?? session('impersonated_by');
+            $admin = Auth::guard('admin')->user();
+            if (!$admin) {
+                $adminId = session('impersonator_admin.id') ?? session('impersonated_by');
+                if ($adminId) {
+                    $admin = User::find($adminId);
+                }
+            }
 
-            if ($adminId) {
+            if ($admin) {
                 session()->forget(['impersonator_admin', 'impersonated_by', 'admin_login_as_bypass', 'session_locked']);
 
-                Auth::loginUsingId($adminId);
+                Auth::guard('web')->login($admin);
+                Auth::guard('admin')->login($admin);
 
-                \App\Models\SystemAuditLog::logAction('EXIT_IMPERSONATION', "Staff exited impersonation session.", $adminId, 'admin');
+                \App\Models\SystemAuditLog::logAction('EXIT_IMPERSONATION', "Staff exited impersonation session.", $admin->id, 'admin');
 
                 return redirect()->route('admin.user.client.index')->with('success', __('Exited impersonation session successfully. Returned to Admin Portal.'));
             }
 
-            if (Auth::check() && !Auth::user()->hasRole('client')) {
-                return redirect()->route('admin.dashboard');
+            if (Auth::check()) {
+                $roles = Auth::user()->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+                if (in_array('admin', $roles) || in_array('attorney', $roles)) {
+                    return redirect()->route('admin.dashboard');
+                }
             }
 
             return redirect()->route('admin.login');

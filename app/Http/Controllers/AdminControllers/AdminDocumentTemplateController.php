@@ -324,18 +324,45 @@ class AdminDocumentTemplateController extends Controller
             $phone = $user ? $user->phone : '(555) 019-2834';
             $address = $user ? $user->address : '123 Prosperity Way, Suite 100, New York, NY 10001';
 
-            // Content comes from the rich text editor (populated and edited content)
-            $content = $request->document_content;
+            // Auto-assign Attorney or Admin creating the document
+            $creator = \Illuminate\Support\Facades\Auth::user();
+            $attorneyName = 'Gerald W. Allen, Esq.';
+            $attorneyTitle = 'Senior Lead Counsel & Founding Partner';
+            $caseNumber = 'YCE-' . date('Y') . '-' . rand(1000, 9999);
+
+            if ($user) {
+                if ($user->assignedAttorney) {
+                    $attorneyName = $user->assignedAttorney->name;
+                    $attorneyTitle = 'Assigned Lead Counsel & Case Attorney';
+                } elseif ($creator) {
+                    $attorneyName = $creator->name;
+                    $attorneyTitle = 'Authorized Firm Director & Counsel';
+                }
+
+                $clientCase = \App\Models\ClientCase::where('client_id', $user->id)->orderBy('created_at', 'desc')->first();
+                if ($clientCase) {
+                    $caseNumber = $clientCase->case_number;
+                    if ($clientCase->attorney) {
+                        $attorneyName = $clientCase->attorney->name;
+                    }
+                }
+            } elseif ($creator) {
+                $attorneyName = $creator->name;
+                $attorneyTitle = 'Authorized Firm Director & Counsel';
+            }
 
             if ($request->action === 'download') {
-                // Generate PDF representation of the document
+                // Generate PDF representation of the document with Ashish Master letterhead, signatures & stamp
                 $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', [
                     'title' => $template->title,
                     'content' => $content,
-                    'client' => $user ?: (object)['name' => $name, 'email' => $email, 'phone' => $phone, 'address' => $address],
+                    'client' => $user ?: (object)['name' => $name, 'email' => $email, 'phone' => $phone, 'address' => $address, 'id' => 1],
                     'companyName' => $companyName,
                     'dateStr' => date('F d, Y'),
-                    'hideDefaultSignatures' => true,
+                    'attorneyName' => $attorneyName,
+                    'attorneyTitle' => $attorneyTitle,
+                    'caseNumber' => $caseNumber,
+                    'hideDefaultSignatures' => false,
                     'isPdf' => true
                 ]);
 
@@ -375,15 +402,18 @@ class AdminDocumentTemplateController extends Controller
 
             $trackingToken = uniqid() . bin2hex(random_bytes(8));
 
-            // Generate PDF representation of the document for attachment
+            // Generate PDF representation of the document for attachment with letterhead, signatures & stamp
             $pdfPath = storage_path('app/temp_' . uniqid() . '.pdf');
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', [
                 'title' => $template->title,
                 'content' => $content,
-                'client' => $user ?: (object)['name' => $name, 'email' => $email, 'phone' => $phone, 'address' => $address],
+                'client' => $user ?: (object)['name' => $name, 'email' => $email, 'phone' => $phone, 'address' => $address, 'id' => 1],
                 'companyName' => $companyName,
                 'dateStr' => date('F d, Y'),
-                'hideDefaultSignatures' => true,
+                'attorneyName' => $attorneyName,
+                'attorneyTitle' => $attorneyTitle,
+                'caseNumber' => $caseNumber,
+                'hideDefaultSignatures' => false,
                 'isPdf' => true
             ]);
             $pdf->save($pdfPath);

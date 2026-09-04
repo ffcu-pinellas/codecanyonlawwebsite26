@@ -3,76 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $document->title }}</title>
+    <title>{{ $document->document_title ?: $document->title }}</title>
     <style>
-        body { font-family: 'Georgia', serif; background: #fff; color: #222; margin: 0; padding: 0; }
-        .doc-wrapper { max-width: 820px; margin: 40px auto; padding: 40px 50px; border: 1px solid #ddd; box-shadow: 0 2px 12px rgba(0,0,0,0.12); }
-        .doc-header { text-align: center; border-bottom: 2px solid #b8860b; padding-bottom: 24px; margin-bottom: 28px; }
-        .doc-header h1 { font-size: 22px; text-transform: uppercase; letter-spacing: 1.5px; color: #1a1a1a; margin: 0 0 6px; }
-        .doc-meta { font-size: 13px; color: #666; }
-        .doc-content { font-size: 14px; line-height: 1.85; color: #333; }
-        .doc-content p { margin-bottom: 14px; }
-        .doc-content ul, .doc-content ol { margin: 12px 0 12px 24px; }
-        .doc-footer { margin-top: 50px; border-top: 1px solid #ddd; padding-top: 24px; }
-        .sig-block { display: flex; gap: 60px; margin-top: 30px; }
-        .sig-line { flex: 1; }
-        .sig-line .label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 6px; }
-        .sig-line .line { border-bottom: 1px solid #444; height: 36px; margin-bottom: 6px; }
-        .sig-line .name { font-size: 12.5px; color: #444; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Georgia", serif;
+            color: #1f2937;
+            line-height: 1.65;
+            margin: 40px;
+            padding: 0;
+            background-color: #fff;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .document-title {
+            text-align: center;
+            margin: 25px 0 35px 0;
+        }
+        .document-title h2 {
+            font-size: 21px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #1e3c72;
+            font-weight: 800;
+            margin: 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #1e3c72;
+            display: inline-block;
+        }
+
+        .content {
+            font-size: 14.5px;
+            text-align: justify;
+            margin-bottom: 40px;
+            color: #334155;
+        }
+        .content p {
+            margin-bottom: 16px;
+        }
+        .content h3, .content h4 {
+            color: #1e3c72;
+            font-size: 15.5px;
+            font-weight: 700;
+            margin-top: 24px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Signatures Section */
+        .signature-section {
+            margin-top: 45px;
+            page-break-inside: avoid;
+        }
+        .signature-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+            border: none !important;
+            background: transparent !important;
+        }
+        .signature-table td {
+            padding: 10px 0;
+            border: none !important;
+            background: transparent !important;
+        }
+        .signature-line {
+            border-top: 1.5px solid #334155;
+            margin-top: 45px;
+            padding-top: 8px;
+            display: inline-block;
+            width: 85%;
+        }
+
+        /* Ashish Master Official Footer */
+        .official-doc-footer {
+            margin-top: 60px;
+            padding-top: 15px;
+            border-top: 1px solid #cbd5e1;
+            font-size: 10px;
+            color: #64748b;
+            line-height: 1.5;
+            page-break-inside: avoid;
+        }
+
+        .print-btn-container {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            z-index: 9999;
+        }
+        .print-btn {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: #ffffff;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(30, 60, 114, 0.4);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
         @media print {
-            .no-print { display: none !important; }
-            body { margin: 0; }
-            .doc-wrapper { box-shadow: none; border: none; margin: 0; padding: 30px; }
+            .print-btn-container {
+                display: none !important;
+            }
+            body {
+                margin: 20px;
+            }
         }
     </style>
 </head>
 <body>
-<div class="doc-wrapper">
-    <div class="doc-header">
-        <h1>{{ $document->title }}</h1>
-        <div class="doc-meta">
-            <span>Document Type: {{ $document->document_type }}</span> &bull;
-            <span>Case: {{ $case->case_number }}</span> &bull;
-            <span>Prepared: {{ $document->created_at->format('F d, Y') }}</span>
-        </div>
+
+    <div class="print-btn-container">
+        <button class="print-btn" onclick="window.print()">
+            <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M19 8H5c-1.66 0-3 1.34-3 3v6h4v4h12v-4h4v-6c0-1.66-1.34-3-3-3zm-3 11H8v-5h8v5zm3-7c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm-1-9H6v4h12V3z"/></svg>
+            {{ __('Print Certified Document') }}
+        </button>
     </div>
 
-    <div class="doc-content">
+    @include('backend.layouts.letterhead')
+
+    <div class="document-title">
+        <h2>{{ $document->document_title ?: $document->title }}</h2>
+    </div>
+
+    <div class="content">
         {!! $content !!}
     </div>
 
-    @if($document->requires_signature)
-    <div class="doc-footer">
-        <p style="font-size:13px;color:#666;font-style:italic;">This document requires a client signature to be considered legally executed.</p>
-        <div class="sig-block">
-            <div class="sig-line">
-                <div class="label">Client Signature</div>
-                <div class="line">
-                    @if($document->is_signed)
-                        <span style="color:#1a7a36;font-family:cursive;font-size:20px;line-height:36px;padding:0 8px;">
-                            ✓ {{ $case->client->name ?? 'Client' }}
-                        </span>
-                    @endif
-                </div>
-                <div class="name">{{ $case->client->name ?? 'Client' }}</div>
-            </div>
-            <div class="sig-line">
-                <div class="label">Authorized Representative</div>
-                <div class="line"></div>
-                <div class="name">{{ config('app.name', 'Your CPA Expert') }}</div>
-            </div>
-        </div>
-    </div>
-    @endif
-</div>
+    @php
+        $clientObj = $document->client ?: (isset($case) ? $case->client : null);
+        $attorneyDisplayName = ($clientObj && $clientObj->assignedAttorney) ? $clientObj->assignedAttorney->name : 'Gerald W. Allen, Esq.';
+        $attorneyDisplayTitle = 'Senior Lead Counsel & Practice Director';
+        $companySettings = \App\Models\GeneralSettings::first();
+        $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+    @endphp
 
-<div class="no-print" style="text-align:center;padding:20px;">
-    <button onclick="window.print()" style="background:#b8860b;color:#fff;border:none;padding:10px 28px;border-radius:6px;font-size:14px;cursor:pointer;">
-        🖨️ Print / Save as PDF
-    </button>
-    <button onclick="window.history.back()" style="background:#555;color:#fff;border:none;padding:10px 28px;border-radius:6px;font-size:14px;cursor:pointer;margin-left:10px;">
-        ← Back
-    </button>
-</div>
+    <div class="signature-section">
+        <h4 style="color: #1e3c72; text-transform: uppercase; font-size: 14px; margin-bottom: 20px; border-bottom: 1px solid #e2e8f0; padding-bottom: 6px;">
+            {{ __('Formal Execution & Certified Verification') }}
+        </h4>
+        
+        <table class="signature-table">
+            <tr>
+                <td style="width: 50%; vertical-align: top;">
+                    <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                        {{ __('Authorized Client / Principal Signatory') }}
+                    </div>
+                    <div class="signature-line">
+                        <strong>{{ $clientObj ? $clientObj->name : 'Client Signatory' }}</strong><br>
+                        <span style="font-size: 12px; color: #64748b;">Client ID: #{{ $clientObj ? sprintf('%05d', $clientObj->id) : '00001' }}</span><br>
+                        <span style="font-size: 12px; color: #64748b;">{{ __('Date:') }} {{ date('F d, Y') }}</span>
+                    </div>
+                </td>
+                <td style="width: 50%; vertical-align: top; text-align: right;">
+                    <div style="display: inline-block; text-align: left; width: 90%;">
+                        <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                            {{ __('Authorized Legal / CPA Counsel & Corporate Seal') }}
+                        </div>
+                        
+                        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 15px; margin-top: 10px;">
+                            <div style="flex-grow: 1;">
+                                <div class="signature-line" style="width: 100%; margin-top: 25px;">
+                                    <strong style="color: #1e3c72;">{{ $attorneyDisplayName }}</strong><br>
+                                    <span style="font-size: 12px; color: #64748b;">{{ $attorneyDisplayTitle }}</span><br>
+                                    <span style="font-size: 12px; color: #64748b;">{{ $companyName }} &bull; Date: {{ date('F d, Y') }}</span>
+                                </div>
+                            </div>
+                            <div>
+                                @include('backend.layouts.official-stamp', ['caseNumber' => (isset($case) && $case->case_number) ? $case->case_number : 'YCE-'.date('Y')])
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <!-- Ashish Master Official Footer -->
+    <div class="official-doc-footer">
+        <table style="width: 100%; border-collapse: collapse; border: none !important; background: transparent !important;">
+            <tr>
+                <td style="vertical-align: middle; text-align: left; border: none !important; padding: 0;">
+                    <strong style="color: #1e3c72; text-transform: uppercase;">&copy; {{ date('Y') }} {{ $companyName }}</strong>. All Rights Reserved.<br>
+                    <span>582 Professional Way, Financial District, NY &bull; www.yourcpaexpert.com</span>
+                </td>
+                <td style="vertical-align: middle; text-align: right; border: none !important; padding: 0;">
+                    <span style="display: inline-block; background: #f1f5f9; border: 1px solid #cbd5e1; padding: 3px 8px; border-radius: 4px; font-weight: 700; color: #334155; font-size: 9px; letter-spacing: 0.5px;">
+                        PRIVILEGED &amp; CONFIDENTIAL
+                    </span>
+                </td>
+            </tr>
+        </table>
+        <p style="margin: 8px 0 0 0; font-size: 9px; color: #94a3b8; font-style: italic; text-align: center;">
+            This instrument contains confidential and attorney-client / CPA-client privileged materials. Any unauthorized disclosure, distribution, or copying is strictly prohibited.
+        </p>
+    </div>
+
 </body>
 </html>

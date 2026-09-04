@@ -12,12 +12,17 @@ class AdminAuthController extends Controller
 {
     public function showLoginForm()
     {
+        if (Auth::guard('admin')->check()) {
+            return redirect()->route('admin.dashboard');
+        }
+
         if (Auth::check()) {
-            if (!Auth::user()->hasRole('client')) {
+            $roles = Auth::user()->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+            if (in_array('admin', $roles) || in_array('attorney', $roles) || in_array('staff', $roles)) {
+                Auth::guard('admin')->login(Auth::user());
                 return redirect()->route('admin.dashboard');
-            } else {
-                return redirect()->route('client.dashboard');
             }
+            return redirect()->route('client.dashboard');
         }
 
         $logoFavicon = LogoSettings::first();
@@ -38,9 +43,12 @@ class AdminAuthController extends Controller
 
         if (Auth::attempt($credentials, $remember)) {
             $user = Auth::user();
+            $roles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
 
-            // Verify that this user is not a regular client
-            if ($user->hasRole('client') && !$user->hasAnyRole(['admin', 'attorney'])) {
+            // Verify that this user is authorized staff/attorney/admin
+            $isStaff = in_array('admin', $roles) || in_array('attorney', $roles) || in_array('staff', $roles) || $user->id === 1;
+
+            if (!$isStaff) {
                 Auth::logout();
                 $request->session()->invalidate();
                 $request->session()->regenerateToken();
@@ -49,6 +57,9 @@ class AdminAuthController extends Controller
                     'email' => __('This portal is restricted to authorized Legal & CPA staff. Clients must sign in via the Client Portal at /login.')
                 ]);
             }
+
+            // Authenticate on admin guard as well so admin session persists during client impersonation
+            Auth::guard('admin')->login($user, $remember);
 
             $request->session()->regenerate();
 

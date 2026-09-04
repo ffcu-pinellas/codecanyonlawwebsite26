@@ -114,6 +114,17 @@ class AppServiceProvider extends ServiceProvider
                         if (!Schema::hasColumn('client_kyc_documents', 'admin_notes')) $table->text('admin_notes')->nullable();
                     });
                 }
+
+                // 7. Ensure standard system roles exist in roles table
+                if (Schema::hasTable('roles')) {
+                    foreach (['admin', 'attorney', 'staff', 'client'] as $roleName) {
+                        try {
+                            if (!\Spatie\Permission\Models\Role::where('name', $roleName)->exists()) {
+                                \Spatie\Permission\Models\Role::create(['name' => $roleName, 'guard_name' => 'web']);
+                            }
+                        } catch (\Throwable $rTh) {}
+                    }
+                }
             }
         } catch (\Throwable $th) {
             // Silence DB exceptions during CLI/testing boots

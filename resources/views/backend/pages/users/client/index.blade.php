@@ -109,7 +109,18 @@
                 <i class="fas fa-user-plus mr-1"></i> {{ __('Add New Client Account') }}
             </button>
         </div>
-    </div>
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show font-weight-bold" role="alert">
+            <i class="fas fa-exclamation-circle mr-2"></i> {{ session('error') }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
+    @endif
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show font-weight-bold" role="alert">
+            <i class="fas fa-check-circle mr-2"></i> {{ session('success') }}
+            <button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
+    @endif
 
     <!-- Main Client Directory Table -->
     <div class="row">
@@ -186,7 +197,7 @@
                                             </form>
 
                                             <!-- Sign In As Client (Frontfield-remodel replica) -->
-                                            <a href="{{ route('admin.user.login', $client->id) }}" class="btn btn-xs btn-info font-weight-bold" title="{{ __('Sign In As Client') }}">
+                                            <a href="{{ route('admin.user.login', $client->id) }}" target="_blank" class="btn btn-xs btn-info font-weight-bold" title="{{ __('Sign In As Client') }}">
                                                 <i class="fas fa-user-secret mr-1"></i> {{ __('Sign In As') }}
                                             </a>
 

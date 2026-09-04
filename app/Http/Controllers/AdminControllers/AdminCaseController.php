@@ -421,9 +421,12 @@ class AdminCaseController extends Controller
 
             ActivityLog::log('Custom Document Composed', 'Created and vaulted document: ' . $title . ' for client ' . $client->name);
 
-            // Generate PDF
+            // Generate PDF with Ashish Master letterhead, signatures & stamp
             $isPdf = true;
-            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', compact('title', 'content', 'client', 'companyName', 'dateStr', 'isPdf'));
+            $attorneyName = ($client && $client->assignedAttorney) ? $client->assignedAttorney->name : (Auth::user() ? Auth::user()->name : 'Gerald W. Allen, Esq.');
+            $attorneyTitle = 'Senior Lead Counsel & Practice Director';
+            $caseNumber = $clientCase ? $clientCase->case_number : 'YCE-' . date('Y');
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', compact('title', 'content', 'client', 'companyName', 'dateStr', 'isPdf', 'attorneyName', 'attorneyTitle', 'caseNumber'));
 
             $uploadPath = public_path('upload/case-documents');
             if (!\Illuminate\Support\Facades\File::exists($uploadPath)) {

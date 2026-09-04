@@ -165,8 +165,6 @@ Route::get('/login', [GuestViewController::class, 'loginRedirect'])->name('login
 Route::get('/forgot-password', [GuestViewController::class, 'forgetPassword'])->name('password.request');
 Route::get('/reset-password/{token}', [GuestViewController::class, 'resetPassword'])->name('password.reset');
 Route::get('/track/document/{token}', [GuestViewController::class, 'trackDocument'])->name('document.track');
-
-Route::get('admin/login', [GuestViewController::class, 'adminLogin'])->name('admin.login');
 Route::get('register', [GuestViewController::class, 'userRegister'])->name('register');
 
 Route::get('/', [GuestViewController::class, 'index'])->name('home');
@@ -201,16 +199,29 @@ Route::get('/attorney/{id}', [GuestViewController::class, 'viewAttorney'])->name
 // Dynamic Pages
 Route::get('pages/{slug}', [GuestViewController::class, 'dynamicPage'])->name('pages');
 // download file
-Route::middleware(['auth:sanctum', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     Route::get('/download-chatting-file/{message}', [GuestViewController::class, 'downloadMessageFile'])->name('download.chatting-file');
 });
 
 
-//Route::middleware(['auth:sanctum', 'verified'])->get('/dashboard', function () {
-//    return view('dashboard');
-//})->name('dashboard');
+Route::middleware(['auth'])->get('/dashboard', function () {
+    if (Auth::guard('admin')->check()) {
+        return redirect()->route('admin.dashboard');
+    }
+    if (session()->has('impersonator_admin') || session()->has('impersonated_by')) {
+        return redirect()->route('client.dashboard');
+    }
+    $roles = Auth::user() ? Auth::user()->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray() : [];
+    if (in_array('admin', $roles) || in_array('attorney', $roles) || (Auth::user() && Auth::user()->id === 1)) {
+        return redirect()->route('admin.dashboard');
+    }
+    if (in_array('staff', $roles) && !in_array('client', $roles)) {
+        return redirect()->route('staff.dashboard');
+    }
+    return redirect()->route('client.dashboard');
+})->name('dashboard');
 
-Route::prefix('/client')->middleware(['auth:sanctum', 'verified', 'role:client', 'security.setup'])->as('client.')->group(function (){
+Route::prefix('/client')->middleware(['auth', 'security.setup'])->as('client.')->group(function (){
     Route::get('/dashboard', [ClientViewController::class, 'dashboard'])->name('dashboard');
     // profile routes
     Route::get('/profile', [ClientViewController::class, 'profile'])->name('profile');
@@ -291,7 +302,7 @@ Route::get('/stop-impersonation', [UserController::class, 'stopImpersonation'])-
 Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
 Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.submit');
 
-Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctum','verified', 'admin']], function () {
+Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth', 'admin']], function () {
     // dashboard route
     Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
     // profile routs
@@ -308,8 +319,16 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth:sanctu
         Route::delete('/contact/{id}', [AdminController::class, 'destroyContactMessage'])->name('contact.destroy');
     });
 
+    // Frontfield-remodel replica: direct admin user login and client impersonation routes
+    Route::get('/user/login/{id}', [UserController::class, 'impersonateClient'])->name('user.login');
+    Route::get('/user/login-as/{id}', [UserController::class, 'impersonateClient'])->name('user.login-as');
+    Route::get('/user/client/{id}/impersonate', [UserController::class, 'impersonateClient'])->name('user.client.impersonate');
+    Route::get('/user/client/login-as/{id}', [UserController::class, 'impersonateClient'])->name('user.client.login');
+    Route::get('/user/client/stop-impersonation', [UserController::class, 'stopImpersonation'])->name('user.client.stop-impersonation');
+    Route::get('/user/stop-impersonation', [UserController::class, 'stopImpersonation'])->name('user.stop-impersonation');
+
     //user, role & permission
-    Route::prefix('user')->as('user.')->middleware(['role:admin'])->group(function (){
+    Route::prefix('user')->as('user.')->group(function (){
         //role
         Route::prefix('role')->as('role.')->group(function (){
             Route::get('/', [UserController::class, 'roleIndex'])->name('index');

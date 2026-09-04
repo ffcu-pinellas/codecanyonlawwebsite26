@@ -58,7 +58,7 @@
                                                             class="btn btn-xs btn-success m-1 user_btn"
                                                             data-id="{{ $user->id }}">{{ __('view') }}</button>
                                                     @if($user->id !== auth()->id())
-                                                        <a href="{{ route('admin.user.login', $user->id) }}" class="btn btn-xs btn-info font-weight-bold m-1" title="{{ __('Sign In As User') }}">
+                                                        <a href="{{ route('admin.user.login', $user->id) }}" target="_blank" class="btn btn-xs btn-info font-weight-bold m-1" title="{{ __('Sign In As User') }}">
                                                             <i class="fas fa-user-secret mr-1"></i> {{ __('Sign In As') }}
                                                         </a>
                                                         <form action="{{ route('admin.user.destroy', $user->id) }}" method="POST" onsubmit="return confirm('{{ __('Are you sure you want to delete this user? This action cannot be undone.') }}');" class="d-inline">

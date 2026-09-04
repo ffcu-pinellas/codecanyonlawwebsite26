@@ -36,6 +36,9 @@ class GuestViewController extends Controller
     {
         try {
             if (Auth::user()){
+                if (session()->has('impersonator_admin') || session()->has('impersonated_by')) {
+                    return redirect()->route('client.dashboard');
+                }
                 if (Auth::user()->hasRole('staff')){
                     return redirect()->route('staff.dashboard');
                 }elseif (!Auth::user()->hasRole('client')){
@@ -51,7 +54,7 @@ class GuestViewController extends Controller
     }
     public function adminLogin()
     {
-        return redirect()->route('login');
+        return redirect()->route('admin.login');
     }
     //===============  register Page ================//
     public function userRegister()

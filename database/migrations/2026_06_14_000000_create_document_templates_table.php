@@ -415,12 +415,29 @@ Date: ____/____/________</p>',
                 'key' => 'company_letterhead',
                 'title' => 'Company Corporate Letterhead Layout',
                 'type' => 'client',
-                'content' => '<div style="text-align: center; border-bottom: 3px double #000; padding-bottom: 20px; margin-bottom: 30px;">
-    {{company_logo}}
-    <h1 style="font-size: 26px; text-transform: uppercase; margin: 10px 0 5px 0; color: #111; letter-spacing: 1px; font-family: sans-serif;">{{company_name}}</h1>
-    <p style="margin: 5px 0 0 0; font-size: 13px; color: #555; font-style: normal; font-family: sans-serif; font-weight: normal;">
-        {{company_address}} &bull; Phone: {{company_phone}} &bull; Email: {{company_email}}
-    </p>
+                'content' => '<div class="company-executive-letterhead" style="margin-bottom: 25px; font-family: -apple-system, BlinkMacSystemFont, \'Segoe UI\', Roboto, \'Georgia\', serif;">
+    <div style="height: 4px; background: linear-gradient(90deg, #1e3c72 0%, #2a5298 50%, #d97706 100%); margin-bottom: 20px; border-radius: 2px;"></div>
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; border: none !important; background: transparent !important;">
+        <tr>
+            <td style="vertical-align: middle; text-align: left; width: 60%; border: none !important; padding: 0;">
+                <div style="font-size: 24px; font-weight: 800; color: #1e3c72; letter-spacing: 0.8px; text-transform: uppercase;">
+                    {{company_name}}
+                </div>
+                <div style="font-size: 10.5px; font-weight: 700; color: #b45309; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 2px;">
+                    Privileged Legal &amp; CPA Advisory Services &bull; Forensic Recovery
+                </div>
+            </td>
+            <td style="vertical-align: middle; text-align: right; width: 40%; font-size: 11px; color: #475569; line-height: 1.45; border: none !important; padding: 0;">
+                <strong style="color: #1e3c72; font-size: 12px;">Corporate Headquarters</strong><br>
+                <span>{{company_address}}</span><br>
+                <span><strong>Phone:</strong> {{company_phone}}</span><br>
+                <span><strong>Email:</strong> {{company_email}}</span>
+            </td>
+        </tr>
+    </table>
+    <div style="border-bottom: 2px solid #1e3c72; position: relative;">
+        <div style="height: 1px; background: #fecc56; margin-top: 2px;"></div>
+    </div>
 </div>',
                 'created_at' => now(),
                 'updated_at' => now()
