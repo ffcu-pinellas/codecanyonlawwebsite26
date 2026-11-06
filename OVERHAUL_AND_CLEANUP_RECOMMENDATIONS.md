@@ -144,3 +144,4 @@ When you are ready to proceed with these cleanups:
 1. **Execute Phase 1** (Purge legacy CSS classes, dead comments, demo seeders, and refine terminology to CPA/Practitioner).
 2. **Execute Phase 2** (Lead-to-Case promotion button and unified audit trail).
 3. **Execute Phase 3** (Security token lock on `/setup` and `/cron/*`, and `APP_DEBUG=false` toggle).
+

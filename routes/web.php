@@ -39,20 +39,47 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/setup', function (){
+    $log = [];
+    $hasError = false;
+
+    // 1. Run Migrations
     try {
         \Illuminate\Support\Facades\Artisan::call('migrate', ['--force' => true]);
-    } catch (\Throwable $e) {}
+        $migrateOut = trim(\Illuminate\Support\Facades\Artisan::output());
+        $log[] = ['title' => 'Database Migrations', 'status' => 'success', 'details' => $migrateOut ?: 'All database tables already up to date.'];
+    } catch (\Throwable $e) {
+        $hasError = true;
+        $log[] = ['title' => 'Database Migrations', 'status' => 'error', 'details' => $e->getMessage()];
+    }
+
+    // 2. Storage Symlink
     try {
         \Illuminate\Support\Facades\Artisan::call('storage:link');
-    } catch (\Throwable $e) {}
-    try {
-        \Illuminate\Support\Facades\Artisan::call('cache:clear');
-    } catch (\Throwable $e) {}
-    try {
-        \Illuminate\Support\Facades\Artisan::call('view:clear');
-    } catch (\Throwable $e) {}
+        $log[] = ['title' => 'Storage Symlink', 'status' => 'success', 'details' => trim(\Illuminate\Support\Facades\Artisan::output()) ?: 'Storage link verified.'];
+    } catch (\Throwable $e) {
+        $log[] = ['title' => 'Storage Symlink', 'status' => 'warning', 'details' => $e->getMessage()];
+    }
 
-    // Clean up settings.json to remove bdcoder / bapric / bipric
+    // 3. Clear Caches & Optimize
+    try {
+        \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+        $log[] = ['title' => 'Framework Cache Flush', 'status' => 'success', 'details' => 'Application, route, config, and compiled view caches purged.'];
+    } catch (\Throwable $e) {
+        $log[] = ['title' => 'Framework Cache Flush', 'status' => 'warning', 'details' => $e->getMessage()];
+    }
+
+    // 4. Verify Schema Columns
+    $schemaChecks = [];
+    try {
+        $schemaChecks['general_settings.company_phone'] = \Illuminate\Support\Facades\Schema::hasColumn('general_settings', 'company_phone') ? 'Present' : 'Missing';
+        $schemaChecks['messages.telegram_message_id'] = \Illuminate\Support\Facades\Schema::hasColumn('messages', 'telegram_message_id') ? 'Present' : 'Missing';
+        $schemaChecks['messages.message'] = \Illuminate\Support\Facades\Schema::hasColumn('messages', 'message') ? 'Present' : 'Missing';
+        $schemaChecks['messages.text'] = \Illuminate\Support\Facades\Schema::hasColumn('messages', 'text') ? 'Present' : 'Missing';
+    } catch (\Throwable $e) {
+        $schemaChecks['error'] = $e->getMessage();
+    }
+
+    // 5. Clean up settings.json to remove bdcoder / bapric / bipric
     try {
         $settingsPath = storage_path('settings.json');
         if (file_exists($settingsPath)) {
@@ -62,78 +89,44 @@ Route::get('/setup', function (){
             $settingsJson = str_ireplace('bipric', 'Your CPA Expert', $settingsJson);
             file_put_contents($settingsPath, $settingsJson);
         }
-    } catch (\Throwable $settingsEx) {
-        // Silence errors
+    } catch (\Throwable $settingsEx) {}
+
+    // HTML Output UI
+    $statusColor = $hasError ? '#ef4444' : '#10b981';
+    $statusTitle = $hasError ? 'Setup Completed with Warnings' : 'System Setup & Migrations Completed Successfully';
+
+    $html = "<!DOCTYPE html><html><head><title>System Setup Status</title>";
+    $html .= "<meta name='viewport' content='width=device-width, initial-scale=1'>";
+    $html .= "<style>body{background:#0b132b;color:#f1f5f9;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;margin:0;padding:30px;}";
+    $html .= ".card{max-width:720px;margin:20px auto;background:#1c2541;border-radius:12px;padding:28px;box-shadow:0 10px 25px rgba(0,0,0,0.4);border-top:4px solid {$statusColor};}";
+    $html .= "h2{margin-top:0;color:#fff;} .badge{display:inline-block;padding:4px 10px;border-radius:6px;font-size:12px;font-weight:700;text-transform:uppercase;}";
+    $html .= ".badge-success{background:#065f46;color:#34d399;} .badge-error{background:#991b1b;color:#fca5a5;} .badge-warning{background:#92400e;color:#fcd34d;}";
+    $html .= ".step{margin:16px 0;padding:14px;background:#0f172a;border-radius:8px;} pre{background:#000;color:#38bdf8;padding:10px;border-radius:6px;overflow-x:auto;font-size:12px;}";
+    $html .= "a.btn{display:inline-block;margin-top:20px;padding:12px 24px;background:#f59e0b;color:#000;font-weight:700;text-decoration:none;border-radius:8px;}</style></head><body>";
+    $html .= "<div class='card'>";
+    $html .= "<h2>⚖️ Your CPA Expert &mdash; Environment Setup</h2>";
+    $html .= "<p style='color:{$statusColor};font-weight:bold;'>{$statusTitle}</p>";
+
+    foreach ($log as $item) {
+        $badgeClass = 'badge-' . $item['status'];
+        $html .= "<div class='step'>";
+        $html .= "<div style='display:flex;justify-content:space-between;align-items:center;'>";
+        $html .= "<strong>{$item['title']}</strong>";
+        $html .= "<span class='badge {$badgeClass}'>{$item['status']}</span>";
+        $html .= "</div>";
+        $html .= "<pre>" . htmlspecialchars($item['details']) . "</pre>";
+        $html .= "</div>";
     }
 
-    // Clean up database tables from legacy hardcoded demo texts
-    try {
-        if (\Illuminate\Support\Facades\Schema::hasTable('users')) {
-            \Illuminate\Support\Facades\DB::table('users')->where('email', 'admin@bdcoder.com')->update(['email' => 'admin@yourcpaexpert.com']);
-        }
-        if (\Illuminate\Support\Facades\Schema::hasTable('general_settings')) {
-            \Illuminate\Support\Facades\DB::table('general_settings')->where('site_name', 'Bapric')->update(['site_name' => 'Your CPA Expert']);
-            \Illuminate\Support\Facades\DB::table('general_settings')->where('author_name', 'BdCoder')->update(['author_name' => 'Your CPA Expert']);
-        }
-        if (\Illuminate\Support\Facades\Schema::hasTable('footer_settings')) {
-            \Illuminate\Support\Facades\DB::table('footer_settings')->where('footer_copy_right', 'like', '%bdCoder%')->update(['footer_copy_right' => 'Copyright © 2026 Your CPA Expert All reserved.']);
-            \Illuminate\Support\Facades\DB::table('footer_settings')->where('footer_copy_right', 'like', '%bapric%')->update(['footer_copy_right' => 'Copyright © 2026 Your CPA Expert All reserved.']);
-        }
-    } catch (\Throwable $dbEx) {
-        // Silence errors
-    }
+    $html .= "<div class='step'><strong>Verified Database Schema Columns:</strong><pre>" . json_encode($schemaChecks, JSON_PRETTY_PRINT) . "</pre></div>";
+    $html .= "<div style='display:flex;gap:12px;flex-wrap:wrap;'>";
+    $html .= "<a href='/' class='btn'>Return to Website &rarr;</a>";
+    $html .= "<a href='/telegram/setup-webhook' class='btn' style='background:#38bdf8;color:#000;'>Bind Telegram Webhook &rarr;</a>";
+    $html .= "<a href='/admin/dashboard' class='btn' style='background:#6366f1;color:#fff;'>Admin Dashboard &rarr;</a>";
+    $html .= "</div>";
+    $html .= "</div></body></html>";
 
-    // Convert legacy relief requests to cases
-    try {
-        $reliefs = \App\Models\ReliefRequest::all();
-        foreach ($reliefs as $relief) {
-            do {
-                $caseNumber = 'CS-' . rand(100000, 999999);
-            } while (\App\Models\ClientCase::where('case_number', $caseNumber)->exists());
-
-            // Create case
-            $case = \App\Models\ClientCase::create([
-                'case_number' => $caseNumber,
-                'title' => $relief->reason ?: 'CPA & Legal Representation Case',
-                'description' => "Client Name: " . $relief->name . "\nPhone: " . $relief->phone . "\nEmail: " . $relief->email . "\nAddress: " . $relief->address . "\n\nProposed Resolution / Target Goal:\n" . $relief->offer . "\n\nAdditional Background & Details:\n" . ($relief->details ?: ''),
-                'client_id' => $relief->user_id,
-                'status' => 'pending',
-            ]);
-
-            // Save file
-            if ($relief->file && file_exists(public_path($relief->file))) {
-                $fileExtension = pathinfo($relief->file, PATHINFO_EXTENSION);
-                $newFileName = time() . '_' . uniqid() . '.' . $fileExtension;
-                $newFilePath = '/upload/case-documents/' . $newFileName;
-
-                $uploadPath = public_path('upload/case-documents');
-                if (!\Illuminate\Support\Facades\File::exists($uploadPath)) {
-                    \Illuminate\Support\Facades\File::makeDirectory($uploadPath, 0755, true);
-                }
-
-                copy(public_path($relief->file), public_path($newFilePath));
-
-                // Create Document Vault entry
-                \App\Models\CaseDocument::create([
-                    'case_id' => $case->id,
-                    'user_id' => $relief->user_id,
-                    'title' => $relief->file_name ?: 'Intake Notice Document',
-                    'file_path' => $newFilePath,
-                    'file_type' => $fileExtension,
-                    'file_size' => file_exists(public_path($newFilePath)) ? filesize(public_path($newFilePath)) : 0,
-                    'is_client_uploaded' => true,
-                ]);
-            }
-
-            \App\Models\ActivityLog::log('Case Request Promoted', 'Automatically converted assistance request #' . $relief->id . ' to Case #' . $case->case_number);
-            $relief->delete();
-        }
-    } catch (\Throwable $e) {
-        // Log or handle
-    }
-
-    echo 'done';
-    return redirect()->route('home');
+    return response($html);
 });
 
 Route::get('/debug-env', function() {
@@ -265,7 +258,8 @@ Route::prefix('/client')->middleware(['auth', 'security.setup'])->as('client.')-
     // Live Counsel Real-Time Chat
     Route::prefix('conversation')->as('conversation.')->group(function (){
         Route::get('/', [ClientViewController::class, 'getConversation'])->name('index');
-        Route::post('/send-chat/{slug}', [ClientViewController::class, 'sendChatMessage'])->name('send-chat');
+        Route::post('/store', [ClientViewController::class, 'sendChatMessage'])->name('store');
+        Route::post('/send-chat/{slug?}', [ClientViewController::class, 'sendChatMessage'])->name('send-chat');
         Route::get('/poll/{slug}', [ClientViewController::class, 'pollChatMessages'])->name('poll');
         Route::get('/search-attorney', [ClientViewController::class, 'searchAttorney'])->name('search-attorney');
         Route::get('/start-chat/{user}', [ClientViewController::class, 'createConversation'])->name('start-chat');
@@ -355,6 +349,7 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth', 'adm
         Route::prefix('client')->as('client.')->group(function (){
             Route::get('/', [UserController::class, 'clientIndex'])->name('index');
             Route::post('/store', [UserController::class, 'clientStore'])->name('store');
+            Route::post('/batch-action', [UserController::class, 'batchClientAction'])->name('batch-action');
             Route::post('/{id}/generate-credentials', [UserController::class, 'generateCredentials'])->name('generate-credentials');
             Route::post('/send-welcome-email', [UserController::class, 'sendCustomWelcomeEmail'])->name('send-welcome-email');
             Route::get('/{id}/impersonate', [UserController::class, 'impersonateClient'])->name('impersonate');
@@ -545,6 +540,7 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth', 'adm
         Route::get('/messages/{id}/poll', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'pollMessages'])->name('messages.poll');
         Route::get('/download-payment-form/{id}/{type}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'downloadPaymentForm'])->name('download-payment-form');
         Route::post('/verify-payment/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'verifyPayment'])->name('verify-payment');
+        Route::post('/toggle-lock/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'toggleLock'])->name('toggle-lock');
 
         // Ledger management
         Route::get('/ledger/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'ledgerIndex'])->name('ledger.index');
@@ -623,7 +619,7 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth', 'adm
 Route::get('/staff/login', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'showLoginForm'])->name('staff.login');
 Route::post('/staff/login', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'login'])->middleware('throttle:5,1');
 
-Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff'])->as('staff.')->group(function () {
+Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff', 'security.setup'])->as('staff.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'dashboard'])->name('dashboard');
     Route::post('/clock-in', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'clockIn'])->name('clock-in');
     Route::post('/clock-out', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'clockOut'])->name('clock-out');

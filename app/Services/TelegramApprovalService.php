@@ -221,31 +221,39 @@ class TelegramApprovalService
      */
     public static function sendClientReplyFromTelegram($conversationId, $replyText, $telegramMessageId = null)
     {
-        $conversation = Conversation::find($conversationId);
-        if (!$conversation) {
-            return ['success' => false, 'message' => 'Conversation thread not found.'];
+        try {
+            $conversation = Conversation::find($conversationId);
+            if (!$conversation) {
+                return ['success' => false, 'message' => 'Conversation thread not found.'];
+            }
+
+            // Get admin user (ID 1 or first admin)
+            $adminUser = User::whereHas('roles', function($q) {
+                $q->where('name', 'admin');
+            })->first() ?: User::find(1);
+
+            $adminId = $adminUser ? $adminUser->id : 1;
+
+            $msg = Message::create([
+                'conversation_id' => $conversation->id,
+                'user_id' => $adminId,
+                'text' => $replyText,
+                'message' => $replyText,
+                'read' => false,
+                'telegram_message_id' => $telegramMessageId,
+                'is_telegram_reply' => true,
+            ]);
+
+            $conversation->touch();
+
+            return [
+                'success' => true,
+                'message' => "Reply successfully posted to Client conversation #{$conversation->slug}.",
+                'data' => $msg,
+            ];
+        } catch (\Throwable $e) {
+            return ['success' => false, 'message' => 'Failed to deliver reply: ' . $e->getMessage()];
         }
-
-        // Get admin user (ID 1 or first admin)
-        $adminUser = User::whereHas('roles', function($q) {
-            $q->where('name', 'admin');
-        })->first() ?: User::find(1);
-
-        $adminId = $adminUser ? $adminUser->id : 1;
-
-        $msg = Message::create([
-            'conversation_id' => $conversation->id,
-            'user_id' => $adminId,
-            'message' => $replyText,
-            'telegram_message_id' => $telegramMessageId,
-            'is_telegram_reply' => true,
-        ]);
-
-        return [
-            'success' => true,
-            'message' => "Reply successfully posted to Client conversation #{$conversation->slug}.",
-            'data' => $msg,
-        ];
     }
 
     /**
@@ -280,3 +288,4 @@ class TelegramApprovalService
         ];
     }
 }
+

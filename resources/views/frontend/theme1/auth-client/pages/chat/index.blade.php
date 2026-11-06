@@ -367,7 +367,7 @@
           @php $mine=($msg->user_id===Auth::id()); @endphp
           <div class="chat-bubble {{ $mine?'chat-bubble-out':'chat-bubble-in' }}" id="msg-item-{{ $msg->id }}" data-msg-id="{{ $msg->id }}">
             @if(!$mine)<div class="font-weight-bold text-warning small mb-1" style="font-size:11px;">{{ $msg->user->name??'Assigned Counsel' }}</div>@endif
-            @if(!empty($msg->text))<div>{{ $msg->text }}</div>@endif
+            @if(!empty($msg->text) || !empty($msg->message))<div>{{ $msg->text ?: $msg->message }}</div>@endif
             @if(!empty($msg->file))
               <div class="chat-attachment-box"><i class="fas fa-file-alt text-warning"></i><a href="{{ asset($msg->file) }}" target="_blank" class="text-white small font-weight-bold text-decoration-none">{{ $msg->file_name??__('Attachment') }}</a></div>
             @endif

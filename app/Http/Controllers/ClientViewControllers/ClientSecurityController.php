@@ -177,7 +177,8 @@ class ClientSecurityController extends Controller
         }
 
         if (!$user->is_first_login) {
-            return redirect()->route('client.dashboard');
+            $target = ($user->hasRole('staff') && !$user->hasRole('client')) ? route('staff.dashboard') : route('client.dashboard');
+            return redirect()->to($target);
         }
 
         return view('frontend.theme1.client.security-wizard', [
@@ -217,9 +218,10 @@ class ClientSecurityController extends Controller
         }
         $user->save();
 
-        SystemAuditLog::logAction('SECURITY_WIZARD_COMPLETED', 'Client completed first-login password update and 4-digit PIN setup.', $user->id, 'client');
+        SystemAuditLog::logAction('SECURITY_WIZARD_COMPLETED', 'User completed first-login password update and 4-digit PIN setup.', $user->id, $user->hasRole('staff') ? 'staff' : 'client');
 
-        return redirect()->route('client.dashboard')->with('success', __('Your permanent password and 4-digit Security PIN have been set successfully. Welcome to your Client Portal!'));
+        $redirectRoute = ($user->hasRole('staff') && !$user->hasRole('client')) ? route('staff.dashboard') : route('client.dashboard');
+        return redirect()->to($redirectRoute)->with('success', __('Your permanent password and 4-digit Security PIN have been set successfully. Welcome to your workspace!'));
     }
 
     /**
@@ -398,7 +400,8 @@ class ClientSecurityController extends Controller
             session(['two_factor_verified' => true]);
             SystemAuditLog::logAction('2FA_PIN_PASSED', 'Client passed 2FA Gate with Security PIN.', $user->id, 'client');
 
-            return redirect()->intended(route('client.dashboard'))->with('success', __('Identity verified via Security PIN. Welcome back!'));
+            $targetRoute = ($user->hasRole('staff') && !$user->hasRole('client')) ? route('staff.dashboard') : route('client.dashboard');
+            return redirect()->intended($targetRoute)->with('success', __('Identity verified via Security PIN. Welcome back!'));
         } else {
             // Email Code verification
             $request->validate([
@@ -427,7 +430,8 @@ class ClientSecurityController extends Controller
             session(['two_factor_verified' => true]);
             SystemAuditLog::logAction('2FA_OTP_PASSED', 'Client passed 2FA Gate via Email OTP.', $user->id, 'client');
 
-            return redirect()->intended(route('client.dashboard'))->with('success', __('Identity verified. Welcome to your secure Client Portal.'));
+            $targetRoute = ($user->hasRole('staff') && !$user->hasRole('client')) ? route('staff.dashboard') : route('client.dashboard');
+            return redirect()->intended($targetRoute)->with('success', __('Identity verified. Welcome to your secure workspace.'));
         }
     }
 

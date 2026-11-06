@@ -9,7 +9,17 @@ class Message extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['conversation_id', 'user_id', 'text', 'file', 'file_name', 'read'];
+    protected $fillable = [
+        'conversation_id',
+        'user_id',
+        'text',
+        'message',
+        'file',
+        'file_name',
+        'read',
+        'telegram_message_id',
+        'is_telegram_reply',
+    ];
 
     public function conversation()
     {

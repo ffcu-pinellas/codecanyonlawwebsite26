@@ -69,7 +69,7 @@
 
                     <div class="card-body">
                         <div class="table-responsive style-scroll">
-                            <table class="table bapric_table table-striped table-bordered miw-500" cellspacing="0" width="100%">
+                            <table class="table table-striped table-bordered table-dark miw-500 text-white" cellspacing="0" width="100%">
                                 <thead>
                                     <tr>
                                         <th>{{ __('Staff ID') }}</th>
@@ -125,12 +125,39 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                <div class="d-flex flex-wrap">
-                                                     <a href="{{ route('admin.staff.edit', $staff->id) }}" class="btn btn-xs btn-info m-1" title="{{ __('Edit Settings') }}"><i class="fas fa-edit"></i></a>
-                                                     <a href="{{ route('admin.staff.ledger.index', $staff->id) }}" class="btn btn-xs btn-warning m-1 text-white" title="{{ __('Financial Ledger') }}"><i class="fas fa-wallet"></i></a>
+                                                <div class="d-flex flex-wrap align-items-center">
+                                                     <!-- Sign In As Staff -->
+                                                     <a href="{{ route('admin.user.login', $staff->id) }}" target="_blank" class="btn btn-xs btn-info font-weight-bold m-1 text-white" title="{{ __('Sign In As Staff') }}">
+                                                         <i class="fas fa-user-secret mr-1"></i> {{ __('Sign In') }}
+                                                     </a>
+
+                                                     <!-- Regenerate Credentials -->
+                                                     <form action="{{ route('admin.user.client.generate-credentials', $staff->id) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ __('Generate new temporary login credentials for this staff member?') }}');">
+                                                         @csrf
+                                                         <button type="submit" class="btn btn-xs btn-warning font-weight-bold text-dark m-1" title="{{ __('Regenerate Credentials') }}">
+                                                             <i class="fas fa-key"></i>
+                                                         </button>
+                                                     </form>
+
+                                                     <!-- Lock / Unlock Account -->
+                                                     <form action="{{ route('admin.staff.toggle-lock', $staff->id) }}" method="POST" class="d-inline">
+                                                         @csrf
+                                                         @if($staff->is_locked || ($staff->account_locked_until && $staff->account_locked_until > now()))
+                                                             <button type="submit" class="btn btn-xs btn-danger font-weight-bold m-1" title="{{ __('Account Suspended - Click to Unlock') }}">
+                                                                 <i class="fas fa-lock"></i>
+                                                             </button>
+                                                         @else
+                                                             <button type="submit" class="btn btn-xs btn-outline-secondary m-1 text-white" title="{{ __('Account Active - Click to Suspend') }}">
+                                                                 <i class="fas fa-unlock"></i>
+                                                             </button>
+                                                         @endif
+                                                     </form>
+
+                                                     <a href="{{ route('admin.staff.edit', $staff->id) }}" class="btn btn-xs btn-light m-1" title="{{ __('Edit Settings') }}"><i class="fas fa-edit"></i></a>
+                                                     <a href="{{ route('admin.staff.ledger.index', $staff->id) }}" class="btn btn-xs btn-primary m-1 text-white" title="{{ __('Financial Ledger') }}"><i class="fas fa-wallet"></i></a>
                                                      <a href="{{ route('admin.staff.time-logs', $staff->id) }}" class="btn btn-xs btn-success m-1" title="{{ __('Time & Wage Logs') }}"><i class="fas fa-history"></i></a>
                                                      <a href="{{ route('admin.staff.login-logs', $staff->id) }}" class="btn btn-xs btn-secondary m-1" title="{{ __('Login Audit') }}"><i class="fas fa-user-lock"></i></a>
-                                                     <a href="{{ route('admin.staff.messages', $staff->id) }}" class="btn btn-xs btn-primary m-1" title="{{ __('Secure Chat') }}"><i class="fas fa-comments"></i></a>
+                                                     <a href="{{ route('admin.staff.messages', $staff->id) }}" class="btn btn-xs btn-dark m-1 border border-secondary" title="{{ __('Secure Chat') }}"><i class="fas fa-comments"></i></a>
                                                     
                                                     <form action="{{ route('admin.staff.destroy', $staff->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this staff member? This deletes all associated time-logs, messages and log records.');" class="d-inline">
                                                         @csrf

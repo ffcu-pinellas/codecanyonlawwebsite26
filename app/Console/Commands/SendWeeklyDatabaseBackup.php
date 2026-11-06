@@ -37,3 +37,4 @@ class SendWeeklyDatabaseBackup extends Command
         }
     }
 }
+

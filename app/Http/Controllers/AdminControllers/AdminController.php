@@ -132,7 +132,6 @@ class AdminController extends Controller
 
     public function profileUpdate(Request $request)
     {
-        //return $this->backWithWarning('Create, update and delete is not allowed to demo version');
         try {
             $input = $request->all();
             if ($request->hasFile('photo')) {
@@ -351,15 +350,20 @@ class AdminController extends Controller
                         $client = $person;
                     }
                 }
-                $lastMessage = $conversation->messages()->orderBy('id', 'DESC')->first();
+                $clientName = ($client && isset($client->name)) ? htmlspecialchars($client->name) : 'Client';
+                $clientAvatar = ($client && !empty($client->profile_photo_url)) ? asset($client->profile_photo_url) : asset('backend/assets/img/profile/other.png');
+                $lastText = $lastMessage ? htmlspecialchars($lastMessage->text ?: $lastMessage->message ?: 'Sent an attachment') : '<em class="text-muted">No messages yet</em>';
+                $lastFileHtml = ($lastMessage && !empty($lastMessage->file)) ? '<p class="px-0 pb-1 my-0"><i class="fas fa-file"></i> &nbsp;' . htmlspecialchars($lastMessage->file_name ?: 'Attachment') . '</p>' : '';
+                $lastSeenHtml = $lastMessage ? ($lastMessage->read ? '<small>seen</small>' : '<small>unseen</small>') : '';
+
                 $row[] = '<tr>
                         <td width="5%">' . ($key + 1) . '</td>
-                        <td width="10%"><img src="' . asset($client->profile_photo_url) . '" alt="" class="img-fluid img-thumbnail rounded-circle w-50"></td>
-                        <td width="15%">' . $client->name . '</td>
+                        <td width="10%"><img src="' . $clientAvatar . '" alt="" class="img-fluid img-thumbnail rounded-circle w-50"></td>
+                        <td width="15%">' . $clientName . '</td>
                         <td><a href="' . route('admin.conversation.get-conversation', $conversation->slug) . '">
-                        <p class="px-0 pb-1 my-0">' . $lastMessage->text . '</p>
-                        ' . ($lastMessage->file ? '<p class="px-0 pb-1 my-0"><i class="fas fa-file"></i> &nbsp;' . $lastMessage->file_name . '</p>' : '') . '
-                        <p class="px-0 pb-1 my-0 text-right">' . ($lastMessage->read ? '<small>seen</small>' : '<small>unseen</small>') . '</p>
+                        <p class="px-0 pb-1 my-0">' . $lastText . '</p>
+                        ' . $lastFileHtml . '
+                        <p class="px-0 pb-1 my-0 text-right">' . $lastSeenHtml . '</p>
                         </a></td>
                         <td width="10%" class="text-right">' . date('D-M-y', strtotime($conversation->updated_at)) . '</br>' . date('H:i', strtotime($conversation->updated_at)) . '</td>
                     </tr>';

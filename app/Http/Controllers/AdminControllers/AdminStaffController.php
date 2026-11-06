@@ -848,4 +848,33 @@ class AdminStaffController extends Controller
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
+
+    /**
+     * Toggle lock/freeze state for staff account
+     */
+    public function toggleLock($id)
+    {
+        try {
+            $staff = User::role('staff')->findOrFail($id);
+            $isCurrentlyLocked = (bool)$staff->is_locked || ($staff->account_locked_until && $staff->account_locked_until > now());
+
+            if ($isCurrentlyLocked) {
+                $staff->is_locked = false;
+                $staff->account_locked_until = null;
+                $staff->failed_pin_attempts = 0;
+                $msg = __("Staff member ':name' account has been unlocked.", ['name' => $staff->name]);
+                \App\Models\SystemAuditLog::logAction('STAFF_UNLOCKED', "Admin unlocked staff member #{$staff->id} ({$staff->email})", auth()->id(), 'admin');
+            } else {
+                $staff->is_locked = true;
+                $staff->account_locked_until = now()->addDays(365);
+                $msg = __("Staff member ':name' account has been locked and suspended.", ['name' => $staff->name]);
+                \App\Models\SystemAuditLog::logAction('STAFF_LOCKED', "Admin locked staff member #{$staff->id} ({$staff->email})", auth()->id(), 'admin');
+            }
+            $staff->save();
+
+            return redirect()->back()->with('success', $msg);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
 }

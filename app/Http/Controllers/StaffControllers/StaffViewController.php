@@ -166,6 +166,15 @@ class StaffViewController extends Controller
             $weeklyHours[] = round($daySeconds / 3600, 2);
         }
 
+        $pendingTasksCount = \App\Models\StaffTask::where('staff_user_id', $user->id)
+            ->whereIn('status', ['pending', 'in_progress', 'todo'])
+            ->count();
+            
+        $approvedReimbursementTotal = \App\Models\StaffLedgerEntry::where('user_id', $user->id)
+            ->where('type', 'reimbursement')
+            ->where('status', 'approved')
+            ->sum('amount');
+
         $title = __('Staff Dashboard');
 
         return view('frontend.theme1.auth-staff.dashboard', compact(
@@ -178,7 +187,9 @@ class StaffViewController extends Controller
             'totalEarned',
             'officer',
             'weeklyDays',
-            'weeklyHours'
+            'weeklyHours',
+            'pendingTasksCount',
+            'approvedReimbursementTotal'
         ));
     }
 

@@ -66,3 +66,4 @@ class SendDailyPracticeDigest extends Command
         return 0;
     }
 }
+

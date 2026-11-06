@@ -369,39 +369,69 @@ class ClientViewController extends Controller
         }
     }
 
-    public function sendChatMessage(Request $request, $slug)
+    public function sendChatMessage(Request $request, $slug = null)
     {
         $request->validate([
             'text' => 'nullable|string',
+            'message' => 'nullable|string',
             'file' => 'nullable|file|mimes:pdf,docx,doc,jpeg,png,jpg,xlsx|max:15360',
+            'attachment' => 'nullable|file|mimes:pdf,docx,doc,jpeg,png,jpg,xlsx|max:15360',
         ]);
         
         try {
-            $conversation = Conversation::where('slug', $slug)->firstOrFail();
+            $user = Auth::user();
+            $conversation = null;
+
+            if (!empty($slug) && $slug !== 'store') {
+                $conversation = Conversation::where('slug', $slug)->first();
+            }
+
+            if (!$conversation) {
+                $conversation = $user->conversation()->first();
+            }
+
+            if (!$conversation) {
+                // Provision a direct conversation if none exists
+                $counsel = $user->assigned_counsel ?: User::role(['attorney', 'admin'])->first();
+                $counselId = $counsel ? $counsel->id : 1;
+                $slugNew = 'chat_' . $user->id . '_' . $counselId . '_' . time();
+
+                $conversation = Conversation::create([
+                    'name' => $user->name . ' vs ' . ($counsel ? $counsel->name : 'Practice Counsel'),
+                    'slug' => $slugNew,
+                ]);
+                $conversation->user()->attach([$user->id, $counselId]);
+            }
+
             $filePath = null;
             $fileName = null;
-            
-            if ($request->hasFile('file')) {
-                $file = $request->file('file');
-                $fileName = $file->getClientOriginalName();
-                $ext = $file->getClientOriginalExtension();
+
+            $fileObj = $request->file('file') ?: $request->file('attachment');
+            if ($fileObj) {
+                $fileName = $fileObj->getClientOriginalName();
+                $ext = $fileObj->getClientOriginalExtension();
                 $newFileName = time() . '_' . uniqid() . '.' . $ext;
                 $uploadPath = public_path('upload/chat-attachments');
                 if (!File::exists($uploadPath)) {
                     File::makeDirectory($uploadPath, 0755, true);
                 }
-                $file->move($uploadPath, $newFileName);
+                $fileObj->move($uploadPath, $newFileName);
                 $filePath = '/upload/chat-attachments/' . $newFileName;
             }
             
-            if (empty($request->text) && empty($filePath)) {
+            $rawText = trim($request->input('text') ?: $request->input('message') ?: '');
+            if (empty($rawText) && empty($filePath)) {
+                if (!$request->ajax() && !$request->wantsJson()) {
+                    return redirect()->back()->with('error', __('Please enter a message or select a file to send.'));
+                }
                 return response()->json(['error' => 'Message or attachment required.'], 422);
             }
             
             $message = Message::create([
                 'conversation_id' => $conversation->id,
                 'user_id' => Auth::id(),
-                'text' => $request->text ?: '',
+                'text' => $rawText,
+                'message' => $rawText,
                 'file' => $filePath,
                 'file_name' => $fileName,
                 'read' => false,
@@ -410,7 +440,7 @@ class ClientViewController extends Controller
             // Telegram Alert with 2-Way Reply Capability
             try {
                 $clientName = Auth::user()->name;
-                $msgPreview = $request->text ?: "[Attached: {$fileName}]";
+                $msgPreview = $rawText ?: "[Attached: {$fileName}]";
                 $telMsg = "💬 <b>Live Client Message Received</b>\n\n"
                         . "👤 <b>Client:</b> " . htmlspecialchars($clientName, ENT_QUOTES, 'UTF-8') . " (#CLI-" . sprintf('%05d', Auth::id()) . ")\n"
                         . "📁 <b>Convo ID:</b> {$conversation->id}\n"
@@ -423,6 +453,7 @@ class ClientViewController extends Controller
                     'inline_keyboard' => [
                         [
                             ['text' => '🔓 Unlock / Clear PIN', 'callback_data' => "unlock_usr:" . Auth::id()],
+                            ['text' => '👤 User Details', 'callback_data' => "user_info:" . Auth::id()],
                         ]
                     ]
                 ];
@@ -433,11 +464,15 @@ class ClientViewController extends Controller
                 }
             } catch (\Throwable $e) {}
             
+            if (!$request->ajax() && !$request->wantsJson()) {
+                return redirect()->back()->with('success', __('Message delivered to your assigned counsel.'));
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => [
                     'id' => $message->id,
-                    'text' => $message->text,
+                    'text' => $message->text ?: $message->message,
                     'file' => $message->file,
                     'file_name' => $message->file_name,
                     'is_sender' => true,
@@ -446,6 +481,9 @@ class ClientViewController extends Controller
                 ]
             ]);
         } catch (\Throwable $e) {
+            if (!$request->ajax() && !$request->wantsJson()) {
+                return redirect()->back()->with('error', $e->getMessage());
+            }
             return response()->json(['error' => $e->getMessage()], 500);
         }
     }
@@ -472,7 +510,7 @@ class ClientViewController extends Controller
                     'id' => $msg->id,
                     'user_id' => $msg->user_id,
                     'user_name' => $msg->user ? $msg->user->name : 'Counsel',
-                    'text' => $msg->text,
+                    'text' => $msg->text ?: ($msg->message ?? ''),
                     'file' => $msg->file,
                     'file_name' => $msg->file_name,
                     'is_sender' => ($msg->user_id === Auth::id()),
@@ -612,12 +650,15 @@ class ClientViewController extends Controller
                     }
                 }
                 $lastMessage = $conversation->messages()->orderBy('id', 'DESC')->first();
-                $attorney = $agent->attorney;
+                $attorney = ($agent && isset($agent->attorney)) ? $agent->attorney : null;
+                $attorneyName = $attorney ? htmlspecialchars($attorney->name) : (($agent && isset($agent->name)) ? htmlspecialchars($agent->name) : 'Assigned Counsel');
+                $attorneyImg = ($attorney && !empty($attorney->image)) ? asset('upload/attorneys/' . $attorney->image) : asset('backend/assets/img/profile/other.png');
+
                 $row[] = '<a href="' . route('client.conversation.get-conversation', $conversation->slug) . '">
                         <div class="card mb-1">
                             <div class="card-header">
-                                <img src="' . asset('upload/attorneys/' . $attorney->image) . '" alt="" class="img-fluid img-thumbnail chat-attorney-Search">
-                                ' . $attorney->name . '
+                                <img src="' . $attorneyImg . '" alt="" class="img-fluid img-thumbnail chat-attorney-Search">
+                                ' . $attorneyName . '
                                  <span class="float-right text-right">' . date('D-M-y', strtotime($conversation->updated_at)) . '</br>' . date('H:i', strtotime($conversation->updated_at)) . '</span>
                             </div>
                         </div>

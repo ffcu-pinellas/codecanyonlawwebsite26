@@ -1,6 +1,6 @@
 @extends('backend.layouts.master-layout')
 
-@section('title', config('app.name', 'Bapric').' | '.$title)
+@section('title', config('app.name', 'Your CPA Expert').' | '.$title)
 
 @section('page-css')
 @endsection
@@ -32,7 +32,7 @@
                             </div>
                         </div>
                         <div class="card-body ">
-                            <table id="slider" class="table bapric_table table-striped table-bordered miw-500" cellspacing="0" width="100%">
+                            <table id="slider" class="table table-striped table-bordered table-dark miw-500" cellspacing="0" width="100%">
                                 <thead>
                                 <tr>
                                     <th scope="col">{{__('Serial')}}</th>
@@ -49,21 +49,33 @@
                                 @foreach($hardships as $value)
                                     <tr>
                                         <th>{{ $loop->index+1 }}</th>
-                                        <td>{{ clean($value->user->name) }}</td>
+                                        <td>{{ clean($value->user->name ?? 'Guest Client') }}</td>
                                         <td>{{ clean($value->name) }}</td>
                                         <td>{{ clean($value->email) }}</td>
                                         <td>{{ clean($value->phone) }}</td>
-                                        <td><a href="{{ asset($value->file) }}" target="_blank">{{ clean($value->file_name) }}</a></td>
+                                        <td>
+                                            @if($value->file)
+                                                <a href="{{ asset($value->file) }}" target="_blank" class="badge badge-info"><i class="fas fa-paperclip mr-1"></i>{{ clean($value->file_name ?: 'Document') }}</a>
+                                            @else
+                                                <span class="text-muted small">None</span>
+                                            @endif
+                                        </td>
                                         <td>{{ substr(clean($value->reason),0,60).'....' }}</td>
                                         <td>
-                                            <div class="d-flex">
+                                            <div class="d-flex align-items-center">
+                                                <form action="{{ route('admin.financial-relief.approve-case', $value->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Promote this lead/intake to an active legal/CPA case representation?');">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-primary m-1" title="{{ __('Promote to Active Case') }}">
+                                                        <i class="fas fa-briefcase mr-1"></i>{{ __('Promote') }}
+                                                    </button>
+                                                </form>
+
                                                 <a href="{{ route('admin.financial-relief.view',$value->id) }}">
-                                                    <button type="button" class="btn btn-sm btn btn-success m-1 blogCategoryEditBtn" data-id="{{ $value->id }}">{{ __('View') }}</button>
+                                                    <button type="button" class="btn btn-sm btn-success m-1 blogCategoryEditBtn" data-id="{{ $value->id }}">{{ __('View') }}</button>
                                                 </a>
 
                                                 <a href="javascript:void(0)" title="{{__('Delete')}}" class="assistanceDestroyBtn">
-                                                    <button type="button" class="btn btn-sm btn btn-danger m-1">{{__('Delete')}}</button>
-
+                                                    <button type="button" class="btn btn-sm btn-danger m-1">{{__('Delete')}}</button>
 
                                                     <form action="{{ route('admin.financial-relief.destroy', $value->id) }}" method="post" class="deleteForm">
                                                         @csrf

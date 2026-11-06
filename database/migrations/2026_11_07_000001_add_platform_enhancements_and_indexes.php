@@ -30,13 +30,16 @@ return new class extends Migration
             }
         });
 
-        // 2. Extend messages table with Telegram message ID tracking
+        // 2. Extend messages table with Telegram message ID tracking and message column
         Schema::table('messages', function (Blueprint $table) {
+            if (!Schema::hasColumn('messages', 'message')) {
+                $table->text('message')->nullable();
+            }
             if (!Schema::hasColumn('messages', 'telegram_message_id')) {
-                $table->string('telegram_message_id', 100)->nullable()->after('message');
+                $table->string('telegram_message_id', 100)->nullable();
             }
             if (!Schema::hasColumn('messages', 'is_telegram_reply')) {
-                $table->boolean('is_telegram_reply')->default(false)->after('telegram_message_id');
+                $table->boolean('is_telegram_reply')->default(false);
             }
         });
 
@@ -121,3 +124,4 @@ return new class extends Migration
         }
     }
 };
+
