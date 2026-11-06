@@ -127,20 +127,17 @@
     <div class="staff-content-col" style="flex: 1; min-width: 0; padding: 20px 16px 20px 16px;">
         <div class="staff-content-container p-3 p-md-4 rounded" style="background: #11151e; border: 1px solid #28303f; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-height: 80vh;">
             
-            <!-- Mobile PWA Install Notification -->
-            <div id="pwaInstallBanner" class="alert alert-info d-none mb-3 shadow-sm border-0 d-flex flex-wrap align-items-center justify-content-between" style="border-radius: 10px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff;">
-                <div class="d-flex align-items-center mb-2 mb-md-0">
-                    <div class="mr-3" style="font-size: 1.8rem;">📲</div>
-                    <div>
-                        <strong class="d-block" style="font-size: 14px;">Install Staff Workspace App</strong>
-                        <small style="opacity: 0.9;">Access tasks, client chats, and scan receipts instantly from your mobile home screen.</small>
-                    </div>
+            <!-- Mobile PWA Install Notification (Sleek Compact Pill) -->
+            <div id="pwaInstallBanner" class="alert d-none mb-3 shadow-sm border-0 d-flex flex-wrap align-items-center justify-content-between py-2 px-3" style="border-radius: 8px; background: rgba(30, 58, 138, 0.9); border: 1px solid rgba(96, 165, 250, 0.3) !important; color: #fff;">
+                <div class="d-flex align-items-center my-1">
+                    <i class="fas fa-mobile-alt text-warning mr-2" style="font-size: 1.1rem;"></i>
+                    <span class="small font-weight-bold">{{ __('Install Staff Workspace App for instantaneous mobile task & messaging access') }}</span>
                 </div>
-                <div>
-                    <button type="button" id="pwaInstallBtn" class="btn btn-warning btn-sm font-weight-bold mr-2 text-dark px-3 shadow-sm">
-                        <i class="fas fa-download mr-1"></i> Install App
+                <div class="d-flex align-items-center my-1">
+                    <button type="button" id="pwaInstallBtn" class="btn btn-warning btn-sm font-weight-bold text-dark px-3 py-1 shadow-sm mr-2" style="font-size: 11.5px; border-radius: 6px;">
+                        <i class="fas fa-download mr-1"></i> {{ __('Install App') }}
                     </button>
-                    <button type="button" class="btn btn-link text-white btn-sm p-0 ml-2" onclick="dismissPwaBanner()" title="Dismiss">
+                    <button type="button" class="btn btn-link text-white btn-sm p-0 ml-1" onclick="dismissPwaBanner()" title="Dismiss">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -306,15 +303,18 @@
         if (toggleBtn && sidebar && overlay) {
             toggleBtn.addEventListener('click', function() {
                 sidebar.classList.toggle('show');
+                sidebar.classList.toggle('active');
                 overlay.classList.toggle('active');
             });
             overlay.addEventListener('click', function() {
                 sidebar.classList.remove('show');
+                sidebar.classList.remove('active');
                 overlay.classList.remove('active');
             });
             if (closeBtn) {
                 closeBtn.addEventListener('click', function() {
                     sidebar.classList.remove('show');
+                    sidebar.classList.remove('active');
                     overlay.classList.remove('active');
                 });
             }

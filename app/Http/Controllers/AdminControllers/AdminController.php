@@ -332,8 +332,12 @@ class AdminController extends Controller
         try {
             $title = 'Client Messaging & Live Chat Hub';
             $chatSettings = \App\Services\ChatwootService::getSettings();
-            $conversations = $this->viewConversationsOnIndex(Auth::user()->conversation);
-            return view('backend.pages.conversations.index', compact('conversations', 'title', 'chatSettings'));
+            
+            // Admin panel must show ALL client conversations in the firm
+            $allConvos = Conversation::with(['user', 'messages'])->latest('updated_at')->get();
+            $conversations = $this->viewConversationsOnIndex($allConvos);
+
+            return view('backend.pages.conversations.index', compact('conversations', 'title', 'chatSettings', 'allConvos'));
         } catch (\Throwable $th) {
             return $this->backWithError($th->getMessage());
         }
@@ -344,54 +348,60 @@ class AdminController extends Controller
         try {
             $row = [];
             foreach ($conversations as $key => $conversation) {
-                $client = [];
-                foreach ($conversation->user as $person) {
-                    if ($person->id !== Auth::user()->id) {
-                        $client = $person;
-                    }
-                }
-                $clientName = ($client && isset($client->name)) ? htmlspecialchars($client->name) : 'Client';
+                // Find client
+                $client = $conversation->user->first(function($u) {
+                    return $u->id !== Auth::id();
+                }) ?: $conversation->user->first();
+
+                $clientName = $client ? htmlspecialchars($client->name) : ($conversation->name ?: 'Client #' . $conversation->id);
+                $clientEmail = $client ? htmlspecialchars($client->email) : '';
                 $clientAvatar = ($client && !empty($client->profile_photo_url)) ? asset($client->profile_photo_url) : asset('backend/assets/img/profile/other.png');
-                $lastMessage = ($conversation->messages && $conversation->messages->count() > 0) ? $conversation->messages->last() : null;
+                
+                $lastMessage = $conversation->messages()->latest('id')->first() ?: ($conversation->messages ? $conversation->messages->last() : null);
                 $lastText = $lastMessage ? htmlspecialchars($lastMessage->text ?: $lastMessage->message ?: 'Sent an attachment') : '<em class="text-muted">No messages yet</em>';
-                $lastFileHtml = ($lastMessage && !empty($lastMessage->file)) ? '<p class="px-0 pb-1 my-0"><i class="fas fa-file"></i> &nbsp;' . htmlspecialchars($lastMessage->file_name ?: 'Attachment') . '</p>' : '';
-                $lastSeenHtml = $lastMessage ? ($lastMessage->read ? '<small>seen</small>' : '<small>unseen</small>') : '';
+                $lastFileHtml = ($lastMessage && !empty($lastMessage->file)) ? '<p class="px-0 pb-1 my-0 text-warning"><i class="fas fa-file"></i> &nbsp;' . htmlspecialchars($lastMessage->file_name ?: 'Attachment') . '</p>' : '';
+                
+                $unreadCount = $conversation->unreadMessages()->count();
+                $unreadBadge = $unreadCount > 0 ? '<span class="badge badge-warning ml-2 font-weight-bold">' . $unreadCount . ' Unread</span>' : '';
+                $openBtn = '<a href="' . route('admin.conversation.get-conversation', $conversation->slug) . '" class="btn btn-sm btn-warning font-weight-bold text-dark px-3 shadow-sm"><i class="fas fa-comment-dots mr-1"></i> Open Chat</a>';
 
                 $row[] = '<tr>
-                        <td width="5%">' . ($key + 1) . '</td>
-                        <td width="10%"><img src="' . $clientAvatar . '" alt="" class="img-fluid img-thumbnail rounded-circle w-50"></td>
-                        <td width="15%">' . $clientName . '</td>
-                        <td><a href="' . route('admin.conversation.get-conversation', $conversation->slug) . '">
+                        <td width="5%" class="align-middle text-center">' . ($key + 1) . '</td>
+                        <td width="8%" class="align-middle text-center"><img src="' . $clientAvatar . '" alt="" class="rounded-circle" style="width:40px;height:40px;object-fit:cover;"></td>
+                        <td width="22%" class="align-middle"><strong>' . $clientName . '</strong>' . $unreadBadge . ($clientEmail ? '<br><small class="text-muted">' . $clientEmail . '</small>' : '') . '</td>
+                        <td class="align-middle"><a href="' . route('admin.conversation.get-conversation', $conversation->slug) . '" class="text-decoration-none text-light d-block">
                         <p class="px-0 pb-1 my-0">' . $lastText . '</p>
                         ' . $lastFileHtml . '
-                        <p class="px-0 pb-1 my-0 text-right">' . $lastSeenHtml . '</p>
                         </a></td>
-                        <td width="10%" class="text-right">' . date('D-M-y', strtotime($conversation->updated_at)) . '</br>' . date('H:i', strtotime($conversation->updated_at)) . '</td>
+                        <td width="14%" class="align-middle text-center">' . date('M d, Y', strtotime($conversation->updated_at)) . '<br><small class="text-muted">' . date('h:i A', strtotime($conversation->updated_at)) . '</small></td>
+                        <td width="12%" class="align-middle text-center">' . $openBtn . '</td>
                     </tr>';
             }
             $output = implode(' ', $row);
             return $output;
         } catch (\Throwable $th) {
-            return $this->backWithError($th->getMessage());
+            return '<tr><td colspan="6" class="text-center text-danger py-4">' . $th->getMessage() . '</td></tr>';
         }
     }
 
     public function getMessage($slug)
     {
         try {
-            $conversation = Conversation::where('slug', $slug)->first();
-            $title = '';
-            foreach ($conversation->user as $person) {
-                if ($person->id !== Auth::user()->id) {
-                    $title = $title . $person->name . ' ';
-                }
-            }
+            $conversation = Conversation::where('slug', $slug)->firstOrFail();
+            $client = $conversation->user->first(function($u) {
+                return $u->id !== Auth::id();
+            }) ?: $conversation->user->first();
+            $title = $client ? $client->name : ($conversation->name ?: 'Client Conversation');
+
             $unreadMessage = $conversation->messages()
                 ->where('read', false)
                 ->where('user_id', '!=', Auth::user()->id)
                 ->get();
             $unreadMessage->each->update(['read' => true]);
-            return view('backend.pages.conversations.messages', compact('title', 'conversation'));
+
+            $conversation->load(['messages.user', 'user']);
+
+            return view('backend.pages.conversations.messages', compact('title', 'conversation', 'client'));
         } catch (\Throwable $th) {
             return $this->backWithError($th->getMessage());
         }
@@ -400,11 +410,12 @@ class AdminController extends Controller
     public function sendMessage(Request $request, $slug)
     {
         try {
-            $conversation = Conversation::where('slug', $slug)->first();
+            $conversation = Conversation::where('slug', $slug)->firstOrFail();
             $message = new Message();
             $message->conversation_id = $conversation->id;
             $message->user_id = Auth::user()->id;
             $message->text = $request->text;
+            $message->message = $request->text;
             if ($request->hasFile('file')) {
                 $request->validate([
                     'file' => ['file', 'mimes:pdf,docx,doc,jpeg,png,jpg,txt', 'max:20480']
@@ -414,11 +425,11 @@ class AdminController extends Controller
                 $request->file->move(public_path('/upload/message-files'), $fileName);
                 $message->file = '/upload/message-files/' . $fileName;
                 $message->save();
-                $conversation->save();
+                $conversation->touch();
             } else {
                 if ($message->text) {
                     $message->save();
-                    $conversation->save();
+                    $conversation->touch();
                 }
             }
 

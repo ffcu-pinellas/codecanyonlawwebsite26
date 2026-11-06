@@ -255,30 +255,44 @@
         // Poll every 3 seconds
         setInterval(pollMessages, 3000);
 
+        // In-flight submission lock to prevent duplicate sends
+        let isSendingStaffMsg = false;
+
         // Enter key to send (Shift+Enter for newline)
         $('#chat-form textarea[name="message"]').on('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                $('#chat-form').submit();
+                if (!isSendingStaffMsg) {
+                    $('#chat-form').trigger('submit');
+                }
             }
         });
 
         // jQuery AJAX form submission
         $('#chat-form').on('submit', function(e) {
             e.preventDefault();
+            if (isSendingStaffMsg) return;
+
             var form = $(this);
             var url = form.attr('action');
             var textarea = form.find('textarea[name="message"]');
+            var sendBtn = form.find('button[type="submit"]');
             var message = textarea.val().trim();
             if (message === '') return;
+
+            isSendingStaffMsg = true;
+            sendBtn.prop('disabled', true);
+            textarea.val('');
 
             $.ajax({
                 url: url,
                 method: 'POST',
-                data: form.serialize(),
+                data: {
+                    _token: form.find('input[name="_token"]').val(),
+                    message: message
+                },
                 success: function(response) {
                     if (response.success) {
-                        // Remove empty state
                         $('#chat-empty-state').remove();
 
                         if ($(`[data-msg-id="${response.id}"]`).length === 0) {
@@ -290,11 +304,19 @@
                             `;
                             $('#chat-messages-container').append(bubble);
                         }
-                        textarea.val('');
                         if (container) {
                             container.scrollTop = container.scrollHeight;
                         }
                     }
+                },
+                error: function(err) {
+                    textarea.val(message);
+                    console.error("Staff chat submission failed:", err);
+                },
+                complete: function() {
+                    isSendingStaffMsg = false;
+                    sendBtn.prop('disabled', false);
+                    textarea.focus();
                 }
             });
         });

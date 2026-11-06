@@ -495,14 +495,18 @@
             });
         }
 
+        let isSubmittingNativeChat = false;
         function submitNativeChat() {
+            if (isSubmittingNativeChat) return;
             const text = chatInput.value.trim();
             if (!text) return;
 
+            isSubmittingNativeChat = true;
             const sendBtn = document.getElementById('nativeChatSendBtn');
             if (sendBtn) sendBtn.disabled = true;
 
             const formData = new FormData(chatForm);
+            formData.set('message', text);
             chatInput.value = '';
 
             fetch(chatForm.action, {
@@ -515,14 +519,16 @@
             })
             .then(res => res.json())
             .then(data => {
+                isSubmittingNativeChat = false;
                 if (sendBtn) sendBtn.disabled = false;
                 if (data.success && data.message) {
                     appendMessageBubble(data.message, true);
                 }
             })
             .catch(() => {
+                isSubmittingNativeChat = false;
                 if (sendBtn) sendBtn.disabled = false;
-                chatForm.submit(); // Fallback to normal form submit if fetch fails
+                chatInput.value = text;
             });
         }
 

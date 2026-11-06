@@ -115,7 +115,28 @@ class AppServiceProvider extends ServiceProvider
                     });
                 }
 
-                // 7. Ensure standard system roles exist in roles table
+                // 7. Ensure messages & staff_messages have telegram & message compatibility columns
+                if (Schema::hasTable('messages')) {
+                    Schema::table('messages', function ($table) {
+                        if (!Schema::hasColumn('messages', 'message')) $table->text('message')->nullable();
+                        if (!Schema::hasColumn('messages', 'telegram_message_id')) $table->string('telegram_message_id', 100)->nullable();
+                        if (!Schema::hasColumn('messages', 'is_telegram_reply')) $table->boolean('is_telegram_reply')->default(0);
+                    });
+                }
+                if (Schema::hasTable('staff_messages')) {
+                    Schema::table('staff_messages', function ($table) {
+                        if (!Schema::hasColumn('staff_messages', 'telegram_message_id')) $table->string('telegram_message_id', 100)->nullable();
+                        if (!Schema::hasColumn('staff_messages', 'is_telegram_reply')) $table->boolean('is_telegram_reply')->default(0);
+                    });
+                }
+                if (Schema::hasTable('general_settings')) {
+                    Schema::table('general_settings', function ($table) {
+                        if (!Schema::hasColumn('general_settings', 'company_phone')) $table->string('company_phone', 50)->nullable();
+                        if (!Schema::hasColumn('general_settings', 'chat_settings')) $table->json('chat_settings')->nullable();
+                    });
+                }
+
+                // 8. Ensure standard system roles exist in roles table
                 if (Schema::hasTable('roles')) {
                     foreach (['admin', 'attorney', 'staff', 'client'] as $roleName) {
                         try {

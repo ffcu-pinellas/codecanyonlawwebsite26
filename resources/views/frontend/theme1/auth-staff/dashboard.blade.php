@@ -4,18 +4,18 @@
 
 @section('page-css')
 <style>
-    /* Top Fast-Punch Attendance Dock */
+    /* Top Fast-Punch Attendance Dock - Sleek Executive Floating Dock */
     .top-punch-dock {
         background: #11151e;
         border: 1px solid #28303f;
-        border-radius: 14px;
-        padding: 16px 24px;
-        margin-bottom: 22px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+        border-radius: 10px;
+        padding: 12px 20px;
+        margin-bottom: 18px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
     }
     .pulse-radar-dot {
-        width: 10px;
-        height: 10px;
+        width: 9px;
+        height: 9px;
         background-color: #10b981;
         border-radius: 50%;
         display: inline-block;
@@ -24,22 +24,22 @@
     }
     @keyframes pulseRadar {
         0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-        70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
+        70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
         100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
     .dock-timer-digits {
-        font-family: 'Courier New', Courier, monospace;
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
         font-weight: 800;
-        font-size: 1.9rem;
+        font-size: 1.45rem;
         letter-spacing: 1.5px;
         color: #fecc56;
-        text-shadow: 0 0 12px rgba(254, 204, 86, 0.3);
+        text-shadow: 0 0 10px rgba(254, 204, 86, 0.25);
         line-height: 1;
     }
     .dock-clock-digits {
-        font-family: 'Courier New', Courier, monospace;
+        font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
         font-weight: 800;
-        font-size: 1.7rem;
+        font-size: 1.35rem;
         letter-spacing: 1.5px;
         color: #cbd5e1;
         line-height: 1;
@@ -48,46 +48,46 @@
         background: linear-gradient(135deg, #059669 0%, #10b981 100%);
         color: #ffffff !important;
         font-weight: 700;
-        font-size: 0.95rem;
-        padding: 10px 26px;
-        border-radius: 10px;
+        font-size: 0.88rem;
+        padding: 8px 20px;
+        border-radius: 8px;
         border: none;
-        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         transition: all 0.2s ease;
         white-space: nowrap;
     }
     .btn-fast-clockin:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(16, 185, 129, 0.45);
     }
     .btn-fast-clockout {
         background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
         color: #ffffff !important;
         font-weight: 700;
-        font-size: 0.95rem;
-        padding: 10px 26px;
-        border-radius: 10px;
+        font-size: 0.88rem;
+        padding: 8px 20px;
+        border-radius: 8px;
         border: none;
-        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
         transition: all 0.2s ease;
         white-space: nowrap;
     }
     .btn-fast-clockout:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(239, 68, 68, 0.45);
     }
 
     /* Executive Profile Card */
     .staff-profile-card {
         background: #11151e;
         border: 1px solid #28303f;
-        border-radius: 14px;
-        padding: 22px 24px;
-        margin-bottom: 22px;
+        border-radius: 10px;
+        padding: 16px 20px;
+        margin-bottom: 18px;
     }
     .staff-avatar-ring {
-        width: 58px;
-        height: 58px;
+        width: 48px;
+        height: 48px;
         border-radius: 50%;
         background: linear-gradient(135deg, #fecc56, #f59e0b);
         display: flex;
@@ -95,8 +95,8 @@
         justify-content: center;
         color: #0b132b;
         font-weight: 800;
-        font-size: 1.5rem;
-        box-shadow: 0 0 16px rgba(254, 204, 86, 0.35);
+        font-size: 1.3rem;
+        box-shadow: 0 0 12px rgba(254, 204, 86, 0.3);
         flex-shrink: 0;
     }
     .badge-exec-gold {

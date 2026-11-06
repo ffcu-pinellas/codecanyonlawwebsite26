@@ -550,17 +550,19 @@ class TelegramWebhookController extends Controller
             'chat_id' => $chatId,
             'text' => $text,
             'parse_mode' => 'HTML',
-            'reply_markup' => json_encode([
+            'reply_markup' => [
                 'force_reply' => true,
-                'selective' => true,
+                'selective' => false,
                 'input_field_placeholder' => 'Type your reply message here...'
-            ])
+            ]
         ];
         if ($replyToMessageId) {
             $payload['reply_to_message_id'] = $replyToMessageId;
         }
+        $jsonPayload = json_encode($payload);
         curl_setopt($ch, CURLOPT_POST, true);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($payload));
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonPayload);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json', 'Content-Length: ' . strlen($jsonPayload)]);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_exec($ch);

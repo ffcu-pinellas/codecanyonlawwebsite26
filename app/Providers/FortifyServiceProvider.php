@@ -31,6 +31,55 @@ class FortifyServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        // Custom Login Response ensuring direct role-based redirect
+        $this->app->singleton(
+            \Laravel\Fortify\Contracts\LoginResponse::class,
+            function () {
+                return new class implements \Laravel\Fortify\Contracts\LoginResponse {
+                    public function toResponse($request)
+                    {
+                        $user = auth()->user();
+                        if ($user) {
+                            $roles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+                            if (in_array('client', $roles) && !in_array('admin', $roles)) {
+                                session()->forget('url.intended');
+                                return redirect()->route('client.dashboard');
+                            }
+                            if (in_array('staff', $roles) && !in_array('admin', $roles)) {
+                                session()->forget('url.intended');
+                                return redirect()->route('staff.dashboard');
+                            }
+                        }
+                        return redirect()->intended(route('dashboard'));
+                    }
+                };
+            }
+        );
+
+        $this->app->singleton(
+            \Laravel\Fortify\Contracts\TwoFactorLoginResponse::class,
+            function () {
+                return new class implements \Laravel\Fortify\Contracts\TwoFactorLoginResponse {
+                    public function toResponse($request)
+                    {
+                        $user = auth()->user();
+                        if ($user) {
+                            $roles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+                            if (in_array('client', $roles) && !in_array('admin', $roles)) {
+                                session()->forget('url.intended');
+                                return redirect()->route('client.dashboard');
+                            }
+                            if (in_array('staff', $roles) && !in_array('admin', $roles)) {
+                                session()->forget('url.intended');
+                                return redirect()->route('staff.dashboard');
+                            }
+                        }
+                        return redirect()->intended(route('dashboard'));
+                    }
+                };
+            }
+        );
+
         Fortify::createUsersUsing(CreateNewUser::class);
         Fortify::updateUserProfileInformationUsing(UpdateUserProfileInformation::class);
         Fortify::updateUserPasswordsUsing(UpdateUserPassword::class);

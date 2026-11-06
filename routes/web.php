@@ -249,21 +249,37 @@ Route::middleware(['auth'])->group(function () {
 
 
 Route::middleware(['auth'])->get('/dashboard', function () {
-    if (Auth::guard('admin')->check()) {
-        return redirect()->route('admin.dashboard');
+    $user = Auth::user();
+    if (!$user) {
+        return redirect()->route('login');
     }
+
     if (session()->has('impersonator_admin') || session()->has('impersonated_by')) {
         return redirect()->route('client.dashboard');
     }
-    $roles = Auth::user() ? Auth::user()->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray() : [];
-    if (in_array('admin', $roles) || in_array('attorney', $roles) || (Auth::user() && Auth::user()->id === 1)) {
-        return redirect()->route('admin.dashboard');
+
+    $roles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+
+    // 1. Client role ALWAYS routes to client portal & security setup gate
+    if (in_array('client', $roles) && !in_array('admin', $roles)) {
+        return redirect()->route('client.dashboard');
     }
-    if (in_array('staff', $roles) && !in_array('client', $roles)) {
+
+    // 2. Staff role routes to staff portal & security setup gate
+    if (in_array('staff', $roles) && !in_array('admin', $roles)) {
         return redirect()->route('staff.dashboard');
     }
+
+    // 3. Admin & Attorney route to admin dashboard
+    if (in_array('admin', $roles) || in_array('attorney', $roles) || $user->id === 1) {
+        return redirect()->route('admin.dashboard');
+    }
+
     return redirect()->route('client.dashboard');
 })->name('dashboard');
+
+Route::get('/client', function() { return redirect()->route('client.dashboard'); });
+Route::get('/client/login', function() { return redirect()->route('login'); });
 
 Route::prefix('/client')->middleware(['auth', 'security.setup'])->as('client.')->group(function (){
     Route::get('/dashboard', [ClientViewController::class, 'dashboard'])->name('dashboard');

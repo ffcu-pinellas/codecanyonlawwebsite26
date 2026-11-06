@@ -39,13 +39,15 @@ class GuestViewController extends Controller
                 if (session()->has('impersonator_admin') || session()->has('impersonated_by')) {
                     return redirect()->route('client.dashboard');
                 }
-                if (Auth::user()->hasRole('staff')){
-                    return redirect()->route('staff.dashboard');
-                }elseif (!Auth::user()->hasRole('client')){
+                $user = Auth::user();
+                $roles = $user->roles ? $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray() : [];
+                if (in_array('admin', $roles) || in_array('attorney', $roles) || $user->id === 1) {
                     return redirect()->route('admin.dashboard');
-                }else {
-                    return redirect()->route('client.dashboard');
                 }
+                if (in_array('staff', $roles)) {
+                    return redirect()->route('staff.dashboard');
+                }
+                return redirect()->route('client.dashboard');
             }
             return view('auth.login');
         }catch (\Throwable $th){
@@ -61,13 +63,15 @@ class GuestViewController extends Controller
     {
         try {
             if (Auth::user()){
-                if (Auth::user()->hasRole('staff')){
-                    return redirect()->route('staff.dashboard');
-                }elseif (!Auth::user()->hasRole('client')){
+                $user = Auth::user();
+                $roles = $user->roles ? $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray() : [];
+                if (in_array('admin', $roles) || in_array('attorney', $roles) || $user->id === 1) {
                     return redirect()->route('admin.dashboard');
-                }else {
-                    return redirect()->route('client.dashboard');
                 }
+                if (in_array('staff', $roles)) {
+                    return redirect()->route('staff.dashboard');
+                }
+                return redirect()->route('client.dashboard');
             }
             return view('auth.register');
         }catch (\Throwable $th){

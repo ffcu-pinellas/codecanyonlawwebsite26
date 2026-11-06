@@ -56,27 +56,31 @@
             </div>
         </div>
 
+        @php
+            $provider = $chatSettings['provider'] ?? 'chatwoot';
+            $isInternal = ($provider === 'internal');
+        @endphp
+
         <!-- Navigation Tabs -->
         <ul class="nav nav-tabs chat-nav-tabs border-bottom-0" id="chatTabs" role="tablist">
             <li class="nav-item">
-                <a class="nav-link active" id="chatwoot-tab" data-toggle="tab" href="#tab-chatwoot" role="tab" aria-controls="tab-chatwoot" aria-selected="true">
-                    <i class="fas fa-comments text-warning mr-1"></i> {{ __('Live Support') }}
+                <a class="nav-link {{ !$isInternal ? 'active' : '' }}" id="chatwoot-tab" data-toggle="tab" href="#tab-chatwoot" role="tab" aria-controls="tab-chatwoot" aria-selected="{{ !$isInternal ? 'true' : 'false' }}">
+                    <i class="fas fa-comments text-warning mr-1"></i> {{ __('Live Support (Chatwoot)') }}
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link" id="archive-tab" data-toggle="tab" href="#tab-archive" role="tab" aria-controls="tab-archive" aria-selected="false">
-                    <i class="fas fa-history mr-1"></i> {{ __('Internal Message') }}
+                <a class="nav-link {{ $isInternal ? 'active' : '' }}" id="archive-tab" data-toggle="tab" href="#tab-archive" role="tab" aria-controls="tab-archive" aria-selected="{{ $isInternal ? 'true' : 'false' }}">
+                    <i class="fas fa-inbox text-warning mr-1"></i> {{ __('Internal Messages & Chats') }}
                 </a>
             </li>
         </ul>
 
         <div class="tab-content" id="chatTabsContent">
             <!-- TAB 1: Chatwoot Live Support Hub -->
-            <div class="tab-pane fade show active" id="tab-chatwoot" role="tabpanel" aria-labelledby="chatwoot-tab">
+            <div class="tab-pane fade {{ !$isInternal ? 'show active' : '' }}" id="tab-chatwoot" role="tabpanel" aria-labelledby="chatwoot-tab">
                 <div class="card card-dark bg-dark border-secondary">
                     <div class="card-body p-4">
                         @php
-                            $provider = $chatSettings['provider'] ?? 'chatwoot';
                             $token = $chatSettings['website_token'] ?? '';
                             $baseUrl = rtrim($chatSettings['base_url'] ?? 'https://app.chatwoot.com', '/');
                             $isConfigured = !empty($token) || $provider === 'chatwoot';
@@ -147,13 +151,20 @@
                 </div>
             </div>
 
-            <!-- TAB 2: Internal Message Archive -->
-            <div class="tab-pane fade" id="tab-archive" role="tabpanel" aria-labelledby="archive-tab">
+            <!-- TAB 2: Internal Message Hub -->
+            <div class="tab-pane fade {{ $isInternal ? 'show active' : '' }}" id="tab-archive" role="tabpanel" aria-labelledby="archive-tab">
                 <div class="card card-dark bg-dark">
                     <div class="card-header d-block">
-                        <div class="row">
+                        <div class="row align-items-center">
                             <div class="col-md-6 col-sm-12">
-                                <h6 class="card-title text-white font-weight-bold"><i class="fas fa-archive text-warning mr-1"></i> {{ __('Legacy Database Message Logs') }}</h6>
+                                <h6 class="card-title text-white font-weight-bold mb-0">
+                                    <i class="fas fa-comments text-warning mr-2"></i> {{ __('Client Conversations & Direct Inquiries') }}
+                                </h6>
+                            </div>
+                            <div class="col-md-6 col-sm-12 text-md-right mt-2 mt-md-0">
+                                <span class="badge badge-warning px-3 py-2 font-weight-bold">
+                                    <i class="fas fa-lock mr-1"></i> {{ __('256-Bit Encrypted Practice Channels') }}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -162,11 +173,12 @@
                             <table id="slider" class="table bapric_table table-striped table-bordered miw-500 text-white" cellspacing="0" width="100%">
                                 <thead>
                                 <tr>
-                                    <th scope="col">{{ __('Serial') }}</th>
-                                    <th scope="col">{{ __('Avatar') }}</th>
-                                    <th scope="col">{{ __('Name') }}</th>
-                                    <th scope="col">{{ __('Message') }}</th>
-                                    <th scope="col">{{ __('Time') }}</th>
+                                    <th scope="col" width="5%" class="text-center">{{ __('Serial') }}</th>
+                                    <th scope="col" width="8%" class="text-center">{{ __('Avatar') }}</th>
+                                    <th scope="col" width="22%">{{ __('Client / Account') }}</th>
+                                    <th scope="col">{{ __('Latest Message Preview') }}</th>
+                                    <th scope="col" width="14%" class="text-center">{{ __('Timestamp') }}</th>
+                                    <th scope="col" width="12%" class="text-center">{{ __('Action') }}</th>
                                 </tr>
                                 </thead>
                                 <tbody>

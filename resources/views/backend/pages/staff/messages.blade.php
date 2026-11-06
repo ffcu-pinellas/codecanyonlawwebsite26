@@ -266,26 +266,40 @@
         setInterval(pollMessages, 3000);
 
         // jQuery AJAX message sending
+        let isAdminSubmitting = false;
+
         // Enter key to send (Shift+Enter for newline)
         $('#admin-chat-form textarea[name="message"]').on('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
-                $('#admin-chat-form').submit();
+                if (!isAdminSubmitting) {
+                    $('#admin-chat-form').trigger('submit');
+                }
             }
         });
 
         $('#admin-chat-form').on('submit', function(e) {
             e.preventDefault();
+            if (isAdminSubmitting) return;
+
             var form = $(this);
             var url = form.attr('action');
             var textarea = form.find('textarea[name="message"]');
+            var sendBtn = form.find('button[type="submit"]');
             var message = textarea.val().trim();
             if (message === '') return;
+
+            isAdminSubmitting = true;
+            sendBtn.prop('disabled', true);
+            textarea.val('');
 
             $.ajax({
                 url: url,
                 method: 'POST',
-                data: form.serialize(),
+                data: {
+                    _token: form.find('input[name="_token"]').val(),
+                    message: message
+                },
                 success: function(response) {
                     if (response.success) {
                         $('#chat-empty-state').remove();
@@ -299,11 +313,19 @@
                             `;
                             $('#chat-messages-container').append(bubble);
                         }
-                        textarea.val('');
                         if (container) {
                             container.scrollTop = container.scrollHeight;
                         }
                     }
+                },
+                error: function(err) {
+                    textarea.val(message);
+                    console.error("Admin chat submission failed:", err);
+                },
+                complete: function() {
+                    isAdminSubmitting = false;
+                    sendBtn.prop('disabled', false);
+                    textarea.focus();
                 }
             });
         });
