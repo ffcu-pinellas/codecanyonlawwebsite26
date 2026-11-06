@@ -68,6 +68,55 @@ Route::get('/setup', function (){
         $log[] = ['title' => 'Framework Cache Flush', 'status' => 'warning', 'details' => $e->getMessage()];
     }
 
+    // 3.5 Guaranteed Direct Schema Healing
+    try {
+        if (\Illuminate\Support\Facades\Schema::hasTable('messages')) {
+            \Illuminate\Support\Facades\Schema::table('messages', function (\Illuminate\Database\Schema\Blueprint $table) {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('messages', 'message')) {
+                    $table->text('message')->nullable();
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('messages', 'telegram_message_id')) {
+                    $table->string('telegram_message_id', 100)->nullable();
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('messages', 'is_telegram_reply')) {
+                    $table->boolean('is_telegram_reply')->default(false);
+                }
+            });
+        }
+        if (\Illuminate\Support\Facades\Schema::hasTable('staff_messages')) {
+            \Illuminate\Support\Facades\Schema::table('staff_messages', function (\Illuminate\Database\Schema\Blueprint $table) {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('staff_messages', 'telegram_message_id')) {
+                    $table->string('telegram_message_id', 100)->nullable();
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('staff_messages', 'is_telegram_reply')) {
+                    $table->boolean('is_telegram_reply')->default(false);
+                }
+            });
+        }
+        if (\Illuminate\Support\Facades\Schema::hasTable('general_settings')) {
+            \Illuminate\Support\Facades\Schema::table('general_settings', function (\Illuminate\Database\Schema\Blueprint $table) {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('general_settings', 'company_phone')) {
+                    $table->string('company_phone', 100)->nullable();
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('general_settings', 'company_email')) {
+                    $table->string('company_email', 150)->nullable();
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('general_settings', 'company_address')) {
+                    $table->string('company_address', 255)->nullable();
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('general_settings', 'whatsapp_number')) {
+                    $table->string('whatsapp_number', 100)->nullable();
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('general_settings', 'telegram_reply_enabled')) {
+                    $table->boolean('telegram_reply_enabled')->default(true);
+                }
+            });
+        }
+        $log[] = ['title' => 'Direct Schema Patch', 'status' => 'success', 'details' => 'Critical table columns guaranteed and patched.'];
+    } catch (\Throwable $patchEx) {
+        $log[] = ['title' => 'Direct Schema Patch', 'status' => 'warning', 'details' => $patchEx->getMessage()];
+    }
+
     // 4. Verify Schema Columns
     $schemaChecks = [];
     try {
@@ -75,6 +124,7 @@ Route::get('/setup', function (){
         $schemaChecks['messages.telegram_message_id'] = \Illuminate\Support\Facades\Schema::hasColumn('messages', 'telegram_message_id') ? 'Present' : 'Missing';
         $schemaChecks['messages.message'] = \Illuminate\Support\Facades\Schema::hasColumn('messages', 'message') ? 'Present' : 'Missing';
         $schemaChecks['messages.text'] = \Illuminate\Support\Facades\Schema::hasColumn('messages', 'text') ? 'Present' : 'Missing';
+        $schemaChecks['staff_messages.telegram_message_id'] = \Illuminate\Support\Facades\Schema::hasColumn('staff_messages', 'telegram_message_id') ? 'Present' : 'Missing';
     } catch (\Throwable $e) {
         $schemaChecks['error'] = $e->getMessage();
     }

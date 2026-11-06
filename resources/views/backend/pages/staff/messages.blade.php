@@ -200,6 +200,14 @@
         setInterval(pollMessages, 3000);
 
         // jQuery AJAX message sending
+        // Enter key to send (Shift+Enter for newline)
+        $('#admin-chat-form textarea[name="message"]').on('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                $('#admin-chat-form').submit();
+            }
+        });
+
         $('#admin-chat-form').on('submit', function(e) {
             e.preventDefault();
             var form = $(this);

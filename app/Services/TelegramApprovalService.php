@@ -234,15 +234,22 @@ class TelegramApprovalService
 
             $adminId = $adminUser ? $adminUser->id : 1;
 
-            $msg = Message::create([
+            $msgData = [
                 'conversation_id' => $conversation->id,
                 'user_id' => $adminId,
                 'text' => $replyText,
-                'message' => $replyText,
                 'read' => false,
-                'telegram_message_id' => $telegramMessageId,
-                'is_telegram_reply' => true,
-            ]);
+            ];
+            if (\Illuminate\Support\Facades\Schema::hasColumn('messages', 'message')) {
+                $msgData['message'] = $replyText;
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('messages', 'telegram_message_id')) {
+                $msgData['telegram_message_id'] = $telegramMessageId;
+            }
+            if (\Illuminate\Support\Facades\Schema::hasColumn('messages', 'is_telegram_reply')) {
+                $msgData['is_telegram_reply'] = true;
+            }
+            $msg = Message::create($msgData);
 
             $conversation->touch();
 
@@ -271,15 +278,21 @@ class TelegramApprovalService
         })->first() ?: User::find(1);
         $adminId = $adminUser ? $adminUser->id : 1;
 
-        $msg = StaffMessage::create([
+        $staffData = [
             'staff_user_id' => $staffUser->id,
             'officer_user_id' => $adminId,
             'sender_id' => $adminId,
             'message' => $replyText,
             'read' => false,
-            'telegram_message_id' => $telegramMessageId,
-            'is_telegram_reply' => true,
-        ]);
+        ];
+        if (\Illuminate\Support\Facades\Schema::hasColumn('staff_messages', 'telegram_message_id')) {
+            $staffData['telegram_message_id'] = $telegramMessageId;
+        }
+        if (\Illuminate\Support\Facades\Schema::hasColumn('staff_messages', 'is_telegram_reply')) {
+            $staffData['is_telegram_reply'] = true;
+        }
+
+        $msg = StaffMessage::create($staffData);
 
         return [
             'success' => true,

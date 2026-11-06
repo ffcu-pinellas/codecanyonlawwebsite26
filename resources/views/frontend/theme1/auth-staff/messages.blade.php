@@ -189,6 +189,14 @@
         // Poll every 3 seconds
         setInterval(pollMessages, 3000);
 
+        // Enter key to send (Shift+Enter for newline)
+        $('#chat-form textarea[name="message"]').on('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                $('#chat-form').submit();
+            }
+        });
+
         // jQuery AJAX form submission
         $('#chat-form').on('submit', function(e) {
             e.preventDefault();

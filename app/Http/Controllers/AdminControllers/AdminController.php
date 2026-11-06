@@ -352,6 +352,7 @@ class AdminController extends Controller
                 }
                 $clientName = ($client && isset($client->name)) ? htmlspecialchars($client->name) : 'Client';
                 $clientAvatar = ($client && !empty($client->profile_photo_url)) ? asset($client->profile_photo_url) : asset('backend/assets/img/profile/other.png');
+                $lastMessage = ($conversation->messages && $conversation->messages->count() > 0) ? $conversation->messages->last() : null;
                 $lastText = $lastMessage ? htmlspecialchars($lastMessage->text ?: $lastMessage->message ?: 'Sent an attachment') : '<em class="text-muted">No messages yet</em>';
                 $lastFileHtml = ($lastMessage && !empty($lastMessage->file)) ? '<p class="px-0 pb-1 my-0"><i class="fas fa-file"></i> &nbsp;' . htmlspecialchars($lastMessage->file_name ?: 'Attachment') . '</p>' : '';
                 $lastSeenHtml = $lastMessage ? ($lastMessage->read ? '<small>seen</small>' : '<small>unseen</small>') : '';

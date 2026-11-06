@@ -398,3 +398,26 @@
   </div>
 </div>
 @endsection
+
+@section('page-script')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const chatInput = document.querySelector('.chat-input-control');
+        if (chatInput) {
+            chatInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    const form = this.closest('form');
+                    if (form && this.value.trim() !== '') {
+                        form.submit();
+                    }
+                }
+            });
+        }
+        const bodyContainer = document.querySelector('.chat-body-native');
+        if (bodyContainer) {
+            bodyContainer.scrollTop = bodyContainer.scrollHeight;
+        }
+    });
+</script>
+@endsection
