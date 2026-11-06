@@ -131,23 +131,48 @@
                 </div>
 
                 <div class="card-body">
-                    <div class="table-responsive style-scroll">
-                        <table id="slider" class="table bapric_table table-striped table-bordered text-white" cellspacing="0" width="100%">
-                            <thead>
-                                <tr>
-                                    <th width="5%">#</th>
-                                    <th>{{ __('Client Details') }}</th>
-                                    <th>{{ __('Contact Info') }}</th>
-                                    <th>{{ __('Assigned Attorney / CPA') }}</th>
-                                    <th>{{ __('Active Cases') }}</th>
-                                    <th>{{ __('Security Status') }}</th>
-                                    <th width="20%">{{ __('Actions') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach ($clients as $client)
-                                <tr>
-                                    <td>{{ $loop->index + 1 }}</td>
+                    <form action="{{ route('admin.user.client.batch-action') }}" method="POST" id="batchClientForm">
+                        @csrf
+                        <div class="d-flex flex-wrap align-items-center justify-content-between mb-3 bg-secondary p-2 rounded">
+                            <div class="d-flex align-items-center">
+                                <span class="mr-2 text-white font-weight-bold small"><i class="fas fa-tasks mr-1"></i> {{ __('Batch Action:') }}</span>
+                                <select name="action" class="form-control form-control-sm mr-2" style="width: 230px;" required>
+                                    <option value="">-- {{ __('Select Action') }} --</option>
+                                    <option value="export_csv">{{ __('Export Selected to CSV') }}</option>
+                                    <option value="unlock_account">{{ __('Unlock & Clear PIN Lockout') }}</option>
+                                    <option value="reset_temp_password">{{ __('Reset to Temporary Credentials') }}</option>
+                                    <option value="lock_account">{{ __('Suspend / Lock Selected Accounts') }}</option>
+                                </select>
+                                <button type="submit" class="btn btn-sm btn-warning text-dark font-weight-bold">
+                                    <i class="fas fa-play mr-1"></i> {{ __('Apply to Selected') }}
+                                </button>
+                            </div>
+                            <div class="text-light small mt-2 mt-md-0">
+                                <span id="selectedCountBadge" class="badge badge-dark px-2 py-1">0 selected</span>
+                            </div>
+                        </div>
+
+                        <div class="table-responsive style-scroll">
+                            <table id="slider" class="table bapric_table table-striped table-bordered text-white" cellspacing="0" width="100%">
+                                <thead>
+                                    <tr>
+                                        <th width="3%" class="text-center"><input type="checkbox" id="selectAllClients" title="Select All"></th>
+                                        <th width="4%">#</th>
+                                        <th>{{ __('Client Details') }}</th>
+                                        <th>{{ __('Contact Info') }}</th>
+                                        <th>{{ __('Assigned Attorney / CPA') }}</th>
+                                        <th>{{ __('Active Cases') }}</th>
+                                        <th>{{ __('Security Status') }}</th>
+                                        <th width="20%">{{ __('Actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($clients as $client)
+                                    <tr>
+                                        <td class="text-center">
+                                            <input type="checkbox" name="client_ids[]" value="{{ $client->id }}" class="client-checkbox">
+                                        </td>
+                                        <td>{{ $loop->index + 1 }}</td>
                                     <td>
                                         <div class="font-weight-bold text-white" style="font-size: 15px;">{{ $client->name }}</div>
                                         <small class="badge badge-dark border border-secondary text-warning">ID #CLI-{{ sprintf('%05d', $client->id) }}</small>
@@ -221,6 +246,7 @@
                             </tbody>
                         </table>
                     </div>
+                    </form>
                 </div>
             </div>
         </div>
@@ -574,6 +600,30 @@
     };
 
     $(document).ready(function() {
+        // Select All Checkbox Handler
+        $('#selectAllClients').on('change', function() {
+            var isChecked = $(this).prop('checked');
+            $('.client-checkbox').prop('checked', isChecked);
+            updateSelectedCount();
+        });
+
+        $(document).on('change', '.client-checkbox', function() {
+            updateSelectedCount();
+        });
+
+        function updateSelectedCount() {
+            var count = $('.client-checkbox:checked').length;
+            $('#selectedCountBadge').text(count + ' selected');
+        }
+
+        $('#batchClientForm').on('submit', function(e) {
+            var count = $('.client-checkbox:checked').length;
+            if (count === 0) {
+                e.preventDefault();
+                alert('Please select at least one client checkbox to apply the batch action.');
+            }
+        });
+
         $(document).on('click', '.user_btn', function() {
             var userId = $(this).data('id');
             $('#modal_data').html('<div class="text-center p-3"><i class="fas fa-spinner fa-spin fa-2x text-warning"></i></div>');

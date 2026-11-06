@@ -25,6 +25,7 @@
 @yield('page-script')
 @include('backend.layouts.toster-script')
 {!! $insertHeaderFooter?$insertHeaderFooter->footer:'' !!}
+@include('components.floating-contact-widget')
 @include('components.chatwoot-widget')
 </body>
 

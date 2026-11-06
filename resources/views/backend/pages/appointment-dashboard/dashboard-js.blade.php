@@ -19,18 +19,36 @@
             //---------------------------------------------------------------------------------------------
             var line_chart_data =  {
                 labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun','Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                datasets: [{
-                    label: 'Appointments',
-                    backgroundColor: "rgba(239,43,65,0.7)",
-                    borderColor: "#ef2b41",
-                    borderWidth: 1,
-                    data: [
-                        <?php
-                        foreach($data['appointmentMlist'] as $item){ ?>
-                         <?php echo $item.','?>
-                     <?php }?>
-                    ]
-                }]};
+                datasets: [
+                    {
+                        label: 'Appointments',
+                        backgroundColor: "rgba(239,43,65,0.2)",
+                        borderColor: "#ef2b41",
+                        borderWidth: 2,
+                        yAxisID: 'y-appointments',
+                        data: [
+                            <?php
+                            foreach($data['appointmentMlist'] as $item){ ?>
+                             <?php echo $item.','?>
+                         <?php }?>
+                        ]
+                    }
+                    <?php if(!empty($data['monthlyRevenue'])) { ?>,
+                    {
+                        label: 'Revenue ($)',
+                        backgroundColor: "rgba(40,167,69,0.2)",
+                        borderColor: "#28a745",
+                        borderWidth: 2,
+                        yAxisID: 'y-revenue',
+                        data: [
+                            <?php
+                            foreach($data['monthlyRevenue'] as $rev){ ?>
+                             <?php echo $rev.','?>
+                         <?php }?>
+                        ]
+                    }
+                    <?php } ?>
+                ]};
 
             var line_chart_config = {
                 type: 'line',
@@ -42,7 +60,27 @@
                     },
                     title: {
                         display: true,
-                        text: 'Line Chart'
+                        text: 'Practice Activity & Collections'
+                    },
+                    scales: {
+                        yAxes: [
+                            {
+                                id: 'y-appointments',
+                                type: 'linear',
+                                position: 'left',
+                                ticks: { beginAtZero: true, precision: 0 }
+                            },
+                            {
+                                id: 'y-revenue',
+                                type: 'linear',
+                                position: 'right',
+                                gridLines: { drawOnChartArea: false },
+                                ticks: {
+                                    beginAtZero: true,
+                                    callback: function(val) { return '$' + val; }
+                                }
+                            }
+                        ]
                     }
                 }
             };

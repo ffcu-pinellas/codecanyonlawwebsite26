@@ -56,14 +56,51 @@ class AdminController extends Controller
             }
             $data['appointmentMlist'] = $appointmentMlist;
 
-            $title = 'My Dashboard';
+            // Monthly Revenue BI Calculation
+            $monthlyRevenue = [];
+            for ($m = 1; $m <= 12; $m++) {
+                $monthlyRevenue[$m] = 0;
+            }
+            try {
+                $paidInvoices = \App\Models\Invoice::where('status', 'paid')
+                    ->whereYear('updated_at', date('Y'))
+                    ->get()
+                    ->groupBy(function ($inv) {
+                        return (int)Carbon::parse($inv->updated_at)->format('n');
+                    });
+                foreach ($paidInvoices as $month => $group) {
+                    $monthlyRevenue[$month] = $group->sum('amount');
+                }
+            } catch (\Throwable $e) {}
+            $data['monthlyRevenue'] = $monthlyRevenue;
+
+            $title = 'Executive Practice Dashboard';
             $AttorneyCount = 0; try { $AttorneyCount = Attorney::count(); } catch (\Throwable $e) {}
             $ServiceCount = 0; try { $ServiceCount = Service::count(); } catch (\Throwable $e) {}
             $BlogCount = 0; try { $BlogCount = Blog::count(); } catch (\Throwable $e) {}
             $AppointmentCount = 0; try { $AppointmentCount = Appointment::count(); } catch (\Throwable $e) {}
             $reliefRequestCount = 0; try { $reliefRequestCount = ReliefRequest::count(); } catch (\Throwable $e) {}
 
-            return view('backend.pages.dashboard', compact('title', 'AttorneyCount', 'ServiceCount', 'BlogCount', 'AppointmentCount', 'data', 'reliefRequestCount'));
+            $totalPaidRevenue = 0; try { $totalPaidRevenue = \App\Models\Invoice::where('status', 'paid')->sum('amount'); } catch (\Throwable $e) {}
+            $pendingInvoicesCount = 0; try { $pendingInvoicesCount = \App\Models\Invoice::where('status', 'pending_proof')->count(); } catch (\Throwable $e) {}
+            $activeCasesCount = 0; try { $activeCasesCount = \App\Models\ClientCase::where('status', 'active')->count(); } catch (\Throwable $e) {}
+            $clientCount = 0; try { $clientCount = \App\Models\User::role('client')->count(); } catch (\Throwable $e) {}
+            $unreadMessagesCount = 0; try { $unreadMessagesCount = \App\Models\Message::where('sender_type', 'client')->whereNull('read_at')->count(); } catch (\Throwable $e) {}
+
+            return view('backend.pages.dashboard', compact(
+                'title',
+                'AttorneyCount',
+                'ServiceCount',
+                'BlogCount',
+                'AppointmentCount',
+                'data',
+                'reliefRequestCount',
+                'totalPaidRevenue',
+                'pendingInvoicesCount',
+                'activeCasesCount',
+                'clientCount',
+                'unreadMessagesCount'
+            ));
         } catch (\Throwable $e) {
             return view('backend.pages.dashboard', ['error' => $e->getMessage(), 'title' => 'Dashboard (Limited Mode)', 'data' => ['appointmentMlist' => []]]);
         }

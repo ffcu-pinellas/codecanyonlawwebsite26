@@ -123,7 +123,7 @@
                                     <th class="text-right">{{ __('Original') }}</th>
                                     <th class="text-right">{{ __('Paid') }}</th>
                                     <th class="text-right">{{ __('Remaining') }}</th>
-                                    <th class="text-center">{{ __('Proof') }}</th>
+                                    <th class="text-center">{{ __('Proof & Paystub') }}</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -138,6 +138,8 @@
                                                 <span class="badge badge-success status-badge">{{ __('Bonus') }}</span>
                                             @elseif($entry->type === 'debt')
                                                 <span class="badge badge-danger status-badge">{{ __('Employee Debt') }}</span>
+                                            @else
+                                                <span class="badge badge-primary status-badge">{{ ucfirst($entry->type) }}</span>
                                             @endif
                                         </td>
                                         <td>
@@ -161,13 +163,16 @@
                                             ${{ number_format(max(0, $entry->amount - $entry->paid_amount), 2) }}
                                         </td>
                                         <td class="text-center">
-                                            @if($entry->attachment_path)
-                                                <a href="{{ route('staff.ledger.proof', $entry->id) }}" target="_blank" class="btn btn-xs btn-outline-info" title="{{ __('Download Proof') }}">
-                                                    <i class="fas fa-file-download"></i>
+                                            <div class="d-inline-flex align-items-center" style="gap: 4px;">
+                                                @if($entry->attachment_path)
+                                                    <a href="{{ route('staff.ledger.proof', $entry->id) }}" target="_blank" class="btn btn-xs btn-outline-info" title="{{ __('Download Proof') }}">
+                                                        <i class="fas fa-file-download"></i>
+                                                    </a>
+                                                @endif
+                                                <a href="{{ route('staff.paystub.download', $entry->id) }}" class="btn btn-xs btn-outline-success font-weight-bold" title="{{ __('Download Official Paystub (PDF)') }}">
+                                                    <i class="fas fa-file-invoice-dollar mr-1"></i>Paystub
                                                 </a>
-                                            @else
-                                                <span class="text-muted small">-</span>
-                                            @endif
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
@@ -343,9 +348,13 @@
                     </div>
 
                     <div class="form-group mb-0">
-                        <label class="font-weight-bold small text-muted text-uppercase mb-2">{{ __('Upload Proof / Document') }}</label>
-                        <input type="file" name="attachment" class="form-control-file">
-                        <small class="text-muted d-block mt-1">{{ __('Accepted PDF, ZIP, PNG, JPG (Max 10MB) - Optional') }}</small>
+                        <label class="font-weight-bold small text-muted text-uppercase mb-2"><i class="fas fa-camera mr-1 text-primary"></i> {{ __('Upload Receipt / Snap Photo') }}</label>
+                        <input type="file" name="attachment" id="reimbursementReceiptInput" accept="image/*,application/pdf" capture="environment" class="form-control-file" onchange="previewAndCompressReceipt(this)">
+                        <small class="text-muted d-block mt-1">{{ __('Snap receipt using phone camera or choose file (PDF, PNG, JPG). Auto-compressed for high speed.') }}</small>
+                        <div id="receiptPreviewBox" class="mt-2 text-center" style="display:none;">
+                            <img id="receiptPreviewImg" src="" style="max-height: 120px; border-radius: 6px; border: 1px solid #cbd5e1; box-shadow: 0 2px 6px rgba(0,0,0,0.15);">
+                            <small class="text-success d-block mt-1 font-weight-bold"><i class="fas fa-check-circle mr-1"></i> Receipt ready for upload</small>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -356,5 +365,25 @@
         </div>
     </div>
 </div>
+
+<script>
+    function previewAndCompressReceipt(input) {
+        if (input.files && input.files[0]) {
+            var file = input.files[0];
+            if (file.type.match('image.*')) {
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var previewBox = document.getElementById('receiptPreviewBox');
+                    var previewImg = document.getElementById('receiptPreviewImg');
+                    if (previewBox && previewImg) {
+                        previewImg.src = e.target.result;
+                        previewBox.style.display = 'block';
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+    }
+</script>
 @endsection
 

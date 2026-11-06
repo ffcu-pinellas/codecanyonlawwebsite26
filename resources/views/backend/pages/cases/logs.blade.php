@@ -35,12 +35,14 @@
             <div class="col-12">
                 <div class="card card-dark bg-dark">
                     <div class="card-header d-block">
-                        <div class="row">
+                        <div class="row align-items-center">
                             <div class="col-md-6 col-sm-12">
-                                <h6 class="card-title lh-35">{{ __($title) }}</h6>
+                                <h6 class="card-title lh-35 mb-0">{{ __($title) }}</h6>
                             </div>
-                            <div class="col-md-6 col-sm-12 text-md-right text-left text-muted small lh-35">
-                                {{ __('Tracking administrative mutations, creations, and security logs') }}
+                            <div class="col-md-6 col-sm-12 text-md-right text-left mt-2 mt-md-0">
+                                <a href="{{ route('admin.activity-logs.export') }}" class="btn btn-sm btn-warning text-dark font-weight-bold shadow-sm">
+                                    <i class="fas fa-file-csv mr-1"></i> {{ __('Export Audit Trail CSV') }}
+                                </a>
                             </div>
                         </div>
                     </div>

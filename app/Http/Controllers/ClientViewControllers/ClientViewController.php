@@ -407,15 +407,30 @@ class ClientViewController extends Controller
                 'read' => false,
             ]);
             
-            // Telegram Alert
+            // Telegram Alert with 2-Way Reply Capability
             try {
                 $clientName = Auth::user()->name;
                 $msgPreview = $request->text ?: "[Attached: {$fileName}]";
                 $telMsg = "💬 <b>Live Client Message Received</b>\n\n"
                         . "👤 <b>Client:</b> " . htmlspecialchars($clientName, ENT_QUOTES, 'UTF-8') . " (#CLI-" . sprintf('%05d', Auth::id()) . ")\n"
+                        . "📁 <b>Convo ID:</b> {$conversation->id}\n"
                         . "💬 <b>Message:</b> " . htmlspecialchars($msgPreview, ENT_QUOTES, 'UTF-8') . "\n"
-                        . "📅 <b>Time:</b> " . now()->format('M d, Y h:i A') . "\n";
-                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+                        . "📅 <b>Time:</b> " . now()->format('M d, Y h:i A') . "\n\n"
+                        . "👉 <i>Reply directly to this Telegram message, or type:</i>\n"
+                        . "<code>/reply {$conversation->id} Your reply here</code>";
+
+                $keyboard = [
+                    'inline_keyboard' => [
+                        [
+                            ['text' => '🔓 Unlock / Clear PIN', 'callback_data' => "unlock_usr:" . Auth::id()],
+                        ]
+                    ]
+                ];
+                $tgRes = \App\Models\GeneralSettings::sendTelegramNotification($telMsg, $keyboard);
+                if ($tgRes && isset($tgRes['result']['message_id'])) {
+                    $message->telegram_message_id = $tgRes['result']['message_id'];
+                    $message->save();
+                }
             } catch (\Throwable $e) {}
             
             return response()->json([

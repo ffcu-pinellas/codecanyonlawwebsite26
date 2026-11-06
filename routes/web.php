@@ -3,6 +3,7 @@
 use App\Actions\Fortify\UpdateUserPassword;
 use App\Http\Controllers\AdminControllers\AdminController;
 use App\Http\Controllers\AdminControllers\AdminAuthController;
+use App\Http\Controllers\TelegramWebhookController;
 use App\Http\Controllers\AdminControllers\AdminBlogCategoryController;
 use App\Http\Controllers\AdminControllers\AdminBlogController;
 use App\Http\Controllers\AdminControllers\AdminCaseStudyController;
@@ -298,9 +299,20 @@ Route::prefix('/client')->middleware(['auth', 'security.setup'])->as('client.')-
 // Global Fallback Exit Impersonation Route (accessible regardless of session role)
 Route::get('/stop-impersonation', [UserController::class, 'stopImpersonation'])->name('stop-impersonation');
 
-// Admin & Staff Authentication Portal
+// Telegram Webhook Setup & Scheduled Automation Helpers
+Route::get('/telegram/setup-webhook', [TelegramWebhookController::class, 'setupWebhook'])->name('telegram.setup-webhook');
+Route::get('/cron/weekly-backup', function () {
+    $res = \App\Services\DatabaseBackupService::createAndSendBackup("📅 <b>Hostinger Scheduled/Manual Triggered Backup</b>");
+    return response()->json($res);
+})->name('cron.weekly-backup');
+Route::get('/cron/daily-digest', function () {
+    \Illuminate\Support\Facades\Artisan::call('practice:daily-digest');
+    return response()->json(['status' => 'Daily practice digest sent to Telegram.']);
+})->name('cron.daily-digest');
+
+// Admin & Staff Authentication Portal with Rate Limiting Protection
 Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');
-Route::post('/admin/login', [AdminAuthController::class, 'login'])->name('admin.login.submit');
+Route::post('/admin/login', [AdminAuthController::class, 'login'])->middleware('throttle:5,1')->name('admin.login.submit');
 
 Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth', 'admin']], function () {
     // dashboard route
@@ -600,13 +612,16 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth', 'adm
     });
 
     // System Activity Logs
-    Route::get('/activity-logs', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'activityLogs'])->name('activity-logs');
+        // Batch Actions & Export
+        Route::post('/client/batch-action', [UserController::class, 'batchClientAction'])->name('client.batch-action');
+        Route::get('/activity-logs/export-csv', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'exportActivityLogsCsv'])->name('activity-logs.export');
+        Route::get('/activity-logs', [App\Http\Controllers\AdminControllers\AdminCaseController::class, 'activityLogs'])->name('activity-logs');
 
 });
 
 // Staff Public/Auth/Dashboard Routes
 Route::get('/staff/login', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'showLoginForm'])->name('staff.login');
-Route::post('/staff/login', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'login']);
+Route::post('/staff/login', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'login'])->middleware('throttle:5,1');
 
 Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff'])->as('staff.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'dashboard'])->name('dashboard');
@@ -618,15 +633,17 @@ Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff'])-
     Route::post('/messages', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'sendMessage']);
     Route::get('/messages/poll', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'pollMessages'])->name('messages.poll');
 
-    // Tasks
+    // Tasks & Interactive Kanban
     Route::get('/tasks', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'tasksIndex'])->name('tasks.index');
     Route::post('/tasks/{task}/complete', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'tasksComplete'])->name('tasks.complete');
+    Route::post('/tasks/{task}/update-stage', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'tasksUpdateStage'])->name('tasks.update-stage');
 
-    // Financial Ledger & Payout requests
+    // Financial Ledger, Payouts & Official Paystub PDF
     Route::get('/financial-ledger', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'financialLedger'])->name('financial-ledger');
     Route::post('/request-payout', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'requestPayout'])->name('request-payout');
     Route::post('/reimbursement/request', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'requestReimbursement'])->name('reimbursement.request');
     Route::get('/ledger/proof/{entry}', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'downloadLedgerProof'])->name('ledger.proof');
+    Route::get('/paystub/{entry}', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'generatePaystubPdf'])->name('paystub.download');
     Route::get('/direct-deposit-form', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'generateDirectDepositForm'])->name('direct-deposit-form.download');
     
     // Invoices

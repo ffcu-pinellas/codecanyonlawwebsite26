@@ -30,5 +30,43 @@
     @yield('page-css')
     {!! $insertHeaderFooter?$insertHeaderFooter->header:'' !!}
 
+    <!-- Rich Structured Data Schema (JSON-LD) for Google Legal & Accounting Rich Results -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "AccountingService",
+          "@id": "{{ url('/') }}#accounting",
+          "name": "{{ config('app.name', 'Your CPA Expert') }}",
+          "url": "{{ url('/') }}",
+          "telephone": "{{ \App\Models\GeneralSettings::getCompanyPhone() }}",
+          "email": "{{ \App\Models\GeneralSettings::getCompanyEmail() }}",
+          "priceRange": "$$",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "{{ \App\Models\GeneralSettings::getCompanyAddress() }}",
+            "addressLocality": "Washington",
+            "addressRegion": "DC",
+            "addressCountry": "US"
+          },
+          "openingHoursSpecification": {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"],
+            "opens": "08:00",
+            "closes": "18:00"
+          }
+        },
+        {
+          "@type": "LegalService",
+          "@id": "{{ url('/') }}#legal",
+          "name": "{{ config('app.name', 'Your CPA Expert') }} Legal & Audit Counsel",
+          "url": "{{ url('/') }}",
+          "telephone": "{{ \App\Models\GeneralSettings::getCompanyPhone() }}",
+          "priceRange": "$$$"
+        }
+      ]
+    }
+    </script>
 </head>
 

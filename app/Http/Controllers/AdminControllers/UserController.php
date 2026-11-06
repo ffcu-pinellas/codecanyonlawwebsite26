@@ -779,4 +779,87 @@ class UserController extends Controller
             return redirect()->route('admin.login');
         }
     }
+
+    /**
+     * Batch operations for selected clients (Export CSV, Lock, Unlock, Reset Temp Credentials)
+     */
+    public function batchClientAction(Request $request)
+    {
+        $request->validate([
+            'action' => 'required|string|in:export_csv,lock_account,unlock_account,reset_temp_password',
+            'client_ids' => 'required|array',
+            'client_ids.*' => 'exists:users,id',
+        ]);
+
+        $clientIds = $request->input('client_ids');
+        $action = $request->input('action');
+
+        if ($action === 'export_csv') {
+            $fileName = 'clients_export_' . date('Y-m-d_His') . '.csv';
+            $clients = User::whereIn('id', $clientIds)->get();
+
+            $headers = [
+                'Content-Type'        => 'text/csv',
+                'Content-Disposition' => "attachment; filename=\"$fileName\"",
+                'Pragma'              => 'no-cache',
+                'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+                'Expires'             => '0',
+            ];
+
+            $callback = function () use ($clients) {
+                $handle = fopen('php://output', 'w');
+                fputcsv($handle, ['Client ID', 'Full Name', 'Email', 'Phone', 'Created Date', 'Status']);
+                foreach ($clients as $client) {
+                    fputcsv($handle, [
+                        $client->id,
+                        $client->name,
+                        $client->email,
+                        $client->phone ?? 'N/A',
+                        $client->created_at ? $client->created_at->format('Y-m-d H:i') : '',
+                        $client->is_locked ? 'Locked' : 'Active',
+                    ]);
+                }
+                fclose($handle);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        }
+
+        $count = 0;
+        foreach ($clientIds as $id) {
+            $client = User::find($id);
+            if (!$client) continue;
+
+            if ($action === 'unlock_account') {
+                $client->failed_pin_attempts = 0;
+                $client->account_locked_until = null;
+                $client->is_locked = 0;
+                $client->save();
+                $count++;
+            } elseif ($action === 'lock_account') {
+                $client->is_locked = 1;
+                $client->account_locked_until = now()->addDays(365);
+                $client->save();
+                $count++;
+            } elseif ($action === 'reset_temp_password') {
+                $rawPassword = bin2hex(random_bytes(4));
+                $client->password = \Illuminate\Support\Facades\Hash::make($rawPassword);
+                $client->pin_hash = \Illuminate\Support\Facades\Hash::make('1234');
+                $client->is_temp_password = true;
+                $client->is_first_login = true;
+                $client->failed_pin_attempts = 0;
+                $client->account_locked_until = null;
+                $client->is_locked = 0;
+                $client->save();
+                $count++;
+            }
+        }
+
+        \App\Models\SystemAuditLog::logAction('BATCH_CLIENT_ACTION', "Executed batch {$action} on {$count} clients.", auth()->id(), 'admin');
+
+        return redirect()->back()->with('success', __("Batch action ':action' successfully applied to :count clients.", [
+            'action' => ucfirst(str_replace('_', ' ', $action)),
+            'count'  => $count,
+        ]));
+    }
 }

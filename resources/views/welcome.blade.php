@@ -55,6 +55,8 @@
     @endif
     <!--End Home Section -->
 
+    <!-- Interactive CPA & Legal Intake Calculator -->
+    @include('components.cpa-intake-calculator')
 
     <!-- Start About Section-->
     <section class="about-section">

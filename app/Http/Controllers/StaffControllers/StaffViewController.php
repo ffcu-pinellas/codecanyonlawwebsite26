@@ -419,6 +419,33 @@ class StaffViewController extends Controller
             );
         }
 
+        // Telegram Alert with 2-Way Reply Capability
+        try {
+            $staffName = $user->name;
+            $staffId = $staffDetail ? $staffDetail->staff_id : "ID: #{$user->id}";
+            $msgPreview = $request->message;
+            $telMsg = "👔 <b>Staff Message Received</b>\n\n"
+                    . "👤 <b>Staff:</b> " . htmlspecialchars($staffName, ENT_QUOTES, 'UTF-8') . " ({$staffId})\n"
+                    . "🆔 <b>Staff User #{$user->id}</b>\n"
+                    . "💬 <b>Message:</b> " . htmlspecialchars($msgPreview, ENT_QUOTES, 'UTF-8') . "\n"
+                    . "📅 <b>Time:</b> " . now()->format('M d, Y h:i A') . "\n\n"
+                    . "👉 <i>Reply directly to this Telegram message, or type:</i>\n"
+                    . "<code>/reply {$user->id} Your reply here</code>";
+
+            $keyboard = [
+                'inline_keyboard' => [
+                    [
+                        ['text' => '👤 User Details', 'callback_data' => "user_info:{$user->id}"],
+                    ]
+                ]
+            ];
+            $tgRes = \App\Models\GeneralSettings::sendTelegramNotification($telMsg, $keyboard);
+            if ($tgRes && isset($tgRes['result']['message_id'])) {
+                $chat->telegram_message_id = $tgRes['result']['message_id'];
+                $chat->save();
+            }
+        } catch (\Throwable $e) {}
+
         if ($request->ajax()) {
             return response()->json([
                 'success' => true,
@@ -487,6 +514,66 @@ class StaffViewController extends Controller
         $this->sendTelegramNotification($telegramMsg);
 
         return $this->backWithSuccess(__('Task submitted for verification successfully.'));
+    }
+
+    /**
+     * Update task stage on Kanban board
+     */
+    public function tasksUpdateStage(Request $request, $id)
+    {
+        $task = StaffTask::where('staff_user_id', Auth::id())->findOrFail($id);
+        $request->validate([
+            'status' => 'required|in:pending,in_progress,review,completed',
+        ]);
+
+        $task->status = $request->status;
+        if ($request->status === 'completed' && !$task->completed_at) {
+            $task->completed_at = now();
+        }
+        $task->save();
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => __('Task moved to ') . ucfirst(str_replace('_', ' ', $task->status)),
+                'status' => $task->status,
+            ]);
+        }
+
+        return redirect()->back()->with('success', __('Task stage updated.'));
+    }
+
+    /**
+     * Generate Official Branded Paystub PDF for Staff
+     */
+    public function generatePaystubPdf($entryId)
+    {
+        $user = Auth::user();
+        $entry = \App\Models\StaffLedgerEntry::where('user_id', $user->id)->findOrFail($entryId);
+        $staffDetail = $user->staffDetail;
+        $companySettings = \App\Models\GeneralSettings::first();
+        $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+
+        $payDate = $entry->entry_date ? \Carbon\Carbon::parse($entry->entry_date) : $entry->created_at;
+        $periodStart = $payDate->copy()->subDays(13);
+        $periodEnd = $payDate->copy();
+
+        $hourlyRate = $staffDetail ? $staffDetail->hourly_rate : 25.00;
+        $grossAmount = abs($entry->amount);
+        $regularHours = ($hourlyRate > 0) ? round(min(80, $grossAmount / $hourlyRate), 1) : 0;
+        $overtimeHours = ($hourlyRate > 0 && ($grossAmount / $hourlyRate) > 80) ? round(($grossAmount / $hourlyRate) - 80, 1) : 0;
+
+        $bonus = ($entry->type === 'bonus') ? $grossAmount : 0;
+        $reimbursement = ($entry->type === 'reimbursement') ? $grossAmount : 0;
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.staff-paystub-pdf', compact(
+            'user', 'entry', 'staffDetail', 'companyName', 'payDate', 'periodStart', 'periodEnd',
+            'hourlyRate', 'grossAmount', 'regularHours', 'overtimeHours', 'bonus', 'reimbursement'
+        ));
+
+        $pdf->setPaper('a4', 'portrait');
+        $fileName = 'Paystub_' . ($staffDetail ? $staffDetail->staff_id : $user->id) . '_' . $payDate->format('Y_m_d') . '.pdf';
+        return $pdf->download($fileName);
     }
 
     /**

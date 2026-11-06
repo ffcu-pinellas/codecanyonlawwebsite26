@@ -54,6 +54,11 @@ class AppSettingsController extends Controller
         try {
             $generalSettingStore = GeneralSettings::first()?GeneralSettings::first(): new GeneralSettings();
             $generalSettingStore->site_name = $request->site_name;
+            $generalSettingStore->company_phone = $request->company_phone;
+            $generalSettingStore->company_email = $request->company_email;
+            $generalSettingStore->company_address = $request->company_address;
+            $generalSettingStore->whatsapp_number = $request->whatsapp_number;
+            $generalSettingStore->telegram_reply_enabled = $request->boolean('telegram_reply_enabled', true);
             $generalSettingStore->site_tag_line = $request->site_tag_line;
             $generalSettingStore->site_sub_tag_line = $request->site_sub_tag_line;
             $generalSettingStore->author_name = $request->author_name;

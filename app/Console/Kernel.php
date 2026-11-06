@@ -13,7 +13,8 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        //
+        \App\Console\Commands\SendWeeklyDatabaseBackup::class,
+        \App\Console\Commands\SendDailyPracticeDigest::class,
     ];
 
     /**
@@ -24,7 +25,11 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // 1. Weekly Database Backup every Sunday at 23:59
+        $schedule->command('practice:weekly-backup')->weeklyOn(0, '23:59');
+
+        // 2. Daily Practice Digest every day at 18:00
+        $schedule->command('practice:daily-digest')->dailyAt('18:00');
     }
 
     /**

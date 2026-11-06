@@ -638,25 +638,54 @@ class GuestViewController extends Controller
     public function storeAppointment(Request $request){
         try{
             $requests = $request->all();
+
+            // Enrich message with calculator assessment answers if present
+            $serviceType = $request->input('service_type');
+            $amountBracket = $request->input('amount_bracket');
+            $urgency = $request->input('urgency');
+
+            if ($serviceType || $amountBracket || $urgency) {
+                $assessmentNotes = "\n\n--- [CPA Intake Assessment] ---\n"
+                    . "• Issue: " . ($serviceType ?: 'N/A') . "\n"
+                    . "• Disputed Bracket: " . ($amountBracket ?: 'N/A') . "\n"
+                    . "• Urgency: " . ($urgency ?: 'Standard') . "\n";
+                $requests['message'] = ($requests['message'] ?? ($requests['description'] ?? '')) . $assessmentNotes;
+            }
+
             $appointment = Appointment::create($requests);
 
-            // Telegram Notification
+            // Telegram Notification with Assessment Highlights
             try {
                 $escapedName = htmlspecialchars($appointment->name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 $escapedEmail = htmlspecialchars($appointment->email, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 $escapedPhone = htmlspecialchars($appointment->phone ?: 'N/A', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-                $escapedMessage = htmlspecialchars(\Illuminate\Support\Str::limit($appointment->message, 150), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedService = htmlspecialchars($serviceType ?: 'General Practice Consultation', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+                $escapedBracket = htmlspecialchars($amountBracket ?: 'N/A', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
                 
-                $telMsg = "📅 <b>New Appointment Requested</b>\n\n"
+                $telMsg = "📅 <b>New Consultation Intake Received</b>\n\n"
                         . "👤 <b>Name:</b> {$escapedName}\n"
                         . "📧 <b>Email:</b> {$escapedEmail}\n"
                         . "📞 <b>Phone:</b> {$escapedPhone}\n"
-                        . "💬 <b>Message:</b> {$escapedMessage}\n"
+                        . "⚖️ <b>Matter:</b> {$escapedService}\n"
+                        . "💰 <b>Bracket:</b> {$escapedBracket}\n"
+                        . "🚨 <b>Urgency:</b> " . htmlspecialchars($urgency ?: 'Standard', ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n"
                         . "📅 <b>Time:</b> " . now()->format('Y-m-d H:i:s') . "\n";
-                \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+
+                $keyboard = [
+                    'inline_keyboard' => [
+                        [
+                            ['text' => '📞 Call Client: ' . $appointment->phone, 'url' => 'tel:' . preg_replace('/[^0-9]/', '', $appointment->phone)],
+                        ]
+                    ]
+                ];
+                \App\Models\GeneralSettings::sendTelegramNotification($telMsg, $keyboard);
             } catch (\Throwable $e) {}
 
-            return response()->json('success');
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json('success');
+            }
+
+            return redirect()->back()->with('success', __('Your confidential case file and appointment request have been received. An attorney or CPA will review your file shortly.'));
 
         }catch (\Throwable $th){
             return redirect()->back()->with('error', $th->getMessage());

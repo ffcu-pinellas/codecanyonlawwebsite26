@@ -611,4 +611,67 @@ class AdminCaseController extends Controller
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
+
+    /**
+     * Export system activity logs as CSV
+     */
+    public function exportActivityLogsCsv()
+    {
+        $fileName = 'practice_audit_trail_' . date('Y-m-d_His') . '.csv';
+
+        $auditLogs = collect();
+        try {
+            $auditLogs = \App\Models\SystemAuditLog::with('user')->orderBy('created_at', 'desc')->limit(5000)->get();
+        } catch (\Throwable $e) {}
+
+        $activityLogs = collect();
+        try {
+            $activityLogs = ActivityLog::with('user')->orderBy('created_at', 'desc')->limit(2000)->get();
+        } catch (\Throwable $e) {}
+
+        $headers = [
+            'Content-Type'        => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$fileName\"",
+            'Pragma'              => 'no-cache',
+            'Cache-Control'       => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires'             => '0',
+        ];
+
+        $callback = function () use ($auditLogs, $activityLogs) {
+            $handle = fopen('php://output', 'w');
+            fputcsv($handle, ['Source', 'Log ID', 'Date & Time', 'User Type', 'User Name', 'User Email', 'Action / Event', 'Details', 'IP Address']);
+
+            foreach ($auditLogs as $log) {
+                fputcsv($handle, [
+                    'System Audit',
+                    $log->id,
+                    $log->created_at ? $log->created_at->format('Y-m-d H:i:s') : '',
+                    $log->user_type ?? 'User',
+                    $log->user ? $log->user->name : 'System',
+                    $log->user ? $log->user->email : 'N/A',
+                    $log->action_key,
+                    $log->details,
+                    $log->ip_address,
+                ]);
+            }
+
+            foreach ($activityLogs as $log) {
+                fputcsv($handle, [
+                    'Activity Log',
+                    $log->id,
+                    $log->created_at ? $log->created_at->format('Y-m-d H:i:s') : '',
+                    'Practice User',
+                    $log->user ? $log->user->name : 'System / Guest',
+                    $log->user ? $log->user->email : 'N/A',
+                    $log->action,
+                    $log->description,
+                    $log->ip_address,
+                ]);
+            }
+
+            fclose($handle);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

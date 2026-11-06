@@ -71,6 +71,25 @@
                             </div>
                         </div>
                         
+                        <!-- Mobile PWA Install Notification / Tooltip Banner -->
+                        <div id="pwaInstallBanner" class="alert alert-info d-none mx-3 my-2 shadow-sm border-0 d-flex flex-wrap align-items-center justify-content-between" style="border-radius: 10px; background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: #fff;">
+                            <div class="d-flex align-items-center mb-2 mb-md-0">
+                                <div class="mr-3" style="font-size: 1.8rem;">📲</div>
+                                <div>
+                                    <strong class="d-block" style="font-size: 14px;">Install Staff Workspace App</strong>
+                                    <small style="opacity: 0.9;">Access tasks, client chats, and scan receipts instantly from your mobile home screen.</small>
+                                </div>
+                            </div>
+                            <div>
+                                <button type="button" id="pwaInstallBtn" class="btn btn-warning btn-sm font-weight-bold mr-2 text-dark px-3 shadow-sm">
+                                    <i class="fas fa-download mr-1"></i> Install App
+                                </button>
+                                <button type="button" class="btn btn-link text-white btn-sm p-0 ml-2" onclick="dismissPwaBanner()" title="Dismiss">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+
                         @if(session('success'))
                             <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
                                 {{ session('success') }}
@@ -105,5 +124,45 @@
 @include('backend.layouts.toster-script')
 {!! $insertHeaderFooter?$insertHeaderFooter->footer:'' !!}
 @yield('modal')
+
+<script>
+    // PWA Service Worker Registration & Install Prompt
+    let deferredPwaPrompt = null;
+    const pwaBanner = document.getElementById('pwaInstallBanner');
+    const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('Staff PWA Service Worker registered:', reg.scope))
+                .catch(err => console.warn('PWA SW registration error:', err));
+        });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPwaPrompt = e;
+        if (!localStorage.getItem('staff_pwa_banner_dismissed')) {
+            if (pwaBanner) pwaBanner.classList.remove('d-none');
+        }
+    });
+
+    if (pwaInstallBtn) {
+        pwaInstallBtn.addEventListener('click', async () => {
+            if (!deferredPwaPrompt) return;
+            deferredPwaPrompt.prompt();
+            const { outcome } = await deferredPwaPrompt.userChoice;
+            if (outcome === 'accepted') {
+                if (pwaBanner) pwaBanner.classList.add('d-none');
+            }
+            deferredPwaPrompt = null;
+        });
+    }
+
+    function dismissPwaBanner() {
+        if (pwaBanner) pwaBanner.classList.add('d-none');
+        localStorage.setItem('staff_pwa_banner_dismissed', 'true');
+    }
+</script>
 </body>
 </html>

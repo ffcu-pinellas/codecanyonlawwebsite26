@@ -66,6 +66,45 @@
                             @endif
                         </div>
 
+                        <hr class="border-secondary my-4">
+                        <h6 class="text-warning font-weight-bold mb-3"><i class="fas fa-phone-alt mr-1"></i> {{__('Practice Contact & Communication Hub')}}</h6>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="small text-light">{{__('Main Practice Phone Number')}}:</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text bg-secondary border-0"><i class="fas fa-phone"></i></span></div>
+                                    <input type="text" name="company_phone" class="form-control" placeholder="(216) 230-1837" value="{{$generalSetting ? $generalSetting->company_phone : env('COMPANY_PHONE')}}">
+                                </div>
+                                <small class="text-muted">{{__('Dynamically updates headers, footers, floating buttons and client notices.')}}</small>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="small text-light">{{__('Primary Support & Practice Email')}}:</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text bg-secondary border-0"><i class="fas fa-envelope"></i></span></div>
+                                    <input type="email" name="company_email" class="form-control" placeholder="support@yourcpaexpert.com" value="{{$generalSetting ? $generalSetting->company_email : env('COMPANY_EMAIL')}}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="small text-light">{{__('Physical Practice Address')}}:</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text bg-secondary border-0"><i class="fas fa-map-marker-alt"></i></span></div>
+                                    <input type="text" name="company_address" class="form-control" placeholder="582 Professional Way, Financial District, DC" value="{{$generalSetting ? $generalSetting->company_address : env('COMPANY_ADDRESS')}}">
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="small text-light">{{__('WhatsApp Direct Contact')}}:</label>
+                                <div class="input-group">
+                                    <div class="input-group-prepend"><span class="input-group-text bg-secondary border-0"><i class="fab fa-whatsapp"></i></span></div>
+                                    <input type="text" name="whatsapp_number" class="form-control" placeholder="+12162301837" value="{{$generalSetting ? $generalSetting->whatsapp_number : env('WHATSAPP_NUMBER')}}">
+                                </div>
+                            </div>
+                        </div>
+                        <hr class="border-secondary my-4">
+
 
                         <p class="mb-1">{{__('Og Meta Title')}}: </p>
                         <div class="input-group input-group-lg mb-3">
