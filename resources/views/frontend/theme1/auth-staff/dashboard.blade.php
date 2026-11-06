@@ -4,111 +4,18 @@
 
 @section('page-css')
 <style>
-    .staff-portal-wrap {
-        color: #f1f5f9;
-    }
-    .exec-welcome-card {
-        background: linear-gradient(135deg, #0b132b 0%, #1c2541 60%, #1e293b 100%);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        padding: 30px;
-        margin-bottom: 25px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-        position: relative;
-        overflow: hidden;
-    }
-    .exec-welcome-card::after {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -10%;
-        width: 300px;
-        height: 300px;
-        background: radial-gradient(circle, rgba(212, 175, 55, 0.12) 0%, transparent 70%);
-        pointer-events: none;
-    }
-    .staff-avatar-ring {
-        width: 72px;
-        height: 72px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #d4af37, #f39c12);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #0b132b;
-        font-weight: 800;
-        font-size: 1.8rem;
-        box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
-        flex-shrink: 0;
-    }
-    .badge-exec-gold {
-        background: rgba(212, 175, 55, 0.15);
-        color: #f1c40f;
-        border: 1px solid rgba(212, 175, 55, 0.3);
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 0.78rem;
-        font-weight: 700;
-        letter-spacing: 0.5px;
-    }
-    .badge-exec-green {
-        background: rgba(16, 185, 129, 0.15);
-        color: #10b981;
-        border: 1px solid rgba(16, 185, 129, 0.3);
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 0.78rem;
-        font-weight: 700;
-    }
-    .badge-exec-warn {
-        background: rgba(245, 158, 11, 0.15);
-        color: #f59e0b;
-        border: 1px solid rgba(245, 158, 11, 0.3);
-        padding: 5px 12px;
-        border-radius: 20px;
-        font-size: 0.78rem;
-        font-weight: 700;
-    }
-    .exec-kpi-card {
-        background: #111827;
-        border: 1px solid rgba(255, 255, 255, 0.08);
+    /* Top Fast-Punch Attendance Dock */
+    .top-punch-dock {
+        background: #11151e;
+        border: 1px solid #28303f;
         border-radius: 14px;
-        padding: 22px;
-        height: 100%;
-        transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-    }
-    .exec-kpi-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-        border-color: rgba(212, 175, 55, 0.3);
-    }
-    .kpi-icon-box {
-        width: 48px;
-        height: 48px;
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.3rem;
-    }
-    .kpi-icon-gold { background: rgba(212, 175, 55, 0.15); color: #f1c40f; }
-    .kpi-icon-green { background: rgba(16, 185, 129, 0.15); color: #10b981; }
-    .kpi-icon-blue { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
-    .kpi-icon-purple { background: rgba(168, 85, 247, 0.15); color: #a855f7; }
-    
-    .attendance-dock-card {
-        background: #111827;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        padding: 30px;
-        margin-bottom: 25px;
+        padding: 16px 24px;
+        margin-bottom: 22px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
     }
     .pulse-radar-dot {
-        width: 12px;
-        height: 12px;
+        width: 10px;
+        height: 10px;
         background-color: #10b981;
         border-radius: 50%;
         display: inline-block;
@@ -117,71 +24,154 @@
     }
     @keyframes pulseRadar {
         0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-        70% { box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
+        70% { box-shadow: 0 0 0 10px rgba(16, 185, 129, 0); }
         100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
     }
-    .exec-timer-display {
+    .dock-timer-digits {
         font-family: 'Courier New', Courier, monospace;
         font-weight: 800;
-        font-size: 2.8rem;
-        letter-spacing: 2px;
-        color: #f1c40f;
-        text-shadow: 0 0 15px rgba(241, 196, 15, 0.3);
+        font-size: 1.9rem;
+        letter-spacing: 1.5px;
+        color: #fecc56;
+        text-shadow: 0 0 12px rgba(254, 204, 86, 0.3);
+        line-height: 1;
     }
-    .exec-clock-display {
+    .dock-clock-digits {
         font-family: 'Courier New', Courier, monospace;
         font-weight: 800;
-        font-size: 2.5rem;
-        letter-spacing: 2px;
-        color: #94a3b8;
+        font-size: 1.7rem;
+        letter-spacing: 1.5px;
+        color: #cbd5e1;
+        line-height: 1;
     }
-    .btn-exec-clockin {
+    .btn-fast-clockin {
         background: linear-gradient(135deg, #059669 0%, #10b981 100%);
-        color: white;
+        color: #ffffff !important;
         font-weight: 700;
-        font-size: 1.15rem;
-        padding: 16px 45px;
-        border-radius: 12px;
+        font-size: 0.95rem;
+        padding: 10px 26px;
+        border-radius: 10px;
         border: none;
-        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
         transition: all 0.2s ease;
+        white-space: nowrap;
     }
-    .btn-exec-clockin:hover {
+    .btn-fast-clockin:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
-        color: white;
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
     }
-    .btn-exec-clockout {
+    .btn-fast-clockout {
         background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
-        color: white;
+        color: #ffffff !important;
         font-weight: 700;
-        font-size: 1.15rem;
-        padding: 16px 45px;
-        border-radius: 12px;
+        font-size: 0.95rem;
+        padding: 10px 26px;
+        border-radius: 10px;
         border: none;
-        box-shadow: 0 4px 15px rgba(239, 68, 68, 0.35);
+        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
         transition: all 0.2s ease;
+        white-space: nowrap;
     }
-    .btn-exec-clockout:hover {
+    .btn-fast-clockout:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(239, 68, 68, 0.5);
-        color: white;
+        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
     }
-    .quick-action-tile {
-        background: #1e293b;
-        border: 1px solid rgba(255, 255, 255, 0.06);
+
+    /* Executive Profile Card */
+    .staff-profile-card {
+        background: #11151e;
+        border: 1px solid #28303f;
+        border-radius: 14px;
+        padding: 22px 24px;
+        margin-bottom: 22px;
+    }
+    .staff-avatar-ring {
+        width: 58px;
+        height: 58px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #fecc56, #f59e0b);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #0b132b;
+        font-weight: 800;
+        font-size: 1.5rem;
+        box-shadow: 0 0 16px rgba(254, 204, 86, 0.35);
+        flex-shrink: 0;
+    }
+    .badge-exec-gold {
+        background: rgba(254, 204, 86, 0.12);
+        color: #fecc56;
+        border: 1px solid rgba(254, 204, 86, 0.3);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+    }
+    .badge-exec-green {
+        background: rgba(16, 185, 129, 0.12);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+    .badge-exec-warn {
+        background: rgba(245, 158, 11, 0.12);
+        color: #f59e0b;
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        padding: 4px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 700;
+    }
+
+    /* KPI Metrics */
+    .metric-card {
+        background: #11151e;
+        border: 1px solid #28303f;
         border-radius: 12px;
-        padding: 18px;
+        padding: 20px;
+        height: 100%;
+        transition: transform 0.2s ease, border-color 0.2s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(254, 204, 86, 0.35);
+    }
+    .metric-icon-box {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+    .icon-blue { background: rgba(59, 130, 246, 0.12); color: #60a5fa; }
+    .icon-green { background: rgba(16, 185, 129, 0.12); color: #4ade80; }
+    .icon-gold { background: rgba(254, 204, 86, 0.12); color: #fecc56; }
+    .icon-purple { background: rgba(168, 85, 247, 0.12); color: #c084fc; }
+
+    /* Action Tiles */
+    .action-tile {
+        background: #161a23;
+        border: 1px solid #28303f;
+        border-radius: 10px;
+        padding: 16px;
         color: #f1f5f9;
         text-decoration: none;
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 14px;
         transition: all 0.2s ease;
+        height: 100%;
     }
-    .quick-action-tile:hover {
-        background: #334155;
-        border-color: rgba(212, 175, 55, 0.4);
+    .action-tile:hover {
+        background: #1f2533;
+        border-color: rgba(254, 204, 86, 0.4);
         color: #ffffff;
         text-decoration: none;
         transform: translateY(-2px);
@@ -190,295 +180,315 @@
 @endsection
 
 @section('content')
-<div class="container-fluid py-4 staff-portal-wrap">
+<div class="container-fluid px-0">
 
-    <!-- Top Executive Profile Header -->
-    <div class="exec-welcome-card">
-        <div class="row align-items-center">
-            <div class="col-lg-8">
-                <div class="d-flex align-items-center flex-wrap" style="gap: 20px;">
-                    <div class="staff-avatar-ring">
-                        {{ strtoupper(substr($user->name, 0, 1)) }}
+    <!-- 1. TOP FAST-PUNCH ATTENDANCE DOCK (INSTANT ACCESS AT VERY TOP) -->
+    <div class="top-punch-dock">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center" style="gap: 14px;">
+            <!-- Left: Status Indicator -->
+            <div class="d-flex align-items-center" style="gap: 12px;">
+                @if($activeLog)
+                    <div class="d-flex align-items-center" style="gap: 8px;">
+                        <span class="pulse-radar-dot"></span>
+                        <span class="badge-exec-green text-uppercase">{{ __('Shift In Progress') }}</span>
                     </div>
-                    <div>
-                        <div class="d-flex align-items-center flex-wrap mb-1" style="gap: 10px;">
-                            <h3 class="font-weight-bold text-white mb-0">{{ $user->name }}</h3>
-                            <span class="badge-exec-green"><i class="fas fa-check-circle mr-1"></i> {{ __('Active Staff') }}</span>
-                            <span class="badge-exec-gold"><i class="fas fa-id-badge mr-1"></i> {{ $staffDetail->staff_id }}</span>
-                        </div>
-                        <p class="text-white-50 mb-2">
-                            {{ $staffDetail->position ?: __('CPA Practice Associate & Staff Attorney') }}
-                            &bull; <span class="text-light"><i class="fas fa-envelope mr-1"></i> {{ $user->email }}</span>
-                            @if($user->phone)
-                                &bull; <span class="text-light"><i class="fas fa-phone mr-1"></i> {{ $user->phone }}</span>
-                            @endif
-                        </p>
-                        <div>
-                            @if(!empty($staffDetail->bank_account_number) || !empty($staffDetail->payment_info))
-                                <span class="badge-exec-green"><i class="fas fa-university mr-1"></i> {{ __('Direct Deposit Verified') }}</span>
-                            @else
-                                <a href="{{ route('staff.payment-method') }}" class="badge-exec-warn text-decoration-none">
-                                    <i class="fas fa-exclamation-triangle mr-1"></i> {{ __('Direct Deposit Setup Needed') }}
-                                </a>
-                            @endif
-                            <span class="text-muted small ml-2">
-                                <i class="fas fa-calendar-alt mr-1"></i> Hired: {{ $staffDetail->hired_at ? $staffDetail->hired_at->format('M d, Y') : 'N/A' }}
-                            </span>
-                        </div>
+                    <div class="d-none d-sm-block text-muted small border-left border-secondary pl-3 ml-2">
+                        <i class="fas fa-sign-in-alt text-success mr-1"></i> Punched in at <strong class="text-white">{{ $activeLog->clocked_in_at->format('h:i A') }}</strong>
                     </div>
-                </div>
+                @else
+                    <div class="d-flex align-items-center" style="gap: 8px;">
+                        <span class="badge-exec-gold text-uppercase">{{ __('Off Duty') }}</span>
+                    </div>
+                    <div class="d-none d-sm-block text-muted small border-left border-secondary pl-3 ml-2">
+                        <i class="fas fa-shield-alt text-warning mr-1"></i> GPS-verified timekeeper ready
+                    </div>
+                @endif
             </div>
-            <div class="col-lg-4 text-lg-right mt-3 mt-lg-0 border-left-lg border-secondary pl-lg-4">
-                <div class="small text-muted text-uppercase font-weight-bold mb-1">{{ __('Firm Timezone (UTC/EST)') }}</div>
-                <div class="h5 text-warning font-weight-bold mb-0" id="live-firm-clock">{{ date('h:i:s A') }}</div>
-                <div class="small text-white-50">{{ date('l, F d, Y') }}</div>
+
+            <!-- Center: Live Digital Clock or Elapsed Duration -->
+            <div class="text-center">
+                @if($activeLog)
+                    <div class="text-muted small text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">{{ __('Session Elapsed') }}</div>
+                    <div class="dock-timer-digits" id="session-timer">00:00:00</div>
+                @else
+                    <div class="text-muted small text-uppercase font-weight-bold" style="font-size: 10px; letter-spacing: 0.5px;">{{ __('Live Clock') }}</div>
+                    <div class="dock-clock-digits" id="digital-clock">00:00:00 AM</div>
+                @endif
+            </div>
+
+            <!-- Right: Instant Punch Button -->
+            <div>
+                @if($activeLog)
+                    <form id="top-clock-out-form" action="{{ route('staff.clock-out') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="latitude" id="top-clock-out-lat">
+                        <input type="hidden" name="longitude" id="top-clock-out-lng">
+                        <button type="button" onclick="submitPunch('top-clock-out-form')" class="btn btn-fast-clockout">
+                            <i class="fas fa-sign-out-alt mr-1"></i> {{ __('Punch Out') }}
+                        </button>
+                    </form>
+                @else
+                    <form id="top-clock-in-form" action="{{ route('staff.clock-in') }}" method="POST">
+                        @csrf
+                        <input type="hidden" name="latitude" id="top-clock-in-lat">
+                        <input type="hidden" name="longitude" id="top-clock-in-lng">
+                        <button type="button" onclick="submitPunch('top-clock-in-form')" class="btn btn-fast-clockin">
+                            <i class="fas fa-sign-in-alt mr-1"></i> {{ __('Punch In Now') }}
+                        </button>
+                    </form>
+                @endif
             </div>
         </div>
     </div>
 
-    <!-- 4-Grid KPI Metric Cards -->
+    <!-- 2. EXECUTIVE PROFILE STRIP -->
+    <div class="staff-profile-card">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center" style="gap: 16px;">
+            <div class="d-flex align-items-center" style="gap: 16px;">
+                <div class="staff-avatar-ring">
+                    {{ strtoupper(substr($user->name, 0, 1)) }}
+                </div>
+                <div>
+                    <div class="d-flex align-items-center flex-wrap mb-1" style="gap: 8px;">
+                        <h4 class="font-weight-bold text-white mb-0">{{ $user->name }}</h4>
+                        <span class="badge-exec-gold"><i class="fas fa-id-badge mr-1"></i> {{ $staffDetail->staff_id }}</span>
+                        @if(!empty($staffDetail->bank_account_number) || !empty($staffDetail->payment_info))
+                            <span class="badge-exec-green"><i class="fas fa-university mr-1"></i> {{ __('Direct Deposit Active') }}</span>
+                        @else
+                            <a href="{{ route('staff.payment-method') }}" class="badge-exec-warn text-decoration-none">
+                                <i class="fas fa-exclamation-triangle mr-1"></i> {{ __('Direct Deposit Needed') }}
+                            </a>
+                        @endif
+                    </div>
+                    <div class="text-muted small">
+                        <span>{{ $staffDetail->position ?: __('CPA Practice Associate & Staff Attorney') }}</span>
+                        &bull; <span class="text-light"><i class="fas fa-envelope mr-1"></i> {{ $user->email }}</span>
+                        @if($user->phone)
+                            &bull; <span class="text-light"><i class="fas fa-phone mr-1"></i> {{ $user->phone }}</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            <div class="text-md-right text-muted small">
+                <div><span class="text-white-50">Assigned Supervisor:</span> <strong class="text-warning">{{ $officer?->name ?: 'Practice Principal' }}</strong></div>
+                <div><span class="text-white-50">Standard Compensation:</span> <strong class="text-success">${{ number_format($staffDetail->hourly_rate, 2) }}/hr</strong></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. KPI METRIC TILES -->
     <div class="row mb-4">
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="exec-kpi-card">
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
+            <div class="metric-card">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <div>
-                        <span class="text-muted small text-uppercase font-weight-bold">{{ __('Hours Logged') }}</span>
-                        <h3 class="text-white font-weight-bold mb-0 mt-1">{{ $totalHoursWorked }} <small class="text-muted font-weight-normal" style="font-size: 0.9rem;">hrs</small></h3>
+                        <span class="text-muted small text-uppercase font-weight-bold" style="font-size: 11px;">{{ __('Cycle Hours') }}</span>
+                        <h3 class="text-white font-weight-bold mb-0 mt-1">{{ $totalHoursWorked }} <small class="text-muted" style="font-size: 13px;">hrs</small></h3>
                     </div>
-                    <div class="kpi-icon-box kpi-icon-blue">
-                        <i class="fas fa-history"></i>
+                    <div class="metric-icon-box icon-blue">
+                        <i class="fas fa-clock"></i>
                     </div>
                 </div>
                 <div class="text-muted small border-top border-secondary pt-2 mt-2">
-                    <i class="fas fa-business-time mr-1 text-info"></i> {{ __('Cumulative cycle hours') }}
+                    <i class="fas fa-calendar-check mr-1 text-info"></i> {{ __('Cumulative logged cycle') }}
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="exec-kpi-card">
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
+            <div class="metric-card">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <div>
-                        <span class="text-muted small text-uppercase font-weight-bold">{{ __('Earned Compensation') }}</span>
+                        <span class="text-muted small text-uppercase font-weight-bold" style="font-size: 11px;">{{ __('Estimated Pay') }}</span>
                         <h3 class="text-success font-weight-bold mb-0 mt-1">${{ number_format($totalEarned, 2) }}</h3>
                     </div>
-                    <div class="kpi-icon-box kpi-icon-green">
+                    <div class="metric-icon-box icon-green">
                         <i class="fas fa-dollar-sign"></i>
                     </div>
                 </div>
                 <div class="text-muted small border-top border-secondary pt-2 mt-2">
-                    <span class="text-light font-weight-bold">${{ number_format($staffDetail->hourly_rate, 2) }}/hr</span> {{ __('Standard Rate') }}
+                    <span class="text-light font-weight-bold">${{ number_format($staffDetail->hourly_rate, 2) }}/hr</span> standard rate
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="exec-kpi-card">
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
+            <div class="metric-card">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <div>
-                        <span class="text-muted small text-uppercase font-weight-bold">{{ __('Active Tasks') }}</span>
+                        <span class="text-muted small text-uppercase font-weight-bold" style="font-size: 11px;">{{ __('Active Tasks') }}</span>
                         <h3 class="text-warning font-weight-bold mb-0 mt-1">{{ $pendingTasksCount ?? 0 }}</h3>
                     </div>
-                    <div class="kpi-icon-box kpi-icon-gold">
+                    <div class="metric-icon-box icon-gold">
                         <i class="fas fa-tasks"></i>
                     </div>
                 </div>
                 <div class="text-muted small border-top border-secondary pt-2 mt-2 d-flex justify-content-between align-items-center">
-                    <span>{{ __('Pending / In Progress') }}</span>
-                    <a href="{{ route('staff.tasks.index') }}" class="text-warning font-weight-bold text-decoration-none">{{ __('Kanban') }} &rarr;</a>
+                    <span>Pending review</span>
+                    <a href="{{ route('staff.tasks.index') }}" class="text-warning font-weight-bold text-decoration-none">{{ __('Kanban Board') }} &rarr;</a>
                 </div>
             </div>
         </div>
 
-        <div class="col-xl-3 col-md-6 mb-3">
-            <div class="exec-kpi-card">
+        <div class="col-xl-3 col-md-6 mb-3 mb-xl-0">
+            <div class="metric-card">
                 <div class="d-flex justify-content-between align-items-start mb-2">
                     <div>
-                        <span class="text-muted small text-uppercase font-weight-bold">{{ __('Approved Reimbursement') }}</span>
+                        <span class="text-muted small text-uppercase font-weight-bold" style="font-size: 11px;">{{ __('Reimbursements') }}</span>
                         <h3 class="text-info font-weight-bold mb-0 mt-1">${{ number_format($approvedReimbursementTotal ?? 0, 2) }}</h3>
                     </div>
-                    <div class="kpi-icon-box kpi-icon-purple">
+                    <div class="metric-icon-box icon-purple">
                         <i class="fas fa-wallet"></i>
                     </div>
                 </div>
                 <div class="text-muted small border-top border-secondary pt-2 mt-2 d-flex justify-content-between align-items-center">
-                    <span>{{ __('Employer Payable') }}</span>
-                    <a href="{{ route('staff.financial-ledger') }}" class="text-info font-weight-bold text-decoration-none">{{ __('Ledger') }} &rarr;</a>
+                    <span>Employer payable</span>
+                    <a href="{{ route('staff.financial-ledger') }}" class="text-info font-weight-bold text-decoration-none">{{ __('View Ledger') }} &rarr;</a>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Attendance Dock & Weekly Analytics Row -->
-    <div class="row">
-        <!-- Interactive Attendance Dock -->
-        <div class="col-lg-6 mb-4">
-            <div class="attendance-dock-card h-100 d-flex flex-column justify-content-between">
-                <div>
-                    <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-3 mb-4">
-                        <div class="d-flex align-items-center" style="gap: 10px;">
-                            <div class="kpi-icon-box kpi-icon-blue" style="width: 38px; height: 38px; font-size: 1rem;">
-                                <i class="fas fa-business-time"></i>
-                            </div>
-                            <h5 class="font-weight-bold text-white mb-0">{{ __('Attendance & Time Punch') }}</h5>
-                        </div>
-                        @if($activeLog)
-                            <span class="badge-exec-green d-flex align-items-center" style="gap: 6px;">
-                                <span class="pulse-radar-dot"></span> {{ __('CLOCKED IN') }}
-                            </span>
-                        @else
-                            <span class="badge-exec-gold">{{ __('OFF DUTY') }}</span>
-                        @endif
-                    </div>
-
-                    <div class="text-center py-4">
-                        @if($activeLog)
-                            <p class="text-muted small text-uppercase font-weight-bold mb-1">{{ __('Current Session Elapsed') }}</p>
-                            <div class="exec-timer-display mb-3" id="session-timer">00:00:00</div>
-                            <p class="text-white-50 small mb-4">
-                                <i class="fas fa-clock mr-1 text-success"></i> Session started at: <strong class="text-white">{{ $activeLog->clocked_in_at->format('h:i:s A') }}</strong>
-                            </p>
-                            <form id="clock-out-form" action="{{ route('staff.clock-out') }}" method="POST">
-                                @csrf
-                                <input type="hidden" name="latitude" id="clock-out-lat">
-                                <input type="hidden" name="longitude" id="clock-out-lng">
-                                <button type="button" onclick="submitWithLocation('clock-out-form')" class="btn btn-exec-clockout btn-lg px-5">
-                                    <i class="fas fa-sign-out-alt mr-2"></i> {{ __('Punch Out Now') }}
-                                </button>
-                            </form>
-                        @else
-                            <p class="text-muted small text-uppercase font-weight-bold mb-1">{{ __('Local Clock Time') }}</p>
-                            <div class="exec-clock-display mb-3" id="digital-clock">00:00:00 AM</div>
-                            <p class="text-white-50 small mb-4">
-                                <i class="fas fa-map-marker-alt mr-1 text-info"></i> Ready to start shift with secure GPS verification
-                            </p>
-                            <form id="clock-in-form" action="{{ route('staff.clock-in') }}" method="POST">
-                                @csrf
-                                <input type="hidden" name="latitude" id="clock-in-lat">
-                                <input type="hidden" name="longitude" id="clock-in-lng">
-                                <button type="button" onclick="submitWithLocation('clock-in-form')" class="btn btn-exec-clockin btn-lg px-5">
-                                    <i class="fas fa-sign-in-alt mr-2"></i> {{ __('Punch In Now') }}
-                                </button>
-                            </form>
-                        @endif
-                    </div>
-                </div>
-
-                <div class="border-top border-secondary pt-3 mt-4">
-                    <div class="row text-center text-muted small">
-                        <div class="col-4 border-right border-secondary">
-                            <span class="d-block text-uppercase font-weight-bold" style="font-size: 0.65rem;">Hourly Rate</span>
-                            <span class="text-white font-weight-bold">${{ number_format($staffDetail->hourly_rate, 2) }}/hr</span>
-                        </div>
-                        <div class="col-4 border-right border-secondary">
-                            <span class="d-block text-uppercase font-weight-bold" style="font-size: 0.65rem;">Hours Worked</span>
-                            <span class="text-white font-weight-bold">{{ $totalHoursWorked }} hrs</span>
-                        </div>
-                        <div class="col-4">
-                            <span class="d-block text-uppercase font-weight-bold" style="font-size: 0.65rem;">Total Earned</span>
-                            <span class="text-success font-weight-bold">${{ number_format($totalEarned, 2) }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Weekly Performance Area Chart -->
-        <div class="col-lg-6 mb-4">
-            <div class="attendance-dock-card h-100 d-flex flex-column justify-content-between">
+    <!-- 4. PERFORMANCE VELOCITY & TIMESHEET HISTORY -->
+    <div class="row mb-4">
+        <!-- 7-Day Performance Velocity Chart -->
+        <div class="col-lg-7 mb-4 mb-lg-0">
+            <div class="staff-profile-card h-100 d-flex flex-column justify-content-between">
                 <div>
                     <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-3 mb-3">
-                        <div class="d-flex align-items-center" style="gap: 10px;">
-                            <div class="kpi-icon-box kpi-icon-gold" style="width: 38px; height: 38px; font-size: 1rem;">
-                                <i class="fas fa-chart-line"></i>
-                            </div>
-                            <h5 class="font-weight-bold text-white mb-0">{{ __('Weekly Hours Velocity') }}</h5>
-                        </div>
-                        <span class="text-muted small">{{ __('Last 7 Days') }}</span>
+                        <h6 class="font-weight-bold text-white mb-0">
+                            <i class="fas fa-chart-area mr-2 text-warning"></i>{{ __('Weekly Velocity (Last 7 Days)') }}
+                        </h6>
+                        <span class="text-muted small">{{ __('Daily logged hours') }}</span>
                     </div>
                     <div id="weekly-hours-chart" style="min-height: 250px;"></div>
                 </div>
-                <div class="border-top border-secondary pt-2 text-right">
+                <div class="border-top border-secondary pt-2 mt-2 text-right">
                     <a href="{{ route('staff.financial-ledger') }}" class="text-warning small font-weight-bold text-decoration-none">
-                        {{ __('View Detailed Timesheet History') }} &rarr;
+                        {{ __('Detailed Ledger & Paystubs') }} &rarr;
                     </a>
                 </div>
             </div>
         </div>
+
+        <!-- Recent Shifts Activity Table -->
+        <div class="col-lg-5">
+            <div class="staff-profile-card h-100">
+                <div class="d-flex justify-content-between align-items-center border-bottom border-secondary pb-3 mb-3">
+                    <h6 class="font-weight-bold text-white mb-0">
+                        <i class="fas fa-history mr-2 text-info"></i>{{ __('Recent Shift Logs') }}
+                    </h6>
+                    <span class="badge badge-secondary">{{ $timeLogs->count() }} {{ __('Total') }}</span>
+                </div>
+                <div class="table-responsive" style="max-height: 270px; overflow-y: auto;">
+                    <table class="table table-sm table-borderless mb-0">
+                        <thead>
+                            <tr class="text-muted small border-bottom border-secondary">
+                                <th>{{ __('Date') }}</th>
+                                <th>{{ __('Duration') }}</th>
+                                <th class="text-right">{{ __('Wages') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($timeLogs->take(6) as $log)
+                                <tr class="border-bottom border-secondary">
+                                    <td class="py-2">
+                                        <div class="text-white small font-weight-bold">{{ $log->clocked_in_at->format('M d, Y') }}</div>
+                                        <div class="text-muted" style="font-size: 11px;">{{ $log->clocked_in_at->format('h:i A') }} - {{ $log->clocked_out_at ? $log->clocked_out_at->format('h:i A') : 'Active' }}</div>
+                                    </td>
+                                    <td class="py-2 text-light small align-middle">
+                                        {{ round($log->duration_seconds / 3600, 2) }} hrs
+                                    </td>
+                                    <td class="py-2 text-success small font-weight-bold text-right align-middle">
+                                        ${{ number_format($log->earned_amount, 2) }}
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="3" class="text-center py-4 text-muted small">
+                                        {{ __('No previous shifts recorded yet.') }}
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- Quick Operations Hub -->
-    <div class="attendance-dock-card mb-4">
-        <h5 class="font-weight-bold text-white mb-3"><i class="fas fa-th-large mr-2 text-warning"></i>{{ __('Staff Operations & Quick Hub') }}</h5>
+    <!-- 5. OPERATIONS & QUICK ACTION HUB -->
+    <div class="staff-profile-card mb-4">
+        <h6 class="font-weight-bold text-white mb-3"><i class="fas fa-th-large mr-2 text-warning"></i>{{ __('Staff Operations & Quick Actions') }}</h6>
         <div class="row">
             <div class="col-lg-4 col-md-6 mb-3">
-                <a href="{{ route('staff.tasks.index') }}" class="quick-action-tile">
-                    <div class="kpi-icon-box kpi-icon-gold">
+                <a href="{{ route('staff.tasks.index') }}" class="action-tile">
+                    <div class="metric-icon-box icon-gold">
                         <i class="fas fa-tasks"></i>
                     </div>
                     <div>
-                        <div class="font-weight-bold">{{ __('Interactive Kanban Tasks') }}</div>
-                        <div class="text-muted small">{{ __('Manage assigned cases & deliverables') }}</div>
+                        <div class="font-weight-bold text-white">{{ __('Kanban Task Board') }}</div>
+                        <div class="text-muted small">{{ __('Manage assigned client cases & deliverables') }}</div>
                     </div>
                 </a>
             </div>
 
             <div class="col-lg-4 col-md-6 mb-3">
-                <a href="{{ route('staff.financial-ledger') }}" class="quick-action-tile">
-                    <div class="kpi-icon-box kpi-icon-green">
+                <a href="{{ route('staff.financial-ledger') }}" class="action-tile">
+                    <div class="metric-icon-box icon-green">
                         <i class="fas fa-file-invoice-dollar"></i>
                     </div>
                     <div>
-                        <div class="font-weight-bold">{{ __('Financial Ledger & Payouts') }}</div>
-                        <div class="text-muted small">{{ __('Ledger balance, bonuses & pay history') }}</div>
+                        <div class="font-weight-bold text-white">{{ __('Financial Ledger') }}</div>
+                        <div class="text-muted small">{{ __('Payout requests, bonuses & paystub PDFs') }}</div>
                     </div>
                 </a>
             </div>
 
             <div class="col-lg-4 col-md-6 mb-3">
-                <a href="javascript:void(0)" data-toggle="modal" data-target="#quickReceiptModal" class="quick-action-tile">
-                    <div class="kpi-icon-box kpi-icon-purple">
+                <a href="javascript:void(0)" data-toggle="modal" data-target="#quickReceiptModal" class="action-tile">
+                    <div class="metric-icon-box icon-purple">
                         <i class="fas fa-camera"></i>
                     </div>
                     <div>
-                        <div class="font-weight-bold">{{ __('Scan Expense Receipt') }}</div>
-                        <div class="text-muted small">{{ __('Snap photo or upload reimbursement receipt') }}</div>
+                        <div class="font-weight-bold text-white">{{ __('Snap Expense Receipt') }}</div>
+                        <div class="text-muted small">{{ __('Mobile camera scanner for instant reimbursement') }}</div>
                     </div>
                 </a>
             </div>
 
             <div class="col-lg-4 col-md-6 mb-3">
-                <a href="{{ route('staff.messages') }}" class="quick-action-tile">
-                    <div class="kpi-icon-box kpi-icon-blue">
+                <a href="{{ route('staff.messages') }}" class="action-tile">
+                    <div class="metric-icon-box icon-blue">
                         <i class="fas fa-comments"></i>
                     </div>
                     <div>
-                        <div class="font-weight-bold">{{ __('Counsel & Internal Chat') }}</div>
-                        <div class="text-muted small">{{ __('Direct encrypted messaging with partners') }}</div>
+                        <div class="font-weight-bold text-white">{{ __('Counsel & Firm Chat') }}</div>
+                        <div class="text-muted small">{{ __('Direct secure communications with partners') }}</div>
                     </div>
                 </a>
             </div>
 
             <div class="col-lg-4 col-md-6 mb-3">
-                <a href="{{ route('staff.payment-method') }}" class="quick-action-tile">
-                    <div class="kpi-icon-box kpi-icon-gold">
+                <a href="{{ route('staff.payment-method') }}" class="action-tile">
+                    <div class="metric-icon-box icon-gold">
                         <i class="fas fa-university"></i>
                     </div>
                     <div>
-                        <div class="font-weight-bold">{{ __('Direct Deposit Routing') }}</div>
-                        <div class="text-muted small">{{ __('Manage checking/savings account details') }}</div>
+                        <div class="font-weight-bold text-white">{{ __('Direct Deposit Routing') }}</div>
+                        <div class="text-muted small">{{ __('Checking / savings account distribution') }}</div>
                     </div>
                 </a>
             </div>
 
             <div class="col-lg-4 col-md-6 mb-3">
-                <a href="{{ route('staff.direct-deposit-form.download') }}" class="quick-action-tile">
-                    <div class="kpi-icon-box kpi-icon-green">
+                <a href="{{ route('staff.direct-deposit-form.download') }}" class="action-tile">
+                    <div class="metric-icon-box icon-green">
                         <i class="fas fa-file-pdf"></i>
                     </div>
                     <div>
-                        <div class="font-weight-bold">{{ __('Download Direct Deposit PDF') }}</div>
-                        <div class="text-muted small">{{ __('Pre-filled official authorization agreement') }}</div>
+                        <div class="font-weight-bold text-white">{{ __('Official Direct Deposit PDF') }}</div>
+                        <div class="text-muted small">{{ __('Pre-filled banking authorization document') }}</div>
                     </div>
                 </a>
             </div>
@@ -489,7 +499,7 @@
 <!-- Modal: Quick Receipt Scanner & Reimbursement -->
 <div class="modal fade" id="quickReceiptModal" tabindex="-1" role="dialog" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content" style="background:#111827; color:#f1f5f9; border:1px solid rgba(255,255,255,0.1);">
+        <div class="modal-content" style="background:#11151e; color:#f1f5f9; border:1px solid #28303f;">
             <div class="modal-header border-secondary">
                 <h5 class="modal-title font-weight-bold text-white"><i class="fas fa-camera mr-2 text-warning"></i>{{ __('Scan & Submit Receipt') }}</h5>
                 <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
@@ -500,22 +510,22 @@
                 @csrf
                 <div class="modal-body">
                     <div class="form-group mb-3">
-                        <label class="small text-muted text-uppercase font-weight-bold">{{ __('Expense / Receipt Description') }} <span class="text-danger">*</span></label>
-                        <input type="text" name="description" class="form-control bg-dark text-white border-secondary" placeholder="e.g. Court filing fees or client file courier" required>
+                        <label class="small text-muted text-uppercase font-weight-bold">{{ __('Expense Description') }} <span class="text-danger">*</span></label>
+                        <input type="text" name="description" class="form-control" placeholder="e.g. Court filing fees or travel fuel" required>
                     </div>
 
                     <div class="form-group mb-3">
                         <label class="small text-muted text-uppercase font-weight-bold">{{ __('Amount ($)') }} <span class="text-danger">*</span></label>
                         <div class="input-group">
                             <div class="input-group-prepend"><span class="input-group-text bg-secondary text-white border-secondary">$</span></div>
-                            <input type="number" step="0.01" min="0.01" name="amount" class="form-control bg-dark text-white border-secondary" placeholder="0.00" required>
+                            <input type="number" step="0.01" min="0.01" name="amount" class="form-control" placeholder="0.00" required>
                         </div>
                     </div>
 
                     <div class="form-group mb-3">
-                        <label class="small text-muted text-uppercase font-weight-bold">{{ __('Snap Receipt or Upload') }} <span class="text-danger">*</span></label>
+                        <label class="small text-muted text-uppercase font-weight-bold">{{ __('Receipt Photo / PDF') }} <span class="text-danger">*</span></label>
                         <input type="file" name="attachment" id="quickReceiptFileInput" accept="image/*,application/pdf" capture="environment" class="form-control-file text-white" required onchange="previewQuickReceipt(this)">
-                        <small class="text-muted d-block mt-1">{{ __('Tap to use camera on mobile, or select PDF/Image from computer.') }}</small>
+                        <small class="text-muted d-block mt-1">{{ __('Tap to use camera on phone, or choose file from computer.') }}</small>
                         <div id="quickReceiptPreviewBox" class="mt-2 text-center" style="display:none;">
                             <img id="quickReceiptPreviewImg" src="" style="max-height: 140px; border-radius: 8px; border: 1px solid #475569;">
                         </div>
@@ -548,7 +558,7 @@
         }
     }
 
-    function submitWithLocation(formId) {
+    function submitPunch(formId) {
         const form = document.getElementById(formId);
         if (!form) return;
 
@@ -562,7 +572,7 @@
                     form.submit();
                 },
                 function(error) {
-                    console.warn("Geolocation fallback: ", error.message);
+                    console.warn("Geolocation fallback:", error.message);
                     form.submit();
                 },
                 { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
@@ -573,48 +583,45 @@
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        // Digital clock update
+        // Digital Clock (Local)
         const clockElement = document.getElementById('digital-clock');
-        const liveClock = document.getElementById('live-firm-clock');
+        if (clockElement) {
+            setInterval(() => {
+                const now = new Date();
+                let hours = now.getHours();
+                const minutes = String(now.getMinutes()).padStart(2, '0');
+                const seconds = String(now.getSeconds()).padStart(2, '0');
+                const ampm = hours >= 12 ? 'PM' : 'AM';
+                hours = hours % 12;
+                hours = hours ? hours : 12;
+                clockElement.textContent = `${String(hours).padStart(2, '0')}:${minutes}:${seconds} ${ampm}`;
+            }, 1000);
+        }
 
-        setInterval(() => {
-            const now = new Date();
-            let hours = now.getHours();
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            const ampm = hours >= 12 ? 'PM' : 'AM';
-            hours = hours % 12;
-            hours = hours ? hours : 12;
-            const timeStr = `${String(hours).padStart(2, '0')}:${minutes}:${seconds} ${ampm}`;
-
-            if (clockElement) clockElement.textContent = timeStr;
-            if (liveClock) liveClock.textContent = timeStr;
-        }, 1000);
-
-        // Stopwatch for active attendance session
+        // Ticking Stopwatch for active shift
         @if($activeLog)
             const clockedInTime = new Date('{{ $activeLog->clocked_in_at->toIso8601String() }}');
             const timerElement = document.getElementById('session-timer');
 
-            setInterval(() => {
-                const now = new Date();
-                const diffMs = now - clockedInTime;
-                
-                if (diffMs > 0) {
-                    const diffSecs = Math.floor(diffMs / 1000);
-                    const hours = Math.floor(diffSecs / 3600);
-                    const minutes = Math.floor((diffSecs % 3600) / 60);
-                    const seconds = diffSecs % 60;
-
-                    timerElement.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-                }
-            }, 1000);
+            if (timerElement) {
+                setInterval(() => {
+                    const now = new Date();
+                    const diffMs = now - clockedInTime;
+                    if (diffMs > 0) {
+                        const diffSecs = Math.floor(diffMs / 1000);
+                        const hours = Math.floor(diffSecs / 3600);
+                        const minutes = Math.floor((diffSecs % 3600) / 60);
+                        const seconds = diffSecs % 60;
+                        timerElement.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+                    }
+                }, 1000);
+            }
         @endif
 
         // ApexCharts Performance
         const options = {
             series: [{
-                name: 'Hours Worked',
+                name: 'Hours Logged',
                 data: @json($weeklyHours)
             }],
             chart: {
@@ -624,25 +631,23 @@
                 zoom: { enabled: false },
                 background: 'transparent'
             },
-            theme: {
-                mode: 'dark'
-            },
+            theme: { mode: 'dark' },
             dataLabels: { enabled: false },
             stroke: {
                 curve: 'smooth',
                 width: 3,
-                colors: ['#f1c40f']
+                colors: ['#fecc56']
             },
             fill: {
                 type: 'gradient',
                 gradient: {
                     shadeIntensity: 1,
-                    opacityFrom: 0.45,
+                    opacityFrom: 0.4,
                     opacityTo: 0.05,
                     stops: [0, 100]
                 }
             },
-            colors: ['#f1c40f'],
+            colors: ['#fecc56'],
             xaxis: {
                 categories: @json($weeklyDays),
                 labels: {

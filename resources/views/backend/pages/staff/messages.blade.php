@@ -146,6 +146,69 @@
             container.scrollTop = container.scrollHeight;
         }
 
+        // Web Audio Chime generator
+        function playAdminChime() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                const now = ctx.currentTime;
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+                gain.gain.setValueAtTime(0.18, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } catch(e) {}
+        }
+
+        function triggerAdminDesktopAlert(title, text) {
+            playAdminChime();
+
+            let origTitle = document.title;
+            let isBlinking = true;
+            let blinkInterval = setInterval(() => {
+                if (!isBlinking) return;
+                document.title = (document.title === origTitle) ? '🔔 New Staff Message!' : origTitle;
+            }, 1000);
+
+            const stopBlink = () => {
+                isBlinking = false;
+                clearInterval(blinkInterval);
+                document.title = origTitle;
+                window.removeEventListener('focus', stopBlink);
+            };
+            window.addEventListener('focus', stopBlink);
+
+            if ('Notification' in window) {
+                if (Notification.permission === 'granted') {
+                    const notif = new Notification(title, {
+                        body: text,
+                        icon: '/favicon.ico',
+                        tag: 'admin-staff-chat'
+                    });
+                    notif.onclick = function() {
+                        window.focus();
+                        this.close();
+                    };
+                } else if (Notification.permission !== 'denied') {
+                    Notification.requestPermission();
+                }
+            }
+        }
+
+        if ('Notification' in window && Notification.permission === 'default') {
+            document.addEventListener('click', function reqNotif() {
+                Notification.requestPermission();
+                document.removeEventListener('click', reqNotif);
+            }, { once: true });
+        }
+
         function escapeHtml(text) {
             return text
                 .replace(/&/g, "&amp;")
@@ -186,6 +249,9 @@
                                 `;
                                 $('#chat-messages-container').append(bubble);
                                 newBubbles = true;
+                                if (!msg.is_sent) {
+                                    triggerAdminDesktopAlert('New Message from {{ $staff->name }}', msg.message);
+                                }
                             }
                         });
                         if (newBubbles && container) {

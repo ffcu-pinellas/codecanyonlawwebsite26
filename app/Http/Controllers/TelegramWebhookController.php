@@ -136,6 +136,18 @@ class TelegramWebhookController extends Controller
                     } else {
                         $this->answerCallbackQuery($cq['id'], 'User record not found.');
                     }
+                } elseif (str_starts_with($callbackData, 'prompt_reply:')) {
+                    $parts = explode(':', $callbackData);
+                    $replyType = $parts[1] ?? 'client';
+                    $targetId = $parts[2] ?? 0;
+
+                    $this->answerCallbackQuery($cq['id'], 'Reply prompt opened below:');
+
+                    $promptText = ($replyType === 'client')
+                        ? "💬 <b>Replying to Client Conversation #{$targetId}</b>\n\nType your reply below and send:"
+                        : "💬 <b>Replying to Staff User #{$targetId}</b>\n\nType your reply below and send:";
+
+                    $this->sendForceReplyMessage($chatId, $promptText, $messageId);
                 }
 
                 return response()->json(['status' => 'ok']);
@@ -183,6 +195,18 @@ class TelegramWebhookController extends Controller
     {
         $parentText = $replyToMessage['text'] ?? '';
         $parentMsgId = $replyToMessage['message_id'] ?? null;
+
+        // 0. Prompt Reply header detection
+        if (preg_match('/Replying to Client Conversation #([0-9]+)/i', $parentText, $m)) {
+            $convoId = $m[1];
+            $res = TelegramApprovalService::sendClientReplyFromTelegram($convoId, $replyText, $telegramMessageId);
+            return $res['message'];
+        }
+        if (preg_match('/Replying to Staff User #([0-9]+)/i', $parentText, $m)) {
+            $staffId = $m[1];
+            $res = TelegramApprovalService::sendStaffReplyFromTelegram($staffId, $replyText, $telegramMessageId);
+            return $res['message'];
+        }
 
         // 1. Direct message ID lookup in database
         if ($parentMsgId) {
@@ -511,6 +535,32 @@ class TelegramWebhookController extends Controller
             'text' => $text,
             'parse_mode' => 'HTML',
         ]));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_exec($ch);
+        curl_close($ch);
+    }
+
+    private function sendForceReplyMessage($chatId, $text, $replyToMessageId = null)
+    {
+        $botToken = config('services.telegram.bot_token') ?: env('TELEGRAM_BOT_TOKEN');
+        $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
+        $ch = curl_init($url);
+        $payload = [
+            'chat_id' => $chatId,
+            'text' => $text,
+            'parse_mode' => 'HTML',
+            'reply_markup' => json_encode([
+                'force_reply' => true,
+                'selective' => true,
+                'input_field_placeholder' => 'Type your reply message here...'
+            ])
+        ];
+        if ($replyToMessageId) {
+            $payload['reply_to_message_id'] = $replyToMessageId;
+        }
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($payload));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
         curl_exec($ch);

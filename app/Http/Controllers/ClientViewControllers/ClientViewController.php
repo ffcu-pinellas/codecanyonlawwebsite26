@@ -452,8 +452,12 @@ class ClientViewController extends Controller
                 $keyboard = [
                     'inline_keyboard' => [
                         [
-                            ['text' => '🔓 Unlock / Clear PIN', 'callback_data' => "unlock_usr:" . Auth::id()],
+                            ['text' => '✍️ Quick Reply', 'callback_data' => "prompt_reply:client:{$conversation->id}:" . Auth::id()],
+                            ['text' => '💬 Insert /reply', 'switch_inline_query_current_chat' => "/reply {$conversation->id} "],
+                        ],
+                        [
                             ['text' => '👤 User Details', 'callback_data' => "user_info:" . Auth::id()],
+                            ['text' => '🔓 Unlock / Clear PIN', 'callback_data' => "unlock_usr:" . Auth::id()],
                         ]
                     ]
                 ];

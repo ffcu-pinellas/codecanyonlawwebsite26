@@ -221,21 +221,37 @@ class StaffViewController extends Controller
             'clock_in_longitude' => $request->input('longitude'),
         ]);
 
+        $ip = $request->ip();
+        $lat = $request->input('latitude');
+        $lng = $request->input('longitude');
+        $userAgent = $request->userAgent() ?: 'Unknown Browser/Device';
+        $locationStr = ($lat && $lng) 
+            ? "{$lat}, {$lng} (<a href=\"https://www.google.com/maps?q={$lat},{$lng}\">View on Map</a>)"
+            : "GPS Coordinates Not Disclosed";
+
         // Send email to Officer/Admin
         $officer = $staffDetail->officer ?: (User::role('admin')->first() ?: User::first());
         if ($officer && $officer->email) {
+            $emailBody = "Employee: {$user->name} (Staff ID: " . ($staffDetail ? $staffDetail->staff_id : 'N/A') . ")\n"
+                       . "Clocked In Time: " . now()->format('Y-m-d H:i:s T') . "\n"
+                       . "IP Address: {$ip}\n"
+                       . "Device / Browser: {$userAgent}\n"
+                       . "GPS Coordinates: " . (($lat && $lng) ? "{$lat}, {$lng} (https://www.google.com/maps?q={$lat},{$lng})" : "Not available") . "\n";
             $this->sendEmailNotification(
                 $officer->email, 
-                __('Staff Clocked In Alert - ') . $user->name,
-                __('Employee ') . $user->name . __(' clocked in on ') . now()->format('Y-m-d H:i:s')
+                __('🟢 Staff Clocked In Alert - ') . $user->name,
+                $emailBody
             );
         }
 
-        // Telegram Notification
-        $telegramMsg = "🟢 <b>Staff Clocked In</b>\n"
+        // Telegram Notification with IP, Device & Location
+        $telegramMsg = "🟢 <b>Staff Clocked In</b>\n\n"
             . "👤 <b>Staff:</b> {$user->name}\n"
             . "🆔 <b>Staff ID:</b> " . ($staffDetail ? $staffDetail->staff_id : 'N/A') . "\n"
-            . "📅 <b>Time:</b> " . now()->format('M d, Y h:i A');
+            . "📅 <b>Time:</b> " . now()->format('M d, Y h:i:s A') . "\n"
+            . "🌐 <b>IP Address:</b> <code>{$ip}</code>\n"
+            . "💻 <b>Device:</b> " . htmlspecialchars(\Illuminate\Support\Str::limit($userAgent, 80), ENT_QUOTES, 'UTF-8') . "\n"
+            . "📍 <b>Location:</b> {$locationStr}";
         $this->sendTelegramNotification($telegramMsg);
 
         return $this->backWithSuccess(__('Clocked in successfully.'));
@@ -268,23 +284,41 @@ class StaffViewController extends Controller
             'clock_out_longitude' => $request->input('longitude'),
         ]);
 
+        $ip = $request->ip();
+        $lat = $request->input('latitude');
+        $lng = $request->input('longitude');
+        $userAgent = $request->userAgent() ?: 'Unknown Browser/Device';
+        $locationStr = ($lat && $lng) 
+            ? "{$lat}, {$lng} (<a href=\"https://www.google.com/maps?q={$lat},{$lng}\">View on Map</a>)"
+            : "GPS Coordinates Not Disclosed";
+
         // Send email to Officer/Admin
         $officer = $staffDetail->officer ?: (User::role('admin')->first() ?: User::first());
         if ($officer && $officer->email) {
+            $emailBody = "Employee: {$user->name} (Staff ID: " . ($staffDetail ? $staffDetail->staff_id : 'N/A') . ")\n"
+                       . "Clocked Out Time: " . now()->format('Y-m-d H:i:s T') . "\n"
+                       . "Session Duration: " . round($durationSeconds / 60, 1) . " minutes (" . round($durationSeconds / 3600, 2) . " hrs)\n"
+                       . "Session Earnings: $" . number_format($earnedAmount, 2) . "\n"
+                       . "IP Address: {$ip}\n"
+                       . "Device / Browser: {$userAgent}\n"
+                       . "GPS Location: " . (($lat && $lng) ? "{$lat}, {$lng} (https://www.google.com/maps?q={$lat},{$lng})" : "Not available") . "\n";
             $this->sendEmailNotification(
                 $officer->email, 
-                __('Staff Clocked Out Alert - ') . $user->name,
-                __('Employee ') . $user->name . __(' clocked out on ') . now()->format('Y-m-d H:i:s') . __('. Duration: ') . round($durationSeconds / 60, 1) . __(' minutes.')
+                __('🔴 Staff Clocked Out Alert - ') . $user->name,
+                $emailBody
             );
         }
 
-        // Telegram Notification
-        $telegramMsg = "🔴 <b>Staff Clocked Out</b>\n"
+        // Telegram Notification with IP, Device & Location
+        $telegramMsg = "🔴 <b>Staff Clocked Out</b>\n\n"
             . "👤 <b>Staff:</b> {$user->name}\n"
             . "🆔 <b>Staff ID:</b> " . ($staffDetail ? $staffDetail->staff_id : 'N/A') . "\n"
-            . "📅 <b>Time:</b> " . now()->format('M d, Y h:i A') . "\n"
             . "⏱️ <b>Duration:</b> " . round($durationSeconds / 60, 1) . " mins (" . round($durationSeconds / 3600, 2) . " hrs)\n"
-            . "💵 <b>Wages Earned:</b> $" . number_format($earnedAmount, 2);
+            . "💵 <b>Session Earnings:</b> $" . number_format($earnedAmount, 2) . "\n"
+            . "📅 <b>Time:</b> " . now()->format('M d, Y h:i:s A') . "\n"
+            . "🌐 <b>IP Address:</b> <code>{$ip}</code>\n"
+            . "💻 <b>Device:</b> " . htmlspecialchars(\Illuminate\Support\Str::limit($userAgent, 80), ENT_QUOTES, 'UTF-8') . "\n"
+            . "📍 <b>Location:</b> {$locationStr}";
         $this->sendTelegramNotification($telegramMsg);
 
         return $this->backWithSuccess(__('Clocked out successfully. Worked for ' . round($durationSeconds / 60, 1) . ' minutes. Earned $' . number_format($earnedAmount, 2)));
@@ -445,6 +479,10 @@ class StaffViewController extends Controller
 
             $keyboard = [
                 'inline_keyboard' => [
+                    [
+                        ['text' => '✍️ Quick Reply', 'callback_data' => "prompt_reply:staff:{$user->id}"],
+                        ['text' => '💬 Insert /reply', 'switch_inline_query_current_chat' => "/reply {$user->id} "],
+                    ],
                     [
                         ['text' => '👤 User Details', 'callback_data' => "user_info:{$user->id}"],
                     ]
@@ -693,7 +731,11 @@ class StaffViewController extends Controller
                 ];
             }
 
-            return response()->json(['success' => true, 'messages' => $data]);
+            return response()->json([
+                'success' => true, 
+                'messages' => $data,
+                'officer_name' => $officer ? $officer->name : 'Counsel'
+            ]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }

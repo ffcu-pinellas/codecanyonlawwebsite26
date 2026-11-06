@@ -383,41 +383,208 @@
       </div>
 
       <div class="chat-footer-native">
-        <form action="{{ route('client.conversation.store') }}" method="POST" enctype="multipart/form-data" class="d-flex align-items-center" style="gap:10px;">
+        <form id="nativeChatForm" action="{{ route('client.conversation.store') }}" method="POST" enctype="multipart/form-data" class="d-flex align-items-center" style="gap:10px;">
           @csrf
-          <input type="text" name="message" class="form-control chat-input-control flex-grow-1" placeholder="{{ __('Type your message here...') }}" required autocomplete="off">
+          <input type="text" name="message" id="nativeChatInput" class="form-control chat-input-control flex-grow-1" placeholder="{{ __('Type message and press Enter to send...') }}" required autocomplete="off">
           <label class="btn btn-portal-secondary mb-0" style="cursor:pointer;padding:10px 14px;" title="{{ __('Attach File') }}">
             <i class="fas fa-paperclip"></i>
             <input type="file" name="attachment" class="d-none" onchange="this.form.submit()">
           </label>
-          <button type="submit" class="btn btn-gold"><i class="fas fa-paper-plane mr-1"></i> {{ __('Send') }}</button>
+          <button type="submit" id="nativeChatSendBtn" class="btn btn-gold"><i class="fas fa-paper-plane mr-1"></i> {{ __('Send') }}</button>
         </form>
       </div>
     @endif
 
   </div>
 </div>
-@endsection
 
-@section('page-script')
 <script>
+    // Desktop Notification & Sound Engine
+    function playNotificationChime() {
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if (!AudioContext) return;
+            const ctx = new AudioContext();
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587.33, now);
+            osc.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+            gain.gain.setValueAtTime(0.18, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(now);
+            osc.stop(now + 0.4);
+        } catch(e) {}
+    }
+
+    function triggerDesktopAlert(title, text) {
+        playNotificationChime();
+
+        // Browser title blinking
+        let originalTitle = document.title;
+        let isBlinking = true;
+        let blinkInterval = setInterval(() => {
+            if (!isBlinking) return;
+            document.title = (document.title === originalTitle) ? '🔔 New Message!' : originalTitle;
+        }, 1000);
+
+        const stopBlink = () => {
+            isBlinking = false;
+            clearInterval(blinkInterval);
+            document.title = originalTitle;
+            window.removeEventListener('focus', stopBlink);
+        };
+        window.addEventListener('focus', stopBlink);
+
+        // Native OS Desktop Notification
+        if ('Notification' in window) {
+            if (Notification.permission === 'granted') {
+                const notif = new Notification(title, {
+                    body: text,
+                    icon: '/favicon.ico',
+                    tag: 'client-chat-msg'
+                });
+                notif.onclick = function() {
+                    window.focus();
+                    this.close();
+                };
+            } else if (Notification.permission !== 'denied') {
+                Notification.requestPermission();
+            }
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
-        const chatInput = document.querySelector('.chat-input-control');
-        if (chatInput) {
+        // Request desktop notification permission on user entry
+        if ('Notification' in window && Notification.permission === 'default') {
+            document.addEventListener('click', function reqNotif() {
+                Notification.requestPermission();
+                document.removeEventListener('click', reqNotif);
+            }, { once: true });
+        }
+
+        const chatInput = document.getElementById('nativeChatInput');
+        const chatForm = document.getElementById('nativeChatForm');
+        const container = document.getElementById('chatMessagesStream');
+
+        if (container) {
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // Enter key to send (Shift+Enter for newline)
+        if (chatInput && chatForm) {
             chatInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter' && !e.shiftKey) {
                     e.preventDefault();
-                    const form = this.closest('form');
-                    if (form && this.value.trim() !== '') {
-                        form.submit();
+                    if (chatInput.value.trim() !== '') {
+                        submitNativeChat();
                     }
                 }
             });
+
+            chatForm.addEventListener('submit', function(e) {
+                const fileInput = chatForm.querySelector('input[type="file"]');
+                if (fileInput && fileInput.files && fileInput.files.length > 0) {
+                    return; // Normal form post for file attachments
+                }
+                e.preventDefault();
+                submitNativeChat();
+            });
         }
-        const bodyContainer = document.querySelector('.chat-body-native');
-        if (bodyContainer) {
-            bodyContainer.scrollTop = bodyContainer.scrollHeight;
+
+        function submitNativeChat() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            const sendBtn = document.getElementById('nativeChatSendBtn');
+            if (sendBtn) sendBtn.disabled = true;
+
+            const formData = new FormData(chatForm);
+            chatInput.value = '';
+
+            fetch(chatForm.action, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (sendBtn) sendBtn.disabled = false;
+                if (data.success && data.message) {
+                    appendMessageBubble(data.message, true);
+                }
+            })
+            .catch(() => {
+                if (sendBtn) sendBtn.disabled = false;
+                chatForm.submit(); // Fallback to normal form submit if fetch fails
+            });
         }
+
+        function appendMessageBubble(msg, isMine) {
+            if (!container) return;
+            if (document.getElementById('msg-item-' + msg.id)) return;
+
+            const bubble = document.createElement('div');
+            bubble.className = 'chat-bubble ' + (isMine ? 'chat-bubble-out' : 'chat-bubble-in');
+            bubble.id = 'msg-item-' + msg.id;
+            bubble.setAttribute('data-msg-id', msg.id);
+
+            let innerHtml = '';
+            if (!isMine) {
+                innerHtml += `<div class="font-weight-bold text-warning small mb-1" style="font-size:11px;">${msg.user_name || 'Assigned Counsel'}</div>`;
+            }
+            if (msg.text) {
+                innerHtml += `<div>${escapeHtml(msg.text)}</div>`;
+            }
+            if (msg.file) {
+                innerHtml += `<div class="chat-attachment-box"><i class="fas fa-file-alt text-warning"></i><a href="${msg.file}" target="_blank" class="text-white small font-weight-bold text-decoration-none">${escapeHtml(msg.file_name || 'Attachment')}</a></div>`;
+            }
+            innerHtml += `<div class="chat-bubble-time"><span>${msg.time || ''}</span>${isMine ? '<i class="fas fa-check-double text-warning ml-1" style="font-size:9px;"></i>' : ''}</div>`;
+
+            bubble.innerHTML = innerHtml;
+            container.appendChild(bubble);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        // Live Message Polling every 3.5 seconds
+        @if(!empty($conversation) && !empty($conversation->slug))
+            let lastMsgId = 0;
+            const existingBubbles = container ? container.querySelectorAll('[data-msg-id]') : [];
+            if (existingBubbles.length > 0) {
+                lastMsgId = parseInt(existingBubbles[existingBubbles.length - 1].getAttribute('data-msg-id')) || 0;
+            }
+
+            setInterval(function pollMessages() {
+                const pollUrl = "{{ route('client.conversation.poll', $conversation->slug) }}?last_id=" + lastMsgId;
+                fetch(pollUrl, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(r => r.json())
+                .then(res => {
+                    if (res && res.messages && res.messages.length > 0) {
+                        res.messages.forEach(msg => {
+                            if (msg.id > lastMsgId) lastMsgId = msg.id;
+                            const isMine = msg.is_sender;
+                            appendMessageBubble(msg, isMine);
+                            if (!isMine) {
+                                triggerDesktopAlert('New Message from ' + (msg.user_name || 'Legal Counsel'), msg.text || 'Sent an attachment');
+                            }
+                        });
+                    }
+                })
+                .catch(() => {});
+            }, 3500);
+        @endif
     });
 </script>
 @endsection

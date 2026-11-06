@@ -516,5 +516,9 @@
 </script>
 @endif
 
+@yield('modal')
+@yield('page-script')
+@yield('scripts')
+
 </body>
 </html>

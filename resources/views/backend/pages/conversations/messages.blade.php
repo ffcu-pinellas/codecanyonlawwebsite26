@@ -112,4 +112,26 @@
     @include('backend.pages.appointments.internal-assets.js.delete-warning')
     @include('backend.layouts.message')
     <script src="{{ asset('backend/assets/js/file-name-view.js') }}"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const input = document.getElementById('chatTaxtInput');
+            const form = document.getElementById('chatForm');
+            const box = document.getElementById('chatBox');
+
+            if (box) {
+                box.scrollTop = box.scrollHeight;
+            }
+
+            if (input && form) {
+                input.addEventListener('keydown', function(e) {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        if (input.value.trim() !== '') {
+                            form.submit();
+                        }
+                    }
+                });
+            }
+        });
+    </script>
 @endsection
