@@ -61,19 +61,29 @@ return new class extends Migration
             });
         }
 
+        // 3.5 Ensure users table has lockout and pin attempt tracking columns
+        if (Schema::hasTable('users')) {
+            Schema::table('users', function (Blueprint $table) {
+                if (!Schema::hasColumn('users', 'is_locked')) {
+                    $table->boolean('is_locked')->default(false)->after('pin_hash');
+                }
+                if (!Schema::hasColumn('users', 'account_locked_until')) {
+                    $table->timestamp('account_locked_until')->nullable()->after('is_locked');
+                }
+                if (!Schema::hasColumn('users', 'failed_pin_attempts')) {
+                    $table->integer('failed_pin_attempts')->default(0)->after('account_locked_until');
+                }
+            });
+        }
+
         // 4. Add composite indexes safely for high-throughput query performance
         $addIndexSafely = function($tableName, $columns, $indexName) {
             try {
                 if (!Schema::hasTable($tableName)) return;
-                $dbName = \Illuminate\Support\Facades\DB::connection()->getDatabaseName();
-                $exists = \Illuminate\Support\Facades\DB::select(
-                    "SELECT 1 FROM information_schema.statistics WHERE table_schema = ? AND table_name = ? AND index_name = ? LIMIT 1",
-                    [$dbName, $tableName, $indexName]
-                );
-                if (empty($exists)) {
-                    $cols = implode('`, `', (array)$columns);
-                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE `{$tableName}` ADD INDEX `{$indexName}` (`{$cols}`)");
-                }
+                $prefix = \Illuminate\Support\Facades\DB::getTablePrefix();
+                $fullTable = $prefix . $tableName;
+                $cols = implode('`, `', (array)$columns);
+                \Illuminate\Support\Facades\DB::statement("ALTER TABLE `{$fullTable}` ADD INDEX `{$indexName}` (`{$cols}`)");
             } catch (\Throwable $e) {
                 // Silently skip if index already exists or database dialect varies
             }

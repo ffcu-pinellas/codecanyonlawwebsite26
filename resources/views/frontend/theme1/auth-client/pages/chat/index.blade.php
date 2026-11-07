@@ -169,13 +169,40 @@
         border-color: #cbd5e1 !important;
     }
 
+    .quick-emoji-bar {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 6px;
+        padding-bottom: 4px;
+    }
+    .quick-emoji-bar::-webkit-scrollbar {
+        display: none;
+    }
+    .quick-emoji-bar .badge {
+        flex-shrink: 0 !important;
+    }
+
     @media (max-width: 768px) {
         .chat-portal-card {
             height: calc(100dvh - 140px);
             border-radius: 0 !important;
             min-height: 0;
         }
+        .chat-portal-header {
+            padding: 10px 14px;
+        }
         .chat-bubble { max-width: 92%; }
+        .chat-footer-native {
+            padding: 10px 12px;
+        }
+        .btn-gold {
+            padding: 8px 14px;
+            font-size: 13px;
+        }
     }
 </style>
 @endsection
@@ -203,34 +230,34 @@
 
     {{-- HEADER --}}
     <div class="chat-portal-header d-flex justify-content-between align-items-center">
-      <div class="d-flex align-items-center">
-        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mr-3 flex-shrink-0"
-             style="width:44px;height:44px;background:rgba(254,204,86,0.15);color:#fecc56;font-size:18px;font-weight:bold;border:2px solid #fecc56;">
+      <div class="d-flex align-items-center" style="min-width: 0; flex: 1; margin-right: 8px;">
+        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mr-2 mr-sm-3 flex-shrink-0"
+             style="width:42px;height:42px;background:rgba(254,204,86,0.15);color:#fecc56;font-size:17px;font-weight:bold;border:2px solid #fecc56;">
           {{ strtoupper(substr($counselName, 0, 1)) }}
         </div>
-        <div>
-          <h6 class="font-weight-bold text-white mb-0" style="font-size:15px;">{{ $counselName }}</h6>
-          <div class="d-flex align-items-center small flex-wrap" style="gap:8px;">
-            <span class="text-success font-weight-bold" style="font-size:11px;"><i class="fas fa-circle mr-1" style="font-size:8px;"></i>{{ __('Counsel Online') }}</span>
-            <span class="text-muted">&bull;</span>
-            <span class="text-warning font-weight-bold" style="font-size:11px;">CLI-{{ sprintf('%05d', $u->id) }}</span>
+        <div style="min-width: 0; overflow: hidden;">
+          <h6 class="font-weight-bold text-white mb-0 text-truncate" style="font-size:14px; line-height: 1.3;" title="{{ $counselName }}">{{ $counselName }}</h6>
+          <div class="d-flex align-items-center small flex-wrap" style="gap:6px; font-size:11px;">
+            <span class="text-success font-weight-bold text-nowrap" style="font-size:11px;"><i class="fas fa-circle mr-1" style="font-size:7px;"></i>{{ __('Counsel Online') }}</span>
+            <span class="text-muted d-none d-sm-inline">&bull;</span>
+            <span class="text-warning font-weight-bold text-nowrap" style="font-size:11px;">CLI-{{ sprintf('%05d', $u->id) }}</span>
             @if($provider==='chatwoot')
-              <span class="text-muted">&bull;</span>
-              <span class="text-muted" style="font-size:11px;"><i class="fas fa-shield-alt text-success mr-1"></i>Chatwoot Live</span>
+              <span class="text-muted d-none d-sm-inline">&bull;</span>
+              <span class="text-muted d-none d-sm-inline" style="font-size:11px;"><i class="fas fa-shield-alt text-success mr-1"></i>Chatwoot Live</span>
             @endif
           </div>
         </div>
       </div>
-      <div class="d-flex align-items-center" style="gap:8px;">
-        <button type="button" class="btn btn-sm btn-outline-warning text-warning px-3 font-weight-bold" onclick="requestClientCall('audio')" title="{{ __('Request Live Voice Call with Counsel') }}">
-          <i class="fas fa-phone-alt mr-1"></i> {{ __('Request Call') }}
+      <div class="d-flex align-items-center flex-shrink-0" style="gap:6px;">
+        <button type="button" class="btn btn-sm btn-outline-warning text-warning px-2 px-sm-3 font-weight-bold" onclick="requestClientCall('audio')" title="{{ __('Request Live Voice Call with Counsel') }}">
+          <i class="fas fa-phone-alt mr-1"></i> <span class="d-none d-sm-inline">{{ __('Request Call') }}</span><span class="d-inline d-sm-none">{{ __('Call') }}</span>
         </button>
-        <span class="badge d-none d-sm-inline-block px-3 py-2"
+        <span class="badge d-none d-md-inline-block px-3 py-2"
               style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:11px;">
           <i class="fas fa-lock mr-1"></i>{{ __('256-Bit Encrypted') }}
         </span>
-        <a href="{{ route('client.dashboard') }}" class="btn btn-sm btn-outline-secondary text-light px-3 font-weight-bold" style="border-color:#3b4252;">
-          <i class="fas fa-arrow-left mr-1"></i>{{ __('Dashboard') }}
+        <a href="{{ route('client.dashboard') }}" class="btn btn-sm btn-outline-secondary text-light px-2 px-sm-3 font-weight-bold" style="border-color:#3b4252;">
+          <i class="fas fa-arrow-left mr-1"></i> <span class="d-none d-sm-inline">{{ __('Dashboard') }}</span><span class="d-inline d-sm-none">{{ __('Back') }}</span>
         </a>
       </div>
     </div>
@@ -389,8 +416,8 @@
 
       <div class="chat-footer-native">
         <!-- Professional Quick Emoji Toolbar -->
-        <div class="quick-emoji-bar d-flex flex-wrap align-items-center mb-2" style="gap: 6px;">
-          <small class="text-muted mr-1" style="font-size: 11px;"><i class="far fa-smile text-warning mr-1"></i>{{ __('Quick Emojis:') }}</small>
+        <div class="quick-emoji-bar mb-2">
+          <small class="text-muted mr-1 flex-shrink-0" style="font-size: 11px;"><i class="far fa-smile text-warning mr-1"></i>{{ __('Emojis:') }}</small>
           <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('😊')" title="Smile">😊</span>
           <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('👍')" title="Thumbs up">👍</span>
           <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('📁')" title="Folder">📁</span>
@@ -405,14 +432,14 @@
           <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('❓')" title="Question">❓</span>
         </div>
 
-        <form id="nativeChatForm" action="{{ route('client.conversation.store') }}" method="POST" enctype="multipart/form-data" class="d-flex align-items-center" style="gap:10px;">
+        <form id="nativeChatForm" action="{{ route('client.conversation.store') }}" method="POST" enctype="multipart/form-data" class="d-flex align-items-center" style="gap:8px;">
           @csrf
-          <input type="text" name="message" id="nativeChatInput" class="form-control chat-input-control flex-grow-1" placeholder="{{ __('Type message and press Enter to send...') }}" required autocomplete="off">
-          <label class="btn btn-portal-secondary mb-0" style="cursor:pointer;padding:10px 14px;" title="{{ __('Attach File') }}">
+          <input type="text" name="message" id="nativeChatInput" class="form-control chat-input-control flex-grow-1" placeholder="{{ __('Type message...') }}" required autocomplete="off">
+          <label class="btn btn-portal-secondary mb-0 flex-shrink-0" style="cursor:pointer;padding:8px 12px;" title="{{ __('Attach File') }}">
             <i class="fas fa-paperclip"></i>
             <input type="file" name="attachment" id="chatAttachmentInput" class="d-none" onchange="previewSelectedAttachment(this)">
           </label>
-          <button type="submit" id="nativeChatSendBtn" class="btn btn-gold"><i class="fas fa-paper-plane mr-1"></i> {{ __('Send') }}</button>
+          <button type="submit" id="nativeChatSendBtn" class="btn btn-gold flex-shrink-0"><i class="fas fa-paper-plane mr-1"></i> {{ __('Send') }}</button>
         </form>
         <div id="fileUploadPreviewBadge" class="small text-warning mt-1 font-weight-bold d-none">
           <i class="fas fa-file-alt mr-1"></i> <span id="fileUploadPreviewName"></span>

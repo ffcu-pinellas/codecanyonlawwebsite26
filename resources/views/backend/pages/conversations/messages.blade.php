@@ -49,6 +49,22 @@
             background: #161a23 !important;
             box-shadow: 0 4px 14px rgba(0,0,0,0.5);
         }
+        .quick-emoji-bar {
+            display: flex !important;
+            flex-wrap: nowrap !important;
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            gap: 6px;
+            padding-bottom: 4px;
+        }
+        .quick-emoji-bar::-webkit-scrollbar {
+            display: none;
+        }
+        .quick-emoji-bar .badge {
+            flex-shrink: 0 !important;
+        }
     </style>
 @endsection
 
@@ -142,8 +158,8 @@
                             </div>
 
                             <!-- Professional Quick Emoji Toolbar -->
-                            <div class="d-flex flex-wrap align-items-center mb-2" style="gap: 6px;">
-                                <small class="text-muted mr-1" style="font-size: 11px;"><i class="far fa-smile text-warning mr-1"></i>{{ __('Quick Emojis:') }}</small>
+                            <div class="quick-emoji-bar mb-2">
+                                <small class="text-muted mr-1 flex-shrink-0" style="font-size: 11px;"><i class="far fa-smile text-warning mr-1"></i>{{ __('Emojis:') }}</small>
                                 <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('😊')" title="Smile">😊</span>
                                 <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('👍')" title="Thumbs up">👍</span>
                                 <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('📁')" title="Folder">📁</span>

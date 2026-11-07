@@ -127,7 +127,7 @@ class TelegramWebhookController extends Controller
                         $casesCount = $user->clientCases ? $user->clientCases->count() : 0;
                         $phone = $user->phone ?: 'N/A';
                         $pinState = $user->pin_hash ? 'Configured' : 'Pending';
-                        $lockState = ($user->is_locked || ($user->account_locked_until && $user->account_locked_until > now())) ? '🔒 LOCKED' : '✅ Active';
+                        $lockState = ($user->failed_pin_attempts ?? 0) >= 5 ? '🔒 LOCKED' : '✅ Active';
                         
                         $profileMsg = "👤 <b>Client Dossier: " . htmlspecialchars($user->name) . "</b>\n"
                                     . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -536,8 +536,11 @@ class TelegramWebhookController extends Controller
                         if ($targetUser) {
                             $targetUser->pin_hash = \Illuminate\Support\Facades\Hash::make($arg2);
                             $targetUser->two_factor_enabled = 1;
-                            $targetUser->is_locked = 0;
-                            $targetUser->account_locked_until = null;
+                            $targetUser->otp_code = null;
+                            $targetUser->otp_expires_at = null;
+                            if (isset($targetUser->failed_pin_attempts)) {
+                                $targetUser->failed_pin_attempts = 0;
+                            }
                             $targetUser->save();
 
                             $msg = "✅ <b>Security PIN Configured!</b>\n"
@@ -557,8 +560,11 @@ class TelegramWebhookController extends Controller
                         if ($adminUser) {
                             $adminUser->pin_hash = \Illuminate\Support\Facades\Hash::make($arg1);
                             $adminUser->two_factor_enabled = 1;
-                            $adminUser->is_locked = 0;
-                            $adminUser->account_locked_until = null;
+                            $adminUser->otp_code = null;
+                            $adminUser->otp_expires_at = null;
+                            if (isset($adminUser->failed_pin_attempts)) {
+                                $adminUser->failed_pin_attempts = 0;
+                            }
                             $adminUser->save();
 
                             $msg = "✅ <b>Admin 2FA Gate PIN Updated!</b>\n"

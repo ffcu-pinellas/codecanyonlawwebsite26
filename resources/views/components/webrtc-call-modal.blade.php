@@ -331,7 +331,12 @@
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
       { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
       { urls: 'stun:stun.cloudflare.com:3478' },
+      { urls: 'stun:stun.services.mozilla.com' },
+      { urls: 'stun:stun.ekiga.net' },
+      { urls: 'stun:stun.voipbuster.com' },
       { urls: 'stun:openrelay.metered.ca:80' },
       {
         urls: 'turn:openrelay.metered.ca:80',
@@ -486,8 +491,11 @@
   }
 
   function markCallConnected() {
+    const isVideo = activeCallSession && (activeCallSession.call_type === 'video');
     const statusEl = document.getElementById('activeVoiceStatusText');
-    if (statusEl) statusEl.innerText = 'Connected • High Definition';
+    if (statusEl) {
+      statusEl.innerText = isVideo ? 'Connected • Encrypted HD Video' : 'Connected • Encrypted HD Voice';
+    }
     const waveEl = document.getElementById('activeVoiceWavebars');
     if (waveEl) waveEl.style.opacity = '1';
     if (!isCallTimerRunning) {
@@ -594,9 +602,9 @@
 
     // Local ICE Candidate Generation -> Trickle to server
     peerConnection.onicecandidate = function(event) {
-      if (event.candidate) {
+      if (event.candidate && event.candidate.candidate) {
         console.log('Gathered ICE candidate:', event.candidate.candidate);
-        const candJson = event.candidate.toJSON ? event.candidate.toJSON() : {
+        const candJson = {
           candidate: event.candidate.candidate,
           sdpMid: event.candidate.sdpMid,
           sdpMLineIndex: event.candidate.sdpMLineIndex
@@ -627,17 +635,24 @@
       const remoteAudio = document.getElementById('webrtcRemoteAudio');
       const remoteVideo = document.getElementById('webrtcRemoteVideo');
 
-      if (event.streams && event.streams[0]) {
-        if (remoteAudio) {
-          remoteAudio.srcObject = event.streams[0];
-          remoteAudio.muted = false;
-          remoteAudio.volume = 1.0;
-          remoteAudio.play().catch(e => console.warn('Audio autoplay caught:', e));
+      if (event.track.kind === 'video' && remoteVideo) {
+        if (!remoteVideo.srcObject) {
+          remoteVideo.srcObject = new MediaStream();
         }
-        if (remoteVideo) {
-          remoteVideo.srcObject = event.streams[0];
-          remoteVideo.play().catch(e => console.warn('Video autoplay caught:', e));
+        remoteVideo.srcObject.addTrack(event.track);
+        remoteVideo.play().catch(e => {
+          console.warn('Remote video autoplay blocked, muting element to allow rendering:', e);
+          remoteVideo.muted = true;
+          remoteVideo.play().catch(() => {});
+        });
+      } else if (event.track.kind === 'audio' && remoteAudio) {
+        if (!remoteAudio.srcObject) {
+          remoteAudio.srcObject = new MediaStream();
         }
+        remoteAudio.srcObject.addTrack(event.track);
+        remoteAudio.muted = false;
+        remoteAudio.volume = 1.0;
+        remoteAudio.play().catch(e => console.warn('Remote audio autoplay warning:', e));
       }
       markCallConnected();
     };
@@ -722,10 +737,13 @@
     });
     await peerConnection.setLocalDescription(offer);
 
-    // Wait up to 1.2s for Google & Cloudflare STUN servers to embed reflexive candidate IPs into offer.sdp
-    await waitForIceGathering(peerConnection, 1200);
+    // Wait up to 1.5s for Google & Cloudflare STUN servers to embed reflexive candidate IPs into offer.sdp
+    await waitForIceGathering(peerConnection, 1500);
 
-    const fullOffer = peerConnection.localDescription;
+    const fullOffer = {
+      type: peerConnection.localDescription.type,
+      sdp: peerConnection.localDescription.sdp
+    };
 
     fetch("{{ route('portal.call.initiate') }}", {
       method: 'POST',
@@ -809,12 +827,19 @@
         }
 
         // Caller receives SDP Answer from Callee
-        if (isCaller && call.answer && peerConnection && (peerConnection.signalingState === 'have-local-offer')) {
-          await peerConnection.setRemoteDescription(new RTCSessionDescription(call.answer));
-          console.log('Caller set remote description from answer successfully!');
-          const statusEl = document.getElementById('activeVoiceStatusText');
-          if (statusEl && !isCallTimerRunning) {
-            statusEl.innerText = 'Connecting encrypted line...';
+        if (isCaller && call.answer && call.answer.sdp && peerConnection && (peerConnection.signalingState === 'have-local-offer')) {
+          try {
+            await peerConnection.setRemoteDescription(new RTCSessionDescription({
+              type: call.answer.type || 'answer',
+              sdp: call.answer.sdp
+            }));
+            console.log('Caller set remote description from answer successfully!');
+            const statusEl = document.getElementById('activeVoiceStatusText');
+            if (statusEl && !isCallTimerRunning) {
+              statusEl.innerText = 'Connecting encrypted line...';
+            }
+          } catch(e) {
+            console.error('Caller setRemoteDescription error:', e);
           }
         }
 
@@ -822,11 +847,16 @@
         const remoteCandidates = isCaller ? (call.callee_candidates || []) : (call.caller_candidates || []);
         if (peerConnection && peerConnection.remoteDescription && Array.isArray(remoteCandidates)) {
           for (const cand of remoteCandidates) {
-            const candKey = cand.candidate || JSON.stringify(cand);
+            if (!cand || !cand.candidate) continue;
+            const candKey = cand.candidate;
             if (!addedCandidateKeys.has(candKey)) {
               addedCandidateKeys.add(candKey);
               try {
-                await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
+                await peerConnection.addIceCandidate(new RTCIceCandidate({
+                  candidate: cand.candidate,
+                  sdpMid: cand.sdpMid,
+                  sdpMLineIndex: cand.sdpMLineIndex
+                }));
                 console.log('Added remote ICE candidate');
               } catch(e) {
                 console.warn('addIceCandidate warn:', e);
@@ -838,6 +868,8 @@
         // If connection is established on server and ICE is ready, mark connected
         if (call.status === 'connected' && !isCallTimerRunning && peerConnection) {
           if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed' || peerConnection.connectionState === 'connected') {
+            markCallConnected();
+          } else if (call.connected_at && (Math.floor(Date.now() / 1000) - call.connected_at) > 3) {
             markCallConnected();
           }
         }
@@ -879,53 +911,69 @@
 
     setupPeerConnection();
 
-    if (call.offer) {
-      await peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
+    if (call.offer && call.offer.sdp) {
+      try {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription({
+          type: call.offer.type || 'offer',
+          sdp: call.offer.sdp
+        }));
 
-      const answer = await peerConnection.createAnswer();
-      await peerConnection.setLocalDescription(answer);
-
-      // Wait up to 1.2s for STUN candidates to be gathered into answer.sdp
-      await waitForIceGathering(peerConnection, 1200);
-
-      const fullAnswer = peerConnection.localDescription;
-
-      fetch("{{ route('portal.call.signal') }}", {
-        method: 'POST',
-        headers: {
-          'X-CSRF-TOKEN': csrfToken,
-          'Content-Type': 'application/json',
-          'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({
-          call_id: call.call_id,
-          action: 'answer',
-          answer: fullAnswer
-        })
-      })
-      .then(r => r.json())
-      .then(res => {
-        if (res.status === 'ok') {
-          if (pendingLocalCandidates.length > 0) {
-            fetch("{{ route('portal.call.signal') }}", {
-              method: 'POST',
-              headers: {
-                'X-CSRF-TOKEN': csrfToken,
-                'Content-Type': 'application/json',
-                'X-Requested-With': 'XMLHttpRequest'
-              },
-              body: JSON.stringify({
-                call_id: call.call_id,
-                action: 'candidates_batch',
-                candidates: pendingLocalCandidates
-              })
-            }).catch(() => {});
-            pendingLocalCandidates = [];
+        // Immediately add any existing caller candidates that came with the call session
+        if (Array.isArray(call.caller_candidates)) {
+          for (const cand of call.caller_candidates) {
+            if (!cand || !cand.candidate) continue;
+            if (!addedCandidateKeys.has(cand.candidate)) {
+              addedCandidateKeys.add(cand.candidate);
+              try {
+                await peerConnection.addIceCandidate(new RTCIceCandidate({
+                  candidate: cand.candidate,
+                  sdpMid: cand.sdpMid,
+                  sdpMLineIndex: cand.sdpMLineIndex
+                }));
+              } catch(e) {}
+            }
           }
-          startSignalingPoller(call.call_id);
         }
-      })
-      .catch(() => {});
+
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+
+        // Wait up to 1.5s for STUN candidates to be gathered into answer.sdp
+        await waitForIceGathering(peerConnection, 1500);
+
+        const fullAnswer = {
+          type: peerConnection.localDescription.type,
+          sdp: peerConnection.localDescription.sdp
+        };
+
+        const batchCandidates = pendingLocalCandidates.slice();
+        pendingLocalCandidates = [];
+
+        fetch("{{ route('portal.call.signal') }}", {
+          method: 'POST',
+          headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({
+            call_id: call.call_id,
+            action: 'answer',
+            answer: fullAnswer,
+            candidates: batchCandidates
+          })
+        })
+        .then(r => r.json())
+        .then(res => {
+          if (res.status === 'ok') {
+            startSignalingPoller(call.call_id);
+          }
+        })
+        .catch(() => {});
+      } catch (errOffer) {
+        console.error('Error negotiating offer/answer on callee:', errOffer);
+        declineIncomingCall('Call setup negotiation error');
+      }
     }
   }
 

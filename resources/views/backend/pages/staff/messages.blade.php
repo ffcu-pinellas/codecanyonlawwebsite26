@@ -19,6 +19,22 @@
         top: 0;
         z-index: 20;
     }
+    .quick-emoji-bar {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 6px;
+        padding-bottom: 4px;
+    }
+    .quick-emoji-bar::-webkit-scrollbar {
+        display: none;
+    }
+    .quick-emoji-bar .badge {
+        flex-shrink: 0 !important;
+    }
     .chat-messages {
         flex: 1;
         padding: 20px;
@@ -154,6 +170,23 @@
                             <i class="fas fa-pen-nib mr-1"></i> <span>{{ $staff->name }}</span> {{ __('is typing live:') }} "<span id="adminStaffTypingText" class="text-white"></span>"
                         </div>
 
+                        <!-- Quick Emoji Toolbar -->
+                        <div class="quick-emoji-bar mb-2">
+                            <small class="text-muted mr-1 flex-shrink-0" style="font-size: 11px;"><i class="far fa-smile text-warning mr-1"></i>{{ __('Emojis:') }}</small>
+                            <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminStaffEmoji('😊')" title="Smile">😊</span>
+                            <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminStaffEmoji('👍')" title="Thumbs up">👍</span>
+                            <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminStaffEmoji('📁')" title="Folder">📁</span>
+                            <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminStaffEmoji('⚖️')" title="Legal Scales">⚖️</span>
+                            <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminStaffEmoji('💼')" title="Case Briefcase">💼</span>
+                            <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminStaffEmoji('✅')" title="Approved">✅</span>
+                            <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminStaffEmoji('🔒')" title="Encrypted">🔒</span>
+                            <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminStaffEmoji('📝')" title="Document">📝</span>
+                            <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminStaffEmoji('🤝')" title="Agreement">🤝</span>
+                            <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminStaffEmoji('📎')" title="Attachment">📎</span>
+                            <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminStaffEmoji('💡')" title="Idea">💡</span>
+                            <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminStaffEmoji('❓')" title="Question">❓</span>
+                        </div>
+
                         <form action="{{ route('admin.staff.send-message', $staff->id) }}" method="POST" id="admin-chat-form" enctype="multipart/form-data">
                             @csrf
                             <div class="input-group">
@@ -182,6 +215,16 @@
 
 @section('page-script')
 <script>
+    function insertAdminStaffEmoji(emoji) {
+        const input = document.getElementById('adminStaffChatInput');
+        if (!input) return;
+        const start = input.selectionStart || input.value.length;
+        const end = input.selectionEnd || input.value.length;
+        input.value = input.value.substring(0, start) + emoji + input.value.substring(end);
+        input.focus();
+        input.selectionStart = input.selectionEnd = start + emoji.length;
+    }
+
     function previewAdminStaffFile(input) {
         if (input.files && input.files[0]) {
             $('#adminStaffFileName').text(input.files[0].name);

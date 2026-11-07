@@ -110,6 +110,35 @@
         background: #ffffff !important;
         border-top-color: #e2e8f0 !important;
     }
+    .quick-emoji-bar {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        white-space: nowrap !important;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+        gap: 6px;
+        padding-bottom: 4px;
+    }
+    .quick-emoji-bar::-webkit-scrollbar {
+        display: none;
+    }
+    .quick-emoji-bar .badge {
+        flex-shrink: 0 !important;
+    }
+    @media (max-width: 768px) {
+        .chat-card {
+            height: calc(100dvh - 160px);
+            border-radius: 0 !important;
+        }
+        .chat-header {
+            padding: 10px 14px;
+        }
+        .chat-bubble { max-width: 90%; }
+        .chat-footer {
+            padding: 10px 12px;
+        }
+    }
 </style>
 @endsection
 
@@ -128,22 +157,22 @@
     <div class="chat-card">
         <!-- Chat Header -->
         <div class="chat-header d-flex align-items-center justify-content-between">
-            <div class="d-flex align-items-center">
-                <div class="rounded-circle mr-3 d-flex align-items-center justify-content-center text-dark font-weight-bold" style="width: 40px; height: 40px; background: #fecc56; font-size: 15px;">
+            <div class="d-flex align-items-center" style="min-width: 0; flex: 1; margin-right: 8px;">
+                <div class="rounded-circle mr-2 mr-sm-3 d-flex align-items-center justify-content-center text-dark font-weight-bold flex-shrink-0" style="width: 40px; height: 40px; background: #fecc56; font-size: 15px;">
                     {{ strtoupper(substr($officer->name ?? 'S', 0, 1)) }}
                 </div>
-                <div>
-                    <h5 class="mb-0 text-white font-weight-bold" style="font-size: 15px;">{{ $officer->name }}</h5>
-                    <span class="badge" style="background: rgba(254,204,86,0.15); color: #fecc56; border: 1px solid rgba(254,204,86,0.3); font-size: 10px;">
+                <div style="min-width: 0; overflow: hidden;">
+                    <h5 class="mb-0 text-white font-weight-bold text-truncate" style="font-size: 14px; line-height: 1.3;" title="{{ $officer->name }}">{{ $officer->name }}</h5>
+                    <span class="badge text-truncate" style="background: rgba(254,204,86,0.15); color: #fecc56; border: 1px solid rgba(254,204,86,0.3); font-size: 10px; max-width: 100%;">
                         <i class="fas fa-user-shield mr-1"></i> {{ __('Assigned Practice Supervisor') }}
                     </span>
                 </div>
             </div>
-            <div class="d-flex align-items-center" style="gap: 8px;">
-                <button type="button" class="btn btn-sm btn-outline-warning text-warning px-3 font-weight-bold" onclick="requestStaffCall('audio')" title="{{ __('Request Voice Call with Supervisor') }}">
-                    <i class="fas fa-phone-alt mr-1"></i> {{ __('Request Call') }}
+            <div class="d-flex align-items-center flex-shrink-0" style="gap: 6px;">
+                <button type="button" class="btn btn-sm btn-outline-warning text-warning px-2 px-sm-3 font-weight-bold" onclick="requestStaffCall('audio')" title="{{ __('Request Voice Call with Supervisor') }}">
+                    <i class="fas fa-phone-alt mr-1"></i> <span class="d-none d-sm-inline">{{ __('Request Call') }}</span><span class="d-inline d-sm-none">{{ __('Call') }}</span>
                 </button>
-                <span class="badge" style="background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); font-size: 10.5px;">
+                <span class="badge d-none d-md-inline-block" style="background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); font-size: 10.5px;">
                     <i class="fas fa-shield-alt mr-1"></i> {{ __('Encrypted Channel') }}
                 </span>
             </div>
@@ -195,8 +224,8 @@
         <!-- Chat Input Footer -->
         <div class="chat-footer">
             <!-- Quick Emoji Bar -->
-            <div class="d-flex flex-wrap align-items-center mb-2" style="gap: 6px;">
-                <small class="text-muted mr-1" style="font-size: 11px;"><i class="far fa-smile text-warning mr-1"></i>{{ __('Quick Emojis:') }}</small>
+            <div class="quick-emoji-bar mb-2">
+                <small class="text-muted mr-1 flex-shrink-0" style="font-size: 11px;"><i class="far fa-smile text-warning mr-1"></i>{{ __('Emojis:') }}</small>
                 <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('😊')">😊</span>
                 <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('👍')">👍</span>
                 <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('📁')">📁</span>

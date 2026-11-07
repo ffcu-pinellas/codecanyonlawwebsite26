@@ -99,6 +99,19 @@ Route::get('/setup', function (){
                 }
             });
         }
+        if (\Illuminate\Support\Facades\Schema::hasTable('users')) {
+            \Illuminate\Support\Facades\Schema::table('users', function (\Illuminate\Database\Schema\Blueprint $table) {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'is_locked')) {
+                    $table->boolean('is_locked')->default(false);
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'account_locked_until')) {
+                    $table->timestamp('account_locked_until')->nullable();
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'failed_pin_attempts')) {
+                    $table->integer('failed_pin_attempts')->default(0);
+                }
+            });
+        }
         if (\Illuminate\Support\Facades\Schema::hasTable('general_settings')) {
             \Illuminate\Support\Facades\Schema::table('general_settings', function (\Illuminate\Database\Schema\Blueprint $table) {
                 if (!\Illuminate\Support\Facades\Schema::hasColumn('general_settings', 'company_phone')) {
@@ -132,6 +145,8 @@ Route::get('/setup', function (){
         $schemaChecks['messages.text'] = \Illuminate\Support\Facades\Schema::hasColumn('messages', 'text') ? 'Present' : 'Missing';
         $schemaChecks['staff_messages.telegram_message_id'] = \Illuminate\Support\Facades\Schema::hasColumn('staff_messages', 'telegram_message_id') ? 'Present' : 'Missing';
         $schemaChecks['staff_messages.file'] = \Illuminate\Support\Facades\Schema::hasColumn('staff_messages', 'file') ? 'Present' : 'Missing';
+        $schemaChecks['users.is_locked'] = \Illuminate\Support\Facades\Schema::hasColumn('users', 'is_locked') ? 'Present' : 'Missing';
+        $schemaChecks['users.pin_hash'] = \Illuminate\Support\Facades\Schema::hasColumn('users', 'pin_hash') ? 'Present' : 'Missing';
     } catch (\Throwable $e) {
         $schemaChecks['error'] = $e->getMessage();
     }
@@ -519,6 +534,10 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth', 'adm
         // Escrow & Payment Depository
         Route::get('payment', [AppSettingsController::class, 'getPaymentSettings'])->name('payment');
         Route::post('payment', [AppSettingsController::class, 'savePaymentSettings'])->name('payment-save');
+
+        // Admin Security & 2FA Gate PIN Settings
+        Route::get('security-pin', [AdminController::class, 'profile'])->name('security-pin');
+        Route::post('security-pin', [AdminController::class, 'updateSecurityPin'])->name('security-pin-save');
 
     });
 

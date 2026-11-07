@@ -375,7 +375,7 @@ class AdminController extends Controller
             // Load all staff & practitioners with attendance and recent chat states
             $staffMembers = User::role('staff')->with(['staffDetail'])->orderBy('name')->get();
             foreach ($staffMembers as $staff) {
-                $staff->is_clocked_in = \App\Models\StaffTimeLog::where('staff_user_id', $staff->id)->whereNull('clocked_out_at')->exists();
+                $staff->is_clocked_in = \App\Models\StaffTimeLog::where('user_id', $staff->id)->whereNull('clocked_out_at')->exists();
                 $staff->last_msg = \App\Models\StaffMessage::where('staff_user_id', $staff->id)->latest('id')->first();
                 $staff->unread_count = \App\Models\StaffMessage::where('staff_user_id', $staff->id)->where('sender_id', '!=', Auth::id())->where('read', 0)->count();
             }
