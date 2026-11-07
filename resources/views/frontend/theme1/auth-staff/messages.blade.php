@@ -18,6 +18,9 @@
         background: #161a23;
         border-bottom: 1px solid #28303f;
         padding: 16px 20px;
+        position: sticky;
+        top: 0;
+        z-index: 20;
     }
     .chat-messages {
         flex: 1;

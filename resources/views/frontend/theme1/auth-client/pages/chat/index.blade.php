@@ -22,6 +22,8 @@
         border-bottom: 1px solid #28303f;
         padding: 14px 20px;
         flex-shrink: 0;
+        position: sticky;
+        top: 0;
         z-index: 20;
     }
     .chatwoot-docked-container {

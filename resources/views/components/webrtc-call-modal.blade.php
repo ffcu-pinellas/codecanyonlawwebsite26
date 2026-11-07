@@ -11,13 +11,31 @@
     }
   }
   .webrtc-call-window {
-    background: #0b0f17;
-    border: 1px solid #28303f;
+    background: #0b0f17 !important;
+    border: 1px solid #28303f !important;
     border-radius: 16px;
     box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
     overflow: hidden;
     position: relative;
+    color: #f1f5f9 !important;
   }
+  /* Force High-Contrast Text Overrides to prevent light-mode parent CSS pollution */
+  .webrtc-call-window h4, .webrtc-call-window h5, .webrtc-call-window h6,
+  .webrtc-call-window strong, .webrtc-call-window b,
+  #activeVoiceName, #incomingCallerName, #activeCallParticipantName {
+    color: #ffffff !important;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9) !important;
+  }
+  #activeVoiceStatusText {
+    color: #fecc56 !important;
+    font-weight: 700 !important;
+    font-size: 14px !important;
+    text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8) !important;
+  }
+  .webrtc-call-window p, .webrtc-call-window small {
+    color: #cbd5e1 !important;
+  }
+
   .webrtc-voice-stage {
     min-height: 420px;
     display: flex;
@@ -79,7 +97,7 @@
     height: 120px;
     border-radius: 50%;
     background: linear-gradient(135deg, #fecc56, #f0a500);
-    color: #0b0f17;
+    color: #0b0f17 !important;
     font-size: 42px;
     font-weight: 800;
     display: flex;
@@ -98,6 +116,7 @@
     gap: 4px;
     height: 24px;
     margin-top: 15px;
+    transition: opacity 0.3s ease;
   }
   .sound-wave-bar {
     width: 4px;
@@ -175,7 +194,7 @@
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7);
     z-index: 10;
     background: #11151e;
-    transform: scaleX(-1); /* Mirror selfie view */
+    transform: scaleX(-1);
   }
   @media (max-width: 576px) {
     #webrtcLocalVideo {
@@ -190,7 +209,7 @@
 <!-- 1. Incoming Call Prompt Modal -->
 <div class="modal fade" id="incomingCallModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" style="z-index: 1099;">
   <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;" role="document">
-    <div class="modal-content text-white" style="background: #11151e; border: 1px solid #28303f; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.85);">
+    <div class="modal-content webrtc-call-window text-white" style="background: #11151e !important; border: 1px solid #28303f; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.85);">
       <div class="modal-body p-4 text-center">
         <!-- Caller Avatar with Pulsing Rings -->
         <div class="d-flex justify-content-center my-3">
@@ -258,10 +277,10 @@
             </div>
           </div>
           <h4 class="font-weight-bold text-white mb-1" id="activeVoiceName">Participant</h4>
-          <span class="text-muted small font-weight-bold mb-2" id="activeVoiceStatusText">Direct In-App Voice Call</span>
+          <span class="text-warning small font-weight-bold mb-2" id="activeVoiceStatusText">Direct In-App Voice Call</span>
           
           <!-- Equalizer animation -->
-          <div class="sound-wave-bars" id="activeVoiceWavebars">
+          <div class="sound-wave-bars" id="activeVoiceWavebars" style="opacity: 0.4;">
             <div class="sound-wave-bar"></div>
             <div class="sound-wave-bar"></div>
             <div class="sound-wave-bar"></div>
@@ -273,7 +292,7 @@
 
         <!-- Video Call Stage -->
         <div id="webrtcVideoView" class="webrtc-video-stage d-none">
-          <video id="webrtcRemoteVideo" autoplay playsinline class="w-100 h-100"></video>
+          <video id="webrtcRemoteVideo" autoplay playsinline class="w-100 h-100" style="object-fit: cover; background: #000;"></video>
           <video id="webrtcLocalVideo" autoplay playsinline muted></video>
         </div>
 
@@ -312,8 +331,12 @@
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
       { urls: 'stun:stun2.l.google.com:19302' },
-      { urls: 'stun:stun.services.mozilla.com' }
-    ]
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
+      { urls: 'stun:stun.services.mozilla.com' },
+      { urls: 'stun:stun.cloudflare.com:3478' }
+    ],
+    iceCandidatePoolSize: 10
   };
 
   let peerConnection = null;
@@ -321,6 +344,7 @@
   let activeCallSession = null;
   let callTimerInterval = null;
   let callSeconds = 0;
+  let isCallTimerRunning = false;
   let signalingInterval = null;
   let isCaller = false;
   let audioContext = null;
@@ -328,7 +352,7 @@
   let titleFlashInterval = null;
   const originalDocTitle = document.title;
 
-  // Ask for notification permission unobtrusively on first user click
+  // Ask for notification permission unobtrusively on first click
   document.addEventListener('click', function requestNotifOnce() {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission().catch(() => {});
@@ -423,7 +447,7 @@
     }
   }
 
-  // Helper to format timer 00:00
+  // Format timer 00:00
   function formatCallTimer(sec) {
     const m = Math.floor(sec / 60);
     const s = sec % 60;
@@ -443,90 +467,155 @@
   function stopCallTimer() {
     clearInterval(callTimerInterval);
     callTimerInterval = null;
+    isCallTimerRunning = false;
   }
 
-  // 4. Initialize Local Media Stream
-  // CRITICAL: If type is 'audio', video is explicitly FALSE. Web camera will NEVER be requested or turned on!
-  async function acquireMediaStream(callType) {
-    const isVideo = (callType === 'video');
-    const constraints = {
-      audio: {
-        echoCancellation: true,
-        noiseSuppression: true,
-        autoGainControl: true
-      },
-      video: isVideo ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false
-    };
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia(constraints);
-      localMediaStream = stream;
-
-      const localVid = document.getElementById('webrtcLocalVideo');
-      if (isVideo && localVid) {
-        localVid.srcObject = stream;
-      }
-      return stream;
-    } catch (err) {
-      console.error('Media acquisition error:', err);
-      alert('Could not access microphone/camera: ' + err.message);
-      throw err;
+  function markCallConnected() {
+    const statusEl = document.getElementById('activeVoiceStatusText');
+    if (statusEl) statusEl.innerText = 'Connected • High Definition';
+    const waveEl = document.getElementById('activeVoiceWavebars');
+    if (waveEl) waveEl.style.opacity = '1';
+    if (!isCallTimerRunning) {
+      isCallTimerRunning = true;
+      startCallTimer();
     }
   }
 
-  // 5. Create RTCPeerConnection and wire remote stream
-  function setupPeerConnection(callId) {
+  // 4. Reliable Media Acquisition with Graceful Fallback
+  // If desktop has no camera or webcam is in use, falls back to audio rather than throwing an error!
+  async function acquireMediaStream(callType) {
+    const isVideo = (callType === 'video');
+    let stream = null;
+
+    if (isVideo) {
+      try {
+        // Attempt 1: Standard HD Video + Audio
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true },
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+      } catch (err1) {
+        console.warn('HD video constraints failed, trying basic video+audio:', err1);
+        try {
+          // Attempt 2: Basic Video + Audio
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        } catch (err2) {
+          console.warn('Camera failed or unavailable (e.g. desktop with no webcam), falling back to audio only:', err2);
+          try {
+            // Attempt 3: Graceful fallback to pure audio so user isn't rejected
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            const statusEl = document.getElementById('activeVoiceStatusText');
+            if (statusEl) statusEl.innerText = 'Connected (Audio only - Camera unavailable)';
+          } catch (err3) {
+            console.error('All media acquisition failed:', err3);
+            throw new Error('Could not access microphone: ' + (err3.message || 'Permission denied'));
+          }
+        }
+      }
+    } else {
+      // Pure audio mode (Voice Call): video is strictly FALSE. Webcam is NEVER requested!
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          audio: { echoCancellation: true, noiseSuppression: true },
+          video: false
+        });
+      } catch (errAudio1) {
+        console.warn('Audio constraints failed, trying basic audio:', errAudio1);
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        } catch (errAudio2) {
+          console.error('Audio capture failed:', errAudio2);
+          throw new Error('Could not access microphone: ' + (errAudio2.message || 'Permission denied'));
+        }
+      }
+    }
+
+    localMediaStream = stream;
+
+    const localVid = document.getElementById('webrtcLocalVideo');
+    if (isVideo && localVid && stream.getVideoTracks().length > 0) {
+      localVid.srcObject = stream;
+    }
+    return stream;
+  }
+
+  // 5. STUN Candidate Gatherer Helper (Waits up to maxWaitMs for candidates to populate local SDP)
+  function waitForIceGathering(pc, maxWaitMs = 1200) {
+    return new Promise(resolve => {
+      if (pc.iceGatheringState === 'complete') {
+        resolve();
+        return;
+      }
+      const timeout = setTimeout(() => {
+        resolve();
+      }, maxWaitMs);
+
+      function onStateChange() {
+        if (pc.iceGatheringState === 'complete') {
+          clearTimeout(timeout);
+          pc.removeEventListener('icegatheringstatechange', onStateChange);
+          resolve();
+        }
+      }
+      pc.addEventListener('icegatheringstatechange', onStateChange);
+    });
+  }
+
+  // 6. Setup RTCPeerConnection and wire media tracks
+  function setupPeerConnection() {
+    if (peerConnection) {
+      try { peerConnection.close(); } catch(e) {}
+    }
     peerConnection = new RTCPeerConnection(rtcConfig);
 
-    // Add local tracks
+    // Bind local media tracks
     if (localMediaStream) {
       localMediaStream.getTracks().forEach(track => {
         peerConnection.addTrack(track, localMediaStream);
       });
     }
 
-    // Remote track arrival
+    // Remote Track Handler: Remote media arrives -> mark call connected!
     peerConnection.ontrack = function(event) {
+      console.log('Remote track received:', event.track.kind);
       const remoteAudio = document.getElementById('webrtcRemoteAudio');
       const remoteVideo = document.getElementById('webrtcRemoteVideo');
 
       if (event.streams && event.streams[0]) {
-        if (remoteAudio) remoteAudio.srcObject = event.streams[0];
-        if (remoteVideo) remoteVideo.srcObject = event.streams[0];
+        if (remoteAudio) {
+          remoteAudio.srcObject = event.streams[0];
+          remoteAudio.muted = false;
+          remoteAudio.volume = 1.0;
+          remoteAudio.play().catch(e => console.warn('Audio autoplay caught:', e));
+        }
+        if (remoteVideo) {
+          remoteVideo.srcObject = event.streams[0];
+          remoteVideo.play().catch(e => console.warn('Video autoplay caught:', e));
+        }
       }
+      markCallConnected();
     };
 
-    // ICE Candidate generation
-    peerConnection.onicecandidate = function(event) {
-      if (event.candidate && callId) {
-        fetch("{{ route('portal.call.signal') }}", {
-          method: 'POST',
-          headers: {
-            'X-CSRF-TOKEN': csrfToken,
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-          },
-          body: JSON.stringify({
-            call_id: callId,
-            action: 'candidate',
-            candidate: event.candidate
-          })
-        }).catch(() => {});
-      }
-    };
-
+    // Connection State Listeners
     peerConnection.onconnectionstatechange = function() {
+      console.log('PeerConnection connectionState:', peerConnection.connectionState);
       if (peerConnection.connectionState === 'connected') {
-        document.getElementById('activeVoiceStatusText').innerText = 'Connected • High Definition';
-        document.getElementById('activeVoiceWavebars').style.opacity = '1';
-        startCallTimer();
+        markCallConnected();
       } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
-        document.getElementById('activeVoiceStatusText').innerText = 'Reconnecting...';
+        const statusEl = document.getElementById('activeVoiceStatusText');
+        if (statusEl) statusEl.innerText = 'Reconnecting...';
+      }
+    };
+
+    peerConnection.oniceconnectionstatechange = function() {
+      console.log('ICE connectionState:', peerConnection.iceConnectionState);
+      if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+        markCallConnected();
       }
     };
   }
 
-  // 6. UI View Switcher
+  // 7. UI View Switcher
   function updateCallModalUi(callType, otherPartyName, avatarUrl) {
     const isVideo = (callType === 'video');
     const badge = document.getElementById('activeCallModeBadge');
@@ -553,7 +642,7 @@
     document.getElementById('btnToggleVideo').classList.remove('active');
   }
 
-  // 7. INITIATE CALL (Caller - Admin / Supervisor)
+  // 8. INITIATE CALL (Caller - Admin / Supervisor)
   window.initiateWebRtcCall = async function(recipientId, recipientName, callType, conversationSlug) {
     if (!recipientId) {
       alert('Recipient ID required.');
@@ -564,6 +653,7 @@
     try {
       await acquireMediaStream(callType);
     } catch (e) {
+      alert(e.message || 'Microphone access is required to initiate call.');
       return;
     }
 
@@ -572,13 +662,21 @@
     document.getElementById('activeVoiceWavebars').style.opacity = '0.3';
     $('#activeWebRtcCallModal').modal('show');
 
-    // Setup RTCPeerConnection and create Offer
-    setupPeerConnection(null);
+    // Create RTCPeerConnection and bind local stream
+    setupPeerConnection();
 
-    const offer = await peerConnection.createOffer();
+    // Create Offer with receive expectations
+    const offer = await peerConnection.createOffer({
+      offerToReceiveAudio: true,
+      offerToReceiveVideo: (callType === 'video')
+    });
     await peerConnection.setLocalDescription(offer);
 
-    // Send offer to server
+    // Wait up to 1.2s for Google & Cloudflare STUN servers to embed reflexive candidate IPs into offer.sdp
+    await waitForIceGathering(peerConnection, 1200);
+
+    const fullOffer = peerConnection.localDescription;
+
     fetch("{{ route('portal.call.initiate') }}", {
       method: 'POST',
       headers: {
@@ -589,7 +687,7 @@
       body: JSON.stringify({
         recipient_id: recipientId,
         call_type: callType,
-        offer: offer,
+        offer: fullOffer,
         conversation_slug: conversationSlug || ''
       })
     })
@@ -597,8 +695,6 @@
     .then(res => {
       if (res.status === 'ok' && res.call) {
         activeCallSession = res.call;
-
-        // Poll for Callee Answer
         startSignalingPoller(res.call_id);
       } else {
         alert(res.error || 'Failed to initiate call.');
@@ -612,7 +708,7 @@
     });
   };
 
-  // 8. SIGNALING POLLER
+  // 9. SIGNALING POLLER
   function startSignalingPoller(callId) {
     clearInterval(signalingInterval);
     signalingInterval = setInterval(() => {
@@ -638,7 +734,8 @@
           clearInterval(signalingInterval);
           signalingInterval = null;
           const label = (call.status === 'declined') ? 'Call declined by recipient.' : 'Call ended.';
-          document.getElementById('activeVoiceStatusText').innerText = label;
+          const statusEl = document.getElementById('activeVoiceStatusText');
+          if (statusEl) statusEl.innerText = label;
           setTimeout(() => {
             hangUpCall(false);
           }, 1200);
@@ -646,22 +743,16 @@
         }
 
         // Caller receives SDP Answer from Callee
-        if (isCaller && call.answer && peerConnection && peerConnection.signalingState === 'have-local-offer') {
+        if (isCaller && call.answer && peerConnection && (peerConnection.signalingState === 'have-local-offer')) {
           await peerConnection.setRemoteDescription(new RTCSessionDescription(call.answer));
-
-          // Apply callee ICE candidates
-          if (call.callee_candidates && call.callee_candidates.length > 0) {
-            call.callee_candidates.forEach(cand => {
-              peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
-            });
-          }
+          console.log('Caller set remote description from answer successfully!');
         }
       })
       .catch(() => {});
-    }, 1500);
+    }, 1200);
   }
 
-  // 9. ACCEPT INCOMING CALL (Callee)
+  // 10. ACCEPT INCOMING CALL (Callee)
   async function acceptIncomingCall() {
     stopTelephoneRing();
     stopTitleFlash();
@@ -674,7 +765,8 @@
     try {
       await acquireMediaStream(call.call_type);
     } catch (e) {
-      declineIncomingCall('Microphone / Camera access denied');
+      console.error('Acquire media error:', e);
+      declineIncomingCall(e.message || 'Microphone permission required');
       return;
     }
 
@@ -682,24 +774,19 @@
     document.getElementById('activeVoiceStatusText').innerText = 'Connecting audio & video...';
     $('#activeWebRtcCallModal').modal('show');
 
-    setupPeerConnection(call.call_id);
+    setupPeerConnection();
 
-    // Callee sets remote offer from caller
     if (call.offer) {
       await peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
 
-      // Add caller candidates
-      if (call.caller_candidates && call.caller_candidates.length > 0) {
-        call.caller_candidates.forEach(c => {
-          peerConnection.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
-        });
-      }
-
-      // Create Answer
       const answer = await peerConnection.createAnswer();
       await peerConnection.setLocalDescription(answer);
 
-      // Post Answer to Server
+      // Wait up to 1.2s for STUN candidates to be gathered into answer.sdp
+      await waitForIceGathering(peerConnection, 1200);
+
+      const fullAnswer = peerConnection.localDescription;
+
       fetch("{{ route('portal.call.signal') }}", {
         method: 'POST',
         headers: {
@@ -710,7 +797,7 @@
         body: JSON.stringify({
           call_id: call.call_id,
           action: 'answer',
-          answer: answer
+          answer: fullAnswer
         })
       })
       .then(r => r.json())
@@ -723,7 +810,7 @@
     }
   }
 
-  // 10. DECLINE INCOMING CALL
+  // 11. DECLINE INCOMING CALL
   function declineIncomingCall(reason) {
     stopTelephoneRing();
     stopTitleFlash();
@@ -747,7 +834,7 @@
     });
   }
 
-  // 11. HANG UP / END CALL
+  // 12. HANG UP / END CALL
   function hangUpCall(notifyServer = true) {
     stopTelephoneRing();
     stopTitleFlash();
@@ -784,9 +871,10 @@
     $('#incomingCallModal').modal('hide');
     activeCallSession = null;
     isCaller = false;
+    isCallTimerRunning = false;
   }
 
-  // 12. Global Call Check Loop (Runs every 3 seconds across master layout)
+  // 13. Global Call Check Loop (Runs every 3 seconds across master layouts)
   if (currentUserId > 0) {
     setInterval(() => {
       // Don't poll if already in an active call modal
@@ -881,4 +969,3 @@
   });
 })();
 </script>
-

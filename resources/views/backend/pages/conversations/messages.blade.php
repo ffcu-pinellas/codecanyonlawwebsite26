@@ -42,10 +42,12 @@
             color: #94a3b8;
             margin-top: 4px;
         }
-        .user_img_msg {
-            width: 38px;
-            height: 38px;
-            object-fit: cover;
+        .card-header-sticky {
+            position: sticky;
+            top: 55px;
+            z-index: 100;
+            background: #161a23 !important;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.5);
         }
     </style>
 @endsection
@@ -66,7 +68,7 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card card-dark bg-dark border-secondary">
-                        <div class="card-header d-flex justify-content-between align-items-center py-3 border-secondary flex-wrap" style="gap: 10px;">
+                        <div class="card-header card-header-sticky d-flex justify-content-between align-items-center py-3 border-secondary flex-wrap" style="gap: 10px;">
                             <div>
                                 <h5 class="card-title text-white font-weight-bold mb-0">
                                     <i class="fas fa-comments text-warning mr-2"></i>{{ $title }}
@@ -75,7 +77,7 @@
                             </div>
                             <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
                                 <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark shadow-sm px-3" data-toggle="modal" data-target="#initiateCallModal">
-                                    <i class="fas fa-video mr-1"></i> {{ __('Start Consultation Call') }}
+                                    <i class="fas fa-phone-alt mr-1"></i> {{ __('Start Call') }}
                                 </button>
                                 <a href="{{ route('admin.conversation.index') }}" class="btn btn-outline-secondary btn-sm text-light">
                                     <i class="fas fa-arrow-left mr-1"></i> Back to All Chats
