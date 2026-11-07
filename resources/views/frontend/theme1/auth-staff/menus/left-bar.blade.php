@@ -265,8 +265,8 @@
         .staff-sidebar-col {
             position: fixed !important;
             top: 0 !important;
-            left: -290px !important;
-            width: 280px !important;
+            left: -320px !important;
+            width: 285px !important;
             max-width: 85vw !important;
             height: 100vh !important;
             z-index: 1099 !important;
@@ -275,11 +275,24 @@
             overflow-y: auto !important;
             padding: 0 !important;
             background: #11151e !important;
+            display: block !important;
+        }
+        .ifw-staff-sidebar {
+            position: static !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 100vh !important;
+            border: none !important;
+            border-radius: 0 !important;
+            box-shadow: none !important;
+            display: block !important;
+            background: #11151e !important;
         }
         .staff-sidebar-col.active,
         .staff-sidebar-col.show {
             left: 0 !important;
-            box-shadow: 10px 0 30px rgba(0,0,0,0.8) !important;
+            box-shadow: 10px 0 35px rgba(0,0,0,0.85) !important;
             display: block !important;
         }
         .sidebar-overlay {

@@ -166,3 +166,4 @@ class SendUnreadMessagesDigest extends Command
         $this->info("Completed. Dispatched {$sentCount} digest email(s).");
     }
 }
+

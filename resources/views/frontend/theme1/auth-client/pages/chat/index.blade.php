@@ -206,15 +206,21 @@
         }
         .chat-counsel-title {
             font-size: 13px !important;
-            max-width: 140px;
+            max-width: 130px !important;
             white-space: nowrap !important;
             overflow: hidden !important;
             text-overflow: ellipsis !important;
             display: block !important;
         }
+        .chat-header-actions {
+            display: flex !important;
+            gap: 4px !important;
+            flex-shrink: 0 !important;
+        }
         .chat-header-actions .btn {
-            padding: 5px 8px !important;
-            font-size: 11.5px !important;
+            padding: 4px 7px !important;
+            font-size: 11px !important;
+            white-space: nowrap !important;
         }
         .chat-bubble { max-width: 92%; }
         .chat-footer-native {
@@ -270,15 +276,15 @@
         </div>
       </div>
       <div class="d-flex align-items-center flex-shrink-0 chat-header-actions" style="gap:5px;">
-        <button type="button" class="btn btn-sm btn-outline-warning text-warning px-2 px-sm-3 font-weight-bold" onclick="requestClientCall('audio')" title="{{ __('Request Live Voice Call with Counsel') }}">
-          <i class="fas fa-phone-alt mr-1"></i> <span class="d-none d-sm-inline">{{ __('Request Call') }}</span><span class="d-inline d-sm-none">{{ __('Call') }}</span>
+        <button type="button" class="btn btn-sm btn-outline-warning text-warning px-2 px-md-3 font-weight-bold" onclick="requestClientCall('audio')" title="{{ __('Request Live Voice Call with Counsel') }}" style="white-space: nowrap; border-radius: 6px;">
+          <i class="fas fa-phone-alt mr-1"></i> <span class="d-none d-md-inline">{{ __('Request Call') }}</span><span class="d-inline d-md-none">{{ __('Call') }}</span>
         </button>
-        <span class="badge d-none d-md-inline-block px-3 py-2"
+        <span class="badge d-none d-lg-inline-block px-3 py-2"
               style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:11px;">
           <i class="fas fa-lock mr-1"></i>{{ __('256-Bit Encrypted') }}
         </span>
-        <a href="{{ route('client.dashboard') }}" class="btn btn-sm btn-outline-secondary text-light px-2 px-sm-3 font-weight-bold" style="border-color:#3b4252;">
-          <i class="fas fa-arrow-left mr-1"></i> <span class="d-none d-sm-inline">{{ __('Dashboard') }}</span><span class="d-inline d-sm-none">{{ __('Back') }}</span>
+        <a href="{{ route('client.dashboard') }}" class="btn btn-sm btn-outline-secondary text-light px-2 px-md-3 font-weight-bold" style="border-color:#3b4252; white-space: nowrap; border-radius: 6px;">
+          <i class="fas fa-arrow-left mr-1"></i> <span class="d-none d-md-inline">{{ __('Dashboard') }}</span><span class="d-inline d-md-none">{{ __('Back') }}</span>
         </a>
       </div>
     </div>

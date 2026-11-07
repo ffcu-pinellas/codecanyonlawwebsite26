@@ -177,6 +177,30 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @foreach($vaultDocuments ?? [] as $vDoc)
+                                <tr>
+                                    <td>
+                                        <div class="font-weight-bold text-white">{{ $vDoc->document_title ?: $vDoc->title }}</div>
+                                        <small class="text-warning"><i class="fas fa-shield-alt mr-1"></i> {{ __('Counsel Vaulted File') }}</small>
+                                    </td>
+                                    <td><span class="text-warning small font-weight-bold">{{ $vDoc->document_type }}</span></td>
+                                    <td>
+                                        @if($vDoc->is_signed)
+                                            <span class="badge-approved"><i class="fas fa-check-circle mr-1"></i> {{ __('Signed') }}</span>
+                                        @elseif($vDoc->requires_signature)
+                                            <span class="badge-resubmit"><i class="fas fa-pen-nib mr-1"></i> {{ __('Sign Required') }}</span>
+                                        @else
+                                            <span class="badge-approved"><i class="fas fa-check-circle mr-1"></i> {{ __('Vaulted') }}</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <small class="text-muted d-block">{{ $vDoc->created_at ? $vDoc->created_at->format('M d, Y') : '' }}</small>
+                                        <a href="{{ route('client.documents.preview', $vDoc->id) }}" target="_blank" class="btn btn-xs btn-outline-warning mt-1 py-0 px-2 font-weight-bold" style="font-size: 11px;">
+                                            <i class="fas fa-eye mr-1"></i> {{ __('View') }}
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endforeach
                             @forelse($documents as $doc)
                                 <tr>
                                     <td>
@@ -196,12 +220,14 @@
                                     <td><small class="text-muted">{{ $doc->created_at ? $doc->created_at->format('M d, Y') : '' }}</small></td>
                                 </tr>
                             @empty
-                                <tr>
-                                    <td colspan="4" class="text-center py-4 text-muted">
-                                        <i class="fas fa-folder-open fa-2x mb-2 d-block text-secondary"></i>
-                                        {{ __('No documents uploaded yet.') }}
-                                    </td>
-                                </tr>
+                                @if(empty($vaultDocuments) || count($vaultDocuments) === 0)
+                                    <tr>
+                                        <td colspan="4" class="text-center py-4 text-muted">
+                                            <i class="fas fa-folder-open fa-2x mb-2 d-block text-secondary"></i>
+                                            {{ __('No documents uploaded yet.') }}
+                                        </td>
+                                    </tr>
+                                @endif
                             @endforelse
                         </tbody>
                     </table>

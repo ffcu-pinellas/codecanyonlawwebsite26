@@ -39,17 +39,31 @@ class CaseDocument extends Model
     protected static function booted()
     {
         static::saving(function ($doc) {
+            // Guarantee legacy columns are always populated
             if (empty($doc->title) && !empty($doc->document_title)) {
                 $doc->title = $doc->document_title;
-            }
-            if (empty($doc->document_title) && !empty($doc->title)) {
-                $doc->document_title = $doc->title;
             }
             if (empty($doc->user_id) && !empty($doc->client_id)) {
                 $doc->user_id = $doc->client_id;
             }
-            if (empty($doc->client_id) && !empty($doc->user_id)) {
-                $doc->client_id = $doc->user_id;
+
+            // Safely guard against missing columns on remote databases that haven't migrated yet
+            try {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('case_documents', 'client_id')) {
+                    unset($doc->client_id);
+                } elseif (empty($doc->client_id) && !empty($doc->user_id)) {
+                    $doc->client_id = $doc->user_id;
+                }
+
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('case_documents', 'document_title')) {
+                    unset($doc->document_title);
+                } elseif (empty($doc->document_title) && !empty($doc->title)) {
+                    $doc->document_title = $doc->title;
+                }
+            } catch (\Throwable $e) {
+                // If schema check fails, safely unset newly added columns
+                unset($doc->client_id);
+                unset($doc->document_title);
             }
         });
     }

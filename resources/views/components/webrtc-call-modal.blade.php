@@ -380,6 +380,29 @@
   </div>
 </div>
 
+<!-- 1B. Top-Pinned Floating Call Dynamic Bar (WhatsApp & FaceTime Style) -->
+<div id="webrtcTopPinnedCallBar" style="position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 99999999; display: none; background: #0b0f17; border: 2px solid #fecc56; border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.95), 0 0 25px rgba(254,204,86,0.4); padding: 7px 16px; align-items: center; gap: 12px; max-width: 95vw; backdrop-filter: blur(16px);">
+  <div class="d-flex align-items-center" style="gap: 8px; cursor: pointer;" onclick="toggleCallMinimize()" title="Click to Return to Full Call Window">
+    <span style="width: 10px; height: 10px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px #22c55e; display: inline-block;"></span>
+    <span class="badge px-2 py-1 font-weight-bold" id="pipCallBadge" style="background: rgba(254,204,86,0.2); color: #fecc56; font-size: 11px;">
+      <i class="fas fa-phone-alt mr-1"></i> Live Call
+    </span>
+    <strong class="text-white text-truncate" id="pipCallPeerName" style="max-width: 140px; font-size: 12.5px;">Caller</strong>
+    <span class="badge px-2 py-1 font-weight-bold" id="pipCallTimer" style="background: #000; color: #fecc56; border: 1.5px solid #fecc56; font-size: 12px; font-family: monospace;">00:00</span>
+  </div>
+  <div class="d-flex align-items-center" style="gap: 8px;">
+    <button type="button" class="btn btn-sm text-white rounded-circle p-0" id="pipBtnMute" title="Mute/Unmute" style="width: 32px; height: 32px; background: #1e293b; border: 1px solid #475569; display: inline-flex; align-items: center; justify-content: center;">
+      <i class="fas fa-microphone" style="font-size: 12px;"></i>
+    </button>
+    <button type="button" class="btn btn-sm btn-danger rounded-circle p-0" id="pipBtnHangup" title="End Call" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,0.5);">
+      <i class="fas fa-phone-slash" style="font-size: 12px;"></i>
+    </button>
+    <button type="button" class="btn btn-sm font-weight-bold text-dark px-3 py-1" onclick="toggleCallMinimize()" title="Expand Call Window" style="background: linear-gradient(135deg, #fecc56, #f0a500); border: 1.5px solid #ffffff; border-radius: 20px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(254,204,86,0.4);">
+      <i class="fas fa-expand-alt"></i> Expand
+    </button>
+  </div>
+</div>
+
 <!-- 2. Active WebRTC Call Session Modal (Voice & Video) -->
 <div class="modal fade" id="activeWebRtcCallModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" style="z-index: 1098;">
   <div class="modal-dialog webrtc-modal-dialog modal-dialog-centered" role="document">
@@ -396,8 +419,9 @@
           <span class="badge px-3 py-1 font-weight-bold" id="activeCallTimer" style="font-size: 13px !important; font-weight: 800 !important; letter-spacing: 1px; background: #000000 !important; color: #fecc56 !important; border: 1.5px solid #fecc56 !important; text-shadow: 0 0 6px rgba(254,204,86,0.7) !important; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.5);">
             00:00
           </span>
-          <button type="button" class="btn btn-sm" id="btnMinimizeCall" title="Minimize Call (Picture-in-Picture)" style="background: rgba(254, 204, 86, 0.15); border: 1px solid rgba(254, 204, 86, 0.4); color: #fecc56 !important; border-radius: 6px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
-            <i class="fas fa-compress-alt" id="iconMinimizeCall" style="font-size: 12px;"></i>
+          <button type="button" class="btn btn-sm font-weight-bold text-dark" id="btnMinimizeCall" title="Minimize Call (Pin to Top Bar)" style="background: linear-gradient(135deg, #fecc56, #f0a500) !important; color: #000000 !important; border: 1.5px solid #ffffff !important; border-radius: 8px; padding: 4px 10px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 10px rgba(254, 204, 86, 0.4); cursor: pointer;">
+            <i class="fas fa-compress-alt" id="iconMinimizeCall" style="font-size: 12px; color: #000000 !important;"></i>
+            <span style="font-size: 11px; font-weight: 800; color: #000000 !important;">Minimize</span>
           </button>
         </div>
       </div>
@@ -662,20 +686,43 @@
     document.title = originalDocTitle;
   }
 
-  // 3. Desktop OS Notification
-  function showDesktopNotification(title, body) {
-    if ('Notification' in window && Notification.permission === 'granted') {
+  // 3. Desktop & Android Mobile Native Notification (Service Worker + Fallback)
+  function showDesktopNotification(title, body, clickUrl) {
+    if (!('Notification' in window)) return;
+    const targetUrl = clickUrl || window.location.href;
+    const iconUrl = '{{ asset("assets/images/logo/logo.png") }}';
+
+    if (Notification.permission === 'granted') {
+      // 1. Android Chrome & PWA: Requires ServiceWorkerRegistration.showNotification()
+      if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
+        navigator.serviceWorker.ready.then(function(reg) {
+          if (reg && reg.showNotification) {
+            reg.showNotification(title, {
+              body: body,
+              icon: iconUrl,
+              badge: iconUrl,
+              vibrate: [250, 100, 250],
+              data: { url: targetUrl }
+            });
+            return;
+          }
+        }).catch(function() {});
+      }
+      // 2. Desktop Browser standard Notification fallback
       try {
         const notif = new Notification(title, {
           body: body,
-          icon: '/frontend/assets/img/logo/favicon.png',
+          icon: iconUrl,
           requireInteraction: true
         });
         notif.onclick = function() {
           window.focus();
+          if (targetUrl) window.location.href = targetUrl;
           this.close();
         };
       } catch (e) {}
+    } else if (Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
     }
   }
 
@@ -712,9 +759,14 @@
       } else {
         callSeconds++;
       }
+      const formatted = formatCallTimer(callSeconds);
       const el = document.getElementById('activeCallTimer');
       if (el) {
-        el.innerText = formatCallTimer(callSeconds);
+        el.innerText = formatted;
+      }
+      const pipTimer = document.getElementById('pipCallTimer');
+      if (pipTimer) {
+        pipTimer.innerText = formatted;
       }
     }
 
@@ -850,9 +902,10 @@
       });
     }
 
-    // Pre-negotiate video transceiver so screen sharing and camera switching work instantly with zero negotiation delays
+    // Pre-negotiate video transceiver ONLY for video calls, never for pure voice calls
+    const isVideoCall = activeCallSession && (activeCallSession.call_type === 'video');
     const hasVideoTrack = localMediaStream && localMediaStream.getVideoTracks().length > 0;
-    if (!hasVideoTrack) {
+    if (isVideoCall && !hasVideoTrack) {
       try {
         peerConnection.addTransceiver('video', { direction: 'sendrecv' });
       } catch(e) {
@@ -905,10 +958,9 @@
       const remoteAudio = document.getElementById('webrtcRemoteAudio');
       const remoteVideo = document.getElementById('webrtcRemoteVideo');
 
-      if (event.track.kind === 'video' && remoteVideo) {
-        document.getElementById('webrtcVoiceView')?.classList.add('d-none');
-        document.getElementById('webrtcVideoView')?.classList.remove('d-none');
+      const isActualVideoCall = activeCallSession && (activeCallSession.call_type === 'video');
 
+      if (event.track.kind === 'video' && remoteVideo) {
         if (event.streams && event.streams[0]) {
           remoteVideo.srcObject = event.streams[0];
         } else {
@@ -918,10 +970,19 @@
           remoteVideo.srcObject.addTrack(event.track);
         }
         remoteVideo.play().catch(e => {
-          console.warn('Remote video autoplay blocked, muting element to allow rendering:', e);
           remoteVideo.muted = true;
           remoteVideo.play().catch(() => {});
         });
+
+        // ONLY switch stage to video view if this is actually a video call or actively screen-sharing!
+        if (isActualVideoCall || isScreenSharing) {
+          document.getElementById('webrtcVoiceView')?.classList.add('d-none');
+          document.getElementById('webrtcVideoView')?.classList.remove('d-none');
+        } else {
+          // Voice call strictly stays on Voice Call view!
+          document.getElementById('webrtcVoiceView')?.classList.remove('d-none');
+          document.getElementById('webrtcVideoView')?.classList.add('d-none');
+        }
       } else if (event.track.kind === 'audio' && remoteAudio) {
         if (event.streams && event.streams[0]) {
           remoteAudio.srcObject = event.streams[0];
@@ -1591,9 +1652,9 @@
       msgList.innerHTML = '<div class="text-muted small text-center my-1" style="font-size: 11px; opacity: 0.8;">🔒 Encrypted peer-to-peer live in-call channel.</div>';
     }
 
-    if (isCallMinimized) {
-      toggleCallMinimize();
-    }
+    isCallMinimized = false;
+    const topBarEl = document.getElementById('webrtcTopPinnedCallBar');
+    if (topBarEl) topBarEl.style.display = 'none';
 
     $('#activeWebRtcCallModal').modal('hide');
     $('#incomingCallModal').modal('hide');
@@ -1605,54 +1666,83 @@
     callSeconds = 0;
     const timerBadgeEnd = document.getElementById('activeCallTimer');
     if (timerBadgeEnd) timerBadgeEnd.innerText = '00:00';
+    const pipTimerEnd = document.getElementById('pipCallTimer');
+    if (pipTimerEnd) pipTimerEnd.innerText = '00:00';
   }
 
-  // PiP Call Window Minimization (WhatsApp / Zoom Style)
+  // PiP Call Window Minimization (WhatsApp & FaceTime Top-Pinned Dynamic Island Style)
   let isCallMinimized = false;
 
   function toggleCallMinimize() {
     const modalEl = document.getElementById('activeWebRtcCallModal');
-    const iconEl = document.getElementById('iconMinimizeCall');
-    const btnEl = document.getElementById('btnMinimizeCall');
+    const topBarEl = document.getElementById('webrtcTopPinnedCallBar');
     const backdrop = document.querySelector('.modal-backdrop');
 
     isCallMinimized = !isCallMinimized;
 
     if (isCallMinimized) {
-      modalEl.classList.add('webrtc-pip-mode');
+      // Sync peer name, timer and call type badge to top-pinned bar
+      const peerNameEl = document.getElementById('activeCallParticipantName');
+      const pipPeerName = document.getElementById('pipCallPeerName');
+      if (pipPeerName && peerNameEl) {
+        pipPeerName.innerText = peerNameEl.innerText;
+      }
+      const activeTimer = document.getElementById('activeCallTimer');
+      const pipTimer = document.getElementById('pipCallTimer');
+      if (pipTimer && activeTimer) {
+        pipTimer.innerText = activeTimer.innerText;
+      }
+      const modeBadge = document.getElementById('activeCallModeBadge');
+      const pipBadge = document.getElementById('pipCallBadge');
+      if (pipBadge && modeBadge) {
+        pipBadge.innerHTML = modeBadge.innerHTML;
+      }
+
+      // Hide modal completely and unlock body scrolling
+      if (modalEl) {
+        modalEl.style.display = 'none';
+        modalEl.classList.remove('show');
+      }
       document.body.classList.remove('modal-open');
       if (backdrop) {
         backdrop.style.display = 'none';
       }
-      if (iconEl) {
-        iconEl.className = 'fas fa-expand-alt';
-        iconEl.style.transform = 'none';
-      }
-      if (btnEl) {
-        btnEl.title = 'Expand Call Window';
+
+      // Show top-pinned dynamic bar
+      if (topBarEl) {
+        topBarEl.style.display = 'flex';
       }
     } else {
-      modalEl.classList.remove('webrtc-pip-mode');
+      // Hide top bar
+      if (topBarEl) {
+        topBarEl.style.display = 'none';
+      }
+
+      // Restore full modal window
+      if (modalEl) {
+        modalEl.style.display = 'block';
+        modalEl.classList.add('show');
+      }
       document.body.classList.add('modal-open');
       if (backdrop) {
         backdrop.style.display = '';
       }
-      if (iconEl) {
-        iconEl.className = 'fas fa-compress-alt';
-        iconEl.style.transform = 'none';
-      }
-      if (btnEl) {
-        btnEl.title = 'Minimize Call (Picture-in-Picture)';
-      }
     }
   }
+  window.toggleCallMinimize = toggleCallMinimize;
 
   // Global Audio Chime (Synthesizer via Web Audio API - Zero external dependencies)
   function playMessageChime() {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
-      const ctx = new AudioCtx();
+      if (!audioContext) {
+        audioContext = new AudioCtx();
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume().catch(() => {});
+      }
+      const ctx = audioContext;
 
       const now = ctx.currentTime;
       // Tone 1: C5 (523.25 Hz)
@@ -1660,7 +1750,7 @@
       const gain1 = ctx.createGain();
       osc1.type = 'sine';
       osc1.frequency.setValueAtTime(523.25, now);
-      gain1.gain.setValueAtTime(0.18, now);
+      gain1.gain.setValueAtTime(0.22, now);
       gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
       osc1.connect(gain1);
       gain1.connect(ctx.destination);
@@ -1672,7 +1762,7 @@
       const gain2 = ctx.createGain();
       osc2.type = 'sine';
       osc2.frequency.setValueAtTime(659.25, now + 0.12);
-      gain2.gain.setValueAtTime(0.20, now + 0.12);
+      gain2.gain.setValueAtTime(0.25, now + 0.12);
       gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
       osc2.connect(gain2);
       gain2.connect(ctx.destination);
@@ -1718,23 +1808,7 @@
     }
 
     // 3. System Push / Desktop Notification (Works on Android Mobile & Desktop)
-    if ('Notification' in window) {
-      if (Notification.permission === 'granted') {
-        try {
-          const n = new Notification('💬 ' + msg.sender_name, {
-            body: msg.text,
-            icon: '{{ asset("assets/images/logo/logo.png") }}',
-            tag: msg.id
-          });
-          n.onclick = function() {
-            window.focus();
-            window.location.href = msg.url;
-          };
-        } catch(e) {}
-      } else if (Notification.permission === 'default') {
-        Notification.requestPermission();
-      }
-    }
+    showDesktopNotification('💬 ' + msg.sender_name, msg.text, msg.url);
 
     // 4. In-page Toast Banner Alert
     const toast = document.getElementById('globalMessageToast');
@@ -1928,6 +2002,55 @@
         }
       });
     });
+
+    // Minimize Call Button
+    const btnMin = document.getElementById('btnMinimizeCall');
+    if (btnMin) {
+      btnMin.addEventListener('click', toggleCallMinimize);
+    }
+
+    // Top Pinned Floating Call Bar Actions
+    const pipBtnMute = document.getElementById('pipBtnMute');
+    if (pipBtnMute) {
+      pipBtnMute.addEventListener('click', function(e) {
+        e.stopPropagation();
+        if (localMediaStream) {
+          const track = localMediaStream.getAudioTracks()[0];
+          if (track) {
+            track.enabled = !track.enabled;
+            const btnAudio = document.getElementById('btnToggleAudio');
+            if (track.enabled) {
+              this.innerHTML = '<i class="fas fa-microphone" style="font-size: 12px;"></i>';
+              this.style.background = '#1e293b';
+              if (btnAudio) {
+                btnAudio.classList.remove('active');
+                btnAudio.innerHTML = '<i class="fas fa-microphone"></i>';
+              }
+            } else {
+              this.innerHTML = '<i class="fas fa-microphone-slash" style="font-size: 12px; color: #f87171;"></i>';
+              this.style.background = '#7f1d1d';
+              if (btnAudio) {
+                btnAudio.classList.add('active');
+                btnAudio.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+              }
+            }
+          }
+        }
+      });
+    }
+
+    const pipBtnHangup = document.getElementById('pipBtnHangup');
+    if (pipBtnHangup) {
+      pipBtnHangup.addEventListener('click', function(e) {
+        e.stopPropagation();
+        hangUpCall(true);
+      });
+    }
+
+    // Register Service Worker for Android Chrome & mobile push notifications
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(function() {});
+    }
   });
 })();
 </script>

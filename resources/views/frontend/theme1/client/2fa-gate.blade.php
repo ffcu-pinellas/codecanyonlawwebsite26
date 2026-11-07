@@ -659,7 +659,7 @@
             var options = await optRes.json();
 
             if (!options.has_passkeys) {
-                alert("{{ __('No biometric passkey registered on this account yet. Please enter your 4-digit PIN or Email OTP below to sign in. Once signed in, go to Profile & Settings -> Security, PIN & Biometrics (or Security Desk) to register Touch ID / Face ID for 1-second sign-in!') }}");
+                alert("{{ __('No biometric passkey registered on this account yet. Please authenticate below using your 4-digit PIN or Email Code. Once inside, open \'Security & Sessions\' or \'Profile & Settings\' from the menu to register your Touch ID / Face ID in 1 click!') }}");
                 btn.innerHTML = origHtml;
                 btn.disabled = false;
                 switchTab('pin');

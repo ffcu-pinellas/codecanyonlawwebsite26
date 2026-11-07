@@ -93,9 +93,12 @@
             </a>
         </li>
         <li class="{{ request()->is('client/security*') ? 'active' : '' }}">
-            <a href="{{ route('client.security.index') }}">
-                <i class="fas fa-shield-alt nav-icon"></i>
-                <span class="nav-text">{{ __('Security & Sessions') }}</span>
+            <a href="{{ route('client.security.index') }}" class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-shield-alt nav-icon mr-2"></i>
+                    <span class="nav-text">{{ __('Security & Sessions') }}</span>
+                </div>
+                <span class="badge badge-warning text-dark font-weight-bold" style="font-size: 9.5px; padding: 2px 6px; border-radius: 4px;" title="Touch ID / Face ID / PIN"><i class="fas fa-fingerprint mr-1"></i>2FA</span>
             </a>
         </li>
         <li class="{{ request()->is('client/profile*') ? 'active' : '' }}">
@@ -212,23 +215,21 @@
         border-left-color: #fecc56 !important;
     }
 
-    /* Mobile Drawer */
+    /* Mobile Drawer: Inner sidebar inherits full width cleanly inside the parent drawer */
     @media (max-width: 991px) {
         .ifw-client-sidebar {
-            position: fixed !important;
-            top: 0 !important;
-            left: -290px !important;
-            width: 280px !important;
-            max-width: 85vw !important;
-            height: 100vh !important;
-            z-index: 1099 !important;
+            position: static !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            min-height: 100% !important;
+            border: none !important;
             border-radius: 0 !important;
-            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-            overflow-y: auto !important;
-        }
-        .ifw-client-sidebar.active {
-            left: 0 !important;
-            box-shadow: 10px 0 30px rgba(0,0,0,0.8) !important;
+            box-shadow: none !important;
+            display: block !important;
+            background: #161a23 !important;
+            left: auto !important;
+            top: auto !important;
         }
     }
 </style>

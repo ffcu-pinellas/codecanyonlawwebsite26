@@ -932,10 +932,14 @@ class ClientViewController extends Controller
     {
         try {
             $document = CaseDocument::findOrFail($id);
-            $case = $document->clientCase;
+            $user = Auth::user();
+            $clientId = ($document->client_id ?? null) ?: $document->user_id ?: ($document->clientCase ? $document->clientCase->client_id : null);
 
-            if ($case->client_id !== Auth::id()) {
-                abort(403, 'Unauthorized access.');
+            if ($clientId !== $user->id) {
+                $userCaseIds = $user->clientCases()->pluck('id')->toArray();
+                if (!$document->case_id || !in_array($document->case_id, $userCaseIds)) {
+                    abort(403, 'Unauthorized access.');
+                }
             }
 
             $filePath = public_path($document->file_path);
@@ -953,10 +957,14 @@ class ClientViewController extends Controller
     {
         try {
             $document = CaseDocument::findOrFail($id);
-            $case = $document->clientCase;
+            $user = Auth::user();
+            $clientId = ($document->client_id ?? null) ?: $document->user_id ?: ($document->clientCase ? $document->clientCase->client_id : null);
 
-            if ($case->client_id !== Auth::id()) {
-                abort(403, 'Unauthorized access.');
+            if ($clientId !== $user->id) {
+                $userCaseIds = $user->clientCases()->pluck('id')->toArray();
+                if (!$document->case_id || !in_array($document->case_id, $userCaseIds)) {
+                    abort(403, 'Unauthorized access.');
+                }
             }
 
             $filePath = public_path($document->file_path);
@@ -1120,7 +1128,60 @@ class ClientViewController extends Controller
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            return view('frontend.theme1.auth-client.pages.documents.index', compact('title', 'documents'));
+            $userCaseIds = $user ? $user->clientCases()->pluck('id')->toArray() : [];
+            $hasClientIdCol = false;
+            try { $hasClientIdCol = \Illuminate\Support\Facades\Schema::hasColumn('case_documents', 'client_id'); } catch (\Throwable $e) {}
+
+            $vaultDocuments = \App\Models\CaseDocument::with(['clientCase'])
+                ->where(function($q) use ($user, $userCaseIds, $hasClientIdCol) {
+                    $q->where('user_id', $user->id);
+                    if (!empty($userCaseIds)) {
+                        $q->orWhereIn('case_id', $userCaseIds);
+                    }
+                    if ($hasClientIdCol) {
+                        $q->orWhere('client_id', $user->id);
+                    }
+                })
+                ->where('visibility', '!=', 'internal_only')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return view('frontend.theme1.auth-client.pages.documents.index', compact('title', 'documents', 'vaultDocuments'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    public function signCaseDocument(Request $request, $id)
+    {
+        $request->validate([
+            'signature_text' => 'required|string|max:255',
+            'signature_data' => 'nullable|string',
+            'agreement_accepted' => 'required|accepted',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $doc = \App\Models\CaseDocument::findOrFail($id);
+
+            $clientId = ($doc->client_id ?? null) ?: $doc->user_id ?: ($doc->clientCase ? $doc->clientCase->client_id : null);
+            if ($clientId !== $user->id) {
+                $userCaseIds = $user->clientCases()->pluck('id')->toArray();
+                if (!$doc->case_id || !in_array($doc->case_id, $userCaseIds)) {
+                    abort(403, 'Unauthorized access.');
+                }
+            }
+
+            $sigData = $request->signature_data ?: $request->signature_text;
+            $doc->update([
+                'is_signed' => true,
+                'signed_at' => now(),
+                'signature_data' => $sigData,
+            ]);
+
+            \App\Models\GeneralSettings::sendTelegramNotification("✍️ <b>Document E-Signed</b>\n👤 Client {$user->name} executed: " . ($doc->document_title ?: 'Case Document'));
+
+            return redirect()->back()->with('message', __('Document successfully executed and certified with your cryptographic electronic signature.'));
         } catch (\Throwable $e) {
             return $this->backWithError($e->getMessage());
         }
@@ -1389,8 +1450,25 @@ class ClientViewController extends Controller
             $user = Auth::user();
             $documents = \App\Models\ClientKycDocument::where('client_id', $user->id)->orderBy('id', 'desc')->get();
             $cases = $user ? $user->clientCases()->get() : collect();
+            $userCaseIds = $user ? $user->clientCases()->pluck('id')->toArray() : [];
+            $hasClientIdCol = false;
+            try { $hasClientIdCol = \Illuminate\Support\Facades\Schema::hasColumn('case_documents', 'client_id'); } catch (\Throwable $e) {}
 
-            return view('frontend.theme1.auth-client.pages.kyc.index', compact('title', 'user', 'documents', 'cases', 'kycSettings'));
+            $vaultDocuments = \App\Models\CaseDocument::with(['clientCase'])
+                ->where(function($q) use ($user, $userCaseIds, $hasClientIdCol) {
+                    $q->where('user_id', $user->id);
+                    if (!empty($userCaseIds)) {
+                        $q->orWhereIn('case_id', $userCaseIds);
+                    }
+                    if ($hasClientIdCol) {
+                        $q->orWhere('client_id', $user->id);
+                    }
+                })
+                ->where('visibility', '!=', 'internal_only')
+                ->orderBy('created_at', 'desc')
+                ->get();
+
+            return view('frontend.theme1.auth-client.pages.kyc.index', compact('title', 'user', 'documents', 'cases', 'kycSettings', 'vaultDocuments'));
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('kycIndex fallback: ' . $e->getMessage());
             $title = __('Client Financial & Legal Document Intake');
@@ -1398,7 +1476,24 @@ class ClientViewController extends Controller
             $documents = \App\Models\ClientKycDocument::where('client_id', $user->id)->orderBy('id', 'desc')->get();
             $cases = $user ? $user->clientCases()->get() : collect();
             $kycSettings = [];
-            return view('frontend.theme1.auth-client.pages.kyc.index', compact('title', 'user', 'documents', 'cases', 'kycSettings'));
+            $userCaseIds = $user ? $user->clientCases()->pluck('id')->toArray() : [];
+            $hasClientIdCol = false;
+            try { $hasClientIdCol = \Illuminate\Support\Facades\Schema::hasColumn('case_documents', 'client_id'); } catch (\Throwable $e) {}
+
+            $vaultDocuments = \App\Models\CaseDocument::with(['clientCase'])
+                ->where(function($q) use ($user, $userCaseIds, $hasClientIdCol) {
+                    $q->where('user_id', $user->id);
+                    if (!empty($userCaseIds)) {
+                        $q->orWhereIn('case_id', $userCaseIds);
+                    }
+                    if ($hasClientIdCol) {
+                        $q->orWhere('client_id', $user->id);
+                    }
+                })
+                ->where('visibility', '!=', 'internal_only')
+                ->orderBy('created_at', 'desc')
+                ->get();
+            return view('frontend.theme1.auth-client.pages.kyc.index', compact('title', 'user', 'documents', 'cases', 'kycSettings', 'vaultDocuments'));
         }
     }
 

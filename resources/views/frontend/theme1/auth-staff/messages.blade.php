@@ -172,8 +172,8 @@
                 </div>
             </div>
             <div class="d-flex align-items-center flex-shrink-0" style="gap: 6px;">
-                <button type="button" class="btn btn-sm btn-outline-warning text-warning px-2 px-sm-3 font-weight-bold" onclick="requestStaffCall('audio')" title="{{ __('Request Voice Call with Supervisor') }}">
-                    <i class="fas fa-phone-alt mr-1"></i> <span class="d-none d-sm-inline">{{ __('Request Call') }}</span><span class="d-inline d-sm-none">{{ __('Call') }}</span>
+                <button type="button" class="btn btn-sm btn-outline-warning text-warning px-2 px-md-3 font-weight-bold" onclick="requestStaffCall('audio')" title="{{ __('Request Voice Call with Supervisor') }}" style="white-space: nowrap; border-radius: 6px;">
+                    <i class="fas fa-phone-alt mr-1"></i> <span class="d-none d-md-inline">{{ __('Request Call') }}</span><span class="d-inline d-md-none">{{ __('Call') }}</span>
                 </button>
                 <span class="badge d-none d-md-inline-block" style="background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); font-size: 10.5px;">
                     <i class="fas fa-shield-alt mr-1"></i> {{ __('Encrypted Channel') }}

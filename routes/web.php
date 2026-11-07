@@ -416,6 +416,7 @@ Route::prefix('/client')->middleware(['auth', 'security.setup'])->as('client.')-
     Route::post('/cases/{id}/upload-document', [ClientViewController::class, 'uploadCaseDocument'])->name('cases.upload-document');
     Route::get('/documents/preview/{id}', [ClientViewController::class, 'previewDocument'])->name('documents.preview');
     Route::get('/documents/download/{id}', [ClientViewController::class, 'downloadDocument'])->name('documents.download');
+    Route::post('/documents/{id}/sign-case-doc', [ClientViewController::class, 'signCaseDocument'])->name('documents.sign-case-doc');
 
     // client invoices
     Route::get('/invoices', [ClientViewController::class, 'invoicesIndex'])->name('invoices.index');

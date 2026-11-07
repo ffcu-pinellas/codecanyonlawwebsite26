@@ -174,6 +174,120 @@
         </div>
     @endif
 
+    <!-- VAULTED CASE DOCUMENTS & GENERATOR DELIVERABLES -->
+    <div class="portal-card mb-4">
+        <div class="portal-card-header d-flex justify-content-between align-items-center flex-wrap" style="gap:8px;">
+            <div>
+                <i class="fas fa-file-invoice text-warning mr-2"></i> {{ __('Case Document Vault & Legal Deliverables') }}
+            </div>
+            <span class="badge badge-warning text-dark px-3 py-1 font-weight-bold" style="font-size:11px;">
+                <i class="fas fa-lock mr-1"></i> {{ count($vaultDocuments ?? []) }} {{ __('Document(s) Vaulted') }}
+            </span>
+        </div>
+
+        <div class="doc-list">
+            @forelse($vaultDocuments ?? [] as $vDoc)
+                <div class="doc-item">
+                    <div class="row align-items-center">
+                        <div class="col-md-7 d-flex align-items-start mb-3 mb-md-0">
+                            <div class="icon-box mr-3">
+                                @if($vDoc->requires_signature && !$vDoc->is_signed)
+                                    <i class="fas fa-file-signature text-warning"></i>
+                                @elseif($vDoc->is_signed)
+                                    <i class="fas fa-file-shield text-success"></i>
+                                @else
+                                    <i class="fas fa-file-pdf"></i>
+                                @endif
+                            </div>
+                            <div>
+                                <h6 class="font-weight-bold text-white mb-1" style="font-size: 15px;">
+                                    {{ $vDoc->document_title ?: $vDoc->title ?: __('Case Legal Document') }}
+                                </h6>
+                                <p class="text-muted small mb-2" style="line-height: 1.4;">
+                                    {{ $vDoc->document_type ?: __('Standard / General Document') }}
+                                    @if($vDoc->clientCase)
+                                        &bull; <strong class="text-warning">{{ $vDoc->clientCase->case_number }}</strong> - {{ $vDoc->clientCase->title }}
+                                    @else
+                                        &bull; <span class="text-muted">{{ __('General Client Representation Vault') }}</span>
+                                    @endif
+                                </p>
+                                <div class="d-flex flex-wrap align-items-center small" style="gap: 10px;">
+                                    <span class="text-muted">
+                                        <i class="far fa-calendar-alt text-warning mr-1"></i> {{ $vDoc->created_at ? $vDoc->created_at->format('M d, Y') : 'Recent' }}
+                                    </span>
+                                    <span class="text-muted">&bull;</span>
+                                    @if($vDoc->is_signed)
+                                        <span class="badge-status text-success border border-success" style="background: rgba(34,197,94,0.15);">
+                                            <i class="fas fa-check-circle mr-1"></i> {{ __('Digitally Executed') }}
+                                            @if($vDoc->signed_at)
+                                                ({{ \Carbon\Carbon::parse($vDoc->signed_at)->format('M d, Y') }})
+                                            @endif
+                                        </span>
+                                    @elseif($vDoc->requires_signature)
+                                        <span class="badge-action text-warning border border-warning" style="background: rgba(254,204,86,0.1);">
+                                            <i class="fas fa-pen-nib mr-1"></i> {{ __('Client Signature Required') }}
+                                        </span>
+                                    @else
+                                        <span class="badge-status text-info border border-info" style="background: rgba(56,189,248,0.1);">
+                                            <i class="fas fa-shield-alt mr-1"></i> {{ __('Vaulted & Certified') }}
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-5 text-md-right">
+                            <div class="d-flex flex-wrap justify-content-md-end align-items-center" style="gap: 8px;">
+                                <a href="{{ route('client.documents.preview', $vDoc->id) }}" target="_blank" class="btn btn-gold btn-sm px-3 font-weight-bold">
+                                    <i class="fas fa-eye mr-1"></i> {{ __('View Document') }}
+                                </a>
+                                <a href="{{ route('client.documents.download', $vDoc->id) }}" class="btn btn-portal-secondary btn-sm px-3">
+                                    <i class="fas fa-download mr-1"></i> {{ __('Download') }}
+                                </a>
+                                @if($vDoc->requires_signature && !$vDoc->is_signed)
+                                    <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark px-3" data-toggle="collapse" data-target="#signCollapse-{{ $vDoc->id }}">
+                                        <i class="fas fa-signature mr-1"></i> {{ __('E-Sign Now') }}
+                                    </button>
+                                @endif
+                            </div>
+
+                            @if($vDoc->requires_signature && !$vDoc->is_signed)
+                                <div class="collapse mt-3 text-left" id="signCollapse-{{ $vDoc->id }}">
+                                    <div class="p-3 rounded border border-warning" style="background: #11151e;">
+                                        <h6 class="text-warning font-weight-bold small mb-2">
+                                            <i class="fas fa-pen mr-1"></i> {{ __('Adopt Electronic Signature') }}
+                                        </h6>
+                                        <form action="{{ route('client.documents.sign-case-doc', $vDoc->id) }}" method="POST">
+                                            @csrf
+                                            <div class="form-group mb-2">
+                                                <label class="small text-white font-weight-bold">{{ __('Full Legal Name (Electronic Signature):') }}</label>
+                                                <input type="text" name="signature_text" class="form-control form-control-sm text-white" value="{{ Auth::user()->name }}" required style="background: #161a23; border: 1px solid #28303f;">
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-3">
+                                                <input type="checkbox" class="custom-control-input" id="caseCheck-{{ $vDoc->id }}" name="agreement_accepted" value="1" required>
+                                                <label class="custom-control-label small text-muted" for="caseCheck-{{ $vDoc->id }}">
+                                                    {{ __('I understand that submitting this electronic signature constitutes a legally binding document execution under the U.S. E-SIGN Act.') }}
+                                                </label>
+                                            </div>
+                                            <button type="submit" class="btn btn-success btn-sm btn-block font-weight-bold">
+                                                <i class="fas fa-check mr-1"></i> {{ __('Confirm & Execute Electronic Signature') }}
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <div class="p-4 text-center text-muted">
+                    <i class="fas fa-folder-open fa-2x mb-2 text-warning" style="opacity: 0.5;"></i>
+                    <p class="small mb-0">{{ __('No case documents currently uploaded to your vault.') }}</p>
+                </div>
+            @endforelse
+        </div>
+    </div>
+
     <div class="portal-card mb-4">
         <div class="portal-card-header d-flex justify-content-between align-items-center flex-wrap" style="gap:8px;">
             <div>

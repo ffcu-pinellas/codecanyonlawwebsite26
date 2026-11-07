@@ -122,7 +122,7 @@
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="staff-portal-wrapper" style="background-color: #0a0c10; min-height: calc(100vh - 60px); display: flex; flex-direction: row; align-items: flex-start;">
     <!-- Sidebar Column -->
-    <div class="staff-sidebar-col d-none d-lg-block" id="staffSidebarCol" style="width: 250px; flex-shrink: 0; padding: 20px 0 20px 16px;">
+    <div class="staff-sidebar-col" id="staffSidebarCol" style="width: 250px; flex-shrink: 0; padding: 20px 0 20px 16px;">
         @include('frontend.theme1.auth-staff.menus.left-bar')
     </div>
 

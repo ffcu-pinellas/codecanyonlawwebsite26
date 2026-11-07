@@ -255,9 +255,19 @@
     window.launchStaffCall = function(type) {
         if (typeof window.initiateWebRtcCall === 'function') {
             window.initiateWebRtcCall({{ $staff->id }}, @json($staff->name), type, null);
-        } else {
-            alert('Calling system initializing. Please try again.');
+            return;
         }
+        let attempts = 0;
+        const checkInterval = setInterval(function() {
+            attempts++;
+            if (typeof window.initiateWebRtcCall === 'function') {
+                clearInterval(checkInterval);
+                window.initiateWebRtcCall({{ $staff->id }}, @json($staff->name), type, null);
+            } else if (attempts >= 10) {
+                clearInterval(checkInterval);
+                alert('Calling system initializing. Please allow microphone permissions and try again.');
+            }
+        }, 200);
     };
 
     document.addEventListener('DOMContentLoaded', function() {
