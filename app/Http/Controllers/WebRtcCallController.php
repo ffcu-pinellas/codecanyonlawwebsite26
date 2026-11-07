@@ -321,14 +321,16 @@ class WebRtcCallController extends Controller
         }
 
         if (!$callId) {
-            return response()->json(['active_call' => null]);
+            $latestUnread = $this->getLatestUnreadMessageForUser($user);
+            return response()->json(['active_call' => null, 'latest_unread' => $latestUnread]);
         }
 
         $callData = $this->getCallSession($callId);
 
         if (!$callData || in_array($callData['status'], ['ended', 'declined', 'missed', 'cancelled'])) {
             Cache::forget("user_active_call_{$user->id}");
-            return response()->json(['active_call' => null]);
+            $latestUnread = $this->getLatestUnreadMessageForUser($user);
+            return response()->json(['active_call' => null, 'latest_unread' => $latestUnread]);
         }
 
         // Auto-expire ringing calls older than 50 seconds as missed
@@ -347,10 +349,12 @@ class WebRtcCallController extends Controller
             Cache::put("call_session_{$callId}", $callData, 15);
             Cache::forget("user_active_call_{$callData['recipient_id']}");
             Cache::forget("user_active_call_{$callData['caller_id']}");
-            return response()->json(['active_call' => null]);
+            $latestUnread = $this->getLatestUnreadMessageForUser($user);
+            return response()->json(['active_call' => null, 'latest_unread' => $latestUnread]);
         }
 
-        return response()->json(['active_call' => $callData]);
+        $latestUnread = $this->getLatestUnreadMessageForUser($user);
+        return response()->json(['active_call' => $callData, 'latest_unread' => $latestUnread]);
     }
 
     /**
@@ -657,6 +661,7 @@ class WebRtcCallController extends Controller
         } elseif ($outcome === 'missed') {
             $msgText = "{$icon} Missed {$callType} Call";
             $telText = "⚠️ <b>Missed {$callType} Call</b>\nRecipient {$callData['recipient_name']} did not answer in time.";
+            $this->sendMissedCallEmail($callData, $callType);
         } else {
             return;
         }
@@ -684,5 +689,138 @@ class WebRtcCallController extends Controller
         }
 
         GeneralSettings::sendTelegramNotification($telText);
+    }
+
+    /**
+     * Dispatch High-Priority Missed Call Email Notification
+     */
+    protected function sendMissedCallEmail(array $callData, string $callType)
+    {
+        try {
+            $recipient = User::find($callData['recipient_id'] ?? null);
+            if (!$recipient || empty($recipient->email)) {
+                return;
+            }
+
+            $callerName = $callData['caller_name'] ?? 'Your CPA Expert Representative';
+            $companySettings = GeneralSettings::first();
+            $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+            $subject = "📞 Missed {$callType} Call from {$callerName} | {$companyName}";
+
+            $callbackUrl = !empty($callData['conversation_slug'])
+                ? route('client.conversation.index')
+                : route('staff.messages');
+
+            $timeStr = now()->format('M d, Y h:i A T');
+
+            $html = "
+            <div style='background: #0b0e14; color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, Helvetica, Arial, sans-serif; padding: 30px; border-radius: 12px; max-width: 560px; margin: 0 auto; border: 1px solid #28303f;'>
+                <div style='text-align: center; margin-bottom: 24px;'>
+                    <h2 style='color: #fecc56; margin: 0 0 6px 0; font-size: 24px;'>{$companyName}</h2>
+                    <p style='color: #94a3b8; font-size: 13px; margin: 0;'>Secure Client & Practitioner Portal</p>
+                </div>
+                <div style='background: #161a23; padding: 26px; border-radius: 10px; border: 1px solid #28303f; text-align: left;'>
+                    <div style='display: flex; align-items: center; margin-bottom: 16px;'>
+                        <div style='width: 44px; height: 44px; border-radius: 50%; background: rgba(239, 68, 68, 0.15); color: #ef4444; font-size: 22px; line-height: 44px; text-align: center; margin-right: 14px;'>
+                            📞
+                        </div>
+                        <div>
+                            <h3 style='margin: 0; color: #ffffff; font-size: 17px; font-weight: 700;'>Missed {$callType} Call</h3>
+                            <p style='margin: 0; color: #94a3b8; font-size: 12px;'>{$timeStr}</p>
+                        </div>
+                    </div>
+                    <p style='font-size: 14px; color: #cbd5e1; line-height: 1.5;'>
+                        Hello <strong>{$recipient->name}</strong>,
+                    </p>
+                    <p style='font-size: 13.5px; color: #94a3b8; line-height: 1.6;'>
+                        <strong>{$callerName}</strong> attempted to reach you via encrypted in-portal {$callType} call regarding your active file.
+                    </p>
+                    <div style='background: #11151e; border-left: 3px solid #fecc56; padding: 14px 18px; border-radius: 4px; margin: 20px 0;'>
+                        <span style='font-size: 13px; color: #e2e8f0;'>
+                            Please log in to your secure workspace to view pending case updates or return the call.
+                        </span>
+                    </div>
+                    <div style='text-align: center; margin-top: 26px;'>
+                        <a href='{$callbackUrl}' style='display: inline-block; background: linear-gradient(135deg, #fecc56, #f0a500); color: #000; font-weight: 700; font-size: 14px; text-decoration: none; padding: 12px 28px; border-radius: 8px;'>
+                            Return Call / View Conversation &rarr;
+                        </a>
+                    </div>
+                </div>
+                <div style='text-align: center; margin-top: 22px; font-size: 11px; color: #64748b;'>
+                    &copy; " . date('Y') . " {$companyName}. All communications are cryptographically protected.
+                </div>
+            </div>
+            ";
+
+            \Illuminate\Support\Facades\Mail::html($html, function ($msg) use ($recipient, $subject) {
+                $msg->to($recipient->email, $recipient->name)->subject($subject);
+            });
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Missed call email dispatch failed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Retrieve Latest Unread Message for Background & Inactive-Tab Notifications
+     */
+    protected function getLatestUnreadMessageForUser($user)
+    {
+        if (!$user) return null;
+
+        try {
+            // Check client conversations
+            $userConvoIds = DB::table('conversations_user')->where('user_id', $user->id)->pluck('conversation_id')->toArray();
+            if (!empty($userConvoIds)) {
+                $msg = Message::with(['user', 'conversation'])
+                    ->whereIn('conversation_id', $userConvoIds)
+                    ->where('user_id', '!=', $user->id)
+                    ->where('read', false)
+                    ->where('created_at', '>=', now()->subHours(12))
+                    ->latest()
+                    ->first();
+
+                if ($msg) {
+                    $senderName = $msg->user ? $msg->user->name : 'Counsel';
+                    $url = $user->hasRole('admin')
+                        ? route('admin.conversation.view-chat', $msg->conversation->slug ?? '')
+                        : route('client.conversation.index');
+
+                    return [
+                        'id' => 'msg_' . $msg->id,
+                        'sender_name' => $senderName,
+                        'text' => \Illuminate\Support\Str::limit($msg->text ?: $msg->message ?: 'Sent an attachment', 90),
+                        'time' => $msg->created_at->format('h:i A'),
+                        'url' => $url,
+                        'type' => 'chat'
+                    ];
+                }
+            }
+
+            // Check staff messages
+            $staffMsg = StaffMessage::with(['sender'])
+                ->where(function($q) use ($user) {
+                    $q->where('staff_user_id', $user->id)->orWhere('officer_user_id', $user->id);
+                })
+                ->where('sender_id', '!=', $user->id)
+                ->where('read', false)
+                ->where('created_at', '>=', now()->subHours(12))
+                ->latest()
+                ->first();
+
+            if ($staffMsg) {
+                $senderName = $staffMsg->sender ? $staffMsg->sender->name : 'Staff Officer';
+                $url = route('staff.messages');
+                return [
+                    'id' => 'staff_msg_' . $staffMsg->id,
+                    'sender_name' => $senderName,
+                    'text' => \Illuminate\Support\Str::limit($staffMsg->message ?: 'Sent an attachment', 90),
+                    'time' => $staffMsg->created_at->format('h:i A'),
+                    'url' => $url,
+                    'type' => 'staff'
+                ];
+            }
+        } catch (\Throwable $e) {}
+
+        return null;
     }
 }

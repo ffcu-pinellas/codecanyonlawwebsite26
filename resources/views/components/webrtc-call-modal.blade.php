@@ -241,7 +241,102 @@
       right: 12px;
     }
   }
+
+  /* WhatsApp / Zoom Style Picture-in-Picture Floating Window */
+  #activeWebRtcCallModal.webrtc-pip-mode {
+    position: fixed !important;
+    top: auto !important;
+    left: auto !important;
+    bottom: 24px !important;
+    right: 24px !important;
+    width: 320px !important;
+    max-width: 90vw !important;
+    height: auto !important;
+    z-index: 999999 !important;
+    pointer-events: none !important;
+    overflow: visible !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  #activeWebRtcCallModal.webrtc-pip-mode .modal-dialog {
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+  #activeWebRtcCallModal.webrtc-pip-mode .modal-content {
+    border-radius: 16px !important;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.95), 0 0 0 2px #fecc56 !important;
+    background: #0f172a !important;
+    overflow: hidden !important;
+  }
+  #activeWebRtcCallModal.webrtc-pip-mode .webrtc-voice-stage {
+    min-height: 110px !important;
+    padding: 12px !important;
+  }
+  #activeWebRtcCallModal.webrtc-pip-mode .call-pulse-ring,
+  #activeWebRtcCallModal.webrtc-pip-mode .call-avatar-placeholder {
+    width: 46px !important;
+    height: 46px !important;
+    font-size: 18px !important;
+  }
+  #activeWebRtcCallModal.webrtc-pip-mode .sound-wave-bars {
+    display: none !important;
+  }
+  #activeWebRtcCallModal.webrtc-pip-mode #webrtcVideoView {
+    height: 170px !important;
+  }
+  #activeWebRtcCallModal.webrtc-pip-mode #webrtcInCallChatDrawer {
+    display: none !important;
+  }
+  #activeWebRtcCallModal.webrtc-pip-mode .webrtc-control-bar {
+    padding: 8px 12px !important;
+    gap: 10px !important;
+  }
+  #activeWebRtcCallModal.webrtc-pip-mode .webrtc-action-btn {
+    width: 36px !important;
+    height: 36px !important;
+    font-size: 13px !important;
+  }
+  #activeWebRtcCallModal.webrtc-pip-mode #btnToggleScreenShare,
+  #activeWebRtcCallModal.webrtc-pip-mode #btnToggleCallChat {
+    display: none !important;
+  }
+  @media (max-width: 576px) {
+    #activeWebRtcCallModal.webrtc-pip-mode {
+      bottom: 14px !important;
+      right: 14px !important;
+      left: 14px !important;
+      width: calc(100vw - 28px) !important;
+      max-width: 100vw !important;
+    }
+  }
 </style>
+
+<!-- Global Floating Message Toast Notification Banner -->
+<div id="globalMessageToast" class="position-fixed" style="top: 20px; right: 20px; z-index: 9999999; display: none; max-width: 360px; width: calc(100vw - 40px); background: #161a23; border: 1.5px solid #fecc56; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.85); padding: 14px 16px; transition: all 0.3s ease;">
+  <div class="d-flex align-items-start" style="gap: 12px;">
+    <div style="width: 40px; height: 40px; border-radius: 50%; background: rgba(254,204,86,0.15); color: #fecc56; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; border: 1.5px solid #fecc56;">
+      💬
+    </div>
+    <div class="flex-grow-1" style="min-width: 0;">
+      <div class="d-flex justify-content-between align-items-center mb-1">
+        <strong class="text-white text-truncate" id="globalToastSender" style="font-size: 13.5px;">Sender</strong>
+        <small class="text-muted" id="globalToastTime">Now</small>
+      </div>
+      <p class="text-muted small mb-2 text-truncate" id="globalToastText" style="font-size: 12px; color: #cbd5e1 !important;">Message snippet...</p>
+      <div class="d-flex align-items-center" style="gap: 8px;">
+        <a href="#" id="globalToastReplyBtn" class="btn btn-warning btn-sm font-weight-bold text-dark px-3 py-1" style="font-size: 11.5px; border-radius: 6px;">
+          <i class="fas fa-reply mr-1"></i> View & Reply
+        </a>
+        <button type="button" class="btn btn-sm btn-link text-muted p-0" onclick="document.getElementById('globalMessageToast').style.display='none';" style="font-size: 11px;">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- 1. Incoming Call Prompt Modal -->
 <div class="modal fade" id="incomingCallModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" style="z-index: 1099;">
@@ -290,17 +385,20 @@
   <div class="modal-dialog webrtc-modal-dialog modal-dialog-centered" role="document">
     <div class="modal-content webrtc-call-window">
       <!-- Call Top Header -->
-      <div class="d-flex justify-content-between align-items-center px-4 py-2" style="background: rgba(17, 21, 30, 0.95); border-bottom: 1px solid #28303f;">
-        <div class="d-flex align-items-center">
-          <span class="badge px-2 py-1 mr-2" id="activeCallModeBadge" style="background: rgba(254,204,86,0.2); color: #fecc56; font-size: 11px;">
+      <div class="d-flex justify-content-between align-items-center px-3 py-2" style="background: rgba(17, 21, 30, 0.98); border-bottom: 1px solid #28303f;">
+        <div class="d-flex align-items-center" style="min-width: 0;">
+          <span class="badge px-2 py-1 mr-2" id="activeCallModeBadge" style="background: rgba(254,204,86,0.2); color: #fecc56; font-size: 11px; flex-shrink: 0;">
             <i class="fas fa-phone-alt mr-1"></i> Live Call
           </span>
-          <span class="text-white font-weight-bold small" id="activeCallParticipantName">Connecting...</span>
+          <span class="text-white font-weight-bold small text-truncate" id="activeCallParticipantName" style="max-width: 140px;">Connecting...</span>
         </div>
-        <div class="d-flex align-items-center">
-          <span class="badge badge-dark px-3 py-1 font-weight-bold text-warning" id="activeCallTimer" style="font-size: 12px; letter-spacing: 1px; background: #0f172a; border: 1px solid #334155;">
+        <div class="d-flex align-items-center" style="gap: 8px;">
+          <span class="badge px-3 py-1 font-weight-bold" id="activeCallTimer" style="font-size: 13px !important; font-weight: 800 !important; letter-spacing: 1px; background: #000000 !important; color: #fecc56 !important; border: 1.5px solid #fecc56 !important; text-shadow: 0 0 6px rgba(254,204,86,0.7) !important; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.5);">
             00:00
           </span>
+          <button type="button" class="btn btn-sm text-white p-0" id="btnMinimizeCall" title="Minimize Call (Floating PiP)" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); border-radius: 6px; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+            <i class="fas fa-window-minimize" id="iconMinimizeCall" style="font-size: 11px; transform: translateY(-3px);"></i>
+          </button>
         </div>
       </div>
 
@@ -752,6 +850,16 @@
       });
     }
 
+    // Pre-negotiate video transceiver so screen sharing and camera switching work instantly with zero negotiation delays
+    const hasVideoTrack = localMediaStream && localMediaStream.getVideoTracks().length > 0;
+    if (!hasVideoTrack) {
+      try {
+        peerConnection.addTransceiver('video', { direction: 'sendrecv' });
+      } catch(e) {
+        console.warn('Could not pre-add video transceiver:', e);
+      }
+    }
+
     // Initialize In-Call DataChannel (Peer-to-peer real-time messaging)
     initDataChannel();
 
@@ -798,6 +906,9 @@
       const remoteVideo = document.getElementById('webrtcRemoteVideo');
 
       if (event.track.kind === 'video' && remoteVideo) {
+        document.getElementById('webrtcVoiceView')?.classList.add('d-none');
+        document.getElementById('webrtcVideoView')?.classList.remove('d-none');
+
         if (event.streams && event.streams[0]) {
           remoteVideo.srcObject = event.streams[0];
         } else {
@@ -917,7 +1028,7 @@
     list.scrollTop = list.scrollHeight;
   }
 
-  // In-Call Screen Sharing
+  // In-Call Screen Sharing (Universal Desktop & Mobile Hardened)
   async function toggleScreenShare() {
     if (!peerConnection) {
       alert('Active call connection required to share screen.');
@@ -929,58 +1040,107 @@
       return;
     }
 
-    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-      alert('Screen sharing is not supported by this browser. Please use Chrome, Edge, Safari or Firefox on desktop/laptop.');
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    // 1. Check if getDisplayMedia is supported
+    if (navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function') {
+      try {
+        // IMPORTANT: Never pass desktop-only constraints like cursor or displaySurface on mobile!
+        const displayConstraints = isMobile
+          ? { video: true, audio: false }
+          : { video: { cursor: 'always', frameRate: { max: 20 } }, audio: false };
+
+        screenStream = await navigator.mediaDevices.getDisplayMedia(displayConstraints);
+      } catch(err) {
+        if (err.name === 'NotAllowedError') {
+          return; // User cancelled prompt
+        }
+        console.warn('getDisplayMedia attempt notice:', err);
+        if (!isMobile) {
+          alert('Could not start screen sharing: ' + (err.message || 'Permission denied'));
+          return;
+        }
+      }
+    }
+
+    // 2. Smart Mobile Fallback (e.g. iOS Safari which restricts web screen capture)
+    if (!screenStream && isMobile) {
+      const useCam = confirm('Live screen recording is restricted by your mobile operating system browser. Would you like to share your camera feed to display documents or tax paperwork instead?');
+      if (!useCam) return;
+      try {
+        screenStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' } },
+          audio: false
+        });
+      } catch(err) {
+        alert('Could not access camera: ' + (err.message || 'Permission denied'));
+        return;
+      }
+    }
+
+    if (!screenStream) {
+      alert('Screen sharing is not supported by this browser. Please use Chrome on Android, or Chrome/Edge/Safari on desktop.');
       return;
     }
 
-    try {
-      screenStream = await navigator.mediaDevices.getDisplayMedia({
-        video: { cursor: 'always' },
-        audio: false
-      });
+    const screenTrack = screenStream.getVideoTracks()[0];
+    if (!screenTrack) return;
 
-      const screenTrack = screenStream.getVideoTracks()[0];
-      if (!screenTrack) return;
-
-      screenTrack.onended = function() {
-        stopScreenShare();
-      };
-
-      const senders = peerConnection.getSenders();
-      const videoSender = senders.find(s => s.track && s.track.kind === 'video');
-
-      if (videoSender) {
-        originalCameraTrack = videoSender.track;
-        await videoSender.replaceTrack(screenTrack);
-      } else {
-        peerConnection.addTrack(screenTrack, screenStream);
-      }
-
-      const localVid = document.getElementById('webrtcLocalVideo');
-      if (localVid) {
-        localVid.srcObject = screenStream;
-        localVid.muted = true;
-        localVid.play().catch(() => {});
-      }
-
-      document.getElementById('webrtcVoiceView')?.classList.add('d-none');
-      document.getElementById('webrtcVideoView')?.classList.remove('d-none');
-
-      isScreenSharing = true;
-      const btn = document.getElementById('btnToggleScreenShare');
-      if (btn) {
-        btn.classList.add('active');
-        btn.title = 'Stop Sharing Screen';
-      }
-
-      appendInCallMessage('System', '🖥️ Screen sharing started', true);
-    } catch(err) {
-      if (err.name !== 'NotAllowedError') {
-        console.error('Screen share error:', err);
-        alert('Could not start screen sharing: ' + (err.message || 'Permission denied'));
-      }
+    // Optimize text/document rendering quality
+    if ('contentHint' in screenTrack) {
+      screenTrack.contentHint = 'detail';
     }
+
+    screenTrack.onended = function() {
+      stopScreenShare();
+    };
+
+    const senders = peerConnection.getSenders();
+    let videoSender = senders.find(s => s.track && s.track.kind === 'video');
+    if (!videoSender) {
+      videoSender = senders.find(s => !s.track || s.track.kind === 'video');
+    }
+
+    if (videoSender) {
+      originalCameraTrack = videoSender.track;
+      await videoSender.replaceTrack(screenTrack);
+
+      // Bandwidth hardening: 1.5 Mbps bitrate limit with 15 fps max for smooth text without heavy internet delay
+      try {
+        if (videoSender.getParameters) {
+          const params = videoSender.getParameters();
+          if (!params.encodings || params.encodings.length === 0) {
+            params.encodings = [{}];
+          }
+          params.encodings[0].maxBitrate = 1500000; // 1.5 Mbps
+          params.encodings[0].maxFramerate = 15;
+          await videoSender.setParameters(params);
+        }
+      } catch(e) {
+        console.warn('Could not set encoding params:', e);
+      }
+    } else {
+      peerConnection.addTrack(screenTrack, screenStream);
+    }
+
+    const localVid = document.getElementById('webrtcLocalVideo');
+    if (localVid) {
+      localVid.srcObject = screenStream;
+      localVid.muted = true;
+      localVid.play().catch(() => {});
+    }
+
+    document.getElementById('webrtcVoiceView')?.classList.add('d-none');
+    document.getElementById('webrtcVideoView')?.classList.remove('d-none');
+
+    isScreenSharing = true;
+    const btn = document.getElementById('btnToggleScreenShare');
+    if (btn) {
+      btn.classList.add('active');
+      btn.title = 'Stop Sharing Screen';
+    }
+
+    appendInCallMessage('System', '🖥️ Screen sharing started', true);
   }
 
   async function stopScreenShare() {
@@ -1442,6 +1602,10 @@
       msgList.innerHTML = '<div class="text-muted small text-center my-1" style="font-size: 11px; opacity: 0.8;">🔒 Encrypted peer-to-peer live in-call channel.</div>';
     }
 
+    if (isCallMinimized) {
+      toggleCallMinimize();
+    }
+
     $('#activeWebRtcCallModal').modal('hide');
     $('#incomingCallModal').modal('hide');
     activeCallSession = null;
@@ -1454,17 +1618,170 @@
     if (timerBadgeEnd) timerBadgeEnd.innerText = '00:00';
   }
 
-  // 13. Global Call Check Loop (Runs every 3 seconds across master layouts)
+  // PiP Call Window Minimization (WhatsApp / Zoom Style)
+  let isCallMinimized = false;
+
+  function toggleCallMinimize() {
+    const modalEl = document.getElementById('activeWebRtcCallModal');
+    const iconEl = document.getElementById('iconMinimizeCall');
+    const btnEl = document.getElementById('btnMinimizeCall');
+    const backdrop = document.querySelector('.modal-backdrop');
+
+    isCallMinimized = !isCallMinimized;
+
+    if (isCallMinimized) {
+      modalEl.classList.add('webrtc-pip-mode');
+      document.body.classList.remove('modal-open');
+      if (backdrop) {
+        backdrop.style.display = 'none';
+      }
+      if (iconEl) {
+        iconEl.className = 'fas fa-expand-alt';
+        iconEl.style.transform = 'none';
+      }
+      if (btnEl) {
+        btnEl.title = 'Expand Call Window';
+      }
+    } else {
+      modalEl.classList.remove('webrtc-pip-mode');
+      document.body.classList.add('modal-open');
+      if (backdrop) {
+        backdrop.style.display = '';
+      }
+      if (iconEl) {
+        iconEl.className = 'fas fa-window-minimize';
+        iconEl.style.transform = 'translateY(-3px)';
+      }
+      if (btnEl) {
+        btnEl.title = 'Minimize Call (Picture-in-Picture)';
+      }
+    }
+  }
+
+  // Global Audio Chime (Synthesizer via Web Audio API - Zero external dependencies)
+  function playMessageChime() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+
+      const now = ctx.currentTime;
+      // Tone 1: C5 (523.25 Hz)
+      const osc1 = ctx.createOscillator();
+      const gain1 = ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(523.25, now);
+      gain1.gain.setValueAtTime(0.18, now);
+      gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+      osc1.connect(gain1);
+      gain1.connect(ctx.destination);
+      osc1.start(now);
+      osc1.stop(now + 0.35);
+
+      // Tone 2: E5 (659.25 Hz) slightly delayed
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(659.25, now + 0.12);
+      gain2.gain.setValueAtTime(0.20, now + 0.12);
+      gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start(now + 0.12);
+      osc2.stop(now + 0.55);
+    } catch(e) {}
+  }
+
+  let lastNotifiedMsgId = null;
+  let originalPageTitle = document.title;
+  let titleFlashInterval = null;
+
+  function handleIncomingUnreadMessage(msg) {
+    if (!msg || !msg.id) return;
+    if (msg.id === lastNotifiedMsgId) return;
+    lastNotifiedMsgId = msg.id;
+
+    const isOnChatPage = window.location.pathname.includes('/conversation') ||
+                         window.location.pathname.includes('/messages') ||
+                         window.location.pathname.includes('/chat');
+
+    // If already viewing chat actively, avoid duplicate popup
+    if (isOnChatPage && !document.hidden) {
+      return;
+    }
+
+    // 1. Play message chime
+    playMessageChime();
+
+    // 2. Flash browser page title
+    if (!titleFlashInterval) {
+      let isAlt = false;
+      titleFlashInterval = setInterval(function() {
+        if (!document.hidden && isOnChatPage) {
+          clearInterval(titleFlashInterval);
+          titleFlashInterval = null;
+          document.title = originalPageTitle;
+          return;
+        }
+        document.title = isAlt ? '💬 (' + (msg.sender_name || '1') + ') New Message!' : originalPageTitle;
+        isAlt = !isAlt;
+      }, 1200);
+    }
+
+    // 3. System Push / Desktop Notification (Works on Android Mobile & Desktop)
+    if ('Notification' in window) {
+      if (Notification.permission === 'granted') {
+        try {
+          const n = new Notification('💬 ' + msg.sender_name, {
+            body: msg.text,
+            icon: '{{ asset("assets/images/logo/logo.png") }}',
+            tag: msg.id
+          });
+          n.onclick = function() {
+            window.focus();
+            window.location.href = msg.url;
+          };
+        } catch(e) {}
+      } else if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+
+    // 4. In-page Toast Banner Alert
+    const toast = document.getElementById('globalMessageToast');
+    if (toast) {
+      document.getElementById('globalToastSender').innerText = msg.sender_name;
+      document.getElementById('globalToastTime').innerText = msg.time || 'Just now';
+      document.getElementById('globalToastText').innerText = msg.text;
+      const replyBtn = document.getElementById('globalToastReplyBtn');
+      if (replyBtn) {
+        replyBtn.href = msg.url;
+      }
+      toast.style.display = 'block';
+      setTimeout(function() {
+        if (toast.style.display === 'block') {
+          toast.style.display = 'none';
+        }
+      }, 9000);
+    }
+  }
+
+  // 13. Global Call & Message Check Loop (Runs every 3 seconds across master layouts)
   if (currentUserId > 0) {
     setInterval(() => {
-      // Don't poll if already in an active call modal
-      if ($('#activeWebRtcCallModal').hasClass('show')) return;
-
       fetch("{{ route('portal.call.check') }}", {
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
       })
       .then(r => r.json())
       .then(res => {
+        // Handle unread messages globally across all pages
+        if (res && res.latest_unread) {
+          handleIncomingUnreadMessage(res.latest_unread);
+        }
+
+        // Don't process incoming calls if already in an active call modal
+        if ($('#activeWebRtcCallModal').hasClass('show')) return;
+
         if (!res || !res.active_call) {
           if ($('#incomingCallModal').hasClass('show')) {
             stopTelephoneRing();
@@ -1510,6 +1827,17 @@
     if (btnAccept) btnAccept.addEventListener('click', acceptIncomingCall);
     if (btnDecline) btnDecline.addEventListener('click', () => declineIncomingCall('Declined by user'));
     if (btnEnd) btnEnd.addEventListener('click', () => hangUpCall(true));
+
+    const btnMin = document.getElementById('btnMinimizeCall');
+    if (btnMin) btnMin.addEventListener('click', toggleCallMinimize);
+
+    // One-time prompt for browser notifications on first user gesture
+    window.addEventListener('click', function reqPerm() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+      window.removeEventListener('click', reqPerm);
+    }, { once: true });
 
     if (btnAudio) {
       btnAudio.addEventListener('click', function() {

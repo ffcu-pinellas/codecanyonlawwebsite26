@@ -318,6 +318,9 @@
                             </form>
                         </div>
                     </div>
+
+                    <!-- WebAuthn Biometric Passkeys (Touch ID / Face ID / Windows Hello) -->
+                    @include('components.biometric-passkey-card')
                 </div>
             </div>
         </div>

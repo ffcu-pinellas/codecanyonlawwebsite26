@@ -1137,8 +1137,26 @@ class StaffViewController extends Controller
     public function invoicesIndex()
     {
         try {
+            $user = Auth::user();
             $title = __('Client Invoices');
-            $invoices = \App\Models\Invoice::with(['client', 'clientCase'])->orderBy('created_at', 'desc')->get();
+
+            // Access control: Supervisors and admins see all; regular staff strictly see only their assigned clients/cases
+            $isSupervisorOrAdmin = $user->hasAnyRole(['admin', 'supervisor']) || $user->is_admin;
+
+            if ($isSupervisorOrAdmin) {
+                $invoices = \App\Models\Invoice::with(['client', 'clientCase'])->orderBy('created_at', 'desc')->get();
+            } else {
+                $assignedClientIds = \App\Models\User::where('assigned_attorney_id', $user->id)->pluck('id')->toArray();
+                $assignedCaseIds = \App\Models\ClientCase::where('attorney_id', $user->id)->pluck('id')->toArray();
+
+                $invoices = \App\Models\Invoice::with(['client', 'clientCase'])
+                    ->where(function ($query) use ($assignedClientIds, $assignedCaseIds) {
+                        $query->whereIn('client_id', $assignedClientIds)
+                              ->orWhereIn('client_case_id', $assignedCaseIds);
+                    })
+                    ->orderBy('created_at', 'desc')
+                    ->get();
+            }
 
             return view('frontend.theme1.auth-staff.pages.invoices.index', compact('title', 'invoices'));
         } catch (\Throwable $e) {
@@ -1149,7 +1167,19 @@ class StaffViewController extends Controller
     public function invoiceShow($id)
     {
         try {
+            $user = Auth::user();
             $invoice = \App\Models\Invoice::with(['client', 'clientCase.attorney'])->findOrFail($id);
+
+            // Access check: Only allow if supervisor/admin OR assigned to client/case
+            $isSupervisorOrAdmin = $user->hasAnyRole(['admin', 'supervisor']) || $user->is_admin;
+            if (!$isSupervisorOrAdmin) {
+                $isClientAssigned = ($invoice->client && $invoice->client->assigned_attorney_id == $user->id);
+                $isCaseAssigned = ($invoice->clientCase && $invoice->clientCase->attorney_id == $user->id);
+
+                if (!$isClientAssigned && !$isCaseAssigned) {
+                    return redirect()->route('staff.invoices.index')->with('error', __('Access denied: You are not assigned to this client or case.'));
+                }
+            }
 
             $title = __('Invoice #') . $invoice->invoice_number;
             $companySettings = \App\Models\GeneralSettings::first();

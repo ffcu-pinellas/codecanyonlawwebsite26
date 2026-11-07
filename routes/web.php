@@ -294,6 +294,15 @@ Route::get('pages/{slug}', [GuestViewController::class, 'dynamicPage'])->name('p
 // download file
 Route::middleware(['auth'])->group(function () {
     Route::get('/download-chatting-file/{message}', [GuestViewController::class, 'downloadMessageFile'])->name('download.chatting-file');
+
+    // Universal WebAuthn Biometric Passkeys (Touch ID / Face ID / Windows Hello) for All Portals (Client, Staff, Admin)
+    Route::prefix('auth/passkey')->as('auth.passkey.')->group(function () {
+        Route::post('/register-options', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyRegisterOptions'])->name('register-options');
+        Route::post('/register-verify', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyRegisterVerify'])->name('register-verify');
+        Route::get('/auth-options', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyAuthOptions'])->name('auth-options');
+        Route::post('/auth-verify', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyAuthVerify'])->name('auth-verify');
+        Route::delete('/remove/{index}', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyRemove'])->name('remove');
+    });
 });
 
 

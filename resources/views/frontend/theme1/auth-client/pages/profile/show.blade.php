@@ -310,6 +310,11 @@ body.light-mode .profile-card-body, html.light-mode .profile-card-body {
         <!-- ==================== TAB 2: SECURITY & 4-DIGIT PIN ==================== -->
         <div class="tab-pane fade" id="pane-security" role="tabpanel">
             <div class="row">
+                <div class="col-12 mb-2">
+                    @include('components.biometric-passkey-card')
+                </div>
+            </div>
+            <div class="row">
                 <!-- 4-Digit Security PIN Section -->
                 <div class="col-lg-6 mb-4">
                     <div class="profile-card h-100" id="pin-section">
