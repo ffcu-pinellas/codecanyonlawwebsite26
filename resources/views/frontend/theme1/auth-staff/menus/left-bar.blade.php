@@ -31,7 +31,7 @@
                 ID: {{ Auth::user()->staffDetail?->staff_id ?: 'STF-' . sprintf('%04d', Auth::id()) }}
             </span>
             @php
-                $isClocked = \App\Models\StaffTimeLog::where('staff_user_id', Auth::id())->whereNull('clocked_out_at')->exists();
+                $isClocked = Auth::check() && \App\Models\StaffTimeLog::where('user_id', Auth::id())->whereNull('clocked_out_at')->exists();
             @endphp
             @if($isClocked)
                 <span class="badge" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-size: 10px;">
