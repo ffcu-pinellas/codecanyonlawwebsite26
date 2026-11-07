@@ -433,7 +433,7 @@ class AdminController extends Controller
 
                 $clientName = $client ? htmlspecialchars($client->name) : ($conversation->name ?: 'Client #' . $conversation->id);
                 $clientEmail = $client ? htmlspecialchars($client->email) : '';
-                $clientAvatar = ($client && !empty($client->profile_photo_url)) ? asset($client->profile_photo_url) : asset('backend/assets/img/profile/other.png');
+                $clientAvatar = ($client && !empty($client->profile_photo_url)) ? $client->profile_photo_url : asset('backend/assets/img/profile/other.png');
                 
                 $lastMessage = $conversation->messages()->latest('id')->first() ?: ($conversation->messages ? $conversation->messages->last() : null);
                 $lastText = $lastMessage ? htmlspecialchars($lastMessage->text ?: $lastMessage->message ?: 'Sent an attachment') : '<em class="text-muted">No messages yet</em>';
@@ -452,7 +452,7 @@ class AdminController extends Controller
 
                 $row[] = '<tr style="cursor: pointer;" onclick="if (!event.target.closest(\'a\') && !event.target.closest(\'button\')) { window.location.href=\'' . $openUrl . '\'; }">
                         <td width="5%" class="align-middle text-center">' . ($key + 1) . '</td>
-                        <td width="8%" class="align-middle text-center"><img src="' . $clientAvatar . '" alt="" class="rounded-circle" style="width:40px;height:40px;object-fit:cover;"></td>
+                        <td width="8%" class="align-middle text-center"><img src="' . $clientAvatar . '" alt="" class="rounded-circle" style="width:40px;height:40px;object-fit:cover;" onerror="this.onerror=null;this.src=\'' . asset('backend/assets/img/profile/other.png') . '\';"></td>
                         <td width="22%" class="align-middle"><strong>' . $clientName . '</strong>' . $unreadBadge . ($clientEmail ? '<br><small class="text-muted">' . $clientEmail . '</small>' : '') . '</td>
                         <td class="align-middle"><a href="' . $openUrl . '" class="text-decoration-none text-light d-block">
                         <p class="px-0 pb-1 my-0">' . $lastText . '</p>

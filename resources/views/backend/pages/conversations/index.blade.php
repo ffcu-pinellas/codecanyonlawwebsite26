@@ -164,7 +164,7 @@
                                 <tbody>
                                     @forelse($staffMembers ?? [] as $idx => $s)
                                         @php
-                                            $sAvatar = !empty($s->profile_photo_url) ? asset($s->profile_photo_url) : asset('backend/assets/img/profile/other.png');
+                                            $sAvatar = !empty($s->profile_photo_url) ? $s->profile_photo_url : asset('backend/assets/img/profile/other.png');
                                             $sRole = $s->staffDetail ? ($s->staffDetail->designation ?: 'Staff Specialist') : 'Staff Specialist';
                                             $chatUrl = route('admin.staff.messages', $s->id);
                                             $lastMsgText = $s->last_msg ? htmlspecialchars($s->last_msg->message) : '<em class="text-muted">No messages exchanged yet</em>';
@@ -174,7 +174,7 @@
                                         <tr style="cursor: pointer;" onclick="if (!event.target.closest('a') && !event.target.closest('button')) { window.location.href='{{ $chatUrl }}'; }">
                                             <td class="align-middle text-center">{{ $idx + 1 }}</td>
                                             <td class="align-middle text-center">
-                                                <img src="{{ $sAvatar }}" alt="" class="rounded-circle" style="width: 42px; height: 42px; object-fit: cover; border: 2px solid {{ $s->is_clocked_in ? '#22c55e' : '#64748b' }};">
+                                                <img src="{{ $sAvatar }}" alt="" class="rounded-circle" style="width: 42px; height: 42px; object-fit: cover; border: 2px solid {{ $s->is_clocked_in ? '#22c55e' : '#64748b' }};" onerror="this.onerror=null;this.src='{{ asset('backend/assets/img/profile/other.png') }}';">
                                             </td>
                                             <td class="align-middle">
                                                 <div class="font-weight-bold text-white d-flex align-items-center">

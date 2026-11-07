@@ -119,7 +119,7 @@
                                     @php
                                         $isMine = ($message->user_id === Auth::id());
                                         $msgBody = $message->text ?: $message->message;
-                                        $userAvatar = $message->user?->profile_photo_url ? asset($message->user->profile_photo_url) : asset('backend/assets/img/profile/other.png');
+                                        $userAvatar = $message->user?->profile_photo_url ?: asset('backend/assets/img/profile/other.png');
                                         $senderName = $message->user ? $message->user->name : ($isMine ? 'Admin Counsel' : 'Client');
                                     @endphp
 
@@ -135,13 +135,13 @@
                                                 <span class="msg_time_send">{{ $message->created_at->format('M d, h:i A') }}</span>
                                             </div>
                                             <div class="img_cont_msg ml-2">
-                                                <img src="{{ $userAvatar }}" class="rounded-circle user_img_msg" title="{{ $senderName }}">
+                                                <img src="{{ $userAvatar }}" class="rounded-circle user_img_msg" title="{{ $senderName }}" onerror="this.onerror=null;this.src='{{ asset('backend/assets/img/profile/other.png') }}';">
                                             </div>
                                         </div>
                                     @else
                                         <div class="d-flex justify-content-start mb-3 msg-item" data-msg-id="{{ $message->id }}">
                                             <div class="img_cont_msg mr-2">
-                                                <img src="{{ $userAvatar }}" class="rounded-circle user_img_msg" title="{{ $senderName }}">
+                                                <img src="{{ $userAvatar }}" class="rounded-circle user_img_msg" title="{{ $senderName }}" onerror="this.onerror=null;this.src='{{ asset('backend/assets/img/profile/other.png') }}';">
                                             </div>
                                             <div class="msg_cotainer">
                                                 <div class="font-weight-bold text-warning small mb-1">{{ $senderName }}</div>

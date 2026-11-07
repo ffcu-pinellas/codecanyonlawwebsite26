@@ -372,6 +372,32 @@
   let titleFlashInterval = null;
   const originalDocTitle = document.title;
 
+  // Universal SDP Sanitizer (RFC 8830 Unified Plan compliance & Chromium parser protection)
+  function sanitizeSdp(sdp) {
+    if (!sdp || typeof sdp !== 'string') return sdp;
+
+    // 1. Normalize line endings to standard CRLF (\r\n)
+    let rawLines = sdp.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+
+    // 2. Filter out problematic legacy duplicate ssrc msid lines that crash modern Chromium parsers:
+    // e.g. "a=ssrc:XXXX msid:YYYY ZZZZ Invalid SDP line."
+    let cleanLines = [];
+    for (let i = 0; i < rawLines.length; i++) {
+      const line = rawLines[i].trim();
+      if (!line) continue; // skip accidental blank lines
+
+      // If line is legacy Plan B "a=ssrc:... msid:...", filter it out.
+      // Modern Unified Plan uses "a=msid:..." at the media section level per RFC 8830.
+      if (line.startsWith('a=ssrc:') && line.indexOf(' msid:') !== -1) {
+        continue;
+      }
+      cleanLines.push(line);
+    }
+
+    // 3. Strict RFC 4566 line termination with trailing CRLF
+    return cleanLines.join('\r\n') + '\r\n';
+  }
+
   // Ask for notification permission unobtrusively on first click
   document.addEventListener('click', function requestNotifOnce() {
     if ('Notification' in window && Notification.permission === 'default') {
@@ -737,19 +763,19 @@
     // Create RTCPeerConnection and bind local stream
     setupPeerConnection();
 
-    // Create Offer with receive expectations
-    const offer = await peerConnection.createOffer({
-      offerToReceiveAudio: true,
-      offerToReceiveVideo: (callType === 'video')
-    });
+    // In Unified Plan, local tracks are already attached; calling createOffer() cleanly
+    // without legacy Plan B dictionary flags prevents duplicate a=ssrc: msid: collision lines!
+    const offer = await peerConnection.createOffer();
     await peerConnection.setLocalDescription(offer);
 
     // Wait up to 600ms for initial STUN/host candidates to be collected
     await waitForIceGathering(peerConnection, 600);
 
+    const cleanLocalOfferSdp = sanitizeSdp(peerConnection.localDescription.sdp);
+
     const fullOffer = {
       type: peerConnection.localDescription.type || 'offer',
-      sdp: peerConnection.localDescription.sdp
+      sdp: cleanLocalOfferSdp
     };
 
     const initialCandidates = pendingLocalCandidates.slice();
@@ -838,9 +864,10 @@
 
         if (isCaller && answerObj && answerObj.sdp && peerConnection && (peerConnection.signalingState === 'have-local-offer')) {
           try {
+            const cleanAnswerSdp = sanitizeSdp(answerObj.sdp);
             await peerConnection.setRemoteDescription({
               type: answerObj.type || 'answer',
-              sdp: answerObj.sdp
+              sdp: cleanAnswerSdp
             });
             console.log('Caller set remote description from answer successfully!');
             const statusEl = document.getElementById('activeVoiceStatusText');
@@ -940,10 +967,13 @@
     }
 
     try {
+      // 1. Sanitize incoming Offer SDP to eliminate any duplicate ssrc msid lines that crash Chromium/Android parsers
+      const cleanOfferSdp = sanitizeSdp(offerObj.sdp);
+
       // 1. Set Remote Description (the Offer)
       await peerConnection.setRemoteDescription({
         type: offerObj.type || 'offer',
-        sdp: offerObj.sdp
+        sdp: cleanOfferSdp
       });
 
       // 2. Create and Set Local Description (the Answer) FIRST so state becomes stable
@@ -972,9 +1002,10 @@
       }
 
       // 4. Send Answer to server immediately without artificial delay
+      const cleanLocalAnswerSdp = sanitizeSdp(peerConnection.localDescription.sdp);
       const fullAnswer = {
         type: peerConnection.localDescription.type || 'answer',
-        sdp: peerConnection.localDescription.sdp
+        sdp: cleanLocalAnswerSdp
       };
 
       const batchCandidates = pendingLocalCandidates.slice();

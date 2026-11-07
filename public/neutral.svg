@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="neutGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1f2937"/>
+      <stop offset="100%" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="neutAcc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fecc56"/>
+      <stop offset="100%" stop-color="#f0a500"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="58" fill="url(#neutGrad)" stroke="#fecc56" stroke-width="3"/>
+  <circle cx="60" cy="46" r="20" fill="#e2e8f0"/>
+  <path d="M26 105 C28 78 44 72 60 72 C76 72 92 78 94 105 Z" fill="#374151"/>
+  <!-- Balance scale emblem -->
+  <path d="M60 22 L60 30 M52 26 L68 26 M52 26 L48 34 M68 26 L72 34" stroke="url(#neutAcc)" stroke-width="2" fill="none"/>
+</svg>

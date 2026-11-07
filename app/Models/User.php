@@ -180,4 +180,35 @@ class User extends Authenticatable
     {
         return $this->hasMany(SystemAuditLog::class, 'user_id');
     }
+
+    /**
+     * Get the URL to the user's profile photo with resilient fallback
+     *
+     * @return string
+     */
+    public function getProfilePhotoUrlAttribute()
+    {
+        if (!empty($this->profile_photo_path)) {
+            if (str_starts_with($this->profile_photo_path, 'http://') || str_starts_with($this->profile_photo_path, 'https://')) {
+                return $this->profile_photo_path;
+            }
+            if (file_exists(public_path($this->profile_photo_path))) {
+                return asset($this->profile_photo_path);
+            }
+            $avatarBase = basename($this->profile_photo_path);
+            if (file_exists(public_path('assets/images/avatars/' . $avatarBase))) {
+                return asset('assets/images/avatars/' . $avatarBase);
+            }
+            if (file_exists(public_path('storage/' . $this->profile_photo_path))) {
+                return asset('storage/' . $this->profile_photo_path);
+            }
+            try {
+                if (Storage::disk($this->profilePhotoDisk())->exists($this->profile_photo_path)) {
+                    return Storage::disk($this->profilePhotoDisk())->url($this->profile_photo_path);
+                }
+            } catch (\Throwable $e) {}
+        }
+
+        return $this->defaultProfilePhotoUrl();
+    }
 }

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120">
+  <defs>
+    <linearGradient id="maleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2d3748"/>
+      <stop offset="100%" stop-color="#1a202c"/>
+    </linearGradient>
+    <linearGradient id="goldAcc" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fecc56"/>
+      <stop offset="100%" stop-color="#f0a500"/>
+    </linearGradient>
+  </defs>
+  <circle cx="60" cy="60" r="58" fill="url(#maleGrad)" stroke="#fecc56" stroke-width="3"/>
+  <!-- Head -->
+  <circle cx="60" cy="45" r="22" fill="#e2e8f0"/>
+  <!-- Hair -->
+  <path d="M38 42 C38 26 50 18 60 18 C70 18 82 26 82 42 C82 33 76 25 60 25 C44 25 38 33 38 42 Z" fill="#4a5568"/>
+  <!-- Suit / Collar -->
+  <path d="M22 105 C25 78 45 74 60 74 C75 74 95 78 98 105 Z" fill="#2d3748"/>
+  <path d="M50 74 L60 92 L70 74 Z" fill="#ffffff"/>
+  <path d="M58 74 L60 102 L62 74 Z" fill="url(#goldAcc)"/>
+</svg>
