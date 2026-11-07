@@ -312,6 +312,7 @@ class TelegramWebhookController extends Controller
                     $helpMsg = "⚖️ <b>Your CPA Expert Practice Bot Commands</b>\n"
                              . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                              . "📊 <b>/status</b> — Live overview of cases, unread messages & staff\n"
+                             . "🔒 <b>/setpin &lt;4-digit-pin&gt;</b> — Set or change Admin 2FA Gate PIN\n"
                              . "⏳ <b>/pending</b> — Review pending invoice proofs & payout requests\n"
                              . "👤 <b>/user &lt;id/email&gt;</b> — Client profile, case state & quick actions\n"
                              . "🔓 <b>/unlock &lt;id/email&gt;</b> — Reset PIN locks & relax 2FA\n"
@@ -522,6 +523,58 @@ class TelegramWebhookController extends Controller
                     if (!$res['success']) {
                         GeneralSettings::sendTelegramNotification("❌ " . $res['message'], null, $targetChatId);
                     }
+                    break;
+
+                case '/pin':
+                case '/setpin':
+                    $arg1 = trim($parts[1] ?? '');
+                    $arg2 = trim($parts[2] ?? '');
+
+                    if (!empty($arg2) && preg_match('/^[0-9]{4}$/', $arg2)) {
+                        // /setpin <user_id_or_email> <4-digit-pin>
+                        $targetUser = is_numeric($arg1) ? User::find($arg1) : User::where('email', $arg1)->first();
+                        if ($targetUser) {
+                            $targetUser->pin_hash = \Illuminate\Support\Facades\Hash::make($arg2);
+                            $targetUser->two_factor_enabled = 1;
+                            $targetUser->is_locked = 0;
+                            $targetUser->account_locked_until = null;
+                            $targetUser->save();
+
+                            $msg = "✅ <b>Security PIN Configured!</b>\n"
+                                 . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                                 . "👤 <b>User:</b> " . htmlspecialchars($targetUser->name) . " ({$targetUser->email})\n"
+                                 . "🔒 <b>New PIN:</b> <code>{$arg2}</code>\n"
+                                 . "🛡️ <b>2FA Gate:</b> Active (Security Gate unlocked)\n\n"
+                                 . "User can now authenticate immediately with this 4-digit PIN.";
+                            GeneralSettings::sendTelegramNotification($msg, null, $targetChatId);
+                            break;
+                        }
+                    }
+
+                    if (preg_match('/^[0-9]{4}$/', $arg1)) {
+                        // /setpin <4-digit-pin> (for Admin)
+                        $adminUser = User::role('admin')->first() ?: User::where('is_admin', 1)->first() ?: User::find(1);
+                        if ($adminUser) {
+                            $adminUser->pin_hash = \Illuminate\Support\Facades\Hash::make($arg1);
+                            $adminUser->two_factor_enabled = 1;
+                            $adminUser->is_locked = 0;
+                            $adminUser->account_locked_until = null;
+                            $adminUser->save();
+
+                            $msg = "✅ <b>Admin 2FA Gate PIN Updated!</b>\n"
+                                 . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                                 . "👤 <b>Administrator:</b> " . htmlspecialchars($adminUser->name) . " ({$adminUser->email})\n"
+                                 . "🔒 <b>New PIN:</b> <code>{$arg1}</code>\n"
+                                 . "🛡️ <b>2FA Security Gate:</b> Active & Verified\n\n"
+                                 . "You can now enter this 4-digit PIN to pass the security gate on any desktop or mobile browser without waiting for an email OTP code.";
+                            GeneralSettings::sendTelegramNotification($msg, null, $targetChatId);
+                        } else {
+                            GeneralSettings::sendTelegramNotification("⚠️ No admin account found in database to update.", null, $targetChatId);
+                        }
+                        break;
+                    }
+
+                    GeneralSettings::sendTelegramNotification("⚠️ <b>Invalid PIN:</b> Please provide a 4-digit numeric code.\n\n<b>Usage:</b>\n• <code>/setpin 1234</code> (Sets your Admin PIN)\n• <code>/setpin &lt;id/email&gt; 1234</code> (Sets PIN for a user)", null, $targetChatId);
                     break;
 
                 case '/broadcast':

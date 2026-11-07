@@ -35,6 +35,10 @@
                     </div>
                 @endif
 
+                <div class="col-12">
+                    @include('backend.pages.profile.update-security-pin-form')
+                </div>
+
                 @if (Laravel\Jetstream\Jetstream::hasAccountDeletionFeatures())
                     <div class="col-12">
                         @include('backend.pages.profile.delete-user-form')

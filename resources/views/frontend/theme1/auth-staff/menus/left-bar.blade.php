@@ -276,7 +276,8 @@
             padding: 0 !important;
             background: #11151e !important;
         }
-        .staff-sidebar-col.active {
+        .staff-sidebar-col.active,
+        .staff-sidebar-col.show {
             left: 0 !important;
             box-shadow: 10px 0 30px rgba(0,0,0,0.8) !important;
             display: block !important;

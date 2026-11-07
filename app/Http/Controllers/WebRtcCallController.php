@@ -139,7 +139,7 @@ class WebRtcCallController extends Controller
     {
         $request->validate([
             'call_id' => 'required|string',
-            'action' => 'required|string|in:answer,candidate,poll',
+            'action' => 'required|string|in:answer,candidate,candidates_batch,poll',
         ]);
 
         $callId = $request->input('call_id');
@@ -188,6 +188,17 @@ class WebRtcCallController extends Controller
                     $callData['caller_candidates'][] = $candidate;
                 } else {
                     $callData['callee_candidates'][] = $candidate;
+                }
+                Cache::put("call_session_{$callId}", $callData, 7200);
+            }
+            return response()->json(['status' => 'ok']);
+        } elseif ($action === 'candidates_batch') {
+            $candidates = $request->input('candidates', []);
+            if (!empty($candidates) && is_array($candidates)) {
+                if ($user->id === $callData['caller_id']) {
+                    $callData['caller_candidates'] = array_merge($callData['caller_candidates'] ?? [], $candidates);
+                } else {
+                    $callData['callee_candidates'] = array_merge($callData['callee_candidates'] ?? [], $candidates);
                 }
                 Cache::put("call_session_{$callId}", $callData, 7200);
             }

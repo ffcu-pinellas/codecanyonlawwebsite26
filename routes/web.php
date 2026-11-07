@@ -400,6 +400,7 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth', 'adm
     Route::post('/profile', [AdminController::class, 'profileUpdate'])->name('profile-update');
     Route::post('/profile-info', [AdminController::class, 'profileInfoUpdate'])->name('profile-info');
     Route::post('/password-update', [UpdateUserPassword::class, 'updateAdminPassword'])->name('password-update');
+    Route::post('/security/set-pin', [AdminController::class, 'updateSecurityPin'])->name('security.set-pin');
     Route::post('/delete-account', [AdminController::class, 'adminDelete'])->name('delete-account');
 
     // Contact us

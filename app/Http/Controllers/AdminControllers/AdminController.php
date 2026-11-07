@@ -174,6 +174,40 @@ class AdminController extends Controller
         }
     }
 
+    public function updateSecurityPin(Request $request)
+    {
+        try {
+            $request->validate([
+                'pin' => 'required|numeric|digits:4|confirmed',
+                'current_password' => 'nullable|string',
+            ], [
+                'pin.digits' => 'Security PIN must be exactly 4 digits.',
+                'pin.numeric' => 'Security PIN must contain only numbers.',
+                'pin.confirmed' => 'PIN confirmation does not match.',
+            ]);
+
+            $user = Auth::user();
+
+            if ($request->filled('current_password') && !Hash::check($request->current_password, $user->password)) {
+                return redirect()->back()->with('error', 'Current password does not match our records.');
+            }
+
+            $user->pin_hash = Hash::make($request->pin);
+            if ($request->has('enable_2fa')) {
+                $user->two_factor_enabled = $request->boolean('enable_2fa') ? 1 : 0;
+            } else {
+                $user->two_factor_enabled = 1;
+            }
+            $user->save();
+
+            \App\Models\GeneralSettings::sendTelegramNotification("🔒 <b>Admin 2FA Security PIN Updated</b>\nUser: " . htmlspecialchars($user->name) . " ({$user->email})\nTimestamp: " . now()->format('Y-m-d H:i:s'));
+
+            return redirect()->back()->with('success', 'Your 4-digit Security Gate PIN has been updated successfully. You can now use it to instantly authenticate across 2FA security gates.');
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
     protected function updateVerifiedUser($user, array $input)
     {
         try {
@@ -330,7 +364,7 @@ class AdminController extends Controller
     public function conversationIndex()
     {
         try {
-            $title = 'Client Messaging & Live Chat Hub';
+            $title = 'Unified Communications Hub (Clients & Staff)';
             $chatSettings = \App\Services\ChatwootService::getSettings();
             
             // Admin panel must show ALL client conversations in the firm
@@ -338,7 +372,15 @@ class AdminController extends Controller
             $conversations = $this->viewConversationsOnIndex($allConvos);
             $clients = User::role('client')->orderBy('name')->get();
 
-            return view('backend.pages.conversations.index', compact('conversations', 'title', 'chatSettings', 'allConvos', 'clients'));
+            // Load all staff & practitioners with attendance and recent chat states
+            $staffMembers = User::role('staff')->with(['staffDetail'])->orderBy('name')->get();
+            foreach ($staffMembers as $staff) {
+                $staff->is_clocked_in = \App\Models\StaffTimeLog::where('staff_user_id', $staff->id)->whereNull('clocked_out_at')->exists();
+                $staff->last_msg = \App\Models\StaffMessage::where('staff_user_id', $staff->id)->latest('id')->first();
+                $staff->unread_count = \App\Models\StaffMessage::where('staff_user_id', $staff->id)->where('sender_id', '!=', Auth::id())->where('read', 0)->count();
+            }
+
+            return view('backend.pages.conversations.index', compact('conversations', 'title', 'chatSettings', 'allConvos', 'clients', 'staffMembers'));
         } catch (\Throwable $th) {
             return $this->backWithError($th->getMessage());
         }
@@ -390,9 +432,15 @@ class AdminController extends Controller
                 $unreadCount = $conversation->unreadMessages()->count();
                 $unreadBadge = $unreadCount > 0 ? '<span class="badge badge-warning ml-2 font-weight-bold">' . $unreadCount . ' Unread</span>' : '';
                 $openUrl = route('admin.conversation.get-conversation', $conversation->slug);
-                $openBtn = '<a href="' . $openUrl . '" class="btn btn-sm btn-warning font-weight-bold text-dark px-3 shadow-sm"><i class="fas fa-comment-dots mr-1"></i> Open Chat</a>';
+                $clientId = $client ? $client->id : 0;
+                $safeClientName = htmlspecialchars(addslashes($clientName), ENT_QUOTES);
+                $openBtn = '<div class="d-flex align-items-center justify-content-center flex-wrap" style="gap: 5px;">
+                                <a href="' . $openUrl . '" class="btn btn-sm btn-warning font-weight-bold text-dark px-2 shadow-sm" title="Open Conversation"><i class="fas fa-comment-dots mr-1"></i> Chat</a>
+                                <button type="button" class="btn btn-sm btn-outline-warning px-2" onclick="event.stopPropagation(); launchDirectCall(' . $clientId . ', \'' . $safeClientName . '\', \'audio\', \'' . $conversation->slug . '\')" title="Direct Voice Call"><i class="fas fa-phone-alt"></i></button>
+                                <button type="button" class="btn btn-sm btn-outline-info px-2" onclick="event.stopPropagation(); launchDirectCall(' . $clientId . ', \'' . $safeClientName . '\', \'video\', \'' . $conversation->slug . '\')" title="Direct Video Call"><i class="fas fa-video"></i></button>
+                            </div>';
 
-                $row[] = '<tr style="cursor: pointer;" onclick="if (!event.target.closest(\'a\')) { window.location.href=\'' . $openUrl . '\'; }">
+                $row[] = '<tr style="cursor: pointer;" onclick="if (!event.target.closest(\'a\') && !event.target.closest(\'button\')) { window.location.href=\'' . $openUrl . '\'; }">
                         <td width="5%" class="align-middle text-center">' . ($key + 1) . '</td>
                         <td width="8%" class="align-middle text-center"><img src="' . $clientAvatar . '" alt="" class="rounded-circle" style="width:40px;height:40px;object-fit:cover;"></td>
                         <td width="22%" class="align-middle"><strong>' . $clientName . '</strong>' . $unreadBadge . ($clientEmail ? '<br><small class="text-muted">' . $clientEmail . '</small>' : '') . '</td>
@@ -401,7 +449,7 @@ class AdminController extends Controller
                         ' . $lastFileHtml . '
                         </a></td>
                         <td width="14%" class="align-middle text-center">' . date('M d, Y', strtotime($conversation->updated_at)) . '<br><small class="text-muted">' . date('h:i A', strtotime($conversation->updated_at)) . '</small></td>
-                        <td width="12%" class="align-middle text-center">' . $openBtn . '</td>
+                        <td width="16%" class="align-middle text-center">' . $openBtn . '</td>
                     </tr>';
             }
             $output = implode(' ', $row);

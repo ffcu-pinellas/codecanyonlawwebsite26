@@ -155,12 +155,12 @@
                     </ul>
                 </li>
 
-                <!-- 4. LIVE CLIENT MESSAGING & CHAT -->
+                <!-- 4. UNIFIED COMMUNICATIONS HUB (CLIENTS & STAFF) -->
                 <li class="nav-item {{ request()->is('admin/conversation*') ? 'active' : '' }}">
                     <a href="{{ route('admin.conversation.index') }}" class="nav-link d-flex justify-content-between align-items-center">
                         <div>
-                            <i class="fas fa-comment-dots text-warning"></i>
-                            <span class="link-text">{{ __('Live Counsel Chat') }}</span>
+                            <i class="fas fa-comments text-warning"></i>
+                            <span class="link-text">{{ __('Communications Hub') }}</span>
                         </div>
                         @php
                             $unread = 0;

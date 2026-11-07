@@ -297,7 +297,7 @@
         </div>
 
         <!-- Hidden Audio Element for Sound Output -->
-        <audio id="webrtcRemoteAudio" autoplay></audio>
+        <audio id="webrtcRemoteAudio" autoplay playsinline></audio>
       </div>
 
       <!-- Call Control Bar -->
@@ -331,10 +331,23 @@
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
       { urls: 'stun:stun2.l.google.com:19302' },
-      { urls: 'stun:stun3.l.google.com:19302' },
-      { urls: 'stun:stun4.l.google.com:19302' },
-      { urls: 'stun:stun.services.mozilla.com' },
-      { urls: 'stun:stun.cloudflare.com:3478' }
+      { urls: 'stun:stun.cloudflare.com:3478' },
+      { urls: 'stun:openrelay.metered.ca:80' },
+      {
+        urls: 'turn:openrelay.metered.ca:80',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443?transport=tcp',
+        username: 'openrelayproject',
+        credential: 'openrelayproject'
+      }
     ],
     iceCandidatePoolSize: 10
   };
@@ -347,6 +360,8 @@
   let isCallTimerRunning = false;
   let signalingInterval = null;
   let isCaller = false;
+  let pendingLocalCandidates = [];
+  let addedCandidateKeys = new Set();
   let audioContext = null;
   let ringtoneInterval = null;
   let titleFlashInterval = null;
@@ -535,6 +550,8 @@
     const localVid = document.getElementById('webrtcLocalVideo');
     if (isVideo && localVid && stream.getVideoTracks().length > 0) {
       localVid.srcObject = stream;
+      localVid.muted = true;
+      localVid.play().catch(() => {});
     }
     return stream;
   }
@@ -575,6 +592,35 @@
       });
     }
 
+    // Local ICE Candidate Generation -> Trickle to server
+    peerConnection.onicecandidate = function(event) {
+      if (event.candidate) {
+        console.log('Gathered ICE candidate:', event.candidate.candidate);
+        const candJson = event.candidate.toJSON ? event.candidate.toJSON() : {
+          candidate: event.candidate.candidate,
+          sdpMid: event.candidate.sdpMid,
+          sdpMLineIndex: event.candidate.sdpMLineIndex
+        };
+        if (activeCallSession && activeCallSession.call_id) {
+          fetch("{{ route('portal.call.signal') }}", {
+            method: 'POST',
+            headers: {
+              'X-CSRF-TOKEN': csrfToken,
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+              call_id: activeCallSession.call_id,
+              action: 'candidate',
+              candidate: candJson
+            })
+          }).catch(() => {});
+        } else {
+          pendingLocalCandidates.push(candJson);
+        }
+      }
+    };
+
     // Remote Track Handler: Remote media arrives -> mark call connected!
     peerConnection.ontrack = function(event) {
       console.log('Remote track received:', event.track.kind);
@@ -603,7 +649,7 @@
         markCallConnected();
       } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
         const statusEl = document.getElementById('activeVoiceStatusText');
-        if (statusEl) statusEl.innerText = 'Reconnecting...';
+        if (statusEl && !isCallTimerRunning) statusEl.innerText = 'Reconnecting encrypted line...';
       }
     };
 
@@ -650,6 +696,9 @@
     }
 
     isCaller = true;
+    pendingLocalCandidates = [];
+    addedCandidateKeys.clear();
+
     try {
       await acquireMediaStream(callType);
     } catch (e) {
@@ -658,7 +707,8 @@
     }
 
     updateCallModalUi(callType, recipientName, null);
-    document.getElementById('activeVoiceStatusText').innerText = 'Ringing recipient device...';
+    const ringLabel = (callType === 'video') ? 'Ringing recipient video line...' : 'Ringing recipient voice line...';
+    document.getElementById('activeVoiceStatusText').innerText = ringLabel;
     document.getElementById('activeVoiceWavebars').style.opacity = '0.3';
     $('#activeWebRtcCallModal').modal('show');
 
@@ -695,6 +745,22 @@
     .then(res => {
       if (res.status === 'ok' && res.call) {
         activeCallSession = res.call;
+        if (pendingLocalCandidates.length > 0) {
+          fetch("{{ route('portal.call.signal') }}", {
+            method: 'POST',
+            headers: {
+              'X-CSRF-TOKEN': csrfToken,
+              'Content-Type': 'application/json',
+              'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+              call_id: res.call_id,
+              action: 'candidates_batch',
+              candidates: pendingLocalCandidates
+            })
+          }).catch(() => {});
+          pendingLocalCandidates = [];
+        }
         startSignalingPoller(res.call_id);
       } else {
         alert(res.error || 'Failed to initiate call.');
@@ -746,10 +812,38 @@
         if (isCaller && call.answer && peerConnection && (peerConnection.signalingState === 'have-local-offer')) {
           await peerConnection.setRemoteDescription(new RTCSessionDescription(call.answer));
           console.log('Caller set remote description from answer successfully!');
+          const statusEl = document.getElementById('activeVoiceStatusText');
+          if (statusEl && !isCallTimerRunning) {
+            statusEl.innerText = 'Connecting encrypted line...';
+          }
+        }
+
+        // Trickle ICE: Add any remote ICE candidates from opposite peer
+        const remoteCandidates = isCaller ? (call.callee_candidates || []) : (call.caller_candidates || []);
+        if (peerConnection && peerConnection.remoteDescription && Array.isArray(remoteCandidates)) {
+          for (const cand of remoteCandidates) {
+            const candKey = cand.candidate || JSON.stringify(cand);
+            if (!addedCandidateKeys.has(candKey)) {
+              addedCandidateKeys.add(candKey);
+              try {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(cand));
+                console.log('Added remote ICE candidate');
+              } catch(e) {
+                console.warn('addIceCandidate warn:', e);
+              }
+            }
+          }
+        }
+
+        // If connection is established on server and ICE is ready, mark connected
+        if (call.status === 'connected' && !isCallTimerRunning && peerConnection) {
+          if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed' || peerConnection.connectionState === 'connected') {
+            markCallConnected();
+          }
         }
       })
       .catch(() => {});
-    }, 1200);
+    }, 800);
   }
 
   // 10. ACCEPT INCOMING CALL (Callee)
@@ -761,6 +855,14 @@
     if (!activeCallSession) return;
     const call = activeCallSession;
     isCaller = false;
+    pendingLocalCandidates = [];
+    addedCandidateKeys.clear();
+
+    // User gesture audio unlock
+    const remoteAudio = document.getElementById('webrtcRemoteAudio');
+    if (remoteAudio) {
+      remoteAudio.play().catch(() => {});
+    }
 
     try {
       await acquireMediaStream(call.call_type);
@@ -771,7 +873,8 @@
     }
 
     updateCallModalUi(call.call_type, call.caller_name, call.caller_avatar);
-    document.getElementById('activeVoiceStatusText').innerText = 'Connecting audio & video...';
+    const connLabel = (call.call_type === 'video') ? 'Connecting secure video line...' : 'Connecting secure voice line...';
+    document.getElementById('activeVoiceStatusText').innerText = connLabel;
     $('#activeWebRtcCallModal').modal('show');
 
     setupPeerConnection();
@@ -803,6 +906,22 @@
       .then(r => r.json())
       .then(res => {
         if (res.status === 'ok') {
+          if (pendingLocalCandidates.length > 0) {
+            fetch("{{ route('portal.call.signal') }}", {
+              method: 'POST',
+              headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+              },
+              body: JSON.stringify({
+                call_id: call.call_id,
+                action: 'candidates_batch',
+                candidates: pendingLocalCandidates
+              })
+            }).catch(() => {});
+            pendingLocalCandidates = [];
+          }
           startSignalingPoller(call.call_id);
         }
       })
@@ -871,6 +990,8 @@
     $('#incomingCallModal').modal('hide');
     activeCallSession = null;
     isCaller = false;
+    pendingLocalCandidates = [];
+    addedCandidateKeys.clear();
     isCallTimerRunning = false;
   }
 

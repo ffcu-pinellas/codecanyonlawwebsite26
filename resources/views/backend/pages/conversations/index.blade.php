@@ -39,6 +39,12 @@
         margin-right: 8px;
         margin-bottom: 8px;
     }
+    @media (max-width: 768px) {
+        .chat-nav-tabs .nav-link {
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+    }
 </style>
 @endsection
 
@@ -61,29 +67,176 @@
             $isInternal = ($provider === 'internal');
         @endphp
 
-        <!-- Navigation Tabs -->
+        <!-- Unified Navigation Tabs: Clients, Staff, and Live Support -->
         <ul class="nav nav-tabs chat-nav-tabs border-bottom-0" id="chatTabs" role="tablist">
             <li class="nav-item">
-                <a class="nav-link {{ !$isInternal ? 'active' : '' }}" id="chatwoot-tab" data-toggle="tab" href="#tab-chatwoot" role="tab" aria-controls="tab-chatwoot" aria-selected="{{ !$isInternal ? 'true' : 'false' }}">
-                    <i class="fas fa-comments text-warning mr-1"></i> {{ __('Live Support (Chatwoot)') }}
+                <a class="nav-link active" id="clients-tab" data-toggle="tab" href="#tab-clients" role="tab" aria-controls="tab-clients" aria-selected="true">
+                    <i class="fas fa-users text-warning mr-1"></i> {{ __('Clients & Accounts') }}
                 </a>
             </li>
             <li class="nav-item">
-                <a class="nav-link {{ $isInternal ? 'active' : '' }}" id="archive-tab" data-toggle="tab" href="#tab-archive" role="tab" aria-controls="tab-archive" aria-selected="{{ $isInternal ? 'true' : 'false' }}">
-                    <i class="fas fa-inbox text-warning mr-1"></i> {{ __('Internal Messages & Chats') }}
+                <a class="nav-link" id="staff-tab" data-toggle="tab" href="#tab-staff" role="tab" aria-controls="tab-staff" aria-selected="false">
+                    <i class="fas fa-user-tie text-warning mr-1"></i> {{ __('Staff & Legal Practitioners') }}
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" id="chatwoot-tab" data-toggle="tab" href="#tab-chatwoot" role="tab" aria-controls="tab-chatwoot" aria-selected="false">
+                    <i class="fas fa-headset text-warning mr-1"></i> {{ __('Live Support (Chatwoot)') }}
                 </a>
             </li>
         </ul>
 
         <div class="tab-content" id="chatTabsContent">
-            <!-- TAB 1: Chatwoot Live Support Hub -->
-            <div class="tab-pane fade {{ !$isInternal ? 'show active' : '' }}" id="tab-chatwoot" role="tabpanel" aria-labelledby="chatwoot-tab">
+            <!-- TAB 1: Clients & Cases Communication Hub -->
+            <div class="tab-pane fade show active" id="tab-clients" role="tabpanel" aria-labelledby="clients-tab">
+                <div class="card card-dark bg-dark border-secondary">
+                    <div class="card-header d-block">
+                        <div class="row align-items-center">
+                            <div class="col-md-6 col-sm-12">
+                                <h6 class="card-title text-white font-weight-bold mb-0">
+                                    <i class="fas fa-comments text-warning mr-2"></i> {{ __('Client Channels, Encrypted Chat & Direct Calling') }}
+                                </h6>
+                            </div>
+                            <div class="col-md-6 col-sm-12 text-md-right mt-2 mt-md-0 d-flex justify-content-md-end align-items-center flex-wrap" style="gap: 10px;">
+                                <button type="button" class="btn btn-warning font-weight-bold text-dark btn-sm px-3 shadow-sm" data-toggle="modal" data-target="#newChatModal">
+                                    <i class="fas fa-plus-circle mr-1"></i> {{ __('Start New Client Chat') }}
+                                </button>
+                                <span class="badge badge-warning px-3 py-2 font-weight-bold">
+                                    <i class="fas fa-lock mr-1"></i> {{ __('256-Bit Cryptographic Security') }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table id="slider" class="table bapric_table table-striped table-bordered miw-500 text-white mb-0" cellspacing="0" width="100%">
+                                <thead style="background: #161a23;">
+                                <tr>
+                                    <th scope="col" width="5%" class="text-center">{{ __('Serial') }}</th>
+                                    <th scope="col" width="8%" class="text-center">{{ __('Avatar') }}</th>
+                                    <th scope="col" width="22%">{{ __('Client / Account') }}</th>
+                                    <th scope="col">{{ __('Latest Message Preview') }}</th>
+                                    <th scope="col" width="14%" class="text-center">{{ __('Timestamp') }}</th>
+                                    <th scope="col" width="16%" class="text-center">{{ __('Quick Actions') }}</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {!! $conversations !!}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: Staff & Practitioners Directory & Quick Calling -->
+            <div class="tab-pane fade" id="tab-staff" role="tabpanel" aria-labelledby="staff-tab">
+                <div class="card card-dark bg-dark border-secondary">
+                    <div class="card-header d-flex justify-content-between align-items-center py-3 border-secondary flex-wrap" style="gap: 10px;">
+                        <div>
+                            <h6 class="card-title text-white font-weight-bold mb-0">
+                                <i class="fas fa-user-tie text-warning mr-2"></i> {{ __('Staff & Attorney Communication Directory') }}
+                            </h6>
+                            <small class="text-muted">{{ __('Direct internal communications, attendance monitoring, and live voice/video calls with practice staff.') }}</small>
+                        </div>
+                        <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                            <a href="{{ route('admin.staff.index') }}" class="btn btn-outline-secondary btn-sm text-light">
+                                <i class="fas fa-users-cog mr-1"></i> {{ __('Full Staff Directory') }}
+                            </a>
+                            <span class="badge badge-success px-3 py-2 font-weight-bold">
+                                <i class="fas fa-shield-alt mr-1"></i> {{ __('Practice Encryption') }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-striped table-bordered text-white mb-0 miw-500" cellspacing="0" width="100%">
+                                <thead style="background: #161a23;">
+                                    <tr>
+                                        <th scope="col" width="5%" class="text-center">{{ __('Serial') }}</th>
+                                        <th scope="col" width="8%" class="text-center">{{ __('Avatar') }}</th>
+                                        <th scope="col" width="24%">{{ __('Practitioner / Role') }}</th>
+                                        <th scope="col" width="15%" class="text-center">{{ __('Shift Attendance') }}</th>
+                                        <th scope="col">{{ __('Recent Internal Message') }}</th>
+                                        <th scope="col" width="18%" class="text-center">{{ __('Direct Actions') }}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($staffMembers ?? [] as $idx => $s)
+                                        @php
+                                            $sAvatar = !empty($s->profile_photo_url) ? asset($s->profile_photo_url) : asset('backend/assets/img/profile/other.png');
+                                            $sRole = $s->staffDetail ? ($s->staffDetail->designation ?: 'Staff Specialist') : 'Staff Specialist';
+                                            $chatUrl = route('admin.staff.messages', $s->id);
+                                            $lastMsgText = $s->last_msg ? htmlspecialchars($s->last_msg->message) : '<em class="text-muted">No messages exchanged yet</em>';
+                                            $lastMsgTime = $s->last_msg ? $s->last_msg->created_at->format('M d, h:i A') : '—';
+                                            $unreadCount = $s->unread_count ?? 0;
+                                        @endphp
+                                        <tr style="cursor: pointer;" onclick="if (!event.target.closest('a') && !event.target.closest('button')) { window.location.href='{{ $chatUrl }}'; }">
+                                            <td class="align-middle text-center">{{ $idx + 1 }}</td>
+                                            <td class="align-middle text-center">
+                                                <img src="{{ $sAvatar }}" alt="" class="rounded-circle" style="width: 42px; height: 42px; object-fit: cover; border: 2px solid {{ $s->is_clocked_in ? '#22c55e' : '#64748b' }};">
+                                            </td>
+                                            <td class="align-middle">
+                                                <div class="font-weight-bold text-white d-flex align-items-center">
+                                                    {{ $s->name }}
+                                                    @if($unreadCount > 0)
+                                                        <span class="badge badge-warning ml-2 font-weight-bold">{{ $unreadCount }} Unread</span>
+                                                    @endif
+                                                </div>
+                                                <small class="text-muted d-block">{{ $sRole }} &bull; {{ $s->email }}</small>
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                @if($s->is_clocked_in)
+                                                    <span class="badge badge-success px-2 py-1 font-weight-bold" style="font-size: 11px;">
+                                                        <i class="fas fa-circle mr-1" style="font-size: 8px;"></i> {{ __('Clocked In') }}
+                                                    </span>
+                                                @else
+                                                    <span class="badge badge-secondary px-2 py-1 font-weight-bold" style="font-size: 11px;">
+                                                        <i class="far fa-circle mr-1" style="font-size: 8px;"></i> {{ __('Off Shift') }}
+                                                    </span>
+                                                @endif
+                                            </td>
+                                            <td class="align-middle">
+                                                <a href="{{ $chatUrl }}" class="text-decoration-none text-light d-block">
+                                                    <p class="px-0 pb-0 my-0">{!! $lastMsgText !!}</p>
+                                                    <small class="text-muted">{{ $lastMsgTime }}</small>
+                                                </a>
+                                            </td>
+                                            <td class="align-middle text-center">
+                                                <div class="d-flex align-items-center justify-content-center flex-wrap" style="gap: 5px;">
+                                                    <a href="{{ $chatUrl }}" class="btn btn-sm btn-warning font-weight-bold text-dark px-2 shadow-sm" title="Open Staff Chat">
+                                                        <i class="fas fa-comment-dots mr-1"></i> {{ __('Chat') }}
+                                                    </a>
+                                                    <button type="button" class="btn btn-sm btn-outline-warning px-2" onclick="event.stopPropagation(); launchDirectCall({{ $s->id }}, @json($s->name), 'audio', null)" title="Direct Voice Call">
+                                                        <i class="fas fa-phone-alt"></i>
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-outline-info px-2" onclick="event.stopPropagation(); launchDirectCall({{ $s->id }}, @json($s->name), 'video', null)" title="Direct HD Video Call">
+                                                        <i class="fas fa-video"></i>
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4 text-muted">
+                                                {{ __('No staff members found in the directory.') }}
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 3: Chatwoot Live Support Hub -->
+            <div class="tab-pane fade" id="tab-chatwoot" role="tabpanel" aria-labelledby="chatwoot-tab">
                 <div class="card card-dark bg-dark border-secondary">
                     <div class="card-body p-4">
                         @php
                             $token = $chatSettings['website_token'] ?? '';
                             $baseUrl = rtrim($chatSettings['base_url'] ?? 'https://app.chatwoot.com', '/');
-                            $isConfigured = !empty($token) || $provider === 'chatwoot';
                         @endphp
 
                         <div class="chat-hero-card mb-4">
@@ -137,7 +290,7 @@
                                     {{ __('Client conversations are instantly synchronized across your dedicated agent inbox. Click below to launch the multi-agent console in a dedicated high-performance workspace.') }}
                                 </p>
 
-                                <div class="d-flex flex-wrap justify-content-center gap-3" style="gap: 12px;">
+                                <div class="d-flex flex-wrap justify-content-center" style="gap: 12px;">
                                     <a href="{{ $baseUrl }}" target="_blank" class="btn btn-warning font-weight-bold text-dark px-4 py-3 shadow-lg text-uppercase" style="background: linear-gradient(135deg, #fecc56, #f0a500); border: none; letter-spacing: 0.5px; border-radius: 8px;">
                                         <i class="fas fa-external-link-alt mr-2"></i> {{ __('Open Live Agent Console (Chatwoot)') }}
                                     </a>
@@ -146,48 +299,6 @@
                                     </a>
                                 </div>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- TAB 2: Internal Message Hub -->
-            <div class="tab-pane fade {{ $isInternal ? 'show active' : '' }}" id="tab-archive" role="tabpanel" aria-labelledby="archive-tab">
-                <div class="card card-dark bg-dark">
-                    <div class="card-header d-block">
-                        <div class="row align-items-center">
-                            <div class="col-md-6 col-sm-12">
-                                <h6 class="card-title text-white font-weight-bold mb-0">
-                                    <i class="fas fa-comments text-warning mr-2"></i> {{ __('Client Conversations & Direct Inquiries') }}
-                                </h6>
-                            </div>
-                            <div class="col-md-6 col-sm-12 text-md-right mt-2 mt-md-0 d-flex justify-content-md-end align-items-center" style="gap: 10px;">
-                                <button type="button" class="btn btn-warning font-weight-bold text-dark btn-sm px-3 shadow-sm" data-toggle="modal" data-target="#newChatModal">
-                                    <i class="fas fa-plus-circle mr-1"></i> {{ __('Start New Chat') }}
-                                </button>
-                                <span class="badge badge-warning px-3 py-2 font-weight-bold">
-                                    <i class="fas fa-lock mr-1"></i> {{ __('256-Bit Encrypted') }}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table id="slider" class="table bapric_table table-striped table-bordered miw-500 text-white" cellspacing="0" width="100%">
-                                <thead>
-                                <tr>
-                                    <th scope="col" width="5%" class="text-center">{{ __('Serial') }}</th>
-                                    <th scope="col" width="8%" class="text-center">{{ __('Avatar') }}</th>
-                                    <th scope="col" width="22%">{{ __('Client / Account') }}</th>
-                                    <th scope="col">{{ __('Latest Message Preview') }}</th>
-                                    <th scope="col" width="14%" class="text-center">{{ __('Timestamp') }}</th>
-                                    <th scope="col" width="12%" class="text-center">{{ __('Action') }}</th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                {!! $conversations !!}
-                                </tbody>
-                            </table>
                         </div>
                     </div>
                 </div>
@@ -243,10 +354,15 @@
         }
         window.location.href = "{{ url('admin/conversation/start-chat') }}/" + clientId;
     }
+
+    function launchDirectCall(userId, userName, callType, conversationSlug) {
+        if (typeof window.initiateWebRtcCall === 'function') {
+            window.initiateWebRtcCall(userId, userName, callType, conversationSlug || null);
+        } else {
+            alert('Calling engine is initializing. Please try again.');
+        }
+    }
 </script>
-        </div>
-    </div>
-</div>
 @endsection
 
 @section('page-script')
