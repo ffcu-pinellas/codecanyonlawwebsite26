@@ -493,30 +493,59 @@
     }
   }
 
-  // Format timer 00:00
+  let callStartTimeMs = null;
+
+  // Format timer 00:00 or 00:00:00 for long calls
   function formatCallTimer(sec) {
-    const m = Math.floor(sec / 60);
+    sec = Math.max(0, parseInt(sec) || 0);
+    const h = Math.floor(sec / 3600);
+    const m = Math.floor((sec % 3600) / 60);
     const s = sec % 60;
-    return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+    const mm = (m < 10 ? '0' + m : m);
+    const ss = (s < 10 ? '0' + s : s);
+    if (h > 0) {
+      const hh = (h < 10 ? '0' + h : h);
+      return hh + ':' + mm + ':' + ss;
+    }
+    return mm + ':' + ss;
   }
 
-  function startCallTimer() {
-    clearInterval(callTimerInterval);
-    callSeconds = 0;
-    document.getElementById('activeCallTimer').innerText = '00:00';
-    callTimerInterval = setInterval(() => {
-      callSeconds++;
-      document.getElementById('activeCallTimer').innerText = formatCallTimer(callSeconds);
-    }, 1000);
+  function startCallTimer(initialSec = 0) {
+    if (callTimerInterval) {
+      clearInterval(callTimerInterval);
+      callTimerInterval = null;
+    }
+    isCallTimerRunning = true;
+    callSeconds = Math.max(0, parseInt(initialSec) || 0);
+    callStartTimeMs = Date.now() - (callSeconds * 1000);
+
+    function tick() {
+      if (!isCallTimerRunning) return;
+      if (callStartTimeMs) {
+        callSeconds = Math.max(0, Math.floor((Date.now() - callStartTimeMs) / 1000));
+      } else {
+        callSeconds++;
+      }
+      const el = document.getElementById('activeCallTimer');
+      if (el) {
+        el.innerText = formatCallTimer(callSeconds);
+      }
+    }
+
+    tick();
+    callTimerInterval = setInterval(tick, 1000);
   }
 
   function stopCallTimer() {
-    clearInterval(callTimerInterval);
-    callTimerInterval = null;
+    if (callTimerInterval) {
+      clearInterval(callTimerInterval);
+      callTimerInterval = null;
+    }
     isCallTimerRunning = false;
+    callStartTimeMs = null;
   }
 
-  function markCallConnected() {
+  function markCallConnected(connectedAtTimestamp = null) {
     const isVideo = activeCallSession && (activeCallSession.call_type === 'video');
     const statusEl = document.getElementById('activeVoiceStatusText');
     if (statusEl) {
@@ -524,9 +553,18 @@
     }
     const waveEl = document.getElementById('activeVoiceWavebars');
     if (waveEl) waveEl.style.opacity = '1';
+
+    let initialElapsed = 0;
+    if (connectedAtTimestamp && parseInt(connectedAtTimestamp) > 0) {
+      const nowSec = Math.floor(Date.now() / 1000);
+      const diff = nowSec - parseInt(connectedAtTimestamp);
+      if (diff > 0 && diff < 86400) {
+        initialElapsed = diff;
+      }
+    }
+
     if (!isCallTimerRunning) {
-      isCallTimerRunning = true;
-      startCallTimer();
+      startCallTimer(initialElapsed);
     }
   }
 
@@ -669,32 +707,40 @@
       const remoteVideo = document.getElementById('webrtcRemoteVideo');
 
       if (event.track.kind === 'video' && remoteVideo) {
-        if (!remoteVideo.srcObject) {
-          remoteVideo.srcObject = new MediaStream();
+        if (event.streams && event.streams[0]) {
+          remoteVideo.srcObject = event.streams[0];
+        } else {
+          if (!remoteVideo.srcObject) {
+            remoteVideo.srcObject = new MediaStream();
+          }
+          remoteVideo.srcObject.addTrack(event.track);
         }
-        remoteVideo.srcObject.addTrack(event.track);
         remoteVideo.play().catch(e => {
           console.warn('Remote video autoplay blocked, muting element to allow rendering:', e);
           remoteVideo.muted = true;
           remoteVideo.play().catch(() => {});
         });
       } else if (event.track.kind === 'audio' && remoteAudio) {
-        if (!remoteAudio.srcObject) {
-          remoteAudio.srcObject = new MediaStream();
+        if (event.streams && event.streams[0]) {
+          remoteAudio.srcObject = event.streams[0];
+        } else {
+          if (!remoteAudio.srcObject) {
+            remoteAudio.srcObject = new MediaStream();
+          }
+          remoteAudio.srcObject.addTrack(event.track);
         }
-        remoteAudio.srcObject.addTrack(event.track);
         remoteAudio.muted = false;
         remoteAudio.volume = 1.0;
         remoteAudio.play().catch(e => console.warn('Remote audio autoplay warning:', e));
       }
-      markCallConnected();
+      markCallConnected(activeCallSession ? activeCallSession.connected_at : null);
     };
 
     // Connection State Listeners
     peerConnection.onconnectionstatechange = function() {
       console.log('PeerConnection connectionState:', peerConnection.connectionState);
       if (peerConnection.connectionState === 'connected') {
-        markCallConnected();
+        markCallConnected(activeCallSession ? activeCallSession.connected_at : null);
       } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
         const statusEl = document.getElementById('activeVoiceStatusText');
         if (statusEl && !isCallTimerRunning) statusEl.innerText = 'Reconnecting encrypted line...';
@@ -704,7 +750,7 @@
     peerConnection.oniceconnectionstatechange = function() {
       console.log('ICE connectionState:', peerConnection.iceConnectionState);
       if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
-        markCallConnected();
+        markCallConnected(activeCallSession ? activeCallSession.connected_at : null);
       }
     };
   }
@@ -746,6 +792,9 @@
     isCaller = true;
     pendingLocalCandidates = [];
     addedCandidateKeys.clear();
+    callSeconds = 0;
+    const timerBadgeInit = document.getElementById('activeCallTimer');
+    if (timerBadgeInit) timerBadgeInit.innerText = '00:00';
 
     try {
       await acquireMediaStream(callType);
@@ -870,10 +919,7 @@
               sdp: cleanAnswerSdp
             });
             console.log('Caller set remote description from answer successfully!');
-            const statusEl = document.getElementById('activeVoiceStatusText');
-            if (statusEl && !isCallTimerRunning) {
-              statusEl.innerText = 'Connecting encrypted line...';
-            }
+            markCallConnected(call.connected_at);
           } catch(e) {
             console.error('Caller setRemoteDescription error:', e);
           }
@@ -905,12 +951,19 @@
           }
         }
 
-        // If connection is established on server and ICE is ready, mark connected
-        if (call.status === 'connected' && !isCallTimerRunning && peerConnection) {
-          if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed' || peerConnection.connectionState === 'connected') {
-            markCallConnected();
-          } else if (call.connected_at && (Math.floor(Date.now() / 1000) - call.connected_at) > 3) {
-            markCallConnected();
+        // If connection is established on server, mark connected & sync timer
+        if (call.status === 'connected') {
+          markCallConnected(call.connected_at);
+
+          // Synchronize clock if server reports server_time and drift > 2s
+          if (res.server_time && call.connected_at) {
+            const serverElapsed = Math.max(0, parseInt(res.server_time) - parseInt(call.connected_at));
+            if (serverElapsed > 0 && Math.abs(callSeconds - serverElapsed) > 2) {
+              callSeconds = serverElapsed;
+              callStartTimeMs = Date.now() - (callSeconds * 1000);
+              const timerEl = document.getElementById('activeCallTimer');
+              if (timerEl) timerEl.innerText = formatCallTimer(callSeconds);
+            }
           }
         }
       })
@@ -1028,6 +1081,7 @@
       .then(r => r.json())
       .then(res => {
         if (res.status === 'ok') {
+          markCallConnected(res.call ? res.call.connected_at : Math.floor(Date.now() / 1000));
           startSignalingPoller(call.call_id);
         } else if (res.status === 'ended') {
           hangUpCall(false);
@@ -1067,6 +1121,7 @@
 
   // 12. HANG UP / END CALL
   function hangUpCall(notifyServer = true) {
+    const finalDurationSec = callSeconds;
     stopTelephoneRing();
     stopTitleFlash();
     stopCallTimer();
@@ -1083,7 +1138,8 @@
         },
         body: JSON.stringify({
           call_id: activeCallSession.call_id,
-          action: 'end'
+          action: 'end',
+          duration_seconds: finalDurationSec
         })
       }).catch(() => {});
     }
@@ -1105,6 +1161,9 @@
     pendingLocalCandidates = [];
     addedCandidateKeys.clear();
     isCallTimerRunning = false;
+    callSeconds = 0;
+    const timerBadgeEnd = document.getElementById('activeCallTimer');
+    if (timerBadgeEnd) timerBadgeEnd.innerText = '00:00';
   }
 
   // 13. Global Call Check Loop (Runs every 3 seconds across master layouts)

@@ -428,7 +428,11 @@ class WebRtcCallController extends Controller
             $icon = ($callData['call_type'] === 'video') ? '🎥' : '📞';
             GeneralSettings::sendTelegramNotification("{$icon} <b>Call Connected</b>\n👤 {$callData['recipient_name']} answered the call with {$callData['caller_name']}. Live session in progress.");
 
-            return response()->json(['status' => 'ok', 'call' => $callData]);
+            return response()->json([
+                'status' => 'ok',
+                'server_time' => now()->timestamp,
+                'call' => $callData
+            ]);
 
         } elseif ($action === 'candidate') {
             $candidate = $request->input('candidate');
@@ -475,10 +479,18 @@ class WebRtcCallController extends Controller
             return response()->json(['status' => 'ok']);
 
         } elseif ($action === 'poll') {
-            return response()->json(['status' => 'ok', 'call' => $callData]);
+            return response()->json([
+                'status' => 'ok',
+                'server_time' => now()->timestamp,
+                'call' => $callData
+            ]);
         }
 
-        return response()->json(['status' => 'ok', 'call' => $callData]);
+        return response()->json([
+            'status' => 'ok',
+            'server_time' => now()->timestamp,
+            'call' => $callData
+        ]);
     }
 
     /**
@@ -492,6 +504,7 @@ class WebRtcCallController extends Controller
             'call_id' => 'required|string',
             'action' => 'required|string|in:accept,decline,end,cancel,missed',
             'reason' => 'nullable|string|max:255',
+            'duration_seconds' => 'nullable|integer',
         ]);
 
         $callId = $request->input('call_id');
@@ -535,7 +548,12 @@ class WebRtcCallController extends Controller
             $callData['status'] = 'ended';
             $callData['ended_at'] = now()->timestamp;
 
-            $duration = $callData['connected_at'] ? (now()->timestamp - $callData['connected_at']) : 0;
+            $clientSec = $request->input('duration_seconds');
+            if (is_numeric($clientSec) && (int)$clientSec > 0) {
+                $duration = (int)$clientSec;
+            } else {
+                $duration = $callData['connected_at'] ? max(0, now()->timestamp - (int)$callData['connected_at']) : 0;
+            }
             $durationFormatted = gmdate($duration >= 3600 ? 'H:i:s' : 'i:s', $duration);
 
             $this->logCallOutcome($callData, 'ended', '', $durationFormatted);
