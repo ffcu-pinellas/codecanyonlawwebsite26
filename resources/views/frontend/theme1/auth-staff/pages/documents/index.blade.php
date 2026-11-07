@@ -5,18 +5,20 @@
 @section('page-css')
 <style>
     .doc-card {
-        background: white;
-        border-radius: 16px;
-        border: none;
-        box-shadow: 0 4px 25px rgba(0,0,0,0.05);
+        background: #11151e;
+        border-radius: 12px;
+        border: 1px solid #28303f;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         margin-bottom: 25px;
+        color: #f1f5f9;
     }
     .doc-item {
         transition: background-color 0.2s ease;
-        border-bottom: 1px solid #f1f5f9;
+        border-bottom: 1px solid #28303f;
+        background: transparent !important;
     }
     .doc-item:hover {
-        background-color: #fafbfc;
+        background-color: rgba(255,255,255,0.02) !important;
     }
     .icon-box {
         width: 48px;
@@ -28,8 +30,8 @@
         font-size: 1.5rem;
     }
     .bg-light-primary {
-        background-color: #eef2f6;
-        color: #2c5364;
+        background-color: rgba(254, 204, 86, 0.12);
+        color: #fecc56;
     }
     .badge-status {
         padding: 5px 10px;
@@ -44,6 +46,20 @@
         font-size: 11px;
         font-weight: 700;
         text-transform: uppercase;
+    }
+
+    /* Light Mode */
+    body.light-mode .doc-card, html.light-mode .doc-card {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .doc-item, html.light-mode .doc-item {
+        border-bottom-color: #e2e8f0 !important;
+    }
+    body.light-mode .doc-item:hover, html.light-mode .doc-item:hover {
+        background-color: #f8fafc !important;
     }
 </style>
 @endsection

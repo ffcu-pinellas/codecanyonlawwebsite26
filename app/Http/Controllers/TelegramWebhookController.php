@@ -157,8 +157,9 @@ class TelegramWebhookController extends Controller
             if (isset($data['message'])) {
                 $msg = $data['message'];
                 $fromId = (string)($msg['from']['id'] ?? '');
+                $chatId = $msg['chat']['id'] ?? null;
 
-                if ($adminChatId && $fromId !== $adminChatId) {
+                if ($adminChatId && $fromId !== $adminChatId && (string)$chatId !== $adminChatId) {
                     return response()->json(['status' => 'ignored']);
                 }
 
@@ -169,14 +170,14 @@ class TelegramWebhookController extends Controller
                 if ($replyTo && !empty($text) && !str_starts_with($text, '/')) {
                     $replyResult = $this->handleDirectReply($replyTo, $text, $msg['message_id'] ?? null);
                     if ($replyResult) {
-                        GeneralSettings::sendTelegramNotification("✅ " . $replyResult);
+                        GeneralSettings::sendTelegramNotification("✅ " . $replyResult, null, $chatId);
                         return response()->json(['status' => 'ok']);
                     }
                 }
 
                 // Command router
                 if (str_starts_with($text, '/')) {
-                    $this->handleCommand($text);
+                    $this->handleCommand($text, $chatId);
                 }
                 return response()->json(['status' => 'ok']);
             }
@@ -271,7 +272,7 @@ class TelegramWebhookController extends Controller
     /**
      * Handle slash commands
      */
-    private function handleCommand($text)
+    private function handleCommand($text, $targetChatId = null)
     {
         try {
             $parts = explode(' ', $text, 3);
@@ -295,7 +296,7 @@ class TelegramWebhookController extends Controller
                              . "💬 <b>/reply &lt;id&gt; &lt;text&gt;</b> — Direct reply to client or staff chat\n"
                              . "📢 <b>/broadcast &lt;text&gt;</b> — Send announcement\n"
                              . "📦 <b>/backup</b> — Dispatch instant encrypted DB backup (.sql.gz)\n";
-                    GeneralSettings::sendTelegramNotification($helpMsg);
+                    GeneralSettings::sendTelegramNotification($helpMsg, null, $targetChatId);
                     break;
 
                 case '/status':
@@ -313,7 +314,7 @@ class TelegramWebhookController extends Controller
                                . "⏱️ <b>Staff Currently Clocked In:</b> {$clockedInStaff}\n"
                                . "💬 <b>Total Client Messages:</b> {$totalClientMsgs}\n"
                                . "📅 <b>Server Time:</b> " . now()->format('Y-m-d H:i:s T');
-                    GeneralSettings::sendTelegramNotification($statusMsg);
+                    GeneralSettings::sendTelegramNotification($statusMsg, null, $targetChatId);
                     break;
 
                 case '/pending':
@@ -328,13 +329,13 @@ class TelegramWebhookController extends Controller
                     } catch (\Throwable $e) {}
 
                     if ($proofs->isEmpty() && $payouts->isEmpty()) {
-                        GeneralSettings::sendTelegramNotification("✅ <b>No pending actions!</b> All invoice proofs and payouts are processed.");
+                        GeneralSettings::sendTelegramNotification("✅ <b>No pending actions!</b> All invoice proofs and payouts are processed.", null, $targetChatId);
                         return;
                     }
 
                     foreach ($proofs as $inv) {
                         $clientName = $inv->client ? $inv->client->name : 'Client';
-                        $msg = "💳 <b>Pending Payment Proof: Invoice #{$inv->invoice_number}</b>\n"
+                        $msg = "💳 <b>Pending Payment Proof: Invoice #" . htmlspecialchars($inv->invoice_number) . "</b>\n"
                              . "👤 <b>Client:</b> " . htmlspecialchars($clientName) . "\n"
                              . "💰 <b>Amount:</b> $" . number_format($inv->amount, 2) . "\n"
                              . "🏦 <b>Method:</b> " . ucfirst($inv->payment_method ?? 'Offline') . "\n";
@@ -347,7 +348,7 @@ class TelegramWebhookController extends Controller
                                 ]
                             ]
                         ];
-                        GeneralSettings::sendTelegramNotification($msg, $keyboard);
+                        GeneralSettings::sendTelegramNotification($msg, $keyboard, $targetChatId);
                     }
 
                     foreach ($payouts as $pay) {
@@ -365,19 +366,19 @@ class TelegramWebhookController extends Controller
                                 ]
                             ]
                         ];
-                        GeneralSettings::sendTelegramNotification($msg, $keyboard);
+                        GeneralSettings::sendTelegramNotification($msg, $keyboard, $targetChatId);
                     }
                     break;
 
                 case '/user':
                     $target = trim($parts[1] ?? '');
                     if (empty($target)) {
-                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/user &lt;id_or_email&gt;</code>");
+                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/user &lt;id_or_email&gt;</code>", null, $targetChatId);
                         return;
                     }
                     $user = is_numeric($target) ? User::find($target) : User::where('email', $target)->first();
                     if (!$user) {
-                        GeneralSettings::sendTelegramNotification("❌ User not found for '{$target}'.");
+                        GeneralSettings::sendTelegramNotification("❌ User not found for '{$target}'.", null, $targetChatId);
                         return;
                     }
                     $roles = implode(', ', $user->roles->pluck('name')->toArray());
@@ -386,12 +387,12 @@ class TelegramWebhookController extends Controller
                     $pinState = $user->pin_hash ? 'Configured' : 'Pending';
                     $lockState = ($user->is_locked || ($user->account_locked_until && $user->account_locked_until > now())) ? '🔒 LOCKED' : '✅ Active';
 
-                    $userMsg = "👤 <b>User Card: {$user->name}</b>\n"
+                    $userMsg = "👤 <b>User Card: " . htmlspecialchars($user->name) . "</b>\n"
                              . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                              . "🆔 <b>ID:</b> #{$user->id} (#CLI-" . sprintf('%05d', $user->id) . ")\n"
-                             . "📧 <b>Email:</b> {$user->email}\n"
-                             . "📞 <b>Phone:</b> {$phone}\n"
-                             . "🏷️ <b>Roles:</b> {$roles}\n"
+                             . "📧 <b>Email:</b> " . htmlspecialchars($user->email) . "\n"
+                             . "📞 <b>Phone:</b> " . htmlspecialchars($phone) . "\n"
+                             . "🏷️ <b>Roles:</b> " . htmlspecialchars($roles) . "\n"
                              . "💼 <b>Active Cases:</b> {$casesCount}\n"
                              . "🛡️ <b>Security:</b> {$lockState} (PIN: {$pinState})\n";
 
@@ -403,23 +404,23 @@ class TelegramWebhookController extends Controller
                             ]
                         ]
                     ];
-                    GeneralSettings::sendTelegramNotification($userMsg, $keyboard);
+                    GeneralSettings::sendTelegramNotification($userMsg, $keyboard, $targetChatId);
                     break;
 
                 case '/unlock':
                     $target = trim($parts[1] ?? '');
                     if (empty($target)) {
-                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/unlock &lt;id_or_email&gt;</code>");
+                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/unlock &lt;id_or_email&gt;</code>", null, $targetChatId);
                         return;
                     }
                     $res = TelegramApprovalService::unlockUser($target);
-                    GeneralSettings::sendTelegramNotification($res['message']);
+                    GeneralSettings::sendTelegramNotification($res['message'], null, $targetChatId);
                     break;
 
                 case '/cases':
                     $cases = ClientCase::with('client')->orderBy('id', 'desc')->take(6)->get();
                     if ($cases->isEmpty()) {
-                        GeneralSettings::sendTelegramNotification("💼 No cases found.");
+                        GeneralSettings::sendTelegramNotification("💼 No cases found.", null, $targetChatId);
                         return;
                     }
                     $msg = "💼 <b>Recent Legal & CPA Cases</b>\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
@@ -427,9 +428,9 @@ class TelegramWebhookController extends Controller
                         $cName = $c->client ? $c->client->name : 'N/A';
                         $cTitle = $c->title ?: 'CPA Representation Case';
                         $cStatus = ucfirst($c->status ?? 'Active');
-                        $msg .= "• <b>{$c->case_number}</b>: " . htmlspecialchars($cName) . "\n  └ <i>{$cTitle}</i> [{$cStatus}]\n";
+                        $msg .= "• <b>" . htmlspecialchars($c->case_number) . "</b>: " . htmlspecialchars($cName) . "\n  └ <i>" . htmlspecialchars($cTitle) . "</i> [" . htmlspecialchars($cStatus) . "]\n";
                     }
-                    GeneralSettings::sendTelegramNotification($msg);
+                    GeneralSettings::sendTelegramNotification($msg, null, $targetChatId);
                     break;
 
                 case '/staff':
@@ -442,10 +443,10 @@ class TelegramWebhookController extends Controller
                         foreach ($activeLogs as $l) {
                             $sName = $l->user ? $l->user->name : 'Staff';
                             $elapsed = round(now()->diffInMinutes($l->clocked_in_at));
-                            $msg .= "• <b>{$sName}</b> (In: " . $l->clocked_in_at->format('H:i') . ", {$elapsed} mins)\n";
+                            $msg .= "• <b>" . htmlspecialchars($sName) . "</b> (In: " . $l->clocked_in_at->format('H:i') . ", {$elapsed} mins)\n";
                         }
                     }
-                    GeneralSettings::sendTelegramNotification($msg);
+                    GeneralSettings::sendTelegramNotification($msg, null, $targetChatId);
                     break;
 
                 case '/invoices':
@@ -456,53 +457,53 @@ class TelegramWebhookController extends Controller
                     } else {
                         $msg .= "<b>⚠️ Unpaid / Pending Invoices:</b>\n";
                         foreach ($unpaid as $inv) {
-                            $msg .= "• <b>#{$inv->invoice_number}</b>: $" . number_format($inv->amount, 2) . " (" . ucfirst($inv->status) . ")\n";
+                            $msg .= "• <b>#" . htmlspecialchars($inv->invoice_number) . "</b>: $" . number_format($inv->amount, 2) . " (" . ucfirst($inv->status) . ")\n";
                         }
                     }
-                    GeneralSettings::sendTelegramNotification($msg);
+                    GeneralSettings::sendTelegramNotification($msg, null, $targetChatId);
                     break;
 
                 case '/reply':
                     $targetId = trim($parts[1] ?? '');
                     $replyText = trim($parts[2] ?? '');
                     if (!$targetId || !$replyText) {
-                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/reply &lt;convo_id_or_user_id&gt; &lt;your reply text&gt;</code>");
+                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/reply &lt;convo_id_or_user_id&gt; &lt;your reply text&gt;</code>", null, $targetChatId);
                         return;
                     }
                     $conversation = Conversation::find($targetId);
                     if ($conversation) {
                         $res = TelegramApprovalService::sendClientReplyFromTelegram($conversation->id, $replyText);
-                        GeneralSettings::sendTelegramNotification("✅ " . $res['message']);
+                        GeneralSettings::sendTelegramNotification("✅ " . $res['message'], null, $targetChatId);
                     } else {
                         $res = TelegramApprovalService::sendStaffReplyFromTelegram($targetId, $replyText);
-                        GeneralSettings::sendTelegramNotification("✅ " . $res['message']);
+                        GeneralSettings::sendTelegramNotification("✅ " . $res['message'], null, $targetChatId);
                     }
                     break;
 
                 case '/backup':
-                    GeneralSettings::sendTelegramNotification("⏳ Generating full database backup... Please wait.");
+                    GeneralSettings::sendTelegramNotification("⏳ Generating full database backup... Please wait.", null, $targetChatId);
                     $res = DatabaseBackupService::createAndSendBackup();
                     if (!$res['success']) {
-                        GeneralSettings::sendTelegramNotification("❌ " . $res['message']);
+                        GeneralSettings::sendTelegramNotification("❌ " . $res['message'], null, $targetChatId);
                     }
                     break;
 
                 case '/broadcast':
                     $bText = substr($text, 11);
                     if (empty(trim($bText))) {
-                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/broadcast &lt;announcement text&gt;</code>");
+                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/broadcast &lt;announcement text&gt;</code>", null, $targetChatId);
                         return;
                     }
-                    GeneralSettings::sendTelegramNotification("📢 <b>Practice Announcement Broadcasted:</b>\n" . htmlspecialchars(trim($bText)));
+                    GeneralSettings::sendTelegramNotification("📢 <b>Practice Announcement Broadcasted:</b>\n" . htmlspecialchars(trim($bText)), null, $targetChatId);
                     break;
 
                 default:
-                    GeneralSettings::sendTelegramNotification("❓ Unknown command. Type <b>/help</b> for list of commands.");
+                    GeneralSettings::sendTelegramNotification("❓ Unknown command. Type <b>/help</b> for list of commands.", null, $targetChatId);
                     break;
             }
         } catch (\Throwable $e) {
             Log::error('Telegram command error: ' . $e->getMessage());
-            GeneralSettings::sendTelegramNotification("⚠️ Error executing command: " . $e->getMessage());
+            GeneralSettings::sendTelegramNotification("⚠️ Error executing command: " . $e->getMessage(), null, $targetChatId);
         }
     }
 

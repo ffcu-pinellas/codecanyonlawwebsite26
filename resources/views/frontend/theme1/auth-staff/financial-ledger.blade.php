@@ -5,16 +5,17 @@
 @section('page-css')
 <style>
     .ledger-card {
-        background: white;
-        border-radius: 16px;
-        border: none;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        background: #11151e;
+        border: 1px solid #28303f;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
         margin-bottom: 25px;
+        color: #f1f5f9;
     }
     .wage-indicator {
         font-size: 2.2rem;
         font-weight: 800;
-        color: #27ae60;
+        color: #10b981;
         font-family: 'Montserrat', sans-serif;
     }
     .status-badge {
@@ -22,6 +23,21 @@
         padding: 5px 10px;
         border-radius: 20px;
         font-weight: 600;
+    }
+    .ledger-summary-box {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid #28303f;
+    }
+
+    body.light-mode .ledger-card {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .ledger-summary-box {
+        background: #f8fafc !important;
+        border-color: #e2e8f0 !important;
     }
 </style>
 @endsection
@@ -62,15 +78,15 @@
             <div class="card ledger-card">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="mb-0" style="font-weight: 700; color: #2c3e50;"><i class="fas fa-wallet mr-2 text-info"></i>{{ __('Reimbursement Ledger') }}</h5>
-                        <button type="button" class="btn btn-outline-info btn-sm" data-toggle="modal" data-target="#requestReimbursementModal">
+                        <h5 class="mb-0 text-white font-weight-bold"><i class="fas fa-wallet mr-2 text-info"></i>{{ __('Reimbursement Ledger') }}</h5>
+                        <button type="button" class="btn btn-outline-info btn-sm font-weight-bold" data-toggle="modal" data-target="#requestReimbursementModal">
                             <i class="fas fa-plus mr-1"></i> {{ __('Request Reimbursement') }}
                         </button>
                     </div>
                     <div class="table-responsive">
                         <table class="table table-bordered mb-0">
                             <thead>
-                                <tr class="bg-light small font-weight-bold text-dark">
+                                <tr class="small font-weight-bold text-muted" style="background: rgba(255,255,255,0.03);">
                                     <th>{{ __('Sub-Ledger Category') }}</th>
                                     <th class="text-right">{{ __('Original') }}</th>
                                     <th class="text-right">{{ __('Paid') }}</th>
@@ -80,24 +96,24 @@
                             <tbody>
                                 <tr>
                                     <td class="text-muted font-weight-medium">{{ __('Funds Owed by Employer (Out-of-Pocket)') }}</td>
-                                    <td class="font-weight-bold text-dark text-right">${{ number_format($origReim, 2) }}</td>
+                                    <td class="font-weight-bold text-white text-right">${{ number_format($origReim, 2) }}</td>
                                     <td class="font-weight-bold text-success text-right">${{ number_format($paidReim, 2) }}</td>
                                     <td class="font-weight-bold text-info text-right">${{ number_format($remReim, 2) }}</td>
                                 </tr>
                                 <tr>
                                     <td class="text-muted font-weight-medium">{{ __('Debts/Funds Owed by Employee') }}</td>
-                                    <td class="font-weight-bold text-dark text-right">${{ number_format($origDebt, 2) }}</td>
+                                    <td class="font-weight-bold text-white text-right">${{ number_format($origDebt, 2) }}</td>
                                     <td class="font-weight-bold text-success text-right">${{ number_format($paidDebt, 2) }}</td>
                                     <td class="font-weight-bold text-danger text-right">${{ number_format($remDebt, 2) }}</td>
                                 </tr>
                                 <tr>
                                     <td class="text-muted font-weight-medium">{{ __('Corporate Bonuses') }}</td>
-                                    <td class="font-weight-bold text-dark text-right">${{ number_format($origBonus, 2) }}</td>
+                                    <td class="font-weight-bold text-white text-right">${{ number_format($origBonus, 2) }}</td>
                                     <td class="font-weight-bold text-success text-right">${{ number_format($paidBonus, 2) }}</td>
                                     <td class="font-weight-bold text-success text-right">${{ number_format($remBonus, 2) }}</td>
                                 </tr>
-                                <tr class="bg-light font-weight-bold">
-                                    <td colspan="3">{{ __('Net Remaining Balance Owed alongside next paycheck/payday') }}</td>
+                                <tr class="font-weight-bold" style="background: rgba(255,255,255,0.03);">
+                                    <td colspan="3" class="text-white">{{ __('Net Remaining Balance Owed alongside next paycheck/payday') }}</td>
                                     <td class="text-right @if($netRemaining >= 0) text-success @else text-danger @endif">
                                         ${{ number_format($netRemaining, 2) }}
                                     </td>
@@ -111,7 +127,7 @@
             <!-- Ledger Transactions Card -->
             <div class="card ledger-card">
                 <div class="card-body">
-                    <h6 class="mb-3" style="font-weight: 600; color: #34495e;"><i class="fas fa-list-alt mr-2 text-primary"></i>{{ __('Itemized Ledger History') }}</h6>
+                    <h6 class="mb-3 text-white font-weight-bold"><i class="fas fa-list-alt mr-2 text-primary"></i>{{ __('Itemized Ledger History') }}</h6>
                     <div class="table-responsive">
                         <table class="table table-hover mb-0" style="font-size: 0.9rem;">
                             <thead>
@@ -190,10 +206,10 @@
             <!-- Earnings & Wage Calculator Card -->
             <div class="card ledger-card">
                 <div class="card-body">
-                    <h5 class="mb-4" style="font-weight: 700; color: #2c3e50;"><i class="fas fa-calculator mr-2 text-success"></i>{{ __('Earnings & Wage Calculator') }}</h5>
+                    <h5 class="mb-4 text-white font-weight-bold"><i class="fas fa-calculator mr-2 text-success"></i>{{ __('Earnings & Wage Calculator') }}</h5>
                     
-                    <div class="row mb-4 bg-light p-3 rounded">
-                        <div class="col-sm-6 text-center border-right">
+                    <div class="row mb-4 p-3 rounded ledger-summary-box">
+                        <div class="col-sm-6 text-center border-right border-secondary">
                             <span class="text-muted small text-uppercase font-weight-bold d-block">{{ __('Accumulated Wages') }}</span>
                             <div class="wage-indicator">${{ number_format($totalEarned, 2) }}</div>
                             <small class="text-muted">{{ __('Total completed shifts') }}</small>
@@ -201,20 +217,20 @@
                         <div class="col-sm-6 text-center">
                             <span class="text-muted small text-uppercase font-weight-bold d-block">{{ __('Hourly Rate') }}</span>
                             <div class="wage-indicator text-primary">${{ number_format($staffDetail->hourly_rate, 2) }}<span style="font-size: 0.9rem; font-weight: 500;">/hr</span></div>
-                            <small class="text-muted">{{ __('Pay Schedule: ') }} <strong>{{ ucfirst($staffDetail->pay_schedule) }}</strong></small>
+                            <small class="text-muted">{{ __('Pay Schedule: ') }} <strong class="text-white">{{ ucfirst($staffDetail->pay_schedule) }}</strong></small>
                         </div>
                     </div>
 
                     <div class="row mb-3 align-items-center">
                         <div class="col-6">
-                            <h6 class="mb-0" style="font-weight: 600; color: #34495e;">{{ __('Next Payday') }}</h6>
+                            <h6 class="mb-0 text-white font-weight-bold">{{ __('Next Payday') }}</h6>
                         </div>
-                        <div class="col-6 text-right font-weight-bold text-dark">
+                        <div class="col-6 text-right font-weight-bold text-warning">
                             {{ $staffDetail->next_pay_date ? $staffDetail->next_pay_date->format('F d, Y') : __('Not Scheduled') }}
                         </div>
                     </div>
 
-                    <h6 class="mb-3 mt-4" style="font-weight: 600; color: #34495e;">{{ __('Recent Shifts') }}</h6>
+                    <h6 class="mb-3 mt-4 text-white font-weight-bold">{{ __('Recent Shifts') }}</h6>
                     <div class="table-responsive">
                         <table class="table table-hover mb-0">
                             <thead>

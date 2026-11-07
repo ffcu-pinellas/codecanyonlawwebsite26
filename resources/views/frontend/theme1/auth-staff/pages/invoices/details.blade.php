@@ -5,33 +5,66 @@
 @section('page-css')
 <style>
     .invoice-container {
-        background: white;
-        border-radius: 15px;
+        background: #11151e;
+        border: 1px solid #28303f;
+        border-radius: 14px;
         padding: 40px;
-        border: none;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
         margin-bottom: 30px;
         position: relative;
+        color: #f1f5f9;
+    }
+    body.light-mode .invoice-container, html.light-mode .invoice-container {
+        background: #ffffff;
+        border-color: #e2e8f0;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+        color: #0f172a;
     }
     .invoice-header {
-        border-bottom: 2px solid #f8f9fa;
+        border-bottom: 2px solid #28303f;
         padding-bottom: 25px;
         margin-bottom: 25px;
     }
-    .status-badge-unpaid { background-color: #ffeef0; color: #f84f5a; font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
-    .status-badge-paid { background-color: #e8f5e9; color: #2e7d32; font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
-    .status-badge-cancelled { background-color: #f1f3f5; color: #868e96; font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
+    body.light-mode .invoice-header, html.light-mode .invoice-header {
+        border-bottom-color: #f1f5f9;
+    }
+    .status-badge-unpaid { background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
+    .status-badge-paid { background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
+    .status-badge-cancelled { background-color: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); font-weight: 600; font-size: 0.8rem; padding: 6px 15px; border-radius: 20px; text-transform: uppercase; }
     
     .section-title {
         font-weight: 700;
-        color: #1a1a2e;
+        color: #f1f5f9;
         font-family: 'Montserrat', sans-serif;
+    }
+    body.light-mode .section-title, html.light-mode .section-title {
+        color: #0f172a;
     }
     .company-logo-text {
         font-size: 1.6rem;
         font-weight: 800;
-        color: #1a1a2e;
+        color: #fecc56;
         letter-spacing: 0.5px;
+    }
+    body.light-mode .company-logo-text, html.light-mode .company-logo-text {
+        color: #0f172a;
+    }
+    .invoice-table thead th {
+        background: #1a202c;
+        color: #fecc56;
+        border-color: #28303f;
+    }
+    body.light-mode .invoice-table thead th, html.light-mode .invoice-table thead th {
+        background: #f8fafc;
+        color: #0f172a;
+        border-color: #e2e8f0;
+    }
+    .invoice-table td, .invoice-table th {
+        border-color: #28303f;
+        color: inherit;
+    }
+    body.light-mode .invoice-table td, body.light-mode .invoice-table th {
+        border-color: #e2e8f0;
     }
     @media print {
         body * {
@@ -47,6 +80,8 @@
             width: 100%;
             padding: 0;
             box-shadow: none;
+            background: white !important;
+            color: black !important;
         }
         .print-btn-container {
             display: none !important;
@@ -87,7 +122,7 @@
                     </div>
                 </div>
                 <div class="col-md-6 text-center text-md-right">
-                    <h3 class="font-weight-bold text-dark uppercase mb-2" style="font-size: 1.4rem;">{{ __('Invoice') }}</h3>
+                    <h3 class="font-weight-bold uppercase mb-2" style="font-size: 1.4rem; color: inherit;">{{ __('Invoice') }}</h3>
                     <span class="status-badge-{{ $invoice->status }}">{{ $invoice->status }}</span>
                     <div class="mt-2 text-muted small">
                         <strong>{{ __('Invoice #:') }}</strong> {{ $invoice->invoice_number }}
@@ -100,7 +135,7 @@
         <div class="row mb-5">
             <div class="col-md-6 mb-4 mb-md-0">
                 <h6 class="text-uppercase font-weight-bold text-muted mb-3" style="font-size: 0.75rem; letter-spacing: 1px;">{{ __('Billed To') }}</h6>
-                <h5 class="font-weight-bold text-dark mb-1">{{ $invoice->client->name }}</h5>
+                <h5 class="font-weight-bold mb-1" style="color: inherit;">{{ $invoice->client->name }}</h5>
                 <p class="text-muted small mb-1">{{ $invoice->client->email }}</p>
                 <p class="text-muted small mb-0">{{ $invoice->client->address ?: __('No Address Registered') }}</p>
             </div>
@@ -116,8 +151,8 @@
 
         <!-- Line items table -->
         <div class="table-responsive mb-4">
-            <table class="table table-bordered">
-                <thead class="bg-light">
+            <table class="table table-bordered invoice-table">
+                <thead>
                     <tr>
                         <th>{{ __('Description of Services Rendered') }}</th>
                         <th class="text-right" style="width: 150px;">{{ __('Total') }}</th>
@@ -127,7 +162,7 @@
                     <tr>
                         <td>
                             <div class="py-2">
-                                <h6 class="font-weight-bold text-dark mb-1">
+                                <h6 class="font-weight-bold mb-1" style="color: inherit;">
                                     @if($invoice->clientCase)
                                         {{ __('Legal/CPA Representation for Case #') }}{{ $invoice->clientCase->case_number }}
                                     @else
@@ -139,7 +174,7 @@
                                 </p>
                             </div>
                         </td>
-                        <td class="text-right align-middle font-weight-bold text-dark">${{ number_format($invoice->amount, 2) }}</td>
+                        <td class="text-right align-middle font-weight-bold" style="color: inherit;">${{ number_format($invoice->amount, 2) }}</td>
                     </tr>
                 </tbody>
             </table>
@@ -148,17 +183,17 @@
         <!-- Payment calculation details summary -->
         <div class="row justify-content-end">
             <div class="col-md-5 text-right">
-                <div class="py-2 border-top">
+                <div class="py-2 border-top" style="border-color: rgba(255,255,255,0.1) !important;">
                     <span class="text-muted uppercase font-weight-bold small mr-4">{{ __('Subtotal:') }}</span>
-                    <span class="font-weight-semibold text-dark">${{ number_format($invoice->amount, 2) }}</span>
+                    <span class="font-weight-semibold" style="color: inherit;">${{ number_format($invoice->amount, 2) }}</span>
                 </div>
-                <div class="py-2 border-top">
+                <div class="py-2 border-top" style="border-color: rgba(255,255,255,0.1) !important;">
                     <span class="text-muted uppercase font-weight-bold small mr-4">{{ __('Tax / Surcharges (0%):') }}</span>
-                    <span class="font-weight-semibold text-dark">$0.00</span>
+                    <span class="font-weight-semibold" style="color: inherit;">$0.00</span>
                 </div>
-                <div class="py-3 border-top border-dark mt-2" style="font-size: 1.25rem;">
-                    <span class="font-weight-bold text-dark mr-4">{{ __('Amount Due:') }}</span>
-                    <span class="font-weight-bold text-primary">${{ number_format($invoice->amount, 2) }}</span>
+                <div class="py-3 border-top mt-2" style="font-size: 1.25rem; border-color: rgba(254, 204, 86, 0.4) !important;">
+                    <span class="font-weight-bold mr-4" style="color: inherit;">{{ __('Amount Due:') }}</span>
+                    <span class="font-weight-bold text-warning">${{ number_format($invoice->amount, 2) }}</span>
                 </div>
             </div>
         </div>

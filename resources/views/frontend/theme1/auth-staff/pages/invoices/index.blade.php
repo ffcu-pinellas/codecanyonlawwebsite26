@@ -5,22 +5,58 @@
 @section('page-css')
 <style>
     .invoice-card {
-        background: white;
-        border-radius: 15px;
+        background: #11151e;
+        border: 1px solid #28303f;
+        border-radius: 14px;
         padding: 24px;
-        border: none;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.25);
         margin-bottom: 25px;
     }
-    .status-badge-unpaid { background-color: #ffeef0; color: #f84f5a; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
-    .status-badge-paid { background-color: #e8f5e9; color: #2e7d32; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
-    .status-badge-cancelled { background-color: #f1f3f5; color: #868e96; font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
+    body.light-mode .invoice-card, html.light-mode .invoice-card {
+        background: #ffffff;
+        border-color: #e2e8f0;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    }
+    .status-badge-unpaid { background-color: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
+    .status-badge-paid { background-color: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
+    .status-badge-cancelled { background-color: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); font-weight: 600; font-size: 0.75rem; padding: 5px 12px; border-radius: 20px; }
     
     .section-title {
         font-weight: 700;
-        color: #1a1a2e;
+        color: #f1f5f9;
         margin-bottom: 25px;
         font-family: 'Montserrat', sans-serif;
+    }
+    body.light-mode .section-title, html.light-mode .section-title {
+        color: #0f172a;
+    }
+    .table-adaptive thead th {
+        background: #1a202c;
+        color: #fecc56;
+        border-color: #28303f;
+        font-size: 12.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    body.light-mode .table-adaptive thead th, html.light-mode .table-adaptive thead th {
+        background: #f8fafc;
+        color: #0f172a;
+        border-color: #e2e8f0;
+    }
+    .table-adaptive tbody tr {
+        border-color: #28303f;
+    }
+    body.light-mode .table-adaptive tbody tr, html.light-mode .table-adaptive tbody tr {
+        border-color: #e2e8f0;
+    }
+    .table-adaptive tbody td {
+        border-color: #28303f;
+        color: #e2e8f0;
+    }
+    body.light-mode .table-adaptive tbody td, html.light-mode .table-adaptive tbody td {
+        border-color: #e2e8f0;
+        color: #1e293b;
     }
 </style>
 @endsection
@@ -54,14 +90,14 @@
             <div class="card invoice-card">
                 @if($invoices->isEmpty())
                     <div class="text-center py-5">
-                        <i class="fas fa-file-invoice-dollar fa-4x text-light mb-3"></i>
-                        <h5 class="text-dark font-weight-bold">{{ __('No invoices found.') }}</h5>
+                        <i class="fas fa-file-invoice-dollar fa-4x text-muted mb-3"></i>
+                        <h5 class="font-weight-bold" style="color: inherit;">{{ __('No invoices found.') }}</h5>
                         <p class="text-muted">{{ __('There are currently no generated or pending client invoices in the system.') }}</p>
                     </div>
                 @else
                     <div class="table-responsive">
-                        <table class="table table-hover align-middle">
-                            <thead class="thead-light">
+                        <table class="table table-hover table-adaptive align-middle">
+                            <thead>
                                 <tr>
                                     <th>{{ __('Invoice Number') }}</th>
                                     <th>{{ __('Client') }}</th>
@@ -76,22 +112,22 @@
                                 @foreach($invoices as $invoice)
                                     <tr>
                                         <td>
-                                            <span class="font-weight-bold text-dark">{{ $invoice->invoice_number }}</span>
+                                            <span class="font-weight-bold" style="color: #fecc56;">{{ $invoice->invoice_number }}</span>
                                         </td>
                                         <td>
-                                            <span class="font-weight-bold text-dark">{{ $invoice->client->name }}</span>
+                                            <span class="font-weight-bold" style="color: inherit;">{{ $invoice->client->name }}</span>
                                             <small class="text-muted d-block">{{ $invoice->client->email }}</small>
                                         </td>
                                         <td>
                                             @if($invoice->clientCase)
-                                                <span class="font-weight-medium text-dark">{{ $invoice->clientCase->case_number }}</span>
+                                                <span class="font-weight-medium" style="color: inherit;">{{ $invoice->clientCase->case_number }}</span>
                                                 <small class="text-muted d-block">{{ $invoice->clientCase->title }}</small>
                                             @else
                                                 <span class="text-muted small">{{ __('General Account Representation') }}</span>
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="font-weight-bold text-dark">${{ number_format($invoice->amount, 2) }}</span>
+                                            <span class="font-weight-bold" style="color: inherit;">${{ number_format($invoice->amount, 2) }}</span>
                                         </td>
                                         <td>
                                             <span class="small text-muted">{{ $invoice->due_date->format('M d, Y') }}</span>

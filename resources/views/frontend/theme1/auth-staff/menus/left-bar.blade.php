@@ -97,7 +97,7 @@
         <li class="{{ request()->is('staff/messages*') ? 'active' : '' }}">
             <a href="{{ route('staff.messages') }}">
                 <i class="fas fa-comments nav-icon"></i>
-                <span class="nav-text">{{ __('Counsel Chat') }}</span>
+                <span class="nav-text">{{ __('Internal Team Chat') }}</span>
                 @php
                     $unreadStaffChat = 0;
                     if (Auth::check()) {
@@ -114,6 +114,12 @@
                 @if ($unreadStaffChat > 0)
                     <span class="badge badge-warning ml-auto font-weight-bold" style="font-size: 10.5px; border-radius: 10px; padding: 2px 7px;">{{ $unreadStaffChat }}</span>
                 @endif
+            </a>
+        </li>
+        <li class="{{ request()->is('staff/profile*') ? 'active' : '' }}">
+            <a href="{{ route('staff.profile') }}">
+                <i class="fas fa-user-cog nav-icon"></i>
+                <span class="nav-text">{{ __('Profile & Settings') }}</span>
             </a>
         </li>
         <li class="border-top border-secondary mt-2 pt-2">
@@ -133,13 +139,24 @@
         background: #11151e !important;
         border: 1px solid #28303f !important;
         border-radius: 12px !important;
-        overflow: hidden !important;
         box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
         width: 100% !important;
+        max-height: calc(100vh - 90px);
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: thin;
+        scrollbar-color: #334155 transparent;
+    }
+    .ifw-staff-sidebar::-webkit-scrollbar {
+        width: 4px;
+    }
+    .ifw-staff-sidebar::-webkit-scrollbar-thumb {
+        background: #334155;
+        border-radius: 4px;
     }
     .ifw-staff-sidebar ul.ifw-nav-list {
         list-style: none !important;
-        padding: 6px 0 !important;
+        padding: 10px 0 !important;
         margin: 0 !important;
         display: block !important;
     }
@@ -155,12 +172,12 @@
         flex-direction: row !important;
         align-items: center !important;
         justify-content: flex-start !important;
-        padding: 10px 16px !important;
-        margin: 2px 8px !important;
+        padding: 12px 18px !important;
+        margin: 6px 12px !important;
         border-radius: 8px !important;
         color: #94a3b8 !important;
         text-decoration: none !important;
-        font-size: 13px !important;
+        font-size: 13.5px !important;
         font-weight: 600 !important;
         transition: all 0.2s ease !important;
         border-left: 3px solid transparent !important;
@@ -180,16 +197,16 @@
         font-weight: 700 !important;
     }
     .ifw-staff-sidebar ul.ifw-nav-list > li > a .nav-icon {
-        width: 22px !important;
-        font-size: 14px !important;
-        margin-right: 10px !important;
+        width: 24px !important;
+        font-size: 15px !important;
+        margin-right: 12px !important;
         flex-shrink: 0 !important;
         text-align: center !important;
         color: #fecc56 !important;
     }
     .ifw-staff-sidebar ul.ifw-nav-list > li > a .nav-text {
-        font-size: 13px !important;
-        line-height: 1.2 !important;
+        font-size: 13.5px !important;
+        line-height: 1.25 !important;
         display: inline-block !important;
         white-space: nowrap !important;
     }

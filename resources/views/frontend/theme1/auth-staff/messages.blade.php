@@ -5,49 +5,58 @@
 @section('page-css')
 <style>
     .chat-card {
-        background: white;
-        border-radius: 16px;
-        border: none;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        background: #11151e;
+        border-radius: 12px;
+        border: 1px solid #28303f;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         display: flex;
         flex-direction: column;
-        height: 600px;
+        height: 640px;
         overflow: hidden;
     }
     .chat-header {
-        background: #f8f9fa;
-        border-bottom: 1px solid #eaeded;
-        padding: 18px 25px;
+        background: #161a23;
+        border-bottom: 1px solid #28303f;
+        padding: 16px 20px;
     }
     .chat-messages {
         flex: 1;
-        padding: 25px;
+        padding: 20px;
         overflow-y: auto;
-        background: #f4f6f7;
+        background: #0a0c10;
     }
     .chat-bubble {
-        max-width: 70%;
+        max-width: 72%;
         padding: 12px 18px;
-        border-radius: 16px;
-        margin-bottom: 15px;
+        border-radius: 14px;
+        margin-bottom: 12px;
         position: relative;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        font-size: 13.5px;
+        line-height: 1.45;
     }
     .chat-bubble-sent {
-        background: #3498db;
-        color: white;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: #ffffff;
         align-self: flex-end;
-        border-bottom-right-radius: 4px;
+        border-bottom-right-radius: 3px;
+        box-shadow: 0 2px 8px rgba(30, 60, 114, 0.35);
     }
     .chat-bubble-received {
-        background: white;
-        color: #2c3e50;
+        background: #161a23;
+        color: #f1f5f9;
         align-self: flex-start;
-        border-bottom-left-radius: 4px;
-        border: 1px solid #e2e8f0;
+        border-bottom-left-radius: 3px;
+        border: 1px solid #28303f;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .chat-bubble-received .chat-text {
+        color: #f1f5f9;
+    }
+    .chat-bubble-sent .chat-text {
+        color: #ffffff;
     }
     .chat-time {
-        font-size: 0.65rem;
+        font-size: 0.68rem;
         display: block;
         margin-top: 5px;
         opacity: 0.8;
@@ -58,30 +67,79 @@
     }
     .chat-bubble-received .chat-time {
         text-align: left;
-        color: #7f8c8d;
+        color: #94a3b8;
     }
     .chat-footer {
-        background: white;
-        border-top: 1px solid #eaeded;
-        padding: 20px 25px;
+        background: #161a23;
+        border-top: 1px solid #28303f;
+        padding: 16px 20px;
+    }
+
+    /* Light Mode Overrides */
+    body.light-mode .chat-card, html.light-mode .chat-card {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+    }
+    body.light-mode .chat-header, html.light-mode .chat-header {
+        background: #f8fafc !important;
+        border-bottom-color: #e2e8f0 !important;
+    }
+    body.light-mode .chat-header h5, html.light-mode .chat-header h5 {
+        color: #0f172a !important;
+    }
+    body.light-mode .chat-messages, html.light-mode .chat-messages {
+        background: #f8fafc !important;
+    }
+    body.light-mode .chat-bubble-received, html.light-mode .chat-bubble-received {
+        background: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.04) !important;
+    }
+    body.light-mode .chat-bubble-received .chat-text, html.light-mode .chat-bubble-received .chat-text {
+        color: #0f172a !important;
+    }
+    body.light-mode .chat-bubble-received .chat-time, html.light-mode .chat-bubble-received .chat-time {
+        color: #64748b !important;
+    }
+    body.light-mode .chat-footer, html.light-mode .chat-footer {
+        background: #ffffff !important;
+        border-top-color: #e2e8f0 !important;
     }
 </style>
 @endsection
 
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="font-weight-bold text-white mb-1"><i class="fas fa-comments text-warning mr-2"></i>{{ __('Internal Team Chat') }}</h4>
+            <p class="text-muted small mb-0">{{ __('Confidential internal practice communications channel with your supervising officer.') }}</p>
+        </div>
+        <a href="{{ route('staff.dashboard') }}" class="btn btn-outline-secondary btn-sm text-light font-weight-bold px-3">
+            <i class="fas fa-arrow-left mr-1"></i> {{ __('Dashboard') }}
+        </a>
+    </div>
+
     <div class="chat-card">
         <!-- Chat Header -->
         <div class="chat-header d-flex align-items-center justify-content-between">
             <div class="d-flex align-items-center">
-                <a href="{{ route('staff.dashboard') }}" class="btn btn-outline-secondary btn-sm mr-3" style="border-radius: 50%; width: 32px; height: 32px; padding: 4px;"><i class="fas fa-arrow-left"></i></a>
+                <div class="rounded-circle mr-3 d-flex align-items-center justify-content-center text-dark font-weight-bold" style="width: 40px; height: 40px; background: #fecc56; font-size: 15px;">
+                    {{ strtoupper(substr($officer->name ?? 'S', 0, 1)) }}
+                </div>
                 <div>
-                    <h5 class="mb-0" style="font-weight: 700; color: #2c3e50;">{{ $officer->name }}</h5>
-                    <span class="badge badge-success small" style="font-size: 0.7rem;">{{ __('Assigned Officer') }}</span>
+                    <h5 class="mb-0 text-white font-weight-bold" style="font-size: 15px;">{{ $officer->name }}</h5>
+                    <span class="badge" style="background: rgba(254,204,86,0.15); color: #fecc56; border: 1px solid rgba(254,204,86,0.3); font-size: 10px;">
+                        <i class="fas fa-user-shield mr-1"></i> {{ __('Assigned Practice Supervisor') }}
+                    </span>
                 </div>
             </div>
             <div class="text-muted small">
-                <i class="fas fa-circle text-success mr-1"></i> {{ __('Online Secure Connection') }}
+                <span class="badge" style="background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); font-size: 10.5px;">
+                    <i class="fas fa-shield-alt mr-1"></i> {{ __('Encrypted Channel') }}
+                </span>
             </div>
         </div>
 
@@ -103,9 +161,9 @@
                 @endif
             @empty
                 <div class="my-auto text-center text-muted py-5" id="chat-empty-state">
-                    <i class="far fa-comments fa-3x mb-3 text-white-50"></i>
-                    <p class="mb-0">{{ __('No messages exchanged yet.') }}</p>
-                    <small>{{ __('Send a message below to start the conversation with your officer.') }}</small>
+                    <i class="fas fa-comments fa-3x mb-3 text-warning" style="opacity: 0.5;"></i>
+                    <h6 class="text-white font-weight-bold mb-1">{{ __('No messages exchanged yet.') }}</h6>
+                    <small class="text-muted">{{ __('Type below to send a message to your supervising officer.') }}</small>
                 </div>
             @endforelse
         </div>
@@ -115,9 +173,9 @@
             <form action="{{ route('staff.messages') }}" method="POST" id="chat-form">
                 @csrf
                 <div class="input-group">
-                    <textarea class="form-control" name="message" rows="2" placeholder="{{ __('Type your message here for the officer...') }}" required style="resize: none; border-radius: 8px 0 0 8px; border-color: #bdc3c7;"></textarea>
+                    <textarea class="form-control" name="message" rows="2" placeholder="{{ __('Type your message here and press Enter to send...') }}" required style="resize: none; border-radius: 8px 0 0 8px;"></textarea>
                     <div class="input-group-append">
-                        <button type="submit" class="btn btn-primary px-4" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border: none; border-radius: 0 8px 8px 0;">
+                        <button type="submit" class="btn font-weight-bold px-4" style="background: linear-gradient(135deg, #fecc56, #f0a500); color: #000; border: none; border-radius: 0 8px 8px 0;">
                             <i class="fas fa-paper-plane mr-2"></i> {{ __('Send') }}
                         </button>
                     </div>

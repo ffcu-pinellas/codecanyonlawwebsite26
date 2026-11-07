@@ -5,52 +5,66 @@
 @section('page-css')
 <style>
     .payment-preference-card {
-        background: white;
-        border-radius: 16px;
-        border: none;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+        background: #11151e;
+        border-radius: 12px;
+        border: 1px solid #28303f;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.3);
         padding: 30px;
     }
     .custom-control-label {
         font-weight: 600;
-        color: #2c3e50;
+        color: #f1f5f9;
     }
     .upload-container {
-        border: 2px dashed #bdc3c7;
+        border: 2px dashed #334155;
         border-radius: 12px;
         padding: 20px;
         text-align: center;
-        background: #f8f9fa;
+        background: #0f172a;
         cursor: pointer;
         transition: all 0.2s;
     }
     .upload-container:hover {
-        border-color: #3498db;
-        background: #f0f8ff;
+        border-color: #fecc56;
+        background: rgba(254, 204, 86, 0.05);
     }
     .file-preview {
         font-size: 0.8rem;
-        color: #7f8c8d;
+        color: #94a3b8;
         margin-top: 5px;
+    }
+
+    /* Light Mode */
+    body.light-mode .payment-preference-card, html.light-mode .payment-preference-card {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
+    }
+    body.light-mode .custom-control-label, html.light-mode .custom-control-label {
+        color: #0f172a !important;
+    }
+    body.light-mode .upload-container, html.light-mode .upload-container {
+        background: #f8fafc !important;
+        border-color: #cbd5e1 !important;
     }
 </style>
 @endsection
 
 @section('content')
-<div class="container-fluid py-4">
+<div class="container-fluid px-0">
     <div class="row justify-content-center">
         <div class="col-lg-8">
             <div class="payment-preference-card">
-                <div class="d-flex align-items-center mb-4 border-bottom pb-3">
-                    <a href="{{ route('staff.dashboard') }}" class="btn btn-outline-secondary btn-sm mr-3" style="border-radius: 50%; width: 32px; height: 32px; padding: 4px;"><i class="fas fa-arrow-left"></i></a>
-                    <h5 class="mb-0" style="font-weight: 700; color: #2c3e50;">{{ __('Payment Preferences & Direct Deposit Setup') }}</h5>
+                <div class="d-flex align-items-center mb-4 border-bottom border-secondary pb-3">
+                    <a href="{{ route('staff.dashboard') }}" class="btn btn-outline-secondary btn-sm mr-3 text-light" style="border-radius: 50%; width: 32px; height: 32px; padding: 4px;"><i class="fas fa-arrow-left"></i></a>
+                    <h5 class="mb-0 text-white font-weight-bold">{{ __('Payment Preferences & Direct Deposit Setup') }}</h5>
                 </div>
 
                 <form action="{{ route('staff.payment-method') }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     
                     <div class="form-group mb-4">
-                        <label class="font-weight-bold text-dark d-block mb-3">{{ __('Preferred Payment Method') }}</label>
+                        <label class="font-weight-bold text-white d-block mb-3">{{ __('Preferred Payment Method') }}</label>
                         
                         <div class="custom-control custom-radio mb-3">
                             <input type="radio" id="method_paycheck" name="payment_method" value="paycheck" class="custom-control-input" @if($staffDetail->payment_method === 'paycheck') checked @endif onclick="toggleMethodFields()">

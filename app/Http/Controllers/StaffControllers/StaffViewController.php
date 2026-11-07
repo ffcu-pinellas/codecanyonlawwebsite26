@@ -1111,4 +1111,101 @@ class StaffViewController extends Controller
             return $this->backWithError($e->getMessage());
         }
     }
+
+    /**
+     * Staff Profile & Account Settings
+     */
+    public function profile()
+    {
+        try {
+            $title = __('Staff Profile & Account Settings');
+            $user = Auth::user();
+            $staffDetail = $user->staffDetail;
+            $officer = $staffDetail ? $staffDetail->officer : null;
+            return view('frontend.theme1.auth-staff.profile', compact('title', 'user', 'staffDetail', 'officer'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Update Staff Profile Information
+     */
+    public function profileUpdate(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            $request->validate([
+                'name' => ['required', 'string', 'max:255'],
+                'email' => ['required', 'email', 'max:255', \Illuminate\Validation\Rule::unique('users')->ignore($user->id)],
+                'phone' => ['nullable', 'string', 'max:30'],
+                'address' => ['nullable', 'string', 'max:255'],
+                'photo' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:3072'],
+            ]);
+
+            $user->name = $request->name;
+            $user->email = $request->email;
+            $user->phone = $request->phone;
+            $user->address = $request->address;
+
+            if ($request->hasFile('photo')) {
+                if (method_exists($user, 'updateProfilePhoto')) {
+                    $user->updateProfilePhoto($request->file('photo'));
+                } else {
+                    $photoPath = $request->file('photo')->store('profile-photos', 'public');
+                    $user->profile_photo_path = $photoPath;
+                }
+            }
+
+            $user->save();
+
+            return redirect()->back()->with([
+                'message' => __('Profile information updated successfully.'),
+                'alert-type' => 'success'
+            ]);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with([
+                'message' => $e->getMessage(),
+                'alert-type' => 'error'
+            ]);
+        }
+    }
+
+    /**
+     * Update Staff Password
+     */
+    public function passwordUpdate(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            $request->validate([
+                'current_password' => ['required', 'string'],
+                'password' => ['required', 'string', 'min:8', 'confirmed'],
+            ]);
+
+            if (!Hash::check($request->current_password, $user->password)) {
+                return redirect()->back()->with([
+                    'message' => __('Current password does not match our records.'),
+                    'alert-type' => 'error'
+                ]);
+            }
+
+            $user->forceFill([
+                'password' => Hash::make($request->password),
+                'is_temp_password' => false,
+            ])->save();
+
+            return redirect()->back()->with([
+                'message' => __('Security credentials & password updated successfully.'),
+                'alert-type' => 'success'
+            ]);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with([
+                'message' => $e->getMessage(),
+                'alert-type' => 'error'
+            ]);
+        }
+    }
 }

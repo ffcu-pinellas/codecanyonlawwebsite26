@@ -15,8 +15,8 @@
         flex: 1;
         min-width: 280px;
         max-width: 340px;
-        background: #f8fafc;
-        border: 1px solid #e2e8f0;
+        background: #11151e;
+        border: 1px solid #28303f;
         border-radius: 12px;
         padding: 16px;
         display: flex;
@@ -28,7 +28,7 @@
         align-items: center;
         margin-bottom: 14px;
         padding-bottom: 10px;
-        border-bottom: 2px solid #e2e8f0;
+        border-bottom: 2px solid #28303f;
     }
     .kanban-col-title {
         font-weight: 700;
@@ -45,22 +45,23 @@
         min-height: 200px;
     }
     .kanban-card {
-        background: #ffffff;
-        border: 1px solid #cbd5e1;
+        background: #161a23;
+        border: 1px solid #28303f;
         border-radius: 10px;
         padding: 14px;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.25);
         transition: all 0.2s ease;
         cursor: grab;
+        color: #f1f5f9;
     }
     .kanban-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 6px 14px rgba(0,0,0,0.08);
-        border-color: #3b82f6;
+        box-shadow: 0 6px 16px rgba(0,0,0,0.4);
+        border-color: #fecc56;
     }
     .kanban-card.dragging {
         opacity: 0.5;
-        border: 2px dashed #3b82f6;
+        border: 2px dashed #fecc56;
     }
     .card-priority-badge {
         font-size: 10px;
@@ -69,9 +70,27 @@
         border-radius: 12px;
         text-transform: uppercase;
     }
-    .badge-urgent { background: #fee2e2; color: #b91c1c; }
-    .badge-high { background: #ffedd5; color: #c2410c; }
-    .badge-normal { background: #eff6ff; color: #1d4ed8; }
+    .badge-urgent { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); }
+    .badge-high { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.35); }
+    .badge-normal { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.35); }
+
+    /* Light Mode Overrides */
+    body.light-mode .kanban-column, html.light-mode .kanban-column {
+        background: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .kanban-col-header, html.light-mode .kanban-col-header {
+        border-bottom-color: #e2e8f0 !important;
+    }
+    body.light-mode .kanban-card, html.light-mode .kanban-card {
+        background: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05) !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .kanban-card:hover, html.light-mode .kanban-card:hover {
+        border-color: #3b82f6 !important;
+    }
 </style>
 @endsection
 

@@ -463,8 +463,8 @@
                         <i class="fas fa-comments"></i>
                     </div>
                     <div>
-                        <div class="font-weight-bold text-white">{{ __('Counsel & Firm Chat') }}</div>
-                        <div class="text-muted small">{{ __('Direct secure communications with partners') }}</div>
+                        <div class="font-weight-bold text-white">{{ __('Internal Team Chat') }}</div>
+                        <div class="text-muted small">{{ __('Direct secure communications with supervisors') }}</div>
                     </div>
                 </a>
             </div>

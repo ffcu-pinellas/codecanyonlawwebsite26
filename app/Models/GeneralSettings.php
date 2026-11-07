@@ -63,10 +63,10 @@ class GeneralSettings extends Model
      * Dispatch Telegram notification with optional interactive inline keyboard
      * Returns decoded response array with message_id for reply mapping
      */
-    public static function sendTelegramNotification($message, $replyMarkup = null)
+    public static function sendTelegramNotification($message, $replyMarkup = null, $targetChatId = null)
     {
         $botToken = config('services.telegram.bot_token') ?: env('TELEGRAM_BOT_TOKEN');
-        $chatId = config('services.telegram.chat_id') ?: env('TELEGRAM_CHAT_ID');
+        $chatId = $targetChatId ?: (config('services.telegram.chat_id') ?: env('TELEGRAM_CHAT_ID'));
 
         if (empty($botToken) || empty($chatId)) {
             return null;
@@ -89,15 +89,39 @@ class GeneralSettings extends Model
             curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($payload));
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 8);
             $response = curl_exec($ch);
             curl_close($ch);
 
             if ($response) {
-                return json_decode($response, true);
+                $resData = json_decode($response, true);
+                if (is_array($resData) && ($resData['ok'] ?? false)) {
+                    return $resData;
+                }
+                
+                // If Telegram rejected due to HTML parse error (e.g. unescaped & or tags), retry as clean plain text!
+                $plainText = strip_tags(str_replace(['<br>', '<br/>', '<br />', '</p>', '</div>', '</li>'], "\n", $message));
+                $plainPayload = [
+                    'chat_id' => $chatId,
+                    'text' => $plainText,
+                ];
+                if (!empty($replyMarkup)) {
+                    $plainPayload['reply_markup'] = is_array($replyMarkup) ? json_encode($replyMarkup) : $replyMarkup;
+                }
+
+                $ch2 = curl_init($url);
+                curl_setopt($ch2, CURLOPT_POST, true);
+                curl_setopt($ch2, CURLOPT_POSTFIELDS, http_build_query($plainPayload));
+                curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER, false);
+                curl_setopt($ch2, CURLOPT_TIMEOUT, 8);
+                $response2 = curl_exec($ch2);
+                curl_close($ch2);
+
+                return $response2 ? json_decode($response2, true) : null;
             }
         } catch (\Throwable $e) {
-            // Fail silently
+            \Illuminate\Support\Facades\Log::error('sendTelegramNotification error: ' . $e->getMessage());
         }
 
         return null;

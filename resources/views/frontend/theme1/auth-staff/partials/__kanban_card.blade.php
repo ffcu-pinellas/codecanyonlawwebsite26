@@ -11,10 +11,10 @@
         <small class="text-muted"><i class="far fa-calendar-alt mr-1"></i> {{ $task->due_date ? $task->due_date->format('M d') : 'No Date' }}</small>
     </div>
     
-    <h6 class="font-weight-bold text-dark mb-1" style="font-size: 13.5px; line-height: 1.3;">{{ $task->title }}</h6>
+    <h6 class="font-weight-bold mb-1 kanban-card-title" style="font-size: 13.5px; line-height: 1.3;">{{ $task->title }}</h6>
     <p class="text-muted small mb-2" style="font-size: 11.5px; line-height: 1.4;">{{ Str::limit($task->description, 75) }}</p>
 
-    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top" style="border-color: rgba(148, 163, 184, 0.2) !important;">
         <button type="button" class="btn btn-xs btn-outline-info" data-toggle="modal" data-target="#previewModal-{{ $task->id }}">
             <i class="fas fa-eye"></i> Details
         </button>

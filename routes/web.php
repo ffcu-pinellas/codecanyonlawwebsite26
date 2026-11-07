@@ -712,6 +712,11 @@ Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff', '
     Route::get('/invoices', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'invoicesIndex'])->name('invoices.index');
     Route::get('/invoices/{id}', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'invoiceShow'])->name('invoices.show');
 
+    // Staff Profile & Settings
+    Route::get('/profile', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'profile'])->name('profile');
+    Route::post('/profile', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'profileUpdate'])->name('profile.update');
+    Route::post('/password-update', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'passwordUpdate'])->name('password.update');
+
     // Document Center
     Route::get('/document-center', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'documentCenter'])->name('documents.index');
     Route::get('/document-center/{id}/print', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'viewDocument'])->name('documents.print');
