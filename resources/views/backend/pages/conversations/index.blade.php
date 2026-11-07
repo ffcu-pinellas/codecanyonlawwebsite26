@@ -161,9 +161,12 @@
                                     <i class="fas fa-comments text-warning mr-2"></i> {{ __('Client Conversations & Direct Inquiries') }}
                                 </h6>
                             </div>
-                            <div class="col-md-6 col-sm-12 text-md-right mt-2 mt-md-0">
+                            <div class="col-md-6 col-sm-12 text-md-right mt-2 mt-md-0 d-flex justify-content-md-end align-items-center" style="gap: 10px;">
+                                <button type="button" class="btn btn-warning font-weight-bold text-dark btn-sm px-3 shadow-sm" data-toggle="modal" data-target="#newChatModal">
+                                    <i class="fas fa-plus-circle mr-1"></i> {{ __('Start New Chat') }}
+                                </button>
                                 <span class="badge badge-warning px-3 py-2 font-weight-bold">
-                                    <i class="fas fa-lock mr-1"></i> {{ __('256-Bit Encrypted Practice Channels') }}
+                                    <i class="fas fa-lock mr-1"></i> {{ __('256-Bit Encrypted') }}
                                 </span>
                             </div>
                         </div>
@@ -189,6 +192,58 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal: Start New Client Chat -->
+<div class="modal fade" id="newChatModal" tabindex="-1" role="dialog" aria-labelledby="newChatModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title font-weight-bold text-warning" id="newChatModalLabel">
+                    <i class="fas fa-comment-medical mr-2"></i> {{ __('Start New Client Conversation') }}
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="small text-muted mb-3">{{ __('Select a client to initiate a secure practice consultation channel:') }}</p>
+                <div class="form-group mb-4">
+                    <label class="font-weight-bold text-white small">{{ __('Select Client Account') }}</label>
+                    <select id="selectClientChat" class="form-control bg-dark text-white border-secondary">
+                        <option value="">-- {{ __('Choose Client') }} --</option>
+                        @if(!empty($clients))
+                            @foreach($clients as $c)
+                                <option value="{{ $c->id }}">
+                                    {{ $c->name }} ({{ $c->email }}) [Ref: #CLI-{{ sprintf('%05d', $c->id) }}]
+                                </option>
+                            @endforeach
+                        @endif
+                    </select>
+                </div>
+                <div class="text-right">
+                    <button type="button" class="btn btn-secondary px-3" data-dismiss="modal">{{ __('Cancel') }}</button>
+                    <button type="button" class="btn btn-warning font-weight-bold text-dark px-4" onclick="proceedToClientChat()">
+                        <i class="fas fa-comments mr-1"></i> {{ __('Open Direct Chat') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function proceedToClientChat() {
+        var clientId = document.getElementById('selectClientChat').value;
+        if (!clientId) {
+            alert('Please select a client account.');
+            return;
+        }
+        window.location.href = "{{ url('admin/conversation/start-chat') }}/" + clientId;
+    }
+</script>
         </div>
     </div>
 </div>

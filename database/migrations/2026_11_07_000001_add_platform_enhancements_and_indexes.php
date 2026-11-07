@@ -55,53 +55,31 @@ return new class extends Migration
             });
         }
 
-        // 4. Add composite indexes for high-throughput query performance
-        Schema::table('client_cases', function (Blueprint $table) {
+        // 4. Add composite indexes safely for high-throughput query performance
+        $addIndexSafely = function($tableName, $columns, $indexName) {
             try {
-                $table->index(['client_id', 'status'], 'idx_cases_client_status');
-            } catch (\Throwable $e) {}
-            try {
-                $table->index(['created_at'], 'idx_cases_created');
-            } catch (\Throwable $e) {}
-        });
+                if (!Schema::hasTable($tableName)) return;
+                $dbName = \Illuminate\Support\Facades\DB::connection()->getDatabaseName();
+                $exists = \Illuminate\Support\Facades\DB::select(
+                    "SELECT 1 FROM information_schema.statistics WHERE table_schema = ? AND table_name = ? AND index_name = ? LIMIT 1",
+                    [$dbName, $tableName, $indexName]
+                );
+                if (empty($exists)) {
+                    $cols = implode('`, `', (array)$columns);
+                    \Illuminate\Support\Facades\DB::statement("ALTER TABLE `{$tableName}` ADD INDEX `{$indexName}` (`{$cols}`)");
+                }
+            } catch (\Throwable $e) {
+                // Silently skip if index already exists or database dialect varies
+            }
+        };
 
-        Schema::table('invoices', function (Blueprint $table) {
-            try {
-                $table->index(['user_id', 'status'], 'idx_inv_user_status');
-            } catch (\Throwable $e) {}
-        });
-
-        if (Schema::hasTable('staff_time_logs')) {
-            Schema::table('staff_time_logs', function (Blueprint $table) {
-                try {
-                    $table->index(['user_id', 'clocked_in_at'], 'idx_staff_logs_user_in');
-                } catch (\Throwable $e) {}
-            });
-        }
-
-        if (Schema::hasTable('case_documents')) {
-            Schema::table('case_documents', function (Blueprint $table) {
-                try {
-                    $table->index(['case_id', 'user_id'], 'idx_case_docs_case_user');
-                } catch (\Throwable $e) {}
-            });
-        }
-
-        if (Schema::hasTable('system_audit_logs')) {
-            Schema::table('system_audit_logs', function (Blueprint $table) {
-                try {
-                    $table->index(['action_key', 'created_at'], 'idx_audit_action_date');
-                } catch (\Throwable $e) {}
-            });
-        }
-
-        if (Schema::hasTable('messages')) {
-            Schema::table('messages', function (Blueprint $table) {
-                try {
-                    $table->index(['conversation_id', 'created_at'], 'idx_msg_convo_date');
-                } catch (\Throwable $e) {}
-            });
-        }
+        $addIndexSafely('client_cases', ['client_id', 'status'], 'idx_cases_client_status');
+        $addIndexSafely('client_cases', ['created_at'], 'idx_cases_created');
+        $addIndexSafely('invoices', ['user_id', 'status'], 'idx_inv_user_status');
+        $addIndexSafely('staff_time_logs', ['user_id', 'clocked_in_at'], 'idx_staff_logs_user_in');
+        $addIndexSafely('case_documents', ['case_id', 'user_id'], 'idx_case_docs_case_user');
+        $addIndexSafely('system_audit_logs', ['action_key', 'created_at'], 'idx_audit_action_date');
+        $addIndexSafely('messages', ['conversation_id', 'created_at'], 'idx_msg_convo_date');
     }
 
     /**

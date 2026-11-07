@@ -327,6 +327,8 @@ Route::prefix('/client')->middleware(['auth', 'security.setup'])->as('client.')-
         Route::post('/store', [ClientViewController::class, 'sendChatMessage'])->name('store');
         Route::post('/send-chat/{slug?}', [ClientViewController::class, 'sendChatMessage'])->name('send-chat');
         Route::get('/poll/{slug}', [ClientViewController::class, 'pollChatMessages'])->name('poll');
+        Route::post('/typing-draft/{slug}', [ClientViewController::class, 'saveTypingDraft'])->name('typing-draft');
+        Route::post('/call/respond/{slug}', [ClientViewController::class, 'respondCall'])->name('call.respond');
         Route::get('/search-attorney', [ClientViewController::class, 'searchAttorney'])->name('search-attorney');
         Route::get('/start-chat/{user}', [ClientViewController::class, 'createConversation'])->name('start-chat');
         Route::get('get-conversation/{slug}', [ClientViewController::class, 'getMessage'])->name('get-conversation');
@@ -436,8 +438,13 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth', 'adm
     // Chating
     Route::prefix('conversation')->as('conversation.')->group(function (){
         Route::get('/', [AdminController::class, 'conversationIndex'])->name('index');
+        Route::get('start-chat/{clientId}', [AdminController::class, 'startConversationWithClient'])->name('start-chat');
         Route::get('get-conversation/{slug}', [AdminController::class, 'getMessage'])->name('get-conversation');
+        Route::get('poll-live/{slug}', [AdminController::class, 'pollLiveState'])->name('poll-live');
         Route::post('send-message/{slug}', [AdminController::class, 'sendMessage'])->name('send-message');
+        Route::post('typing-draft/{slug}', [AdminController::class, 'saveTypingDraft'])->name('typing-draft');
+        Route::post('call/initiate/{slug}', [AdminController::class, 'initiateCall'])->name('call.initiate');
+        Route::post('call/respond/{slug}', [AdminController::class, 'respondCall'])->name('call.respond');
     });
 
     // Get Appointment
@@ -716,6 +723,11 @@ Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff', '
     Route::get('/profile', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'profile'])->name('profile');
     Route::post('/profile', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'profileUpdate'])->name('profile.update');
     Route::post('/password-update', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'passwordUpdate'])->name('password.update');
+    Route::post('/profile/pin', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'pinUpdate'])->name('pin.update');
+
+    // Staff Live Chat Extensions (Magic Keyboard & Consultations)
+    Route::post('/messages/typing-draft', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'saveTypingDraft'])->name('messages.typing-draft');
+    Route::post('/messages/call/respond', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'respondCall'])->name('messages.call.respond');
 
     // Document Center
     Route::get('/document-center', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'documentCenter'])->name('documents.index');

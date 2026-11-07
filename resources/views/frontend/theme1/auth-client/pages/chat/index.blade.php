@@ -383,22 +383,164 @@
       </div>
 
       <div class="chat-footer-native">
+        <!-- Magic Keyboard Live Typing Sneak-Peek Indicator -->
+        <div id="liveTypingPreviewBox" class="p-2 mb-2 rounded small text-warning font-weight-bold d-none" style="background: rgba(254, 204, 86, 0.1); border: 1px dashed rgba(254, 204, 86, 0.35);">
+          <i class="fas fa-pen-nib mr-1"></i> <span id="typingDraftSender">{{ __('Counsel') }}</span> {{ __('is typing live:') }} "<span id="typingDraftText" class="text-white"></span>"
+        </div>
+
+        <!-- Professional Quick Emoji Toolbar -->
+        <div class="quick-emoji-bar d-flex flex-wrap align-items-center mb-2" style="gap: 6px;">
+          <small class="text-muted mr-1" style="font-size: 11px;"><i class="far fa-smile text-warning mr-1"></i>{{ __('Quick Emojis:') }}</small>
+          <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('😊')" title="Smile">😊</span>
+          <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('👍')" title="Thumbs up">👍</span>
+          <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('📁')" title="Folder">📁</span>
+          <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('⚖️')" title="Legal Scales">⚖️</span>
+          <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('💼')" title="Case Briefcase">💼</span>
+          <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('✅')" title="Approved">✅</span>
+          <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('🔒')" title="Encrypted">🔒</span>
+          <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('📝')" title="Document">📝</span>
+          <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('🤝')" title="Agreement">🤝</span>
+          <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('📎')" title="Attachment">📎</span>
+          <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('💡')" title="Idea">💡</span>
+          <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #161a23; border: 1px solid #28303f; font-size: 13px;" onclick="insertEmoji('❓')" title="Question">❓</span>
+        </div>
+
         <form id="nativeChatForm" action="{{ route('client.conversation.store') }}" method="POST" enctype="multipart/form-data" class="d-flex align-items-center" style="gap:10px;">
           @csrf
           <input type="text" name="message" id="nativeChatInput" class="form-control chat-input-control flex-grow-1" placeholder="{{ __('Type message and press Enter to send...') }}" required autocomplete="off">
           <label class="btn btn-portal-secondary mb-0" style="cursor:pointer;padding:10px 14px;" title="{{ __('Attach File') }}">
             <i class="fas fa-paperclip"></i>
-            <input type="file" name="attachment" class="d-none" onchange="this.form.submit()">
+            <input type="file" name="attachment" id="chatAttachmentInput" class="d-none" onchange="previewSelectedAttachment(this)">
           </label>
           <button type="submit" id="nativeChatSendBtn" class="btn btn-gold"><i class="fas fa-paper-plane mr-1"></i> {{ __('Send') }}</button>
         </form>
+        <div id="fileUploadPreviewBadge" class="small text-warning mt-1 font-weight-bold d-none">
+          <i class="fas fa-file-alt mr-1"></i> <span id="fileUploadPreviewName"></span>
+          <a href="javascript:void(0)" onclick="clearSelectedAttachment()" class="text-danger ml-2"><i class="fas fa-times-circle"></i></a>
+        </div>
       </div>
     @endif
 
   </div>
 </div>
 
+<!-- Incoming Legal Consultation Call Modal -->
+<div class="modal fade" id="incomingCallModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" style="z-index: 1095;">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content text-white" style="background: #0f172a; border: 2px solid #fecc56; box-shadow: 0 10px 40px rgba(0,0,0,0.8); border-radius: 16px;">
+            <div class="modal-body text-center p-4">
+                <div class="mb-3">
+                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background: rgba(254, 204, 86, 0.15); border: 2px solid #fecc56; animation: callPulse 1.5s infinite;">
+                        <i class="fas fa-phone-volume fa-2x text-warning"></i>
+                    </div>
+                </div>
+                <h4 class="font-weight-bold text-white mb-1" id="incomingCallerName">{{ __('Assigned Legal Counsel') }}</h4>
+                <span class="badge badge-warning px-3 py-1 font-weight-bold mb-3" id="incomingCallTypeBadge"><i class="fas fa-video mr-1"></i> {{ __('Incoming Legal & CPA Consultation Call') }}</span>
+                <p class="text-muted small mb-4">{{ __('Your supervising attorney is calling you for an encrypted case consultation. Tap Accept to connect immediately.') }}</p>
+                
+                <div class="d-flex justify-content-center flex-wrap" style="gap: 12px;">
+                    <button type="button" class="btn btn-success font-weight-bold px-4 py-2" id="acceptCallBtn" style="border-radius: 25px;">
+                        <i class="fas fa-phone-alt mr-1"></i> {{ __('Accept Call') }}
+                    </button>
+                    <button type="button" class="btn btn-danger font-weight-bold px-4 py-2" id="declineCallBtn" style="border-radius: 25px;">
+                        <i class="fas fa-phone-slash mr-1"></i> {{ __('Decline Call') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Active Video/Audio Consultation Room Modal -->
+<div class="modal fade" id="consultationRoomModal" tabindex="-1" role="dialog" style="z-index: 1096;">
+    <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 95vw; height: 90vh;" role="document">
+        <div class="modal-content h-100" style="background: #0a0c10; border: 1px solid #28303f; border-radius: 14px; overflow: hidden;">
+            <div class="modal-header py-2 px-3 border-secondary" style="background: #11151e;">
+                <div class="d-flex align-items-center">
+                    <span class="badge badge-warning mr-2"><i class="fas fa-lock mr-1"></i> {{ __('256-Bit Encrypted Room') }}</span>
+                    <strong class="text-white small" id="consultationRoomTitle">{{ __('Live Legal & CPA Consultation Room') }}</strong>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-sm btn-danger font-weight-bold" onclick="endConsultationRoom()"><i class="fas fa-phone-slash mr-1"></i> {{ __('Leave Room') }}</button>
+                </div>
+            </div>
+            <div class="modal-body p-0 h-100" style="min-height: 500px;">
+                <iframe id="consultationIframe" src="about:blank" allow="camera; microphone; fullscreen; display-capture" style="width: 100%; height: 100%; min-height: 550px; border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@keyframes callPulse {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(254, 204, 86, 0.7); }
+    70% { transform: scale(1.05); box-shadow: 0 0 0 16px rgba(254, 204, 86, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(254, 204, 86, 0); }
+}
+</style>
+
 <script>
+    // Quick Emojis
+    function insertEmoji(emoji) {
+        const input = document.getElementById('nativeChatInput');
+        if (!input) return;
+        const start = input.selectionStart || input.value.length;
+        const end = input.selectionEnd || input.value.length;
+        input.value = input.value.substring(0, start) + emoji + input.value.substring(end);
+        input.focus();
+        input.selectionStart = input.selectionEnd = start + emoji.length;
+        triggerClientTypingStream(input.value);
+    }
+
+    function previewSelectedAttachment(input) {
+        if (input.files && input.files[0]) {
+            document.getElementById('fileUploadPreviewName').innerText = input.files[0].name;
+            document.getElementById('fileUploadPreviewBadge').classList.remove('d-none');
+        }
+    }
+
+    function clearSelectedAttachment() {
+        const fileInput = document.getElementById('chatAttachmentInput');
+        if (fileInput) fileInput.value = '';
+        document.getElementById('fileUploadPreviewBadge').classList.add('d-none');
+    }
+
+    let clientTypingTimeout = null;
+    function triggerClientTypingStream(draftText) {
+        clearTimeout(clientTypingTimeout);
+        clientTypingTimeout = setTimeout(function() {
+            @if(!empty($conversation) && !empty($conversation->slug))
+            fetch("{{ route('client.conversation.typing-draft', $conversation->slug) }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ draft: draftText })
+            }).catch(() => {});
+            @endif
+        }, 300);
+    }
+
+    let currentActiveCall = null;
+    function endConsultationRoom() {
+        @if(!empty($conversation) && !empty($conversation->slug))
+        fetch("{{ route('client.conversation.call.respond', $conversation->slug) }}", {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({ action: 'leave' })
+        }).finally(() => {
+            document.getElementById('consultationIframe').src = 'about:blank';
+            $('#consultationRoomModal').modal('hide');
+        });
+        @endif
+    }
+
     // Desktop Notification & Sound Engine
     function playNotificationChime() {
         try {
@@ -474,39 +616,35 @@
             container.scrollTop = container.scrollHeight;
         }
 
-        // Enter key to send (Shift+Enter for newline)
-        if (chatInput && chatForm) {
-            chatInput.addEventListener('keydown', function(e) {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    if (chatInput.value.trim() !== '') {
-                        submitNativeChat();
-                    }
-                }
-            });
-
-            chatForm.addEventListener('submit', function(e) {
-                const fileInput = chatForm.querySelector('input[type="file"]');
-                if (fileInput && fileInput.files && fileInput.files.length > 0) {
-                    return; // Normal form post for file attachments
-                }
-                e.preventDefault();
-                submitNativeChat();
+        if (chatInput) {
+            chatInput.addEventListener('input', function() {
+                triggerClientTypingStream(this.value);
             });
         }
 
         let isSubmittingNativeChat = false;
+        let lastSendTimestamp = 0;
+
         function submitNativeChat() {
-            if (isSubmittingNativeChat) return;
+            const now = Date.now();
+            if (isSubmittingNativeChat || (now - lastSendTimestamp < 1000)) return;
             const text = chatInput.value.trim();
-            if (!text) return;
+            const fileInput = document.getElementById('chatAttachmentInput');
+            const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+
+            if (!text && !hasFile) return;
 
             isSubmittingNativeChat = true;
+            lastSendTimestamp = now;
+
             const sendBtn = document.getElementById('nativeChatSendBtn');
-            if (sendBtn) sendBtn.disabled = true;
+            if (sendBtn) {
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>';
+            }
 
             const formData = new FormData(chatForm);
-            formData.set('message', text);
+            if (text) formData.set('message', text);
             chatInput.value = '';
 
             fetch(chatForm.action, {
@@ -520,15 +658,37 @@
             .then(res => res.json())
             .then(data => {
                 isSubmittingNativeChat = false;
-                if (sendBtn) sendBtn.disabled = false;
+                if (sendBtn) {
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = '<i class="fas fa-paper-plane mr-1"></i> {{ __("Send") }}';
+                }
+                clearSelectedAttachment();
                 if (data.success && data.message) {
                     appendMessageBubble(data.message, true);
                 }
             })
             .catch(() => {
                 isSubmittingNativeChat = false;
-                if (sendBtn) sendBtn.disabled = false;
+                if (sendBtn) {
+                    sendBtn.disabled = false;
+                    sendBtn.innerHTML = '<i class="fas fa-paper-plane mr-1"></i> {{ __("Send") }}';
+                }
                 chatInput.value = text;
+            });
+        }
+
+        // Enter key to send (Shift+Enter for newline)
+        if (chatInput && chatForm) {
+            chatInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    submitNativeChat();
+                }
+            });
+
+            chatForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                submitNativeChat();
             });
         }
 
@@ -562,7 +722,48 @@
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         }
 
-        // Live Message Polling every 3.5 seconds
+        // Call Acceptance & Decline Handlers
+        const acceptCallBtn = document.getElementById('acceptCallBtn');
+        const declineCallBtn = document.getElementById('declineCallBtn');
+
+        if (acceptCallBtn) {
+            acceptCallBtn.addEventListener('click', function() {
+                if (!currentActiveCall) return;
+                fetch("{{ route('client.conversation.call.respond', $conversation->slug ?? '') }}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ action: 'accept' })
+                }).finally(() => {
+                    $('#incomingCallModal').modal('hide');
+                    const userName = "{{ Auth::user()->name }}";
+                    const jitsiUrl = `https://meet.jit.si/${currentActiveCall.room_id}#userInfo.displayName="${encodeURIComponent(userName)}"`;
+                    document.getElementById('consultationIframe').src = jitsiUrl;
+                    $('#consultationRoomModal').modal('show');
+                });
+            });
+        }
+
+        if (declineCallBtn) {
+            declineCallBtn.addEventListener('click', function() {
+                fetch("{{ route('client.conversation.call.respond', $conversation->slug ?? '') }}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ action: 'decline' })
+                }).finally(() => {
+                    $('#incomingCallModal').modal('hide');
+                });
+            });
+        }
+
+        // Live Message & Call Polling every 3.5 seconds
         @if(!empty($conversation) && !empty($conversation->slug))
             let lastMsgId = 0;
             const existingBubbles = container ? container.querySelectorAll('[data-msg-id]') : [];
@@ -577,6 +778,34 @@
                 })
                 .then(r => r.json())
                 .then(res => {
+                    // 1. Live Typing Draft Sneak-Peek
+                    const typingBox = document.getElementById('liveTypingPreviewBox');
+                    const typingDraftText = document.getElementById('typingDraftText');
+                    if (res && res.magic_typing && res.magic_typing.draft) {
+                        typingDraftText.innerText = res.magic_typing.draft;
+                        typingBox.classList.remove('d-none');
+                    } else {
+                        typingBox.classList.add('d-none');
+                    }
+
+                    // 2. Incoming Consultation Call
+                    if (res && res.active_call && res.active_call.status === 'ringing') {
+                        currentActiveCall = res.active_call;
+                        document.getElementById('incomingCallerName').innerText = res.active_call.caller_name || 'Counsel';
+                        document.getElementById('incomingCallTypeBadge').innerHTML = (res.active_call.call_type === 'video')
+                            ? '<i class="fas fa-video mr-1"></i> Incoming Video Consultation'
+                            : '<i class="fas fa-phone-alt mr-1"></i> Incoming Voice Consultation';
+                        if (!$('#incomingCallModal').hasClass('show') && !$('#consultationRoomModal').hasClass('show')) {
+                            playNotificationChime();
+                            $('#incomingCallModal').modal('show');
+                        }
+                    } else {
+                        if ($('#incomingCallModal').hasClass('show')) {
+                            $('#incomingCallModal').modal('hide');
+                        }
+                    }
+
+                    // 3. New Message Bubbles
                     if (res && res.messages && res.messages.length > 0) {
                         res.messages.forEach(msg => {
                             if (msg.id > lastMsgId) lastMsgId = msg.id;

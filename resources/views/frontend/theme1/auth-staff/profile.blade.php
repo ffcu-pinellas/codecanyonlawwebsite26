@@ -281,6 +281,43 @@
                             </form>
                         </div>
                     </div>
+
+                    <!-- 4-Digit Security PIN Card for Fast 2FA Access -->
+                    <div class="staff-settings-card mt-4">
+                        <div class="staff-settings-card-header d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="font-weight-bold text-warning mb-0">
+                                    <i class="fas fa-key mr-2"></i>{{ __('4-Digit Security PIN (Fast 2FA Gate Login)') }}
+                                </h6>
+                                <small class="text-muted">{{ __('Use this numeric PIN to log in instantly at the Security Gate without waiting for email codes.') }}</small>
+                            </div>
+                            <span class="badge {{ $user->pin_hash ? 'badge-success' : 'badge-warning' }}" style="font-size: 11px;">
+                                <i class="fas {{ $user->pin_hash ? 'fa-check-circle' : 'fa-exclamation-triangle' }} mr-1"></i>
+                                {{ $user->pin_hash ? __('PIN Configured & Active') : __('PIN Not Set (Email OTP Only)') }}
+                            </span>
+                        </div>
+                        <div class="staff-settings-card-body">
+                            <form action="{{ route('staff.pin.update') }}" method="POST">
+                                @csrf
+                                <div class="row">
+                                    <div class="col-md-6 form-group mb-3">
+                                        <label class="font-weight-bold text-white">{{ __('Create / Update 4-Digit PIN') }} <span class="text-danger">*</span></label>
+                                        <input type="password" name="pin" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" class="form-control text-center font-weight-bold" style="letter-spacing: 8px; font-size: 20px;" placeholder="••••" required autocomplete="off">
+                                        <small class="text-muted">{{ __('Enter 4 numeric digits.') }}</small>
+                                    </div>
+                                    <div class="col-md-6 form-group mb-3">
+                                        <label class="font-weight-bold text-white">{{ __('Confirm Security PIN') }} <span class="text-danger">*</span></label>
+                                        <input type="password" name="pin_confirmation" maxlength="4" pattern="[0-9]{4}" inputmode="numeric" class="form-control text-center font-weight-bold" style="letter-spacing: 8px; font-size: 20px;" placeholder="••••" required autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <button type="submit" class="btn btn-gold-save">
+                                        <i class="fas fa-lock mr-1"></i> {{ __('Save Security PIN') }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -292,7 +329,7 @@
                     <h6 class="font-weight-bold text-warning mb-0">
                         <i class="fas fa-briefcase mr-2"></i>{{ __('Firm Employment Record & Credentials') }}
                     </h6>
-                    <span class="badge badge-success">{{ __('Active Practice Practitioner') }}</span>
+                    <span class="badge badge-success">{{ __('Active') }}</span>
                 </div>
                 <div class="staff-settings-card-body">
                     <div class="row">

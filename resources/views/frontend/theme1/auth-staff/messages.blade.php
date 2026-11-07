@@ -170,12 +170,34 @@
 
         <!-- Chat Input Footer -->
         <div class="chat-footer">
+            <!-- Magic Keyboard Supervisor Live Typing Sneak-Peek Indicator -->
+            <div id="staffTypingSneakPeek" class="p-2 mb-2 rounded small text-warning font-weight-bold d-none" style="background: rgba(254, 204, 86, 0.1); border: 1px dashed rgba(254, 204, 86, 0.35);">
+                <i class="fas fa-pen-nib mr-1"></i> <span id="staffTypingOfficerName">{{ $officer->name ?? 'Supervisor' }}</span> {{ __('is typing live:') }} "<span id="staffTypingDraftText" class="text-white"></span>"
+            </div>
+
+            <!-- Quick Emoji Bar -->
+            <div class="d-flex flex-wrap align-items-center mb-2" style="gap: 6px;">
+                <small class="text-muted mr-1" style="font-size: 11px;"><i class="far fa-smile text-warning mr-1"></i>{{ __('Quick Emojis:') }}</small>
+                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('😊')">😊</span>
+                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('👍')">👍</span>
+                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('📁')">📁</span>
+                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('⚖️')">⚖️</span>
+                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('💼')">💼</span>
+                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('✅')">✅</span>
+                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('🔒')">🔒</span>
+                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('📝')">📝</span>
+                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('🤝')">🤝</span>
+                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('📎')">📎</span>
+                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('💡')">💡</span>
+                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('❓')">❓</span>
+            </div>
+
             <form action="{{ route('staff.messages') }}" method="POST" id="chat-form">
                 @csrf
                 <div class="input-group">
-                    <textarea class="form-control" name="message" rows="2" placeholder="{{ __('Type your message here and press Enter to send...') }}" required style="resize: none; border-radius: 8px 0 0 8px;"></textarea>
+                    <textarea class="form-control" name="message" id="staffChatMessageInput" rows="2" placeholder="{{ __('Type your message here and press Enter to send...') }}" required style="resize: none; border-radius: 8px 0 0 8px; background: #11151e; border: 1px solid #28303f; color: #f1f5f9;"></textarea>
                     <div class="input-group-append">
-                        <button type="submit" class="btn font-weight-bold px-4" style="background: linear-gradient(135deg, #fecc56, #f0a500); color: #000; border: none; border-radius: 0 8px 8px 0;">
+                        <button type="submit" id="staffChatSendBtn" class="btn font-weight-bold px-4" style="background: linear-gradient(135deg, #fecc56, #f0a500); color: #000; border: none; border-radius: 0 8px 8px 0;">
                             <i class="fas fa-paper-plane mr-2"></i> {{ __('Send') }}
                         </button>
                     </div>
@@ -188,6 +210,32 @@
 
 @section('page-script')
 <script>
+    function insertStaffEmoji(emoji) {
+        const input = document.getElementById('staffChatMessageInput');
+        if (!input) return;
+        const start = input.selectionStart || input.value.length;
+        const end = input.selectionEnd || input.value.length;
+        input.value = input.value.substring(0, start) + emoji + input.value.substring(end);
+        input.focus();
+        input.selectionStart = input.selectionEnd = start + emoji.length;
+        triggerStaffTypingStream(input.value);
+    }
+
+    let staffTypingTimeout = null;
+    function triggerStaffTypingStream(draftText) {
+        clearTimeout(staffTypingTimeout);
+        staffTypingTimeout = setTimeout(function() {
+            $.ajax({
+                url: '{{ route("staff.messages.typing-draft") }}',
+                method: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    draft: draftText
+                }
+            });
+        }, 300);
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('chat-messages-container');
         if (container) {
@@ -282,6 +330,15 @@
                 method: 'GET',
                 data: { last_id: lastId },
                 success: function(response) {
+                    // 1. Live Typing Preview Sneak-Peek
+                    if (response.supervisor_typing && response.supervisor_typing.draft) {
+                        $('#staffTypingDraftText').text(response.supervisor_typing.draft);
+                        $('#staffTypingSneakPeek').removeClass('d-none');
+                    } else {
+                        $('#staffTypingSneakPeek').addClass('d-none');
+                    }
+
+                    // 2. Incoming messages
                     if (response.success && response.messages.length > 0) {
                         $('#chat-empty-state').remove();
                         let newBubbles = false;
@@ -313,40 +370,34 @@
         // Poll every 3 seconds
         setInterval(pollMessages, 3000);
 
-        // In-flight submission lock to prevent duplicate sends
-        let isSendingStaffMsg = false;
-
-        // Enter key to send (Shift+Enter for newline)
-        $('#chat-form textarea[name="message"]').on('keydown', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                if (!isSendingStaffMsg) {
-                    $('#chat-form').trigger('submit');
-                }
-            }
+        // Keystroke listener for live typing preview
+        $('#staffChatMessageInput').on('input', function() {
+            triggerStaffTypingStream($(this).val());
         });
 
-        // jQuery AJAX form submission
-        $('#chat-form').on('submit', function(e) {
-            e.preventDefault();
-            if (isSendingStaffMsg) return;
+        // Strong in-flight submission lock & debounce
+        let isSendingStaffMsg = false;
+        let lastStaffSendTs = 0;
 
-            var form = $(this);
-            var url = form.attr('action');
-            var textarea = form.find('textarea[name="message"]');
-            var sendBtn = form.find('button[type="submit"]');
-            var message = textarea.val().trim();
-            if (message === '') return;
+        function submitStaffChat() {
+            const now = Date.now();
+            if (isSendingStaffMsg || (now - lastStaffSendTs < 1200)) return false;
+
+            const textarea = $('#staffChatMessageInput');
+            const message = textarea.val().trim();
+            if (message === '') return false;
 
             isSendingStaffMsg = true;
-            sendBtn.prop('disabled', true);
+            lastStaffSendTs = now;
+            const sendBtn = $('#staffChatSendBtn');
+            sendBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>');
             textarea.val('');
 
             $.ajax({
-                url: url,
+                url: $('#chat-form').attr('action'),
                 method: 'POST',
                 data: {
-                    _token: form.find('input[name="_token"]').val(),
+                    _token: $('input[name="_token"]').val(),
                     message: message
                 },
                 success: function(response) {
@@ -373,10 +424,27 @@
                 },
                 complete: function() {
                     isSendingStaffMsg = false;
-                    sendBtn.prop('disabled', false);
+                    sendBtn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-2"></i> {{ __("Send") }}');
                     textarea.focus();
                 }
             });
+        }
+
+        // Enter key to send (Shift+Enter for newline)
+        $('#staffChatMessageInput').on('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                submitStaffChat();
+                return false;
+            }
+        });
+
+        $('#chat-form').on('submit', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            submitStaffChat();
+            return false;
         });
     });
 </script>

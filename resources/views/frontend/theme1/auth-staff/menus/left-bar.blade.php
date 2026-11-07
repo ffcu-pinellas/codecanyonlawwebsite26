@@ -135,13 +135,36 @@
 </div>
 
 <style>
+    @media (min-width: 992px) {
+        .staff-sidebar-col {
+            position: sticky !important;
+            top: 75px !important;
+            height: calc(100vh - 95px) !important;
+            max-height: calc(100vh - 95px) !important;
+            padding: 10px 0 10px 16px !important;
+            align-self: flex-start !important;
+            z-index: 90 !important;
+        }
+        .ifw-staff-sidebar {
+            height: 100% !important;
+            min-height: 100% !important;
+            max-height: 100% !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        .ifw-staff-sidebar ul.ifw-nav-list {
+            flex: 1 1 auto !important;
+            overflow-y: auto !important;
+            overflow-x: hidden !important;
+        }
+    }
     .ifw-staff-sidebar {
         background: #11151e !important;
         border: 1px solid #28303f !important;
         border-radius: 12px !important;
         box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
         width: 100% !important;
-        max-height: calc(100vh - 90px);
+        height: 100% !important;
         overflow-y: auto;
         overflow-x: hidden;
         scrollbar-width: thin;
@@ -156,7 +179,7 @@
     }
     .ifw-staff-sidebar ul.ifw-nav-list {
         list-style: none !important;
-        padding: 10px 0 !important;
+        padding: 8px 0 !important;
         margin: 0 !important;
         display: block !important;
     }
@@ -172,8 +195,8 @@
         flex-direction: row !important;
         align-items: center !important;
         justify-content: flex-start !important;
-        padding: 12px 18px !important;
-        margin: 6px 12px !important;
+        padding: 13px 18px !important;
+        margin: 7px 12px !important;
         border-radius: 8px !important;
         color: #94a3b8 !important;
         text-decoration: none !important;

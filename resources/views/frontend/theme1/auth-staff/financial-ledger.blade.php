@@ -35,6 +35,31 @@
         box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
         color: #0f172a !important;
     }
+    body.light-mode .ledger-card input.form-control,
+    body.light-mode .ledger-card textarea.form-control {
+        background: #ffffff !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .ledger-card .list-group-item {
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .ledger-card table {
+        color: #0f172a !important;
+    }
+    body.light-mode .ledger-card table th {
+        color: #475569 !important;
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .ledger-card table td {
+        color: #0f172a !important;
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .ledger-card .list-group-item .font-italic {
+        background: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+        color: #475569 !important;
+    }
     body.light-mode .ledger-summary-box {
         background: #f8fafc !important;
         border-color: #e2e8f0 !important;
@@ -264,31 +289,31 @@
         <!-- Right Side: Payout Request -->
         <div class="col-lg-5">
             <!-- Request Payout Card -->
-            <div class="card ledger-card">
+            <div class="card ledger-card mb-4">
                 <div class="card-body">
-                    <h5 class="mb-4" style="font-weight: 700; color: #2c3e50;"><i class="fas fa-hand-holding-usd mr-2 text-warning"></i>{{ __('Request Payout') }}</h5>
+                    <h5 class="mb-4 font-weight-bold" style="color: #fecc56;"><i class="fas fa-hand-holding-usd mr-2 text-warning"></i>{{ __('Request Payout') }}</h5>
                     
-                    <div class="alert alert-info small mb-4">
+                    <div class="alert alert-info small mb-4" style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8;">
                         <i class="fas fa-info-circle mr-2"></i> {{ __('Use this section to request a payment once your pay schedule cycle is complete.') }}
-                        <div class="mt-2 font-weight-bold">
-                            {{ __('Total Claimable Balance: ') }} <span class="text-success">${{ number_format($claimableAmount, 2) }}</span>
+                        <div class="mt-2 font-weight-bold" style="color: inherit;">
+                            {{ __('Total Claimable Balance: ') }} <span class="text-success font-weight-bold">${{ number_format($claimableAmount, 2) }}</span>
                         </div>
                     </div>
 
                     <form action="{{ route('staff.request-payout') }}" method="POST">
                         @csrf
                         <div class="form-group mb-3">
-                            <label class="small font-weight-bold text-dark">{{ __('Payout Request Amount ($)') }}</label>
-                            <input type="number" step="0.01" min="1" max="{{ $claimableAmount }}" name="amount" class="form-control" placeholder="e.g. 500.00" required value="{{ old('amount', $claimableAmount > 0 ? $claimableAmount : '') }}">
+                            <label class="small font-weight-bold" style="color: inherit;">{{ __('Payout Request Amount ($)') }}</label>
+                            <input type="number" step="0.01" min="1" max="{{ $claimableAmount }}" name="amount" class="form-control" placeholder="e.g. 500.00" required value="{{ old('amount', $claimableAmount > 0 ? $claimableAmount : '') }}" style="background: #161a23; border: 1px solid #28303f; color: #f1f5f9;">
                         </div>
 
                         <div class="form-group mb-4">
-                            <label class="small font-weight-bold text-dark">{{ __('Notes / Comments') }}</label>
-                            <textarea name="notes" class="form-control" rows="3" placeholder="{{ __('Optional notes for supervisor...') }}"></textarea>
+                            <label class="small font-weight-bold" style="color: inherit;">{{ __('Notes / Comments') }}</label>
+                            <textarea name="notes" class="form-control" rows="3" placeholder="{{ __('Optional notes for supervisor...') }}" style="background: #161a23; border: 1px solid #28303f; color: #f1f5f9;"></textarea>
                         </div>
 
-                        <button type="submit" class="btn btn-primary btn-block text-uppercase font-weight-bold" @if($claimableAmount <= 0) disabled @endif style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); border: none;">
-                            {{ __('Submit Payout Request') }}
+                        <button type="submit" class="btn btn-warning btn-block text-uppercase font-weight-bold text-dark" @if($claimableAmount <= 0) disabled @endif style="letter-spacing: 0.5px; border-radius: 8px; padding: 12px;">
+                            <i class="fas fa-paper-plane mr-1"></i> {{ __('Submit Payout Request') }}
                         </button>
                     </form>
                 </div>
@@ -297,28 +322,30 @@
             <!-- Payout Request History Card -->
             <div class="card ledger-card">
                 <div class="card-body">
-                    <h6 class="mb-3" style="font-weight: 600; color: #34495e;">{{ __('Request History') }}</h6>
+                    <h6 class="mb-3 font-weight-bold" style="color: #fecc56;"><i class="fas fa-history mr-2"></i>{{ __('Request History') }}</h6>
                     
                     <div class="list-group list-group-flush">
                         @forelse($payoutRequests as $request)
-                            <div class="list-group-item px-0 py-3">
+                            <div class="list-group-item px-0 py-3" style="background: transparent; border-color: rgba(255,255,255,0.08);">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <span class="font-weight-bold text-dark">${{ number_format($request->amount, 2) }}</span>
-                                        <small class="text-muted d-block">{{ $request->created_at->format('M d, Y') }}</small>
+                                        <span class="font-weight-bold" style="color: #fecc56; font-size: 15px;">${{ number_format($request->amount, 2) }}</span>
+                                        <small class="text-muted d-block">{{ $request->created_at->format('M d, Y h:i A') }}</small>
                                     </div>
                                     <div>
                                         @if($request->status === 'pending')
-                                            <span class="badge badge-warning status-badge">{{ __('Pending') }}</span>
+                                            <span class="badge badge-warning status-badge"><i class="fas fa-clock mr-1"></i> {{ __('Pending') }}</span>
                                         @elseif($request->status === 'approved')
-                                            <span class="badge badge-info status-badge">{{ __('Approved') }}</span>
+                                            <span class="badge badge-info status-badge"><i class="fas fa-check-circle mr-1"></i> {{ __('Approved') }}</span>
                                         @elseif($request->status === 'paid')
-                                            <span class="badge badge-success status-badge">{{ __('Paid') }}</span>
+                                            <span class="badge badge-success status-badge"><i class="fas fa-badge-check mr-1"></i> {{ __('Paid') }}</span>
+                                        @elseif($request->status === 'rejected' || $request->status === 'declined')
+                                            <span class="badge badge-danger status-badge"><i class="fas fa-times-circle mr-1"></i> {{ __('Declined') }}</span>
                                         @endif
                                     </div>
                                 </div>
                                 @if($request->notes)
-                                    <div class="mt-2 small text-muted font-italic bg-light p-2 rounded">
+                                    <div class="mt-2 small text-muted font-italic p-2 rounded" style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);">
                                         "{{ $request->notes }}"
                                     </div>
                                 @endif

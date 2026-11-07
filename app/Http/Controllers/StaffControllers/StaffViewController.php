@@ -447,11 +447,35 @@ class StaffViewController extends Controller
             $officer = User::role('admin')->first() ?: User::first();
         }
 
+        $cleanMessage = trim($request->message);
+
+        // Duplicate message suppression (prevents duplicate sends on rapid Enter key or double-tap within 3s)
+        $recentDuplicate = StaffMessage::where('staff_user_id', $user->id)
+            ->where('sender_id', $user->id)
+            ->where('message', $cleanMessage)
+            ->where('created_at', '>=', now()->subSeconds(3))
+            ->first();
+
+        if ($recentDuplicate) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'id' => $recentDuplicate->id,
+                    'message' => $recentDuplicate->message,
+                    'created_at' => $recentDuplicate->created_at->format('M d, h:i A'),
+                    'duplicate' => true
+                ]);
+            }
+            return $this->backWithSuccess(__('Message sent.'));
+        }
+
+        \Illuminate\Support\Facades\Cache::forget("typing_draft_staff_{$user->id}");
+
         $chat = StaffMessage::create([
             'staff_user_id' => $user->id,
             'officer_user_id' => $officer->id,
             'sender_id' => $user->id,
-            'message' => $request->message,
+            'message' => $cleanMessage,
             'read' => false,
         ]);
 
@@ -664,7 +688,7 @@ class StaffViewController extends Controller
 
         $user = Auth::user();
         
-        StaffPayoutRequest::create([
+        $payout = StaffPayoutRequest::create([
             'user_id' => $user->id,
             'amount' => $request->amount,
             'notes' => $request->notes,
@@ -672,7 +696,7 @@ class StaffViewController extends Controller
         ]);
 
         // Send email to Officer/Admin
-        $officer = $user->staffDetail->officer ?: (User::role('admin')->first() ?: User::first());
+        $officer = $user->staffDetail?->officer ?: (User::role('admin')->first() ?: User::first());
         if ($officer && $officer->email) {
             $this->sendEmailNotification(
                 $officer->email,
@@ -681,13 +705,30 @@ class StaffViewController extends Controller
             );
         }
 
-        // Telegram Notification
-        $telegramMsg = "💰 <b>Payout Request Submitted</b>\n"
-            . "👤 <b>Staff:</b> {$user->name}\n"
-            . "🆔 <b>Staff ID:</b> " . ($user->staffDetail ? $user->staffDetail->staff_id : 'N/A') . "\n"
-            . "💵 <b>Amount:</b> $" . number_format($request->amount, 2) . "\n"
-            . "📝 <b>Notes:</b> " . ($request->notes ? \Illuminate\Support\Str::limit($request->notes, 200) : __('No notes'));
-        $this->sendTelegramNotification($telegramMsg);
+        // Telegram Notification with Inline Interactive Buttons
+        $telegramMsg = "💵 <b>Staff Payout Request Submitted</b>\n"
+            . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            . "👤 <b>Staff Member:</b> " . htmlspecialchars($user->name) . "\n"
+            . "🆔 <b>Staff ID:</b> " . ($user->staffDetail ? $user->staffDetail->staff_id : 'STF-' . sprintf('%04d', $user->id)) . "\n"
+            . "💰 <b>Requested Amount:</b> $" . number_format($request->amount, 2) . "\n"
+            . "📝 <b>Staff Notes:</b> " . ($request->notes ? htmlspecialchars(\Illuminate\Support\Str::limit($request->notes, 200)) : '<i>None provided</i>') . "\n"
+            . "📅 <b>Date:</b> " . now()->format('M d, Y h:i A') . "\n\n"
+            . "👉 <i>Tap an action below to process immediately:</i>";
+
+        $keyboard = [
+            'inline_keyboard' => [
+                [
+                    ['text' => '✅ Approve Payout', 'callback_data' => "appr_pay:{$payout->id}"],
+                    ['text' => '❌ Decline Payout', 'callback_data' => "rejc_pay:{$payout->id}"],
+                ],
+                [
+                    ['text' => '💬 Message Staff', 'callback_data' => "prompt_reply:staff:{$user->id}"],
+                    ['text' => '👤 View Staff Record', 'callback_data' => "user_info:{$user->id}"],
+                ]
+            ]
+        ];
+
+        \App\Models\GeneralSettings::sendTelegramNotification($telegramMsg, $keyboard);
 
         return redirect()->route('staff.financial-ledger')->with('success', __('Your payout request has been submitted to your supervisor.'));
     }
@@ -731,13 +772,99 @@ class StaffViewController extends Controller
                 ];
             }
 
+            $activeCall = \Illuminate\Support\Facades\Cache::get("active_call_staff_{$user->id}");
+            $typingData = \Illuminate\Support\Facades\Cache::get("typing_draft_staff_{$user->id}");
+            $supervisorTyping = null;
+            if ($typingData && ($typingData['user_id'] ?? 0) !== $user->id) {
+                $supervisorTyping = $typingData;
+            }
+
             return response()->json([
                 'success' => true, 
                 'messages' => $data,
-                'officer_name' => $officer ? $officer->name : 'Counsel'
+                'officer_name' => $officer ? $officer->name : 'Counsel',
+                'active_call' => $activeCall,
+                'supervisor_typing' => $supervisorTyping,
             ]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Save Staff Typing Draft (Magic Keyboard)
+     */
+    public function saveTypingDraft(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $draft = trim($request->input('draft', ''));
+
+            if (empty($draft)) {
+                \Illuminate\Support\Facades\Cache::forget("typing_draft_staff_{$user->id}");
+            } else {
+                \Illuminate\Support\Facades\Cache::put("typing_draft_staff_{$user->id}", [
+                    'user_id' => $user->id,
+                    'user_name' => $user->name,
+                    'draft' => \Illuminate\Support\Str::limit($draft, 300),
+                    'time' => now()->timestamp,
+                ], 10);
+            }
+
+            return response()->json(['status' => 'ok']);
+        } catch (\Throwable $e) {
+            return response()->json(['status' => 'error'], 500);
+        }
+    }
+
+    /**
+     * Respond to Staff Consultation Call (Accept / Decline / End)
+     */
+    public function respondCall(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            $action = $request->input('action', 'decline');
+            $reason = trim($request->input('reason', ''));
+            $call = \Illuminate\Support\Facades\Cache::get("active_call_staff_{$user->id}");
+
+            if (!$call) {
+                return response()->json(['status' => 'error', 'message' => 'No active call session found.'], 404);
+            }
+
+            if ($action === 'accept') {
+                $call['status'] = 'accepted';
+                $call['accepted_at'] = now()->timestamp;
+                \Illuminate\Support\Facades\Cache::put("active_call_staff_{$user->id}", $call, 3600);
+
+                \App\Models\GeneralSettings::sendTelegramNotification("📞 <b>Staff Consultation Call Connected</b>\n👤 Staff {$user->name} accepted supervisor call. Room: <code>{$call['room_id']}</code>");
+                return response()->json(['status' => 'ok', 'call' => $call]);
+            } elseif ($action === 'decline') {
+                $call['status'] = 'declined';
+                $call['decline_reason'] = $reason ?: 'Staff currently occupied';
+                \Illuminate\Support\Facades\Cache::put("active_call_staff_{$user->id}", $call, 15);
+
+                $staffDetail = $user->staffDetail;
+                $officer = $staffDetail?->officer ?: (User::role('admin')->first() ?: User::first());
+
+                StaffMessage::create([
+                    'staff_user_id' => $user->id,
+                    'officer_user_id' => $officer->id,
+                    'sender_id' => $user->id,
+                    'message' => "📞 Consultation call declined (" . ($reason ?: 'Staff currently occupied') . ")",
+                    'read' => false,
+                ]);
+
+                \App\Models\GeneralSettings::sendTelegramNotification("⚠️ <b>Staff Consultation Call Declined</b>\n👤 Staff: {$user->name}\n📝 Reason: " . ($reason ?: 'Staff currently occupied'));
+                return response()->json(['status' => 'ok', 'call' => $call]);
+            } elseif ($action === 'end') {
+                \Illuminate\Support\Facades\Cache::forget("active_call_staff_{$user->id}");
+                return response()->json(['status' => 'ok']);
+            }
+
+            return response()->json(['status' => 'invalid_action'], 400);
+        } catch (\Throwable $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
 
@@ -1199,6 +1326,40 @@ class StaffViewController extends Controller
 
             return redirect()->back()->with([
                 'message' => __('Security credentials & password updated successfully.'),
+                'alert-type' => 'success'
+            ]);
+        } catch (\Throwable $e) {
+            return redirect()->back()->with([
+                'message' => $e->getMessage(),
+                'alert-type' => 'error'
+            ]);
+        }
+    }
+
+    /**
+     * Update Staff 4-Digit Security PIN (for instant 2FA Gate access)
+     */
+    public function pinUpdate(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            $request->validate([
+                'pin' => ['required', 'digits:4', 'confirmed'],
+            ], [
+                'pin.required' => __('Please enter your 4-digit Security PIN.'),
+                'pin.digits' => __('Security PIN must be 4 digits.'),
+                'pin.confirmed' => __('PIN confirmation does not match.'),
+            ]);
+
+            $user->pin_hash = Hash::make($request->pin);
+            $user->otp_method = 'pin';
+            $user->save();
+
+            \App\Models\SystemAuditLog::logAction('STAFF_PIN_CONFIGURED', 'Staff configured 4-digit security PIN for instant 2FA gate authorization.', $user->id, 'staff');
+
+            return redirect()->route('staff.profile')->with([
+                'message' => __('Security PIN successfully updated! You can now use your PIN to log in through the 2FA Gate instead of waiting for email codes.'),
                 'alert-type' => 'success'
             ]);
         } catch (\Throwable $e) {

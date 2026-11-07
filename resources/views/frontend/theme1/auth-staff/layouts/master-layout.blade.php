@@ -303,6 +303,46 @@
         box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
         color: #0f172a !important;
     }
+
+    /* PWA Banner light mode */
+    body.light-mode #pwaInstallBanner {
+        background: #eff6ff !important;
+        border: 1px solid #93c5fd !important;
+        color: #1e40af !important;
+    }
+    body.light-mode #pwaInstallBanner span {
+        color: #1e40af !important;
+    }
+    body.light-mode #pwaInstallBanner .btn-link {
+        color: #1e40af !important;
+    }
+
+    /* Top utility controls light mode */
+    body.light-mode #languageDropdown {
+        background: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode #themeModeToggle {
+        background: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode #themeModeToggle span {
+        color: #0f172a !important;
+    }
+    body.light-mode .dropdown-menu {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+    body.light-mode .dropdown-menu .dropdown-item {
+        color: #1e293b !important;
+    }
+    body.light-mode .dropdown-menu .dropdown-item:hover {
+        background: #f1f5f9 !important;
+        color: #0f172a !important;
+    }
     body.light-mode .card-header,
     body.light-mode .chat-header,
     body.light-mode .staff-settings-card-header {

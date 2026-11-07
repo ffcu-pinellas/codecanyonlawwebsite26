@@ -40,7 +40,7 @@ class FortifyServiceProvider extends ServiceProvider
                     {
                         $user = auth()->user();
                         if ($user) {
-                            $roles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+                            $roles = $user->roles ? $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray() : [];
                             if (in_array('client', $roles) && !in_array('admin', $roles)) {
                                 session()->forget('url.intended');
                                 return redirect()->route('client.dashboard');
@@ -49,8 +49,13 @@ class FortifyServiceProvider extends ServiceProvider
                                 session()->forget('url.intended');
                                 return redirect()->route('staff.dashboard');
                             }
+                            if (in_array('admin', $roles) || in_array('attorney', $roles) || $user->id === 1) {
+                                session()->forget('url.intended');
+                                return redirect()->route('admin.dashboard');
+                            }
                         }
-                        return redirect()->intended(route('dashboard'));
+                        session()->forget('url.intended');
+                        return redirect()->route('client.dashboard');
                     }
                 };
             }
@@ -64,7 +69,7 @@ class FortifyServiceProvider extends ServiceProvider
                     {
                         $user = auth()->user();
                         if ($user) {
-                            $roles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+                            $roles = $user->roles ? $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray() : [];
                             if (in_array('client', $roles) && !in_array('admin', $roles)) {
                                 session()->forget('url.intended');
                                 return redirect()->route('client.dashboard');
@@ -73,8 +78,13 @@ class FortifyServiceProvider extends ServiceProvider
                                 session()->forget('url.intended');
                                 return redirect()->route('staff.dashboard');
                             }
+                            if (in_array('admin', $roles) || in_array('attorney', $roles) || $user->id === 1) {
+                                session()->forget('url.intended');
+                                return redirect()->route('admin.dashboard');
+                            }
                         }
-                        return redirect()->intended(route('dashboard'));
+                        session()->forget('url.intended');
+                        return redirect()->route('client.dashboard');
                     }
                 };
             }

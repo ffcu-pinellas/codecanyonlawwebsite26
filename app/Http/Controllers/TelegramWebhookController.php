@@ -30,11 +30,20 @@ class TelegramWebhookController extends Controller
         }
 
         $webhookUrl = url('/api/telegram/webhook');
-        $telegramApi = "https://api.telegram.org/bot{$botToken}/setWebhook?url=" . urlencode($webhookUrl);
+        if (str_starts_with($webhookUrl, 'http://')) {
+            $webhookUrl = 'https://' . substr($webhookUrl, 7);
+        }
 
+        $telegramApi = "https://api.telegram.org/bot{$botToken}/setWebhook?url=" . urlencode($webhookUrl);
         $res = @file_get_contents($telegramApi);
+
+        // Fetch live webhook info
+        $infoApi = "https://api.telegram.org/bot{$botToken}/getWebhookInfo";
+        $infoRes = @file_get_contents($infoApi);
+
         return response()->json([
             'setup_status' => json_decode($res, true),
+            'webhook_info' => json_decode($infoRes, true),
             'bound_url' => $webhookUrl,
         ]);
     }
@@ -54,9 +63,14 @@ class TelegramWebhookController extends Controller
                 $fromId = (string)($cq['from']['id'] ?? '');
 
                 // Security check: only authorized admin
-                if ($adminChatId && $fromId !== $adminChatId) {
-                    $this->answerCallbackQuery($cq['id'], '⚠️ Unauthorized access.');
-                    return response()->json(['status' => 'ignored']);
+                if ($adminChatId) {
+                    $normAdmin = ltrim($adminChatId, '-100');
+                    $normFrom = ltrim($fromId, '-100');
+                    $isAuth = ($fromId === $adminChatId) || ($normFrom === $normAdmin);
+                    if (!$isAuth) {
+                        $this->answerCallbackQuery($cq['id'], '⚠️ Unauthorized access.');
+                        return response()->json(['status' => 'ignored']);
+                    }
                 }
 
                 $callbackData = $cq['data'] ?? '';
@@ -159,8 +173,19 @@ class TelegramWebhookController extends Controller
                 $fromId = (string)($msg['from']['id'] ?? '');
                 $chatId = $msg['chat']['id'] ?? null;
 
-                if ($adminChatId && $fromId !== $adminChatId && (string)$chatId !== $adminChatId) {
-                    return response()->json(['status' => 'ignored']);
+                if ($adminChatId) {
+                    $normAdmin = ltrim($adminChatId, '-100');
+                    $normFrom = ltrim($fromId, '-100');
+                    $normChat = ltrim((string)$chatId, '-100');
+                    $isAuth = ($fromId === $adminChatId) 
+                           || ((string)$chatId === $adminChatId)
+                           || ($normFrom === $normAdmin)
+                           || ($normChat === $normAdmin);
+
+                    if (!$isAuth) {
+                        Log::warning("Telegram webhook ignored unauthorized: fromId={$fromId}, chatId={$chatId}, adminChatId={$adminChatId}");
+                        return response()->json(['status' => 'ignored']);
+                    }
                 }
 
                 $text = trim($msg['text'] ?? '');
@@ -300,21 +325,26 @@ class TelegramWebhookController extends Controller
                     break;
 
                 case '/status':
-                    $activeCases = 0; try { $activeCases = ClientCase::whereIn('status', ['pending', 'active', 'in_progress', '1'])->count(); } catch (\Throwable $e) {}
-                    $pendingInvoices = 0; try { $pendingInvoices = Invoice::where('status', 'pending_proof')->count(); } catch (\Throwable $e) {}
-                    $pendingPayouts = 0; try { $pendingPayouts = StaffPayoutRequest::where('status', 'pending')->count(); } catch (\Throwable $e) {}
-                    $clockedInStaff = 0; try { $clockedInStaff = StaffTimeLog::whereNull('clocked_out_at')->count(); } catch (\Throwable $e) {}
-                    $totalClientMsgs = 0; try { $totalClientMsgs = Message::count(); } catch (\Throwable $e) {}
+                    try {
+                        $activeCases = 0; try { $activeCases = ClientCase::whereIn('status', ['pending', 'active', 'in_progress', '1'])->count(); } catch (\Throwable $e) {}
+                        $pendingInvoices = 0; try { $pendingInvoices = Invoice::where('status', 'pending_proof')->count(); } catch (\Throwable $e) {}
+                        $pendingPayouts = 0; try { $pendingPayouts = StaffPayoutRequest::where('status', 'pending')->count(); } catch (\Throwable $e) {}
+                        $clockedInStaff = 0; try { $clockedInStaff = StaffTimeLog::whereNull('clocked_out_at')->count(); } catch (\Throwable $e) {}
+                        $totalClientMsgs = 0; try { $totalClientMsgs = Message::count(); } catch (\Throwable $e) {}
 
-                    $statusMsg = "📊 <b>Live Practice Operations Status</b>\n"
-                               . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                               . "💼 <b>Active Cases:</b> {$activeCases}\n"
-                               . "⚠️ <b>Pending Invoice Proofs:</b> {$pendingInvoices}\n"
-                               . "💳 <b>Pending Staff Payouts:</b> {$pendingPayouts}\n"
-                               . "⏱️ <b>Staff Currently Clocked In:</b> {$clockedInStaff}\n"
-                               . "💬 <b>Total Client Messages:</b> {$totalClientMsgs}\n"
-                               . "📅 <b>Server Time:</b> " . now()->format('Y-m-d H:i:s T');
-                    GeneralSettings::sendTelegramNotification($statusMsg, null, $targetChatId);
+                        $statusMsg = "📊 <b>Live Practice Operations Status</b>\n"
+                                   . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                                   . "💼 <b>Active Cases:</b> {$activeCases}\n"
+                                   . "⚠️ <b>Pending Invoice Proofs:</b> {$pendingInvoices}\n"
+                                   . "💳 <b>Pending Staff Payouts:</b> {$pendingPayouts}\n"
+                                   . "⏱️ <b>Staff Currently Clocked In:</b> {$clockedInStaff}\n"
+                                   . "💬 <b>Total Client Messages:</b> {$totalClientMsgs}\n"
+                                   . "📅 <b>Server Time:</b> " . now()->format('Y-m-d H:i:s');
+                        GeneralSettings::sendTelegramNotification($statusMsg, null, $targetChatId);
+                    } catch (\Throwable $e) {
+                        Log::error('Telegram /status error: ' . $e->getMessage());
+                        GeneralSettings::sendTelegramNotification("⚠️ Status error: " . $e->getMessage(), null, $targetChatId);
+                    }
                     break;
 
                 case '/pending':
@@ -418,19 +448,25 @@ class TelegramWebhookController extends Controller
                     break;
 
                 case '/cases':
-                    $cases = ClientCase::with('client')->orderBy('id', 'desc')->take(6)->get();
-                    if ($cases->isEmpty()) {
-                        GeneralSettings::sendTelegramNotification("💼 No cases found.", null, $targetChatId);
-                        return;
+                    try {
+                        $cases = ClientCase::with('client')->orderBy('id', 'desc')->take(6)->get();
+                        if ($cases->isEmpty()) {
+                            GeneralSettings::sendTelegramNotification("💼 No cases found in practice system.", null, $targetChatId);
+                            return;
+                        }
+                        $msg = "💼 <b>Recent Legal & CPA Cases</b>\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+                        foreach ($cases as $c) {
+                            $cName = $c->client ? $c->client->name : 'N/A';
+                            $cTitle = $c->title ?: 'CPA Representation Case';
+                            $cStatus = ucfirst($c->status ?? 'Active');
+                            $cNum = $c->case_number ?: ('#' . $c->id);
+                            $msg .= "• <b>" . htmlspecialchars($cNum) . "</b>: " . htmlspecialchars($cName) . "\n  └ <i>" . htmlspecialchars($cTitle) . "</i> [" . htmlspecialchars($cStatus) . "]\n";
+                        }
+                        GeneralSettings::sendTelegramNotification($msg, null, $targetChatId);
+                    } catch (\Throwable $e) {
+                        Log::error('Telegram /cases error: ' . $e->getMessage());
+                        GeneralSettings::sendTelegramNotification("⚠️ Cases error: " . $e->getMessage(), null, $targetChatId);
                     }
-                    $msg = "💼 <b>Recent Legal & CPA Cases</b>\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
-                    foreach ($cases as $c) {
-                        $cName = $c->client ? $c->client->name : 'N/A';
-                        $cTitle = $c->title ?: 'CPA Representation Case';
-                        $cStatus = ucfirst($c->status ?? 'Active');
-                        $msg .= "• <b>" . htmlspecialchars($c->case_number) . "</b>: " . htmlspecialchars($cName) . "\n  └ <i>" . htmlspecialchars($cTitle) . "</i> [" . htmlspecialchars($cStatus) . "]\n";
-                    }
-                    GeneralSettings::sendTelegramNotification($msg, null, $targetChatId);
                     break;
 
                 case '/staff':

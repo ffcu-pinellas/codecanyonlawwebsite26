@@ -23,11 +23,21 @@ class RedirectIfAuthenticated
 
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                if (!Auth::user()->hasRole('client')){
-                    return redirect()->route('admin.dashboard');
-                }else{
-                    return redirect()->route('client.dashboard');
+                $user = Auth::guard($guard)->user();
+                if (!$user) {
+                    return redirect()->route('login');
                 }
+                $roles = $user->roles ? $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray() : [];
+
+                if (in_array('admin', $roles) || in_array('attorney', $roles) || $user->id === 1) {
+                    return redirect()->route('admin.dashboard');
+                }
+
+                if (in_array('staff', $roles)) {
+                    return redirect()->route('staff.dashboard');
+                }
+
+                return redirect()->route('client.dashboard');
             }
         }
 

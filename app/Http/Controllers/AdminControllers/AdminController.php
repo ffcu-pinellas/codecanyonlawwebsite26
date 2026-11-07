@@ -336,8 +336,34 @@ class AdminController extends Controller
             // Admin panel must show ALL client conversations in the firm
             $allConvos = Conversation::with(['user', 'messages'])->latest('updated_at')->get();
             $conversations = $this->viewConversationsOnIndex($allConvos);
+            $clients = User::role('client')->orderBy('name')->get();
 
-            return view('backend.pages.conversations.index', compact('conversations', 'title', 'chatSettings', 'allConvos'));
+            return view('backend.pages.conversations.index', compact('conversations', 'title', 'chatSettings', 'allConvos', 'clients'));
+        } catch (\Throwable $th) {
+            return $this->backWithError($th->getMessage());
+        }
+    }
+
+    public function startConversationWithClient($clientId)
+    {
+        try {
+            $client = User::findOrFail($clientId);
+            $admin = Auth::user();
+
+            $conversation = Conversation::whereHas('user', function($q) use ($client) {
+                $q->where('users.id', $client->id);
+            })->first();
+
+            if (!$conversation) {
+                $slug = 'convo_' . $client->id . '_' . $admin->id . '_' . time();
+                $conversation = Conversation::create([
+                    'name' => $client->name . ' - Legal & CPA Representation',
+                    'slug' => $slug,
+                ]);
+                $conversation->user()->attach([$client->id, $admin->id]);
+            }
+
+            return redirect()->route('admin.conversation.get-conversation', $conversation->slug);
         } catch (\Throwable $th) {
             return $this->backWithError($th->getMessage());
         }
@@ -363,13 +389,14 @@ class AdminController extends Controller
                 
                 $unreadCount = $conversation->unreadMessages()->count();
                 $unreadBadge = $unreadCount > 0 ? '<span class="badge badge-warning ml-2 font-weight-bold">' . $unreadCount . ' Unread</span>' : '';
-                $openBtn = '<a href="' . route('admin.conversation.get-conversation', $conversation->slug) . '" class="btn btn-sm btn-warning font-weight-bold text-dark px-3 shadow-sm"><i class="fas fa-comment-dots mr-1"></i> Open Chat</a>';
+                $openUrl = route('admin.conversation.get-conversation', $conversation->slug);
+                $openBtn = '<a href="' . $openUrl . '" class="btn btn-sm btn-warning font-weight-bold text-dark px-3 shadow-sm"><i class="fas fa-comment-dots mr-1"></i> Open Chat</a>';
 
-                $row[] = '<tr>
+                $row[] = '<tr style="cursor: pointer;" onclick="if (!event.target.closest(\'a\')) { window.location.href=\'' . $openUrl . '\'; }">
                         <td width="5%" class="align-middle text-center">' . ($key + 1) . '</td>
                         <td width="8%" class="align-middle text-center"><img src="' . $clientAvatar . '" alt="" class="rounded-circle" style="width:40px;height:40px;object-fit:cover;"></td>
                         <td width="22%" class="align-middle"><strong>' . $clientName . '</strong>' . $unreadBadge . ($clientEmail ? '<br><small class="text-muted">' . $clientEmail . '</small>' : '') . '</td>
-                        <td class="align-middle"><a href="' . route('admin.conversation.get-conversation', $conversation->slug) . '" class="text-decoration-none text-light d-block">
+                        <td class="align-middle"><a href="' . $openUrl . '" class="text-decoration-none text-light d-block">
                         <p class="px-0 pb-1 my-0">' . $lastText . '</p>
                         ' . $lastFileHtml . '
                         </a></td>
@@ -411,11 +438,29 @@ class AdminController extends Controller
     {
         try {
             $conversation = Conversation::where('slug', $slug)->firstOrFail();
+
+            $rawText = trim($request->text ?? '');
+            if (!$request->hasFile('file') && !empty($rawText)) {
+                $dup = Message::where('conversation_id', $conversation->id)
+                    ->where('user_id', Auth::id())
+                    ->where(function($q) use ($rawText) {
+                        $q->where('text', $rawText)->orWhere('message', $rawText);
+                    })
+                    ->where('created_at', '>=', now()->subSeconds(3))
+                    ->first();
+                if ($dup) {
+                    if ($request->ajax()) {
+                        return response()->json(['status' => 'duplicate', 'id' => $dup->id]);
+                    }
+                    return redirect()->back();
+                }
+            }
+
             $message = new Message();
             $message->conversation_id = $conversation->id;
             $message->user_id = Auth::user()->id;
-            $message->text = $request->text;
-            $message->message = $request->text;
+            $message->text = $rawText;
+            $message->message = $rawText;
             if ($request->hasFile('file')) {
                 $request->validate([
                     'file' => ['file', 'mimes:pdf,docx,doc,jpeg,png,jpg,txt', 'max:20480']
@@ -435,6 +480,7 @@ class AdminController extends Controller
 
             // Notify participants
             if ($message->id) {
+                \Illuminate\Support\Facades\Cache::forget("typing_draft_convo_{$conversation->id}");
                 foreach ($conversation->user as $participant) {
                     if ($participant->id !== Auth::user()->id) {
                         $participant->notify(new \App\Notifications\MessageNotification($message));
@@ -445,6 +491,152 @@ class AdminController extends Controller
             return back();
         } catch (\Throwable $th) {
             return $this->backWithError($th->getMessage());
+        }
+    }
+
+    /**
+     * Admin Live State Polling (New Messages, Client Typing Draft, Active Call)
+     */
+    public function pollLiveState(Request $request, $slug)
+    {
+        try {
+            $conversation = Conversation::where('slug', $slug)->firstOrFail();
+            $lastId = (int)$request->input('last_id', 0);
+
+            $newMessages = $conversation->messages()
+                ->where('id', '>', $lastId)
+                ->with('user')
+                ->orderBy('id', 'asc')
+                ->get();
+
+            $conversation->messages()
+                ->where('id', '>', $lastId)
+                ->where('user_id', '!=', Auth::id())
+                ->update(['read' => true]);
+
+            $formatted = $newMessages->map(function ($msg) {
+                return [
+                    'id' => $msg->id,
+                    'user_id' => $msg->user_id,
+                    'user_name' => $msg->user ? $msg->user->name : 'Client',
+                    'text' => $msg->text ?: ($msg->message ?? ''),
+                    'file' => $msg->file,
+                    'file_name' => $msg->file_name,
+                    'is_mine' => ($msg->user_id === Auth::id()),
+                    'time' => $msg->created_at->format('M d, h:i A'),
+                ];
+            });
+
+            $activeCall = \Illuminate\Support\Facades\Cache::get("active_call_convo_{$conversation->id}");
+            $typingData = \Illuminate\Support\Facades\Cache::get("typing_draft_convo_{$conversation->id}");
+            $clientTyping = null;
+            if ($typingData && ($typingData['user_id'] ?? 0) !== Auth::id()) {
+                $clientTyping = $typingData;
+            }
+
+            return response()->json([
+                'messages' => $formatted,
+                'active_call' => $activeCall,
+                'client_typing' => $clientTyping,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['messages' => [], 'active_call' => null, 'client_typing' => null]);
+        }
+    }
+
+    /**
+     * Save Admin Typing Draft
+     */
+    public function saveTypingDraft(Request $request, $slug)
+    {
+        try {
+            $conversation = Conversation::where('slug', $slug)->firstOrFail();
+            $draft = trim($request->input('draft', ''));
+
+            if (empty($draft)) {
+                \Illuminate\Support\Facades\Cache::forget("typing_draft_convo_{$conversation->id}");
+            } else {
+                \Illuminate\Support\Facades\Cache::put("typing_draft_convo_{$conversation->id}", [
+                    'user_id' => Auth::id(),
+                    'user_name' => Auth::user()->name,
+                    'draft' => \Illuminate\Support\Str::limit($draft, 300),
+                    'time' => now()->timestamp,
+                ], 10);
+            }
+
+            return response()->json(['status' => 'ok']);
+        } catch (\Throwable $e) {
+            return response()->json(['status' => 'error'], 500);
+        }
+    }
+
+    /**
+     * Admin Initiates Video/Voice Consultation Call with Client
+     */
+    public function initiateCall(Request $request, $slug)
+    {
+        try {
+            $conversation = Conversation::where('slug', $slug)->firstOrFail();
+            $callType = $request->input('call_type', 'video'); // video or audio
+            $roomId = 'ycpa_' . substr(md5($conversation->id . '_' . time()), 0, 10);
+
+            $callData = [
+                'call_id' => uniqid('call_'),
+                'caller_id' => Auth::id(),
+                'caller_name' => Auth::user()->name ?: 'Assigned Legal Counsel',
+                'call_type' => $callType,
+                'room_id' => $roomId,
+                'status' => 'ringing',
+                'started_at' => now()->timestamp,
+            ];
+
+            \Illuminate\Support\Facades\Cache::put("active_call_convo_{$conversation->id}", $callData, 120);
+
+            // Notify Telegram
+            $client = $conversation->user->first(fn($u) => $u->id !== Auth::id());
+            $clientName = $client ? $client->name : 'Client';
+            $telMsg = "📞 <b>Consultation Call Initiated</b>\n"
+                    . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                    . "👤 <b>Caller:</b> " . htmlspecialchars(Auth::user()->name) . " (Admin / Counsel)\n"
+                    . "👥 <b>Client:</b> " . htmlspecialchars($clientName) . "\n"
+                    . "🎥 <b>Mode:</b> " . ucfirst($callType) . " Encrypted Consultation\n"
+                    . "🔗 <b>Room ID:</b> <code>{$roomId}</code>\n"
+                    . "⏳ <b>Status:</b> Ringing on client device...";
+            \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
+
+            return response()->json(['status' => 'ok', 'call' => $callData]);
+        } catch (\Throwable $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Admin Ends or Responds to Consultation Call
+     */
+    public function respondCall(Request $request, $slug)
+    {
+        try {
+            $conversation = Conversation::where('slug', $slug)->firstOrFail();
+            $action = $request->input('action', 'end');
+
+            if ($action === 'end') {
+                \Illuminate\Support\Facades\Cache::forget("active_call_convo_{$conversation->id}");
+
+                Message::create([
+                    'conversation_id' => $conversation->id,
+                    'user_id' => Auth::id(),
+                    'text' => "📞 Encrypted consultation call ended.",
+                    'message' => "📞 Encrypted consultation call ended.",
+                    'read' => true,
+                ]);
+
+                \App\Models\GeneralSettings::sendTelegramNotification("📞 <b>Consultation Call Ended</b>\nSession closed by Admin.");
+                return response()->json(['status' => 'ok']);
+            }
+
+            return response()->json(['status' => 'invalid_action'], 400);
+        } catch (\Throwable $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
     }
 

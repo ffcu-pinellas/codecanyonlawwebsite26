@@ -43,13 +43,14 @@ class MessageNotification extends Notification
      */
     public function toMail($notifiable)
     {
-        $senderName = $this->message->user->name;
+        $senderName = ($this->message && $this->message->user) ? $this->message->user->name : 'Staff / Attorney';
+        $msgText = $this->message ? ($this->message->text ?: ($this->message->message ?: '')) : '';
         
         return (new MailMessage)
                     ->subject('New Message Received - ' . config('app.name'))
                     ->greeting('Hello ' . $notifiable->name . ',')
                     ->line('You have received a new secure message from ' . $senderName . '.')
-                    ->line('Message Preview: "' . substr($this->message->text, 0, 100) . (strlen($this->message->text) > 100 ? '...' : '') . '"')
+                    ->line('Message Preview: "' . substr($msgText, 0, 100) . (strlen($msgText) > 100 ? '...' : '') . '"')
                     ->action('View Message', route('login'))
                     ->line('Thank you for using our Secured Messaging System.');
     }

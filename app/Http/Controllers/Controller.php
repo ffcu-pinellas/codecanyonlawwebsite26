@@ -474,19 +474,26 @@ HTML;
                                 $row4 = [];
                                 if ($menuItem2->childs->count() > 0) {
                                     foreach ($menuItem2->childs()->orderBy('position', 'ASC')->get() as $menuItem3) {
-                                        $row4[] = '<a class="dropdown-item" href="' . $menuItem3->href . '" title="' . $menuItem3->title . '" target="' . $menuItem3->target . '" ' . ($menuItem3->childs->count() > 0 ? 'data-toggle="dropdown"' : '') . ' aria-haspopup="true" aria-expanded="false">' . __($menuItem3->text) . ' </a>';
+                                        if (!$menuItem3) continue;
+                                        $row4[] = '<a class="dropdown-item" href="' . ($menuItem3->href ?? '#') . '" title="' . ($menuItem3->title ?? '') . '" target="' . ($menuItem3->target ?? '_self') . '" ' . ($menuItem3->childs->count() > 0 ? 'data-toggle="dropdown"' : '') . ' aria-haspopup="true" aria-expanded="false">' . __($menuItem3->text ?? '') . ' </a>';
                                     }
                                 }
 
-                                $row3[] = '<div class="dropdown"><a class="' . ($menuItem2->childs->count() > 0 ? 'dropdown-toggle' : '') . ' dropdown-item" href="' . ($menuItem2->childs->count() > 0 ? 'javascript:void(0)' : $menuItem2->href) . '" target="' . $menuItem2->target . '" title="' . $menuItem2->title . '" ' . ($menuItem2->childs->count() > 0 ? 'data-toggle="dropdown"' : '') . ' aria-haspopup="true" aria-expanded="false">' . __($menuItem2->text) . '</a>' . implode(" ", $row4) . '</div>';
+                                if ($menuItem2) {
+                                    $row3[] = '<div class="dropdown"><a class="' . ($menuItem2->childs->count() > 0 ? 'dropdown-toggle' : '') . ' dropdown-item" href="' . ($menuItem2->childs->count() > 0 ? 'javascript:void(0)' : ($menuItem2->href ?? '#')) . '" target="' . ($menuItem2->target ?? '_self') . '" title="' . ($menuItem2->title ?? '') . '" ' . ($menuItem2->childs->count() > 0 ? 'data-toggle="dropdown"' : '') . ' aria-haspopup="true" aria-expanded="false">' . __($menuItem2->text ?? '') . '</a>' . implode(" ", $row4) . '</div>';
+                                }
                             }
                         }
-                        $row2[] = '<a class="dropdown-item  ' . ($menuItem1->childs->count() > 0 ? 'dropdown-toggle' : '') . '" href="' . ($menuItem1->childs->count() > 0 ? 'javascript:void(0)' : url($menuItem1->href)) . '" target="' . $menuItem1->target . '" title="' . $menuItem1->title . '" ' . ($menuItem1->childs->count() > 0 ? 'data-toggle="dropdown"' : '') . ' aria-haspopup="true" aria-expanded="false">' . __($menuItem1->text) . '</a>' . implode(" ", $row3);
+                        if ($menuItem1) {
+                            $row2[] = '<a class="dropdown-item  ' . ($menuItem1->childs->count() > 0 ? 'dropdown-toggle' : '') . '" href="' . ($menuItem1->childs->count() > 0 ? 'javascript:void(0)' : url($menuItem1->href ?? '#')) . '" target="' . ($menuItem1->target ?? '_self') . '" title="' . ($menuItem1->title ?? '') . '" ' . ($menuItem1->childs->count() > 0 ? 'data-toggle="dropdown"' : '') . ' aria-haspopup="true" aria-expanded="false">' . __($menuItem1->text ?? '') . '</a>' . implode(" ", $row3);
+                        }
                     }
                 }
 
-                $row1[] = '<li class="nav-item ' . ($menu->childs->count() > 0 ? 'dropdown' : '') . '">
-                                            <a href="' . ($menu->childs->count() > 0 ? 'javascript:void(0)' : $menu->href) . '" class="nav-link ' . ($menu->childs->count() > 0 ? 'dropdown-toggle' : '') . '" target="' . $menu->target . '" title="' . $menu->title . '" ' . ($menu->childs->count() > 0 ? 'data-toggle="dropdown"' : '') . ' aria-haspopup="true" aria-expanded="false">' . __($menu->text) . '</a>' . '<div class="dropdown-menu">'.implode("", $row2).'</div>' . '</li>';
+                if ($menu) {
+                    $row1[] = '<li class="nav-item ' . ($menu->childs->count() > 0 ? 'dropdown' : '') . '">
+                                                <a href="' . ($menu->childs->count() > 0 ? 'javascript:void(0)' : ($menu->href ?? '#')) . '" class="nav-link ' . ($menu->childs->count() > 0 ? 'dropdown-toggle' : '') . '" target="' . ($menu->target ?? '_self') . '" title="' . ($menu->title ?? '') . '" ' . ($menu->childs->count() > 0 ? 'data-toggle="dropdown"' : '') . ' aria-haspopup="true" aria-expanded="false">' . __($menu->text ?? '') . '</a>' . '<div class="dropdown-menu">'.implode("", $row2).'</div>' . '</li>';
+                }
             }
         }
         $output = '<ul class="navbar-nav ml-xl-auto">' . implode(" ", $row1) . '</ul>';

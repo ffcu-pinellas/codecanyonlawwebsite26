@@ -33,6 +33,11 @@ class AdminMiddleware
                 return $next($request);
             }
 
+            // If user is an authenticated client, redirect to client portal instead of 403
+            if (in_array('client', $roles)) {
+                return redirect()->route('client.dashboard');
+            }
+
             // 3. If currently in an impersonation session
             if (session()->has('impersonator_admin') || session()->has('impersonated_by')) {
                 // If requesting exit impersonation, allow request to pass to controller

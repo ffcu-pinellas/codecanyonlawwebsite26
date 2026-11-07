@@ -66,14 +66,17 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card card-dark bg-dark border-secondary">
-                        <div class="card-header d-flex justify-content-between align-items-center py-3 border-secondary">
+                        <div class="card-header d-flex justify-content-between align-items-center py-3 border-secondary flex-wrap" style="gap: 10px;">
                             <div>
                                 <h5 class="card-title text-white font-weight-bold mb-0">
                                     <i class="fas fa-comments text-warning mr-2"></i>{{ $title }}
                                 </h5>
                                 <small class="text-muted">Direct secure case communication channel</small>
                             </div>
-                            <div>
+                            <div class="d-flex align-items-center flex-wrap" style="gap: 8px;">
+                                <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark shadow-sm px-3" data-toggle="modal" data-target="#initiateCallModal">
+                                    <i class="fas fa-video mr-1"></i> {{ __('Start Consultation Call') }}
+                                </button>
                                 <a href="{{ route('admin.conversation.index') }}" class="btn btn-outline-secondary btn-sm text-light">
                                     <i class="fas fa-arrow-left mr-1"></i> Back to All Chats
                                 </a>
@@ -90,7 +93,7 @@
                                     @endphp
 
                                     @if($isMine)
-                                        <div class="d-flex justify-content-end mb-3">
+                                        <div class="d-flex justify-content-end mb-3 msg-item" data-msg-id="{{ $message->id }}">
                                             <div class="msg_cotainer_send">
                                                 @if(!empty($message->file))
                                                     <p class="mb-1"><a href="{{ route('download.chatting-file', $message->id) }}" class="text-warning font-weight-bold" target="_blank"><i class="fas fa-paperclip mr-1"></i> {{ $message->file_name ?: 'Attachment' }}</a></p>
@@ -105,7 +108,7 @@
                                             </div>
                                         </div>
                                     @else
-                                        <div class="d-flex justify-content-start mb-3">
+                                        <div class="d-flex justify-content-start mb-3 msg-item" data-msg-id="{{ $message->id }}">
                                             <div class="img_cont_msg mr-2">
                                                 <img src="{{ $userAvatar }}" class="rounded-circle user_img_msg" title="{{ $senderName }}">
                                             </div>
@@ -122,7 +125,7 @@
                                         </div>
                                     @endif
                                 @empty
-                                    <div class="text-center py-5 text-muted">
+                                    <div class="text-center py-5 text-muted" id="chatEmptyPlaceholder">
                                         <i class="fas fa-comments fa-3x mb-3 text-secondary d-block"></i>
                                         <h5 class="text-white font-weight-bold">No Messages in this Thread Yet</h5>
                                         <p class="small text-muted">Type below to begin case representation conversation with {{ $title }}.</p>
@@ -131,18 +134,98 @@
                             </div>
                         </div>
                         <div class="card-footer bg-dark border-secondary p-3">
+                            <!-- Magic Keyboard Client Live Typing Sneak-Peek Indicator -->
+                            <div id="adminLiveTypingBox" class="p-2 mb-2 rounded small text-warning font-weight-bold d-none" style="background: rgba(254, 204, 86, 0.1); border: 1px dashed rgba(254, 204, 86, 0.35);">
+                                <i class="fas fa-pen-nib mr-1"></i> <span id="adminTypingClientName">{{ $client ? $client->name : 'Client' }}</span> {{ __('is typing live:') }} "<span id="adminTypingDraftText" class="text-white"></span>"
+                            </div>
+
+                            <!-- Professional Quick Emoji Toolbar -->
+                            <div class="d-flex flex-wrap align-items-center mb-2" style="gap: 6px;">
+                                <small class="text-muted mr-1" style="font-size: 11px;"><i class="far fa-smile text-warning mr-1"></i>{{ __('Quick Emojis:') }}</small>
+                                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('😊')" title="Smile">😊</span>
+                                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('👍')" title="Thumbs up">👍</span>
+                                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('📁')" title="Folder">📁</span>
+                                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('⚖️')" title="Legal Scales">⚖️</span>
+                                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('💼')" title="Case Briefcase">💼</span>
+                                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('✅')" title="Approved">✅</span>
+                                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('🔒')" title="Encrypted">🔒</span>
+                                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('📝')" title="Document">📝</span>
+                                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('🤝')" title="Agreement">🤝</span>
+                                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('📎')" title="Attachment">📎</span>
+                                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('💡')" title="Idea">💡</span>
+                                <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #0f172a; border: 1px solid #334155; font-size: 13px;" onclick="insertAdminEmoji('❓')" title="Question">❓</span>
+                            </div>
+
                             <form action="{{ route('admin.conversation.send-message', $conversation->slug) }}" method="post" enctype="multipart/form-data" id="chatForm" class="d-flex align-items-center" style="gap:10px;">
                                 @csrf
                                 <input type="text" name="text" id="chatTaxtInput" class="form-control bg-dark text-white border-secondary flex-grow-1" placeholder="Type message and press Enter to send..." autocomplete="off" required>
                                 <label for="chatFileInput" class="btn btn-outline-secondary mb-0 text-light" style="cursor:pointer;" title="Attach File">
                                     <i class="fas fa-paperclip"></i>
-                                    <input type="file" hidden name="file" id="chatFileInput" onchange="document.getElementById('showSelectedFile').innerText = this.files[0]?.name || ''">
+                                    <input type="file" hidden name="file" id="chatFileInput" onchange="previewAdminAttachment(this)">
                                 </label>
-                                <button type="submit" class="btn btn-warning font-weight-bold text-dark px-4"><i class="fas fa-paper-plane mr-1"></i> {{ __('Send') }}</button>
+                                <button type="submit" id="adminSendBtn" class="btn btn-warning font-weight-bold text-dark px-4"><i class="fas fa-paper-plane mr-1"></i> {{ __('Send') }}</button>
                             </form>
-                            <small class="text-warning d-block mt-1 font-weight-bold" id="showSelectedFile"></small>
+                            <div id="adminFilePreviewBox" class="small text-warning mt-1 font-weight-bold d-none">
+                                <i class="fas fa-file-alt mr-1"></i> <span id="adminFilePreviewName"></span>
+                                <a href="javascript:void(0)" onclick="clearAdminAttachment()" class="text-danger ml-2"><i class="fas fa-times-circle"></i></a>
+                            </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Initiate Consultation Call -->
+    <div class="modal fade" id="initiateCallModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <div class="modal-header border-secondary">
+                    <h5 class="modal-title font-weight-bold text-warning">
+                        <i class="fas fa-video mr-2"></i> {{ __('Initiate Encrypted Consultation Call') }}
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-4 text-center">
+                    <p class="text-muted small mb-4">
+                        {{ __('Choose consultation mode to begin encrypted real-time video/voice call with ') }} <strong class="text-white">{{ $title }}</strong>:
+                    </p>
+                    <div class="row">
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-warning btn-block py-3 font-weight-bold" onclick="launchCall('video')">
+                                <i class="fas fa-video fa-2x d-block mb-2"></i>
+                                {{ __('HD Video Call') }}
+                            </button>
+                        </div>
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-info btn-block py-3 font-weight-bold" onclick="launchCall('audio')">
+                                <i class="fas fa-phone-alt fa-2x d-block mb-2"></i>
+                                {{ __('Voice Call') }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Active Consultation Room -->
+    <div class="modal fade" id="adminConsultationRoomModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" style="z-index: 1098;">
+        <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 95vw; height: 90vh;" role="document">
+            <div class="modal-content h-100" style="background: #0a0c10; border: 1px solid #334155; border-radius: 12px; overflow: hidden;">
+                <div class="modal-header py-2 px-3 border-secondary" style="background: #11151e;">
+                    <div class="d-flex align-items-center">
+                        <span class="badge badge-warning mr-2"><i class="fas fa-shield-alt mr-1"></i> {{ __('Encrypted Counsel Room') }}</span>
+                        <strong class="text-white small" id="adminRoomTitle">{{ __('Practice Consultation with ') }} {{ $title }}</strong>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-danger font-weight-bold" onclick="endAdminCall()"><i class="fas fa-phone-slash mr-1"></i> {{ __('End Consultation') }}</button>
+                    </div>
+                </div>
+                <div class="modal-body p-0 h-100" style="min-height: 520px;">
+                    <iframe id="adminCallIframe" src="about:blank" allow="camera; microphone; fullscreen; display-capture" style="width: 100%; height: 100%; min-height: 550px; border: none;"></iframe>
                 </div>
             </div>
         </div>
@@ -154,6 +237,88 @@
     @include('backend.layouts.message')
     <script src="{{ asset('backend/assets/js/file-name-view.js') }}"></script>
     <script>
+        function insertAdminEmoji(emoji) {
+            const input = document.getElementById('chatTaxtInput');
+            if (!input) return;
+            const start = input.selectionStart || input.value.length;
+            const end = input.selectionEnd || input.value.length;
+            input.value = input.value.substring(0, start) + emoji + input.value.substring(end);
+            input.focus();
+            input.selectionStart = input.selectionEnd = start + emoji.length;
+            triggerAdminTypingStream(input.value);
+        }
+
+        function previewAdminAttachment(input) {
+            if (input.files && input.files[0]) {
+                document.getElementById('adminFilePreviewName').innerText = input.files[0].name;
+                document.getElementById('adminFilePreviewBox').classList.remove('d-none');
+            }
+        }
+
+        function clearAdminAttachment() {
+            const fileInput = document.getElementById('chatFileInput');
+            if (fileInput) fileInput.value = '';
+            document.getElementById('adminFilePreviewBox').classList.add('d-none');
+        }
+
+        let adminTypingTimeout = null;
+        function triggerAdminTypingStream(draftText) {
+            clearTimeout(adminTypingTimeout);
+            adminTypingTimeout = setTimeout(function() {
+                fetch("{{ route('admin.conversation.typing-draft', $conversation->slug) }}", {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ draft: draftText })
+                }).catch(() => {});
+            }, 300);
+        }
+
+        function launchCall(type) {
+            $('#initiateCallModal').modal('hide');
+            fetch("{{ route('admin.conversation.call.initiate', $conversation->slug) }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ call_type: type })
+            })
+            .then(r => r.json())
+            .then(res => {
+                if (res.status === 'ok' && res.call) {
+                    const roomUrl = `https://meet.jit.si/${res.call.room_id}#userInfo.displayName="${encodeURIComponent('{{ Auth::user()->name }}')}"`;
+                    document.getElementById('adminCallIframe').src = roomUrl;
+                    $('#adminConsultationRoomModal').modal('show');
+                } else {
+                    alert('Could not initiate consultation call.');
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Call setup failed.');
+            });
+        }
+
+        function endAdminCall() {
+            fetch("{{ route('admin.conversation.call.respond', $conversation->slug) }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ action: 'end' })
+            }).finally(() => {
+                document.getElementById('adminCallIframe').src = 'about:blank';
+                $('#adminConsultationRoomModal').modal('hide');
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const input = document.getElementById('chatTaxtInput');
             const form = document.getElementById('chatForm');
@@ -163,29 +328,131 @@
                 box.scrollTop = box.scrollHeight;
             }
 
+            // Keystroke typing listener
+            if (input) {
+                input.addEventListener('input', function() {
+                    triggerAdminTypingStream(this.value);
+                });
+            }
+
             let isAdminSending = false;
-            form.addEventListener('submit', function(e) {
-                if (isAdminSending) {
-                    e.preventDefault();
-                    return false;
-                }
+            let lastAdminSendTs = 0;
+
+            function submitAdminForm() {
+                const now = Date.now();
+                if (isAdminSending || (now - lastAdminSendTs < 1200)) return false;
+                if (!input.value.trim() && !document.getElementById('chatFileInput').files.length) return false;
+
                 isAdminSending = true;
-                const btn = form.querySelector('button[type="submit"]');
+                lastAdminSendTs = now;
+                const btn = document.getElementById('adminSendBtn');
                 if (btn) {
                     btn.disabled = true;
-                    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Sending...';
+                    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>';
                 }
-            });
+                form.submit();
+            }
 
-            if (input && form) {
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const now = Date.now();
+                    if (isAdminSending || (now - lastAdminSendTs < 1200)) {
+                        e.preventDefault();
+                        return false;
+                    }
+                    isAdminSending = true;
+                    lastAdminSendTs = now;
+                    const btn = document.getElementById('adminSendBtn');
+                    if (btn) {
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>';
+                    }
+                });
+            }
+
+            if (input) {
                 input.addEventListener('keydown', function(e) {
                     if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        if (!isAdminSending && input.value.trim() !== '') {
-                            form.requestSubmit ? form.requestSubmit() : form.submit();
-                        }
+                        submitAdminForm();
                     }
                 });
+            }
+
+            // Live State Polling (Every 3.5s)
+            let lastAdminMsgId = 0;
+            const existingItems = box ? box.querySelectorAll('.msg-item') : [];
+            if (existingItems.length > 0) {
+                lastAdminMsgId = parseInt(existingItems[existingItems.length - 1].getAttribute('data-msg-id')) || 0;
+            }
+
+            setInterval(function pollAdminLive() {
+                fetch("{{ route('admin.conversation.poll-live', $conversation->slug) }}?last_id=" + lastAdminMsgId, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                })
+                .then(r => r.json())
+                .then(res => {
+                    // 1. Live Typing Preview Sneak-Peek
+                    const typingBox = document.getElementById('adminLiveTypingBox');
+                    const typingText = document.getElementById('adminTypingDraftText');
+                    if (res.client_typing && res.client_typing.draft) {
+                        typingText.innerText = res.client_typing.draft;
+                        typingBox.classList.remove('d-none');
+                    } else {
+                        typingBox.classList.add('d-none');
+                    }
+
+                    // 2. Append new incoming messages
+                    if (res.messages && res.messages.length > 0) {
+                        const placeholder = document.getElementById('chatEmptyPlaceholder');
+                        if (placeholder) placeholder.remove();
+
+                        res.messages.forEach(msg => {
+                            if (msg.id > lastAdminMsgId) lastAdminMsgId = msg.id;
+                            if (document.querySelector(`[data-msg-id="${msg.id}"]`)) return;
+
+                            const isMine = msg.is_mine;
+                            const itemDiv = document.createElement('div');
+                            itemDiv.className = isMine ? 'd-flex justify-content-end mb-3 msg-item' : 'd-flex justify-content-start mb-3 msg-item';
+                            itemDiv.setAttribute('data-msg-id', msg.id);
+
+                            let fileHtml = msg.file ? `<p class="mb-1"><a href="${msg.file}" class="text-warning font-weight-bold" target="_blank"><i class="fas fa-paperclip mr-1"></i> ${msg.file_name || 'Attachment'}</a></p>` : '';
+                            let textHtml = msg.text ? `<div>${escapeAdminHtml(msg.text).replace(/\\n/g, '<br>')}</div>` : '';
+
+                            if (isMine) {
+                                itemDiv.innerHTML = `
+                                    <div class="msg_cotainer_send">
+                                        ${fileHtml}
+                                        ${textHtml}
+                                        <span class="msg_time_send">${msg.time}</span>
+                                    </div>
+                                    <div class="img_cont_msg ml-2">
+                                        <img src="{{ asset('backend/assets/img/profile/other.png') }}" class="rounded-circle user_img_msg" title="Admin Counsel">
+                                    </div>
+                                `;
+                            } else {
+                                itemDiv.innerHTML = `
+                                    <div class="img_cont_msg mr-2">
+                                        <img src="{{ asset('backend/assets/img/profile/other.png') }}" class="rounded-circle user_img_msg" title="${msg.user_name}">
+                                    </div>
+                                    <div class="msg_cotainer">
+                                        <div class="font-weight-bold text-warning small mb-1">${msg.user_name}</div>
+                                        ${fileHtml}
+                                        ${textHtml}
+                                        <span class="msg_time">${msg.time}</span>
+                                    </div>
+                                `;
+                            }
+                            box.appendChild(itemDiv);
+                            box.scrollTop = box.scrollHeight;
+                        });
+                    }
+                })
+                .catch(() => {});
+            }, 3500);
+
+            function escapeAdminHtml(str) {
+                return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
             }
         });
     </script>
