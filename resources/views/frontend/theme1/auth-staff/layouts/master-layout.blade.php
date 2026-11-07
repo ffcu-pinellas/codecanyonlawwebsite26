@@ -47,20 +47,20 @@
 
             <!-- Language Switcher Dropdown -->
             <div class="dropdown">
-                <button class="btn btn-sm btn-dark dropdown-toggle font-weight-bold text-light px-2 py-1" type="button" id="languageDropdown" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background: #161a23; border: 1px solid #28303f; border-radius: 6px; font-size: 11.5px;">
+                <button class="btn btn-sm btn-dark dropdown-toggle font-weight-bold px-2 py-1 staff-nav-btn" type="button" id="languageDropdown" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="border-radius: 6px; font-size: 11.5px;">
                     <span id="currentLangFlag">🇺🇸</span> <span id="currentLangShort" class="d-none d-sm-inline">EN</span>
                 </button>
-                <div class="dropdown-menu dropdown-menu-right shadow-lg p-2" aria-labelledby="languageDropdown" style="background: #161a23; border: 1px solid #28303f; min-width: 170px; max-height: 280px; overflow-y: auto;">
-                    <a class="dropdown-item py-1 px-2 text-light rounded d-flex align-items-center" href="javascript:void(0);" onclick="setPortalLanguage('en', 'English', '🇺🇸')" style="font-size: 12px;">
+                <div class="dropdown-menu dropdown-menu-right shadow-lg p-2 staff-nav-dropdown" aria-labelledby="languageDropdown" style="min-width: 170px; max-height: 280px; overflow-y: auto;">
+                    <a class="dropdown-item py-1 px-2 rounded d-flex align-items-center staff-dropdown-item" href="javascript:void(0);" onclick="setPortalLanguage('en', 'English', '🇺🇸')" style="font-size: 12px;">
                         <span class="mr-2">🇺🇸</span> <span>English</span>
                     </a>
-                    <a class="dropdown-item py-1 px-2 text-light rounded d-flex align-items-center" href="javascript:void(0);" onclick="setPortalLanguage('es', 'Español', '🇪🇸')" style="font-size: 12px;">
+                    <a class="dropdown-item py-1 px-2 rounded d-flex align-items-center staff-dropdown-item" href="javascript:void(0);" onclick="setPortalLanguage('es', 'Español', '🇪🇸')" style="font-size: 12px;">
                         <span class="mr-2">🇪🇸</span> <span>Español</span>
                     </a>
-                    <a class="dropdown-item py-1 px-2 text-light rounded d-flex align-items-center" href="javascript:void(0);" onclick="setPortalLanguage('fr', 'Français', '🇫🇷')" style="font-size: 12px;">
+                    <a class="dropdown-item py-1 px-2 rounded d-flex align-items-center staff-dropdown-item" href="javascript:void(0);" onclick="setPortalLanguage('fr', 'Français', '🇫🇷')" style="font-size: 12px;">
                         <span class="mr-2">🇫🇷</span> <span>Français</span>
                     </a>
-                    <a class="dropdown-item py-1 px-2 text-light rounded d-flex align-items-center" href="javascript:void(0);" onclick="setPortalLanguage('de', 'Deutsch', '🇩🇪')" style="font-size: 12px;">
+                    <a class="dropdown-item py-1 px-2 rounded d-flex align-items-center staff-dropdown-item" href="javascript:void(0);" onclick="setPortalLanguage('de', 'Deutsch', '🇩🇪')" style="font-size: 12px;">
                         <span class="mr-2">🇩🇪</span> <span>Deutsch</span>
                     </a>
                 </div>
@@ -81,27 +81,27 @@
                         <small class="text-muted" style="font-size: 10px;">ID: {{ Auth::user()->staffDetail?->staff_id ?: 'Staff' }}</small>
                     </div>
                 </a>
-                <div class="dropdown-menu dropdown-menu-right shadow-lg p-2" aria-labelledby="staffUserMenuDropdown" style="background: #161a23; border: 1px solid #28303f; min-width: 220px;">
-                    <div class="px-3 py-2 border-bottom mb-2" style="border-color: #28303f !important;">
-                        <span class="d-block font-weight-bold text-white small">{{ Auth::user()->name }}</span>
+                <div class="dropdown-menu dropdown-menu-right shadow-lg p-2 staff-nav-dropdown" aria-labelledby="staffUserMenuDropdown" style="min-width: 220px;">
+                    <div class="px-3 py-2 border-bottom mb-2 staff-dropdown-header" style="border-color: #28303f !important;">
+                        <span class="d-block font-weight-bold small text-name">{{ Auth::user()->name }}</span>
                         <small class="text-muted d-block text-truncate">{{ Auth::user()->email }}</small>
                     </div>
-                    <a class="dropdown-item text-light py-2 rounded" href="{{ route('staff.dashboard') }}" style="font-size: 13px;">
+                    <a class="dropdown-item staff-dropdown-item py-2 rounded" href="{{ route('staff.dashboard') }}" style="font-size: 13px;">
                         <i class="fas fa-tachometer-alt text-warning mr-2"></i> {{ __('Staff Dashboard') }}
                     </a>
-                    <a class="dropdown-item text-light py-2 rounded" href="{{ route('staff.tasks.index') }}" style="font-size: 13px;">
+                    <a class="dropdown-item staff-dropdown-item py-2 rounded" href="{{ route('staff.tasks.index') }}" style="font-size: 13px;">
                         <i class="fas fa-tasks text-warning mr-2"></i> {{ __('Assigned Tasks') }}
                     </a>
-                    <a class="dropdown-item text-light py-2 rounded" href="{{ route('staff.financial-ledger') }}" style="font-size: 13px;">
+                    <a class="dropdown-item staff-dropdown-item py-2 rounded" href="{{ route('staff.financial-ledger') }}" style="font-size: 13px;">
                         <i class="fas fa-wallet text-warning mr-2"></i> {{ __('Financial Ledger') }}
                     </a>
-                    <a class="dropdown-item text-light py-2 rounded" href="{{ route('staff.payment-method') }}" style="font-size: 13px;">
+                    <a class="dropdown-item staff-dropdown-item py-2 rounded" href="{{ route('staff.payment-method') }}" style="font-size: 13px;">
                         <i class="fas fa-university text-warning mr-2"></i> {{ __('Direct Deposit Setup') }}
                     </a>
-                    <a class="dropdown-item text-light py-2 rounded" href="{{ route('staff.messages') }}" style="font-size: 13px;">
+                    <a class="dropdown-item staff-dropdown-item py-2 rounded" href="{{ route('staff.messages') }}" style="font-size: 13px;">
                         <i class="fas fa-comments text-warning mr-2"></i> {{ __('Internal Team Chat') }}
                     </a>
-                    <a class="dropdown-item text-light py-2 rounded" href="{{ route('staff.profile') }}" style="font-size: 13px;">
+                    <a class="dropdown-item staff-dropdown-item py-2 rounded" href="{{ route('staff.profile') }}" style="font-size: 13px;">
                         <i class="fas fa-user-cog text-warning mr-2"></i> {{ __('Profile & Settings') }}
                     </a>
                     <div class="dropdown-divider" style="border-color: #28303f !important;"></div>
@@ -288,6 +288,11 @@
     body.light-mode .text-dark { color: #0f172a !important; }
     body.light-mode strong, body.light-mode b { color: #0f172a !important; }
     body.light-mode .font-weight-bold { color: #0f172a !important; }
+    body.light-mode [style*="color: #fecc56"],
+    body.light-mode [style*="color:#fecc56"],
+    body.light-mode .text-warning {
+        color: #b45309 !important;
+    }
 
     /* Containers light */
     body.light-mode .staff-content-container,
@@ -317,10 +322,49 @@
         color: #1e40af !important;
     }
 
+    .staff-nav-btn {
+        background: #161a23;
+        border: 1px solid #28303f;
+        color: #f1f5f9;
+    }
+    .staff-nav-dropdown {
+        background: #161a23 !important;
+        border: 1px solid #28303f !important;
+    }
+    .staff-dropdown-item {
+        color: #cbd5e1 !important;
+    }
+    .staff-dropdown-item:hover {
+        background: #28303f !important;
+        color: #fecc56 !important;
+    }
+    .staff-dropdown-header .text-name {
+        color: #ffffff !important;
+    }
+
     /* Top utility controls light mode */
-    body.light-mode #languageDropdown {
+    body.light-mode #languageDropdown,
+    body.light-mode .staff-nav-btn {
         background: #f8fafc !important;
         border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .staff-nav-dropdown {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+    body.light-mode .staff-dropdown-item {
+        color: #1e293b !important;
+    }
+    body.light-mode .staff-dropdown-item:hover {
+        background: #f1f5f9 !important;
+        color: #b45309 !important;
+    }
+    body.light-mode .staff-dropdown-header {
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .staff-dropdown-header .text-name {
         color: #0f172a !important;
     }
     body.light-mode #themeModeToggle {

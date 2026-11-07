@@ -35,6 +35,12 @@
         box-shadow: 0 4px 16px rgba(0,0,0,0.06) !important;
         color: #0f172a !important;
     }
+    body.light-mode .ledger-card [style*="color: #fecc56"],
+    body.light-mode .ledger-card [style*="color:#fecc56"],
+    body.light-mode .ledger-card h5,
+    body.light-mode .ledger-card h6 {
+        color: #b45309 !important;
+    }
     body.light-mode .ledger-card input.form-control,
     body.light-mode .ledger-card textarea.form-control {
         background: #ffffff !important;

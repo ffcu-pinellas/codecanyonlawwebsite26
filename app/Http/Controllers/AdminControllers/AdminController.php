@@ -130,6 +130,16 @@ class AdminController extends Controller
         }
     }
 
+    public function securityPinView()
+    {
+        try {
+            $title = 'Admin 2FA Security Gate PIN';
+            return view('backend.pages.profile.show', compact('title'));
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
     public function profileUpdate(Request $request)
     {
         try {

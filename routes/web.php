@@ -536,7 +536,7 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth', 'adm
         Route::post('payment', [AppSettingsController::class, 'savePaymentSettings'])->name('payment-save');
 
         // Admin Security & 2FA Gate PIN Settings
-        Route::get('security-pin', [AdminController::class, 'profile'])->name('security-pin');
+        Route::get('security-pin', [AdminController::class, 'securityPinView'])->name('security-pin');
         Route::post('security-pin', [AdminController::class, 'updateSecurityPin'])->name('security-pin-save');
 
     });

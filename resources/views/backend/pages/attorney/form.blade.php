@@ -237,6 +237,12 @@
 
                 </div>
             </div>
+
+            @if (!empty($page) && $page === 'profile')
+                <div class="col-12 mt-4 px-0">
+                    @include('backend.pages.profile.update-security-pin-form')
+                </div>
+            @endif
         </div>
     </div>
 @endsection
