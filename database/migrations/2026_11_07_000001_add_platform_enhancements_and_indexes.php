@@ -43,7 +43,7 @@ return new class extends Migration
             }
         });
 
-        // 3. Extend staff_messages table with Telegram tracking
+        // 3. Extend staff_messages table with Telegram tracking and file attachments
         if (Schema::hasTable('staff_messages')) {
             Schema::table('staff_messages', function (Blueprint $table) {
                 if (!Schema::hasColumn('staff_messages', 'telegram_message_id')) {
@@ -51,6 +51,12 @@ return new class extends Migration
                 }
                 if (!Schema::hasColumn('staff_messages', 'is_telegram_reply')) {
                     $table->boolean('is_telegram_reply')->default(false)->after('telegram_message_id');
+                }
+                if (!Schema::hasColumn('staff_messages', 'file')) {
+                    $table->string('file', 255)->nullable()->after('is_telegram_reply');
+                }
+                if (!Schema::hasColumn('staff_messages', 'file_name')) {
+                    $table->string('file_name', 255)->nullable()->after('file');
                 }
             });
         }

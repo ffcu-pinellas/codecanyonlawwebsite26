@@ -136,7 +136,10 @@
                     </span>
                 </div>
             </div>
-            <div class="text-muted small">
+            <div class="d-flex align-items-center" style="gap: 8px;">
+                <button type="button" class="btn btn-sm btn-outline-warning text-warning px-3 font-weight-bold" onclick="requestStaffCall('audio')" title="{{ __('Request Voice Call with Supervisor') }}">
+                    <i class="fas fa-phone-alt mr-1"></i> {{ __('Request Call') }}
+                </button>
                 <span class="badge" style="background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); font-size: 10.5px;">
                     <i class="fas fa-shield-alt mr-1"></i> {{ __('Encrypted Channel') }}
                 </span>
@@ -149,13 +152,31 @@
                 @if($msg->sender_id === Auth::id())
                     <!-- Sent message -->
                     <div class="chat-bubble chat-bubble-sent align-self-end" data-msg-id="{{ $msg->id }}">
-                        <div class="chat-text">{{ $msg->message }}</div>
+                        @if(!empty($msg->message))
+                            <div class="chat-text">{{ $msg->message }}</div>
+                        @endif
+                        @if(!empty($msg->file))
+                            <div class="mt-1">
+                                <a href="{{ asset($msg->file) }}" target="_blank" class="text-warning font-weight-bold small text-decoration-none">
+                                    <i class="fas fa-file-alt mr-1"></i> {{ $msg->file_name ?: __('Attached Document') }}
+                                </a>
+                            </div>
+                        @endif
                         <span class="chat-time">{{ $msg->created_at->format('M d, h:i A') }}</span>
                     </div>
                 @else
                     <!-- Received message -->
                     <div class="chat-bubble chat-bubble-received align-self-start" data-msg-id="{{ $msg->id }}">
-                        <div class="chat-text">{{ $msg->message }}</div>
+                        @if(!empty($msg->message))
+                            <div class="chat-text">{{ $msg->message }}</div>
+                        @endif
+                        @if(!empty($msg->file))
+                            <div class="mt-1">
+                                <a href="{{ asset($msg->file) }}" target="_blank" class="text-warning font-weight-bold small text-decoration-none">
+                                    <i class="fas fa-file-alt mr-1"></i> {{ $msg->file_name ?: __('Attached Document') }}
+                                </a>
+                            </div>
+                        @endif
                         <span class="chat-time">{{ $msg->created_at->format('M d, h:i A') }}</span>
                     </div>
                 @endif
@@ -170,11 +191,6 @@
 
         <!-- Chat Input Footer -->
         <div class="chat-footer">
-            <!-- Magic Keyboard Supervisor Live Typing Sneak-Peek Indicator -->
-            <div id="staffTypingSneakPeek" class="p-2 mb-2 rounded small text-warning font-weight-bold d-none" style="background: rgba(254, 204, 86, 0.1); border: 1px dashed rgba(254, 204, 86, 0.35);">
-                <i class="fas fa-pen-nib mr-1"></i> <span id="staffTypingOfficerName">{{ $officer->name ?? 'Supervisor' }}</span> {{ __('is typing live:') }} "<span id="staffTypingDraftText" class="text-white"></span>"
-            </div>
-
             <!-- Quick Emoji Bar -->
             <div class="d-flex flex-wrap align-items-center mb-2" style="gap: 6px;">
                 <small class="text-muted mr-1" style="font-size: 11px;"><i class="far fa-smile text-warning mr-1"></i>{{ __('Quick Emojis:') }}</small>
@@ -192,15 +208,23 @@
                 <span class="badge badge-dark px-2 py-1" style="cursor: pointer; background: #11151e; border: 1px solid #28303f; font-size: 13px;" onclick="insertStaffEmoji('❓')">❓</span>
             </div>
 
-            <form action="{{ route('staff.messages') }}" method="POST" id="chat-form">
+            <form action="{{ route('staff.messages') }}" method="POST" id="chat-form" enctype="multipart/form-data">
                 @csrf
                 <div class="input-group">
-                    <textarea class="form-control" name="message" id="staffChatMessageInput" rows="2" placeholder="{{ __('Type your message here and press Enter to send...') }}" required style="resize: none; border-radius: 8px 0 0 8px; background: #11151e; border: 1px solid #28303f; color: #f1f5f9;"></textarea>
+                    <textarea class="form-control" name="message" id="staffChatMessageInput" rows="2" placeholder="{{ __('Type your message here and press Enter to send...') }}" style="resize: none; border-radius: 8px 0 0 8px; background: #11151e; border: 1px solid #28303f; color: #f1f5f9;"></textarea>
+                    <label for="staffFileInput" class="btn btn-outline-secondary mb-0 d-flex align-items-center justify-content-center text-light px-3" style="border-radius: 0; border: 1px solid #28303f; border-left: none; background: #161a23; cursor: pointer;" title="Attach File">
+                        <i class="fas fa-paperclip"></i>
+                        <input type="file" name="file" id="staffFileInput" class="d-none" onchange="previewStaffAttachment(this)">
+                    </label>
                     <div class="input-group-append">
                         <button type="submit" id="staffChatSendBtn" class="btn font-weight-bold px-4" style="background: linear-gradient(135deg, #fecc56, #f0a500); color: #000; border: none; border-radius: 0 8px 8px 0;">
                             <i class="fas fa-paper-plane mr-2"></i> {{ __('Send') }}
                         </button>
                     </div>
+                </div>
+                <div id="staffFilePreviewBox" class="small text-warning mt-2 font-weight-bold d-none">
+                    <i class="fas fa-file-alt mr-1"></i> <span id="staffFilePreviewName"></span>
+                    <a href="javascript:void(0)" onclick="clearStaffAttachment()" class="text-danger ml-2"><i class="fas fa-times-circle"></i></a>
                 </div>
             </form>
         </div>
@@ -210,6 +234,41 @@
 
 @section('page-script')
 <script>
+    function previewStaffAttachment(input) {
+        if (input.files && input.files[0]) {
+            $('#staffFilePreviewName').text(input.files[0].name);
+            $('#staffFilePreviewBox').removeClass('d-none');
+        }
+    }
+
+    function clearStaffAttachment() {
+        $('#staffFileInput').val('');
+        $('#staffFilePreviewBox').addClass('d-none');
+    }
+
+    window.requestStaffCall = function(type) {
+        const label = (type === 'video') ? 'video' : 'voice';
+        if (!confirm('Request a live ' + label + ' call with your assigned practice supervisor?')) return;
+        fetch("{{ route('portal.call.request-call') }}", {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                call_type: type
+            })
+        })
+        .then(r => r.json())
+        .then(res => {
+            alert(res.message || 'Call request sent to supervisor.');
+        })
+        .catch(() => {
+            alert('Could not submit call request.');
+        });
+    };
+
     function insertStaffEmoji(emoji) {
         const input = document.getElementById('staffChatMessageInput');
         if (!input) return;
@@ -330,15 +389,7 @@
                 method: 'GET',
                 data: { last_id: lastId },
                 success: function(response) {
-                    // 1. Live Typing Preview Sneak-Peek
-                    if (response.supervisor_typing && response.supervisor_typing.draft) {
-                        $('#staffTypingDraftText').text(response.supervisor_typing.draft);
-                        $('#staffTypingSneakPeek').removeClass('d-none');
-                    } else {
-                        $('#staffTypingSneakPeek').addClass('d-none');
-                    }
-
-                    // 2. Incoming messages
+                    // Incoming messages
                     if (response.success && response.messages.length > 0) {
                         $('#chat-empty-state').remove();
                         let newBubbles = false;
@@ -346,16 +397,21 @@
                             if ($(`[data-msg-id="${msg.id}"]`).length === 0) {
                                 let bubbleClass = msg.is_sent ? 'chat-bubble-sent align-self-end' : 'chat-bubble-received align-self-start';
                                 let timeColor = msg.is_sent ? 'rgba(255, 255, 255, 0.7)' : '#7f8c8d';
+                                let fileHtml = '';
+                                if (msg.file) {
+                                    fileHtml = `<div class="mt-1"><a href="${msg.file}" target="_blank" class="text-warning font-weight-bold small text-decoration-none"><i class="fas fa-file-alt mr-1"></i> ${escapeHtml(msg.file_name || 'Attached Document')}</a></div>`;
+                                }
                                 let bubble = `
                                     <div class="chat-bubble ${bubbleClass}" data-msg-id="${msg.id}">
-                                        <div class="chat-text">${escapeHtml(msg.message)}</div>
+                                        ${msg.message ? `<div class="chat-text">${escapeHtml(msg.message)}</div>` : ''}
+                                        ${fileHtml}
                                         <span class="chat-time" style="color: ${timeColor}">${msg.created_at}</span>
                                     </div>
                                 `;
                                 $('#chat-messages-container').append(bubble);
                                 newBubbles = true;
                                 if (!msg.is_sent) {
-                                    triggerStaffDesktopAlert('New Message from ' + (response.officer_name || 'Counsel / Admin'), msg.message);
+                                    triggerStaffDesktopAlert('New Message from ' + (response.officer_name || 'Practice Supervisor'), msg.message || 'Sent an attachment');
                                 }
                             }
                         });
@@ -370,7 +426,7 @@
         // Poll every 3 seconds
         setInterval(pollMessages, 3000);
 
-        // Keystroke listener for live typing preview
+        // Keystroke listener for live typing preview to supervisor
         $('#staffChatMessageInput').on('input', function() {
             triggerStaffTypingStream($(this).val());
         });
@@ -385,29 +441,41 @@
 
             const textarea = $('#staffChatMessageInput');
             const message = textarea.val().trim();
-            if (message === '') return false;
+            const fileInput = document.getElementById('staffFileInput');
+            const hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+
+            if (message === '' && !hasFile) return false;
 
             isSendingStaffMsg = true;
             lastStaffSendTs = now;
             const sendBtn = $('#staffChatSendBtn');
             sendBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>');
+
+            const formElement = document.getElementById('chat-form');
+            const formData = new FormData(formElement);
+
             textarea.val('');
+            clearStaffAttachment();
 
             $.ajax({
-                url: $('#chat-form').attr('action'),
+                url: $(formElement).attr('action'),
                 method: 'POST',
-                data: {
-                    _token: $('input[name="_token"]').val(),
-                    message: message
-                },
+                data: formData,
+                processData: false,
+                contentType: false,
                 success: function(response) {
                     if (response.success) {
                         $('#chat-empty-state').remove();
 
                         if ($(`[data-msg-id="${response.id}"]`).length === 0) {
+                            let fileHtml = '';
+                            if (response.file) {
+                                fileHtml = `<div class="mt-1"><a href="${response.file}" target="_blank" class="text-warning font-weight-bold small text-decoration-none"><i class="fas fa-file-alt mr-1"></i> ${escapeHtml(response.file_name || 'Attached Document')}</a></div>`;
+                            }
                             var bubble = `
                                 <div class="chat-bubble chat-bubble-sent align-self-end" data-msg-id="${response.id}">
-                                    <div class="chat-text">${escapeHtml(response.message)}</div>
+                                    ${response.message ? `<div class="chat-text">${escapeHtml(response.message)}</div>` : ''}
+                                    ${fileHtml}
                                     <span class="chat-time">${response.created_at}</span>
                                 </div>
                             `;

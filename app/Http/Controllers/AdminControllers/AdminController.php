@@ -545,99 +545,27 @@ class AdminController extends Controller
     }
 
     /**
-     * Save Admin Typing Draft
+     * Admin Typing Draft - Kept private; admin drafts are never sent to clients.
      */
     public function saveTypingDraft(Request $request, $slug)
     {
-        try {
-            $conversation = Conversation::where('slug', $slug)->firstOrFail();
-            $draft = trim($request->input('draft', ''));
-
-            if (empty($draft)) {
-                \Illuminate\Support\Facades\Cache::forget("typing_draft_convo_{$conversation->id}");
-            } else {
-                \Illuminate\Support\Facades\Cache::put("typing_draft_convo_{$conversation->id}", [
-                    'user_id' => Auth::id(),
-                    'user_name' => Auth::user()->name,
-                    'draft' => \Illuminate\Support\Str::limit($draft, 300),
-                    'time' => now()->timestamp,
-                ], 10);
-            }
-
-            return response()->json(['status' => 'ok']);
-        } catch (\Throwable $e) {
-            return response()->json(['status' => 'error'], 500);
-        }
+        return response()->json(['status' => 'ok']);
     }
 
     /**
-     * Admin Initiates Video/Voice Consultation Call with Client
+     * Admin Initiates Video/Voice Call with Client
      */
     public function initiateCall(Request $request, $slug)
     {
-        try {
-            $conversation = Conversation::where('slug', $slug)->firstOrFail();
-            $callType = $request->input('call_type', 'video'); // video or audio
-            $roomId = 'ycpa_' . substr(md5($conversation->id . '_' . time()), 0, 10);
-
-            $callData = [
-                'call_id' => uniqid('call_'),
-                'caller_id' => Auth::id(),
-                'caller_name' => Auth::user()->name ?: 'Assigned Legal Counsel',
-                'call_type' => $callType,
-                'room_id' => $roomId,
-                'status' => 'ringing',
-                'started_at' => now()->timestamp,
-            ];
-
-            \Illuminate\Support\Facades\Cache::put("active_call_convo_{$conversation->id}", $callData, 120);
-
-            // Notify Telegram
-            $client = $conversation->user->first(fn($u) => $u->id !== Auth::id());
-            $clientName = $client ? $client->name : 'Client';
-            $telMsg = "📞 <b>Consultation Call Initiated</b>\n"
-                    . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                    . "👤 <b>Caller:</b> " . htmlspecialchars(Auth::user()->name) . " (Admin / Counsel)\n"
-                    . "👥 <b>Client:</b> " . htmlspecialchars($clientName) . "\n"
-                    . "🎥 <b>Mode:</b> " . ucfirst($callType) . " Encrypted Consultation\n"
-                    . "🔗 <b>Room ID:</b> <code>{$roomId}</code>\n"
-                    . "⏳ <b>Status:</b> Ringing on client device...";
-            \App\Models\GeneralSettings::sendTelegramNotification($telMsg);
-
-            return response()->json(['status' => 'ok', 'call' => $callData]);
-        } catch (\Throwable $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
+        return app(\App\Http\Controllers\WebRtcCallController::class)->initiate($request);
     }
 
     /**
-     * Admin Ends or Responds to Consultation Call
+     * Admin Ends or Responds to Call
      */
     public function respondCall(Request $request, $slug)
     {
-        try {
-            $conversation = Conversation::where('slug', $slug)->firstOrFail();
-            $action = $request->input('action', 'end');
-
-            if ($action === 'end') {
-                \Illuminate\Support\Facades\Cache::forget("active_call_convo_{$conversation->id}");
-
-                Message::create([
-                    'conversation_id' => $conversation->id,
-                    'user_id' => Auth::id(),
-                    'text' => "📞 Encrypted consultation call ended.",
-                    'message' => "📞 Encrypted consultation call ended.",
-                    'read' => true,
-                ]);
-
-                \App\Models\GeneralSettings::sendTelegramNotification("📞 <b>Consultation Call Ended</b>\nSession closed by Admin.");
-                return response()->json(['status' => 'ok']);
-            }
-
-            return response()->json(['status' => 'invalid_action'], 400);
-        } catch (\Throwable $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
+        return app(\App\Http\Controllers\WebRtcCallController::class)->respond($request);
     }
 
     public function approveAndCreateCase($relief_id)

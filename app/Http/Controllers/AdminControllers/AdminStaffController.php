@@ -384,18 +384,44 @@ class AdminStaffController extends Controller
     public function sendMessage(Request $request, $id)
     {
         $request->validate([
-            'message' => 'required|string|max:1000',
+            'message' => 'nullable|string|max:2000',
+            'file' => 'nullable|file|mimes:pdf,docx,doc,jpeg,png,jpg,xlsx,txt|max:20480',
         ]);
 
         try {
             $staff = User::role('staff')->findOrFail($id);
             $adminUser = Auth::user();
 
+            $rawMessage = trim($request->input('message') ?: '');
+            $filePath = null;
+            $fileName = null;
+
+            if ($request->hasFile('file')) {
+                $f = $request->file('file');
+                $fileName = $f->getClientOriginalName();
+                $newFileName = time() . '_' . uniqid() . '.' . $f->getClientOriginalExtension();
+                $dir = public_path('upload/staff-message-files');
+                if (!\Illuminate\Support\Facades\File::exists($dir)) {
+                    \Illuminate\Support\Facades\File::makeDirectory($dir, 0755, true);
+                }
+                $f->move($dir, $newFileName);
+                $filePath = '/upload/staff-message-files/' . $newFileName;
+            }
+
+            if (empty($rawMessage) && empty($filePath)) {
+                if ($request->ajax()) {
+                    return response()->json(['error' => 'Message or attachment required.'], 422);
+                }
+                return redirect()->back();
+            }
+
             $chat = StaffMessage::create([
                 'staff_user_id' => $staff->id,
                 'officer_user_id' => $adminUser->id,
                 'sender_id' => $adminUser->id,
-                'message' => $request->message,
+                'message' => $rawMessage ?: 'Sent an attachment',
+                'file' => $filePath,
+                'file_name' => $fileName,
                 'read' => false,
             ]);
 
@@ -404,7 +430,7 @@ class AdminStaffController extends Controller
                 $this->sendEmailNotification(
                     $staff->email, 
                     __('New Message from Admin/Officer'),
-                    __('Your officer ') . $adminUser->name . __(' sent a message: ') . "\n\n" . $request->message
+                    __('Your officer ') . $adminUser->name . __(' sent a message: ') . "\n\n" . ($rawMessage ?: 'Attached file: ' . $fileName)
                 );
             }
 
@@ -413,6 +439,8 @@ class AdminStaffController extends Controller
                     'success' => true,
                     'id' => $chat->id,
                     'message' => $chat->message,
+                    'file' => $chat->file,
+                    'file_name' => $chat->file_name,
                     'created_at' => $chat->created_at->format('M d, h:i A')
                 ]);
             }
@@ -642,11 +670,19 @@ class AdminStaffController extends Controller
                     'sender_id' => $msg->sender_id,
                     'is_sent' => ($msg->sender_id === $adminUser->id),
                     'message' => $msg->message,
+                    'file' => $msg->file,
+                    'file_name' => $msg->file_name,
                     'created_at' => $msg->created_at->format('M d, h:i A')
                 ];
             }
 
-            return response()->json(['success' => true, 'messages' => $data]);
+            $staffTyping = \Illuminate\Support\Facades\Cache::get("typing_draft_staff_{$staff->id}");
+
+            return response()->json([
+                'success' => true, 
+                'messages' => $data,
+                'staff_typing' => $staffTyping,
+            ]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }

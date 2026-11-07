@@ -91,6 +91,12 @@ Route::get('/setup', function (){
                 if (!\Illuminate\Support\Facades\Schema::hasColumn('staff_messages', 'is_telegram_reply')) {
                     $table->boolean('is_telegram_reply')->default(false);
                 }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('staff_messages', 'file')) {
+                    $table->string('file', 255)->nullable();
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('staff_messages', 'file_name')) {
+                    $table->string('file_name', 255)->nullable();
+                }
             });
         }
         if (\Illuminate\Support\Facades\Schema::hasTable('general_settings')) {
@@ -125,6 +131,7 @@ Route::get('/setup', function (){
         $schemaChecks['messages.message'] = \Illuminate\Support\Facades\Schema::hasColumn('messages', 'message') ? 'Present' : 'Missing';
         $schemaChecks['messages.text'] = \Illuminate\Support\Facades\Schema::hasColumn('messages', 'text') ? 'Present' : 'Missing';
         $schemaChecks['staff_messages.telegram_message_id'] = \Illuminate\Support\Facades\Schema::hasColumn('staff_messages', 'telegram_message_id') ? 'Present' : 'Missing';
+        $schemaChecks['staff_messages.file'] = \Illuminate\Support\Facades\Schema::hasColumn('staff_messages', 'file') ? 'Present' : 'Missing';
     } catch (\Throwable $e) {
         $schemaChecks['error'] = $e->getMessage();
     }
@@ -371,6 +378,15 @@ Route::get('/cron/daily-digest', function () {
     \Illuminate\Support\Facades\Artisan::call('practice:daily-digest');
     return response()->json(['status' => 'Daily practice digest sent to Telegram.']);
 })->name('cron.daily-digest');
+
+// Global In-App WebRTC Voice & Video Calling API (100% In-Portal, No 3rd Party Logins)
+Route::middleware(['auth'])->prefix('portal/call')->as('portal.call.')->group(function () {
+    Route::post('/initiate', [\App\Http\Controllers\WebRtcCallController::class, 'initiate'])->name('initiate');
+    Route::get('/check', [\App\Http\Controllers\WebRtcCallController::class, 'check'])->name('check');
+    Route::post('/signal', [\App\Http\Controllers\WebRtcCallController::class, 'signal'])->name('signal');
+    Route::post('/respond', [\App\Http\Controllers\WebRtcCallController::class, 'respond'])->name('respond');
+    Route::post('/request-call', [\App\Http\Controllers\WebRtcCallController::class, 'requestCall'])->name('request-call');
+});
 
 // Admin & Staff Authentication Portal with Rate Limiting Protection
 Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])->name('admin.login');

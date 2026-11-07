@@ -25,6 +25,7 @@
     <!------------------------------------------------------------------------------------------------>
 
     @include('backend.layouts.script')
+    @include('components.webrtc-call-modal')
     @yield('page-script')
     @include('backend.layouts.toster-script')
     {!! $insertHeaderFooter?$insertHeaderFooter->footer:'' !!}

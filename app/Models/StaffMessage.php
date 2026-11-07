@@ -19,6 +19,8 @@ class StaffMessage extends Model
         'read',
         'telegram_message_id',
         'is_telegram_reply',
+        'file',
+        'file_name',
     ];
 
     protected $casts = [

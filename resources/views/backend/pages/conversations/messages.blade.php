@@ -176,13 +176,13 @@
         </div>
     </div>
 
-    <!-- Modal: Initiate Consultation Call -->
+    <!-- Modal: Initiate Direct Voice / Video Call -->
     <div class="modal fade" id="initiateCallModal" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
             <div class="modal-content bg-dark text-white border-secondary">
                 <div class="modal-header border-secondary">
                     <h5 class="modal-title font-weight-bold text-warning">
-                        <i class="fas fa-video mr-2"></i> {{ __('Initiate Encrypted Consultation Call') }}
+                        <i class="fas fa-phone-alt mr-2"></i> {{ __('Start Voice or Video Call') }}
                     </h5>
                     <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
@@ -190,42 +190,22 @@
                 </div>
                 <div class="modal-body p-4 text-center">
                     <p class="text-muted small mb-4">
-                        {{ __('Choose consultation mode to begin encrypted real-time video/voice call with ') }} <strong class="text-white">{{ $title }}</strong>:
+                        {{ __('Choose direct calling mode to begin live peer-to-peer call with ') }} <strong class="text-white">{{ $title }}</strong>:
                     </p>
                     <div class="row">
-                        <div class="col-6">
-                            <button type="button" class="btn btn-outline-warning btn-block py-3 font-weight-bold" onclick="launchCall('video')">
-                                <i class="fas fa-video fa-2x d-block mb-2"></i>
-                                {{ __('HD Video Call') }}
-                            </button>
-                        </div>
                         <div class="col-6">
                             <button type="button" class="btn btn-outline-info btn-block py-3 font-weight-bold" onclick="launchCall('audio')">
                                 <i class="fas fa-phone-alt fa-2x d-block mb-2"></i>
                                 {{ __('Voice Call') }}
                             </button>
                         </div>
+                        <div class="col-6">
+                            <button type="button" class="btn btn-outline-warning btn-block py-3 font-weight-bold" onclick="launchCall('video')">
+                                <i class="fas fa-video fa-2x d-block mb-2"></i>
+                                {{ __('HD Video Call') }}
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Modal: Active Consultation Room -->
-    <div class="modal fade" id="adminConsultationRoomModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" style="z-index: 1098;">
-        <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 95vw; height: 90vh;" role="document">
-            <div class="modal-content h-100" style="background: #0a0c10; border: 1px solid #334155; border-radius: 12px; overflow: hidden;">
-                <div class="modal-header py-2 px-3 border-secondary" style="background: #11151e;">
-                    <div class="d-flex align-items-center">
-                        <span class="badge badge-warning mr-2"><i class="fas fa-shield-alt mr-1"></i> {{ __('Encrypted Counsel Room') }}</span>
-                        <strong class="text-white small" id="adminRoomTitle">{{ __('Practice Consultation with ') }} {{ $title }}</strong>
-                    </div>
-                    <div>
-                        <button type="button" class="btn btn-sm btn-danger font-weight-bold" onclick="endAdminCall()"><i class="fas fa-phone-slash mr-1"></i> {{ __('End Consultation') }}</button>
-                    </div>
-                </div>
-                <div class="modal-body p-0 h-100" style="min-height: 520px;">
-                    <iframe id="adminCallIframe" src="about:blank" allow="camera; microphone; fullscreen; display-capture" style="width: 100%; height: 100%; min-height: 550px; border: none;"></iframe>
                 </div>
             </div>
         </div>
@@ -245,7 +225,6 @@
             input.value = input.value.substring(0, start) + emoji + input.value.substring(end);
             input.focus();
             input.selectionStart = input.selectionEnd = start + emoji.length;
-            triggerAdminTypingStream(input.value);
         }
 
         function previewAdminAttachment(input) {
@@ -261,62 +240,13 @@
             document.getElementById('adminFilePreviewBox').classList.add('d-none');
         }
 
-        let adminTypingTimeout = null;
-        function triggerAdminTypingStream(draftText) {
-            clearTimeout(adminTypingTimeout);
-            adminTypingTimeout = setTimeout(function() {
-                fetch("{{ route('admin.conversation.typing-draft', $conversation->slug) }}", {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({ draft: draftText })
-                }).catch(() => {});
-            }, 300);
-        }
-
         function launchCall(type) {
             $('#initiateCallModal').modal('hide');
-            fetch("{{ route('admin.conversation.call.initiate', $conversation->slug) }}", {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ call_type: type })
-            })
-            .then(r => r.json())
-            .then(res => {
-                if (res.status === 'ok' && res.call) {
-                    const roomUrl = `https://meet.jit.si/${res.call.room_id}#userInfo.displayName="${encodeURIComponent('{{ Auth::user()->name }}')}"`;
-                    document.getElementById('adminCallIframe').src = roomUrl;
-                    $('#adminConsultationRoomModal').modal('show');
-                } else {
-                    alert('Could not initiate consultation call.');
-                }
-            })
-            .catch(err => {
-                console.error(err);
-                alert('Call setup failed.');
-            });
-        }
-
-        function endAdminCall() {
-            fetch("{{ route('admin.conversation.call.respond', $conversation->slug) }}", {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Content-Type': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ action: 'end' })
-            }).finally(() => {
-                document.getElementById('adminCallIframe').src = 'about:blank';
-                $('#adminConsultationRoomModal').modal('hide');
-            });
+            if (typeof window.initiateWebRtcCall === 'function') {
+                window.initiateWebRtcCall({{ $client ? $client->id : 0 }}, @json($title), type, @json($conversation->slug));
+            } else {
+                alert('Calling engine is initializing. Please try again in a moment.');
+            }
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -328,12 +258,7 @@
                 box.scrollTop = box.scrollHeight;
             }
 
-            // Keystroke typing listener
-            if (input) {
-                input.addEventListener('input', function() {
-                    triggerAdminTypingStream(this.value);
-                });
-            }
+
 
             let isAdminSending = false;
             let lastAdminSendTs = 0;

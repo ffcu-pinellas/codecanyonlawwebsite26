@@ -1,0 +1,884 @@
+<!-- In-App WebRTC Voice & Video Call Modal & Engine (Zero 3rd-Party Logins, Native HTML5 WebRTC) -->
+<style>
+  .webrtc-modal-dialog {
+    max-width: 820px;
+    margin: 1.75rem auto;
+  }
+  @media (max-width: 768px) {
+    .webrtc-modal-dialog {
+      max-width: 95vw;
+      margin: 10px auto;
+    }
+  }
+  .webrtc-call-window {
+    background: #0b0f17;
+    border: 1px solid #28303f;
+    border-radius: 16px;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
+    overflow: hidden;
+    position: relative;
+  }
+  .webrtc-voice-stage {
+    min-height: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at center, #1b2434 0%, #0a0d14 75%);
+    position: relative;
+    padding: 30px 20px;
+  }
+  .webrtc-video-stage {
+    min-height: 480px;
+    height: 65vh;
+    background: #000;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  /* Acoustic Ripple Soundwave Animation */
+  .call-pulse-ring {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .call-pulse-ring::before, .call-pulse-ring::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid rgba(254, 204, 86, 0.45);
+    animation: callRipples 2.4s ease-out infinite;
+  }
+  .call-pulse-ring::after {
+    animation-delay: 1.2s;
+  }
+  @keyframes callRipples {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(2.1); opacity: 0; }
+  }
+  .call-avatar-img {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    border: 3px solid #fecc56;
+    object-fit: cover;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    position: relative;
+    z-index: 2;
+  }
+  .call-avatar-placeholder {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #fecc56, #f0a500);
+    color: #0b0f17;
+    font-size: 42px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 3px solid #fecc56;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    position: relative;
+    z-index: 2;
+  }
+  /* Sound bars equalizer animation */
+  .sound-wave-bars {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    height: 24px;
+    margin-top: 15px;
+  }
+  .sound-wave-bar {
+    width: 4px;
+    background: #fecc56;
+    border-radius: 3px;
+    animation: barBounce 1.2s ease-in-out infinite alternate;
+  }
+  .sound-wave-bar:nth-child(1) { height: 8px; animation-delay: 0.1s; }
+  .sound-wave-bar:nth-child(2) { height: 18px; animation-delay: 0.25s; }
+  .sound-wave-bar:nth-child(3) { height: 24px; animation-delay: 0.4s; }
+  .sound-wave-bar:nth-child(4) { height: 14px; animation-delay: 0.15s; }
+  .sound-wave-bar:nth-child(5) { height: 20px; animation-delay: 0.3s; }
+  .sound-wave-bar:nth-child(6) { height: 10px; animation-delay: 0.2s; }
+  @keyframes barBounce {
+    0% { height: 4px; opacity: 0.3; }
+    100% { height: 24px; opacity: 1; }
+  }
+  .webrtc-action-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 19px;
+    border: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+  .webrtc-action-btn:hover {
+    transform: scale(1.08);
+  }
+  .webrtc-btn-mute {
+    background: #28303f;
+    color: #f1f5f9;
+  }
+  .webrtc-btn-mute.active {
+    background: #ef4444;
+    color: #fff;
+  }
+  .webrtc-btn-video-toggle {
+    background: #28303f;
+    color: #f1f5f9;
+  }
+  .webrtc-btn-video-toggle.active {
+    background: #ef4444;
+    color: #fff;
+  }
+  .webrtc-btn-hangup {
+    background: #ef4444;
+    color: #fff;
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+  }
+  .webrtc-btn-accept {
+    background: #22c55e;
+    color: #fff;
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
+  }
+  /* Floating Local Video PiP */
+  #webrtcLocalVideo {
+    position: absolute;
+    bottom: 90px;
+    right: 20px;
+    width: 170px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 10px;
+    border: 2px solid #fecc56;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.7);
+    z-index: 10;
+    background: #11151e;
+    transform: scaleX(-1); /* Mirror selfie view */
+  }
+  @media (max-width: 576px) {
+    #webrtcLocalVideo {
+      width: 110px;
+      height: 80px;
+      bottom: 80px;
+      right: 12px;
+    }
+  }
+</style>
+
+<!-- 1. Incoming Call Prompt Modal -->
+<div class="modal fade" id="incomingCallModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" style="z-index: 1099;">
+  <div class="modal-dialog modal-dialog-centered" style="max-width: 420px;" role="document">
+    <div class="modal-content text-white" style="background: #11151e; border: 1px solid #28303f; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.85);">
+      <div class="modal-body p-4 text-center">
+        <!-- Caller Avatar with Pulsing Rings -->
+        <div class="d-flex justify-content-center my-3">
+          <div class="call-pulse-ring">
+            <div id="incomingCallerAvatarBox">
+              <div class="call-avatar-placeholder" id="incomingCallerInitial">C</div>
+            </div>
+          </div>
+        </div>
+
+        <h4 class="font-weight-bold text-white mb-1" id="incomingCallerName">Caller</h4>
+        <div class="mb-3">
+          <span class="badge px-3 py-1 font-weight-bold" id="incomingCallTypeBadge" style="background: rgba(254,204,86,0.18); color: #fecc56; border: 1px solid rgba(254,204,86,0.35); font-size: 12px;">
+            <i class="fas fa-phone-alt mr-1"></i> Voice Call
+          </span>
+        </div>
+        <p class="text-muted small mb-4">Incoming live audio/video call. Connect to talk instantly inside your portal workspace.</p>
+
+        <!-- Accept & Decline Action Buttons -->
+        <div class="d-flex justify-content-center align-items-center" style="gap: 28px;">
+          <div class="text-center">
+            <button type="button" class="webrtc-action-btn webrtc-btn-hangup" id="btnDeclineIncomingCall" title="Decline Call">
+              <i class="fas fa-phone-slash"></i>
+            </button>
+            <div class="text-muted small font-weight-bold mt-2">Decline</div>
+          </div>
+          <div class="text-center">
+            <button type="button" class="webrtc-action-btn webrtc-btn-accept" id="btnAcceptIncomingCall" title="Accept Call">
+              <i class="fas fa-phone"></i>
+            </button>
+            <div class="text-muted small font-weight-bold mt-2 text-success">Accept</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 2. Active WebRTC Call Session Modal (Voice & Video) -->
+<div class="modal fade" id="activeWebRtcCallModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" style="z-index: 1098;">
+  <div class="modal-dialog webrtc-modal-dialog modal-dialog-centered" role="document">
+    <div class="modal-content webrtc-call-window">
+      <!-- Call Top Header -->
+      <div class="d-flex justify-content-between align-items-center px-4 py-2" style="background: rgba(17, 21, 30, 0.95); border-bottom: 1px solid #28303f;">
+        <div class="d-flex align-items-center">
+          <span class="badge px-2 py-1 mr-2" id="activeCallModeBadge" style="background: rgba(254,204,86,0.2); color: #fecc56; font-size: 11px;">
+            <i class="fas fa-phone-alt mr-1"></i> Live Call
+          </span>
+          <span class="text-white font-weight-bold small" id="activeCallParticipantName">Connecting...</span>
+        </div>
+        <div class="d-flex align-items-center">
+          <span class="badge badge-dark px-3 py-1 font-weight-bold text-warning" id="activeCallTimer" style="font-size: 12px; letter-spacing: 1px; background: #0f172a; border: 1px solid #334155;">
+            00:00
+          </span>
+        </div>
+      </div>
+
+      <!-- Main Stage Container -->
+      <div class="modal-body p-0 position-relative" id="webrtcMainStage">
+        <!-- Voice Call Stage -->
+        <div id="webrtcVoiceView" class="webrtc-voice-stage">
+          <div class="call-pulse-ring mb-3">
+            <div id="activeVoiceAvatarBox">
+              <div class="call-avatar-placeholder" id="activeVoiceInitial">U</div>
+            </div>
+          </div>
+          <h4 class="font-weight-bold text-white mb-1" id="activeVoiceName">Participant</h4>
+          <span class="text-muted small font-weight-bold mb-2" id="activeVoiceStatusText">Direct In-App Voice Call</span>
+          
+          <!-- Equalizer animation -->
+          <div class="sound-wave-bars" id="activeVoiceWavebars">
+            <div class="sound-wave-bar"></div>
+            <div class="sound-wave-bar"></div>
+            <div class="sound-wave-bar"></div>
+            <div class="sound-wave-bar"></div>
+            <div class="sound-wave-bar"></div>
+            <div class="sound-wave-bar"></div>
+          </div>
+        </div>
+
+        <!-- Video Call Stage -->
+        <div id="webrtcVideoView" class="webrtc-video-stage d-none">
+          <video id="webrtcRemoteVideo" autoplay playsinline class="w-100 h-100"></video>
+          <video id="webrtcLocalVideo" autoplay playsinline muted></video>
+        </div>
+
+        <!-- Hidden Audio Element for Sound Output -->
+        <audio id="webrtcRemoteAudio" autoplay></audio>
+      </div>
+
+      <!-- Call Control Bar -->
+      <div class="p-3 d-flex justify-content-center align-items-center" style="gap: 20px; background: #11151e; border-top: 1px solid #28303f;">
+        <button type="button" class="webrtc-action-btn webrtc-btn-mute" id="btnToggleAudio" title="Mute Microphone">
+          <i class="fas fa-microphone"></i>
+        </button>
+
+        <button type="button" class="webrtc-action-btn webrtc-btn-video-toggle d-none" id="btnToggleVideo" title="Toggle Camera">
+          <i class="fas fa-video"></i>
+        </button>
+
+        <button type="button" class="webrtc-action-btn webrtc-btn-hangup" id="btnEndActiveCall" title="End Call">
+          <i class="fas fa-phone-slash"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WebRTC Core Engine Script -->
+<script>
+(function() {
+  const currentUserId = {{ Auth::id() ?: 0 }};
+  const currentUserName = @json(Auth::user()?->name ?: 'User');
+  const currentUserRole = @json(Auth::user()?->getRoleNames()->first() ?: 'client');
+  const csrfToken = '{{ csrf_token() }}';
+
+  const rtcConfig = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun.services.mozilla.com' }
+    ]
+  };
+
+  let peerConnection = null;
+  let localMediaStream = null;
+  let activeCallSession = null;
+  let callTimerInterval = null;
+  let callSeconds = 0;
+  let signalingInterval = null;
+  let isCaller = false;
+  let audioContext = null;
+  let ringtoneInterval = null;
+  let titleFlashInterval = null;
+  const originalDocTitle = document.title;
+
+  // Ask for notification permission unobtrusively on first user click
+  document.addEventListener('click', function requestNotifOnce() {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {});
+    }
+    document.removeEventListener('click', requestNotifOnce);
+  }, { once: true });
+
+  // 1. Synthesized Telephone Ringer (UK/US dual-tone 440Hz + 480Hz)
+  function playTelephoneRing() {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      if (!audioContext || audioContext.state === 'closed') {
+        audioContext = new AudioCtx();
+      }
+      if (audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
+
+      function ringBurst() {
+        if (!ringtoneInterval) return;
+        const now = audioContext.currentTime;
+        const osc1 = audioContext.createOscillator();
+        const osc2 = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(440, now);
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(480, now);
+
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.setValueAtTime(0.08, now + 1.8);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.95);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(audioContext.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 2.0);
+        osc2.stop(now + 2.0);
+      }
+
+      ringBurst();
+      ringtoneInterval = setInterval(ringBurst, 4000);
+    } catch (e) {
+      console.warn('Ringtone generator error:', e);
+    }
+  }
+
+  function stopTelephoneRing() {
+    if (ringtoneInterval) {
+      clearInterval(ringtoneInterval);
+      ringtoneInterval = null;
+    }
+  }
+
+  // 2. Off-tab Title Flashing
+  function startTitleFlash(text) {
+    stopTitleFlash();
+    let state = false;
+    titleFlashInterval = setInterval(() => {
+      document.title = state ? '📞 ' + text : originalDocTitle;
+      state = !state;
+    }, 850);
+  }
+
+  function stopTitleFlash() {
+    if (titleFlashInterval) {
+      clearInterval(titleFlashInterval);
+      titleFlashInterval = null;
+    }
+    document.title = originalDocTitle;
+  }
+
+  // 3. Desktop OS Notification
+  function showDesktopNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      try {
+        const notif = new Notification(title, {
+          body: body,
+          icon: '/frontend/assets/img/logo/favicon.png',
+          requireInteraction: true
+        });
+        notif.onclick = function() {
+          window.focus();
+          this.close();
+        };
+      } catch (e) {}
+    }
+  }
+
+  // Helper to format timer 00:00
+  function formatCallTimer(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return (m < 10 ? '0' + m : m) + ':' + (s < 10 ? '0' + s : s);
+  }
+
+  function startCallTimer() {
+    clearInterval(callTimerInterval);
+    callSeconds = 0;
+    document.getElementById('activeCallTimer').innerText = '00:00';
+    callTimerInterval = setInterval(() => {
+      callSeconds++;
+      document.getElementById('activeCallTimer').innerText = formatCallTimer(callSeconds);
+    }, 1000);
+  }
+
+  function stopCallTimer() {
+    clearInterval(callTimerInterval);
+    callTimerInterval = null;
+  }
+
+  // 4. Initialize Local Media Stream
+  // CRITICAL: If type is 'audio', video is explicitly FALSE. Web camera will NEVER be requested or turned on!
+  async function acquireMediaStream(callType) {
+    const isVideo = (callType === 'video');
+    const constraints = {
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      },
+      video: isVideo ? { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' } : false
+    };
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      localMediaStream = stream;
+
+      const localVid = document.getElementById('webrtcLocalVideo');
+      if (isVideo && localVid) {
+        localVid.srcObject = stream;
+      }
+      return stream;
+    } catch (err) {
+      console.error('Media acquisition error:', err);
+      alert('Could not access microphone/camera: ' + err.message);
+      throw err;
+    }
+  }
+
+  // 5. Create RTCPeerConnection and wire remote stream
+  function setupPeerConnection(callId) {
+    peerConnection = new RTCPeerConnection(rtcConfig);
+
+    // Add local tracks
+    if (localMediaStream) {
+      localMediaStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localMediaStream);
+      });
+    }
+
+    // Remote track arrival
+    peerConnection.ontrack = function(event) {
+      const remoteAudio = document.getElementById('webrtcRemoteAudio');
+      const remoteVideo = document.getElementById('webrtcRemoteVideo');
+
+      if (event.streams && event.streams[0]) {
+        if (remoteAudio) remoteAudio.srcObject = event.streams[0];
+        if (remoteVideo) remoteVideo.srcObject = event.streams[0];
+      }
+    };
+
+    // ICE Candidate generation
+    peerConnection.onicecandidate = function(event) {
+      if (event.candidate && callId) {
+        fetch("{{ route('portal.call.signal') }}", {
+          method: 'POST',
+          headers: {
+            'X-CSRF-TOKEN': csrfToken,
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({
+            call_id: callId,
+            action: 'candidate',
+            candidate: event.candidate
+          })
+        }).catch(() => {});
+      }
+    };
+
+    peerConnection.onconnectionstatechange = function() {
+      if (peerConnection.connectionState === 'connected') {
+        document.getElementById('activeVoiceStatusText').innerText = 'Connected • High Definition';
+        document.getElementById('activeVoiceWavebars').style.opacity = '1';
+        startCallTimer();
+      } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
+        document.getElementById('activeVoiceStatusText').innerText = 'Reconnecting...';
+      }
+    };
+  }
+
+  // 6. UI View Switcher
+  function updateCallModalUi(callType, otherPartyName, avatarUrl) {
+    const isVideo = (callType === 'video');
+    const badge = document.getElementById('activeCallModeBadge');
+    badge.innerHTML = isVideo ? '<i class="fas fa-video mr-1"></i> Video Call' : '<i class="fas fa-phone-alt mr-1"></i> Voice Call';
+
+    document.getElementById('activeCallParticipantName').innerText = otherPartyName || 'Participant';
+    document.getElementById('activeVoiceName').innerText = otherPartyName || 'Participant';
+
+    const initial = (otherPartyName ? otherPartyName.charAt(0).toUpperCase() : 'U');
+    document.getElementById('activeVoiceInitial').innerText = initial;
+
+    if (isVideo) {
+      document.getElementById('webrtcVoiceView').classList.add('d-none');
+      document.getElementById('webrtcVideoView').classList.remove('d-none');
+      document.getElementById('btnToggleVideo').classList.remove('d-none');
+    } else {
+      document.getElementById('webrtcVoiceView').classList.remove('d-none');
+      document.getElementById('webrtcVideoView').classList.add('d-none');
+      document.getElementById('btnToggleVideo').classList.add('d-none');
+    }
+
+    // Reset mute toggles
+    document.getElementById('btnToggleAudio').classList.remove('active');
+    document.getElementById('btnToggleVideo').classList.remove('active');
+  }
+
+  // 7. INITIATE CALL (Caller - Admin / Supervisor)
+  window.initiateWebRtcCall = async function(recipientId, recipientName, callType, conversationSlug) {
+    if (!recipientId) {
+      alert('Recipient ID required.');
+      return;
+    }
+
+    isCaller = true;
+    try {
+      await acquireMediaStream(callType);
+    } catch (e) {
+      return;
+    }
+
+    updateCallModalUi(callType, recipientName, null);
+    document.getElementById('activeVoiceStatusText').innerText = 'Ringing recipient device...';
+    document.getElementById('activeVoiceWavebars').style.opacity = '0.3';
+    $('#activeWebRtcCallModal').modal('show');
+
+    // Setup RTCPeerConnection and create Offer
+    setupPeerConnection(null);
+
+    const offer = await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+
+    // Send offer to server
+    fetch("{{ route('portal.call.initiate') }}", {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': csrfToken,
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        recipient_id: recipientId,
+        call_type: callType,
+        offer: offer,
+        conversation_slug: conversationSlug || ''
+      })
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === 'ok' && res.call) {
+        activeCallSession = res.call;
+
+        // Poll for Callee Answer
+        startSignalingPoller(res.call_id);
+      } else {
+        alert(res.error || 'Failed to initiate call.');
+        hangUpCall();
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      alert('Network error initiating call.');
+      hangUpCall();
+    });
+  };
+
+  // 8. SIGNALING POLLER
+  function startSignalingPoller(callId) {
+    clearInterval(signalingInterval);
+    signalingInterval = setInterval(() => {
+      fetch("{{ route('portal.call.signal') }}", {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+          call_id: callId,
+          action: 'poll'
+        })
+      })
+      .then(r => r.json())
+      .then(async res => {
+        if (!res || !res.call) return;
+        const call = res.call;
+        activeCallSession = call;
+
+        if (call.status === 'ended' || call.status === 'declined' || call.status === 'cancelled' || call.status === 'missed') {
+          clearInterval(signalingInterval);
+          signalingInterval = null;
+          const label = (call.status === 'declined') ? 'Call declined by recipient.' : 'Call ended.';
+          document.getElementById('activeVoiceStatusText').innerText = label;
+          setTimeout(() => {
+            hangUpCall(false);
+          }, 1200);
+          return;
+        }
+
+        // Caller receives SDP Answer from Callee
+        if (isCaller && call.answer && peerConnection && peerConnection.signalingState === 'have-local-offer') {
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(call.answer));
+
+          // Apply callee ICE candidates
+          if (call.callee_candidates && call.callee_candidates.length > 0) {
+            call.callee_candidates.forEach(cand => {
+              peerConnection.addIceCandidate(new RTCIceCandidate(cand)).catch(() => {});
+            });
+          }
+        }
+      })
+      .catch(() => {});
+    }, 1500);
+  }
+
+  // 9. ACCEPT INCOMING CALL (Callee)
+  async function acceptIncomingCall() {
+    stopTelephoneRing();
+    stopTitleFlash();
+    $('#incomingCallModal').modal('hide');
+
+    if (!activeCallSession) return;
+    const call = activeCallSession;
+    isCaller = false;
+
+    try {
+      await acquireMediaStream(call.call_type);
+    } catch (e) {
+      declineIncomingCall('Microphone / Camera access denied');
+      return;
+    }
+
+    updateCallModalUi(call.call_type, call.caller_name, call.caller_avatar);
+    document.getElementById('activeVoiceStatusText').innerText = 'Connecting audio & video...';
+    $('#activeWebRtcCallModal').modal('show');
+
+    setupPeerConnection(call.call_id);
+
+    // Callee sets remote offer from caller
+    if (call.offer) {
+      await peerConnection.setRemoteDescription(new RTCSessionDescription(call.offer));
+
+      // Add caller candidates
+      if (call.caller_candidates && call.caller_candidates.length > 0) {
+        call.caller_candidates.forEach(c => {
+          peerConnection.addIceCandidate(new RTCIceCandidate(c)).catch(() => {});
+        });
+      }
+
+      // Create Answer
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+
+      // Post Answer to Server
+      fetch("{{ route('portal.call.signal') }}", {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+          call_id: call.call_id,
+          action: 'answer',
+          answer: answer
+        })
+      })
+      .then(r => r.json())
+      .then(res => {
+        if (res.status === 'ok') {
+          startSignalingPoller(call.call_id);
+        }
+      })
+      .catch(() => {});
+    }
+  }
+
+  // 10. DECLINE INCOMING CALL
+  function declineIncomingCall(reason) {
+    stopTelephoneRing();
+    stopTitleFlash();
+    $('#incomingCallModal').modal('hide');
+
+    if (!activeCallSession) return;
+    fetch("{{ route('portal.call.respond') }}", {
+      method: 'POST',
+      headers: {
+        'X-CSRF-TOKEN': csrfToken,
+        'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest'
+      },
+      body: JSON.stringify({
+        call_id: activeCallSession.call_id,
+        action: 'decline',
+        reason: reason || 'User unavailable'
+      })
+    }).finally(() => {
+      activeCallSession = null;
+    });
+  }
+
+  // 11. HANG UP / END CALL
+  function hangUpCall(notifyServer = true) {
+    stopTelephoneRing();
+    stopTitleFlash();
+    stopCallTimer();
+    clearInterval(signalingInterval);
+    signalingInterval = null;
+
+    if (notifyServer && activeCallSession) {
+      fetch("{{ route('portal.call.respond') }}", {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+          call_id: activeCallSession.call_id,
+          action: 'end'
+        })
+      }).catch(() => {});
+    }
+
+    if (localMediaStream) {
+      localMediaStream.getTracks().forEach(track => track.stop());
+      localMediaStream = null;
+    }
+
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnection = null;
+    }
+
+    $('#activeWebRtcCallModal').modal('hide');
+    $('#incomingCallModal').modal('hide');
+    activeCallSession = null;
+    isCaller = false;
+  }
+
+  // 12. Global Call Check Loop (Runs every 3 seconds across master layout)
+  if (currentUserId > 0) {
+    setInterval(() => {
+      // Don't poll if already in an active call modal
+      if ($('#activeWebRtcCallModal').hasClass('show')) return;
+
+      fetch("{{ route('portal.call.check') }}", {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      })
+      .then(r => r.json())
+      .then(res => {
+        if (!res || !res.active_call) {
+          if ($('#incomingCallModal').hasClass('show')) {
+            stopTelephoneRing();
+            stopTitleFlash();
+            $('#incomingCallModal').modal('hide');
+          }
+          return;
+        }
+
+        const call = res.active_call;
+        if (call.status === 'ringing' && call.recipient_id === currentUserId) {
+          activeCallSession = call;
+
+          const isVideo = (call.call_type === 'video');
+          document.getElementById('incomingCallerName').innerText = call.caller_name || 'Counsel';
+          document.getElementById('incomingCallTypeBadge').innerHTML = isVideo
+            ? '<i class="fas fa-video mr-1"></i> Incoming Video Call'
+            : '<i class="fas fa-phone-alt mr-1"></i> Incoming Voice Call';
+
+          const initial = call.caller_name ? call.caller_name.charAt(0).toUpperCase() : 'C';
+          document.getElementById('incomingCallerInitial').innerText = initial;
+
+          if (!$('#incomingCallModal').hasClass('show') && !$('#activeWebRtcCallModal').hasClass('show')) {
+            playTelephoneRing();
+            startTitleFlash('Incoming ' + (isVideo ? 'Video' : 'Voice') + ' Call (' + (call.caller_name || 'Counsel') + ')...');
+            showDesktopNotification('Incoming ' + (isVideo ? 'Video' : 'Voice') + ' Call', (call.caller_name || 'Counsel') + ' is calling you...');
+            $('#incomingCallModal').modal('show');
+          }
+        }
+      })
+      .catch(() => {});
+    }, 3000);
+  }
+
+  // UI Event Bindings
+  document.addEventListener('DOMContentLoaded', function() {
+    const btnAccept = document.getElementById('btnAcceptIncomingCall');
+    const btnDecline = document.getElementById('btnDeclineIncomingCall');
+    const btnEnd = document.getElementById('btnEndActiveCall');
+    const btnAudio = document.getElementById('btnToggleAudio');
+    const btnVideo = document.getElementById('btnToggleVideo');
+
+    if (btnAccept) btnAccept.addEventListener('click', acceptIncomingCall);
+    if (btnDecline) btnDecline.addEventListener('click', () => declineIncomingCall('Declined by user'));
+    if (btnEnd) btnEnd.addEventListener('click', () => hangUpCall(true));
+
+    if (btnAudio) {
+      btnAudio.addEventListener('click', function() {
+        if (localMediaStream) {
+          const track = localMediaStream.getAudioTracks()[0];
+          if (track) {
+            track.enabled = !track.enabled;
+            if (track.enabled) {
+              this.classList.remove('active');
+              this.innerHTML = '<i class="fas fa-microphone"></i>';
+            } else {
+              this.classList.add('active');
+              this.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+            }
+          }
+        }
+      });
+    }
+
+    if (btnVideo) {
+      btnVideo.addEventListener('click', function() {
+        if (localMediaStream) {
+          const track = localMediaStream.getVideoTracks()[0];
+          if (track) {
+            track.enabled = !track.enabled;
+            if (track.enabled) {
+              this.classList.remove('active');
+              this.innerHTML = '<i class="fas fa-video"></i>';
+            } else {
+              this.classList.add('active');
+              this.innerHTML = '<i class="fas fa-video-slash"></i>';
+            }
+          }
+        }
+      });
+    }
+  });
+})();
+</script>
+

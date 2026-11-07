@@ -127,6 +127,8 @@ class AppServiceProvider extends ServiceProvider
                     Schema::table('staff_messages', function ($table) {
                         if (!Schema::hasColumn('staff_messages', 'telegram_message_id')) $table->string('telegram_message_id', 100)->nullable();
                         if (!Schema::hasColumn('staff_messages', 'is_telegram_reply')) $table->boolean('is_telegram_reply')->default(0);
+                        if (!Schema::hasColumn('staff_messages', 'file')) $table->string('file', 255)->nullable();
+                        if (!Schema::hasColumn('staff_messages', 'file_name')) $table->string('file_name', 255)->nullable();
                     });
                 }
                 if (Schema::hasTable('general_settings')) {

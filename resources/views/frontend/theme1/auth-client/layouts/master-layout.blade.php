@@ -516,6 +516,8 @@
 </script>
 @endif
 
+@include('components.webrtc-call-modal')
+
 @yield('modal')
 @yield('page-script')
 @yield('scripts')

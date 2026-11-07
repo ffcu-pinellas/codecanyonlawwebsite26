@@ -220,6 +220,9 @@
         </div>
       </div>
       <div class="d-flex align-items-center" style="gap:8px;">
+        <button type="button" class="btn btn-sm btn-outline-warning text-warning px-3 font-weight-bold" onclick="requestClientCall('audio')" title="{{ __('Request Live Voice Call with Counsel') }}">
+          <i class="fas fa-phone-alt mr-1"></i> {{ __('Request Call') }}
+        </button>
         <span class="badge d-none d-sm-inline-block px-3 py-2"
               style="background:rgba(34,197,94,0.15);color:#4ade80;border:1px solid rgba(34,197,94,0.3);font-size:11px;">
           <i class="fas fa-lock mr-1"></i>{{ __('256-Bit Encrypted') }}
@@ -383,11 +386,6 @@
       </div>
 
       <div class="chat-footer-native">
-        <!-- Magic Keyboard Live Typing Sneak-Peek Indicator -->
-        <div id="liveTypingPreviewBox" class="p-2 mb-2 rounded small text-warning font-weight-bold d-none" style="background: rgba(254, 204, 86, 0.1); border: 1px dashed rgba(254, 204, 86, 0.35);">
-          <i class="fas fa-pen-nib mr-1"></i> <span id="typingDraftSender">{{ __('Counsel') }}</span> {{ __('is typing live:') }} "<span id="typingDraftText" class="text-white"></span>"
-        </div>
-
         <!-- Professional Quick Emoji Toolbar -->
         <div class="quick-emoji-bar d-flex flex-wrap align-items-center mb-2" style="gap: 6px;">
           <small class="text-muted mr-1" style="font-size: 11px;"><i class="far fa-smile text-warning mr-1"></i>{{ __('Quick Emojis:') }}</small>
@@ -423,61 +421,6 @@
 
   </div>
 </div>
-
-<!-- Incoming Legal Consultation Call Modal -->
-<div class="modal fade" id="incomingCallModal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false" style="z-index: 1095;">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-        <div class="modal-content text-white" style="background: #0f172a; border: 2px solid #fecc56; box-shadow: 0 10px 40px rgba(0,0,0,0.8); border-radius: 16px;">
-            <div class="modal-body text-center p-4">
-                <div class="mb-3">
-                    <div class="rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px; background: rgba(254, 204, 86, 0.15); border: 2px solid #fecc56; animation: callPulse 1.5s infinite;">
-                        <i class="fas fa-phone-volume fa-2x text-warning"></i>
-                    </div>
-                </div>
-                <h4 class="font-weight-bold text-white mb-1" id="incomingCallerName">{{ __('Assigned Legal Counsel') }}</h4>
-                <span class="badge badge-warning px-3 py-1 font-weight-bold mb-3" id="incomingCallTypeBadge"><i class="fas fa-video mr-1"></i> {{ __('Incoming Legal & CPA Consultation Call') }}</span>
-                <p class="text-muted small mb-4">{{ __('Your supervising attorney is calling you for an encrypted case consultation. Tap Accept to connect immediately.') }}</p>
-                
-                <div class="d-flex justify-content-center flex-wrap" style="gap: 12px;">
-                    <button type="button" class="btn btn-success font-weight-bold px-4 py-2" id="acceptCallBtn" style="border-radius: 25px;">
-                        <i class="fas fa-phone-alt mr-1"></i> {{ __('Accept Call') }}
-                    </button>
-                    <button type="button" class="btn btn-danger font-weight-bold px-4 py-2" id="declineCallBtn" style="border-radius: 25px;">
-                        <i class="fas fa-phone-slash mr-1"></i> {{ __('Decline Call') }}
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Active Video/Audio Consultation Room Modal -->
-<div class="modal fade" id="consultationRoomModal" tabindex="-1" role="dialog" style="z-index: 1096;">
-    <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 95vw; height: 90vh;" role="document">
-        <div class="modal-content h-100" style="background: #0a0c10; border: 1px solid #28303f; border-radius: 14px; overflow: hidden;">
-            <div class="modal-header py-2 px-3 border-secondary" style="background: #11151e;">
-                <div class="d-flex align-items-center">
-                    <span class="badge badge-warning mr-2"><i class="fas fa-lock mr-1"></i> {{ __('256-Bit Encrypted Room') }}</span>
-                    <strong class="text-white small" id="consultationRoomTitle">{{ __('Live Legal & CPA Consultation Room') }}</strong>
-                </div>
-                <div>
-                    <button type="button" class="btn btn-sm btn-danger font-weight-bold" onclick="endConsultationRoom()"><i class="fas fa-phone-slash mr-1"></i> {{ __('Leave Room') }}</button>
-                </div>
-            </div>
-            <div class="modal-body p-0 h-100" style="min-height: 500px;">
-                <iframe id="consultationIframe" src="about:blank" allow="camera; microphone; fullscreen; display-capture" style="width: 100%; height: 100%; min-height: 550px; border: none;"></iframe>
-            </div>
-        </div>
-    </div>
-</div>
-
-<style>
-@keyframes callPulse {
-    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(254, 204, 86, 0.7); }
-    70% { transform: scale(1.05); box-shadow: 0 0 0 16px rgba(254, 204, 86, 0); }
-    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(254, 204, 86, 0); }
-}
-</style>
 
 <script>
     // Quick Emojis
@@ -724,46 +667,32 @@
 
         // Call Acceptance & Decline Handlers
         const acceptCallBtn = document.getElementById('acceptCallBtn');
-        const declineCallBtn = document.getElementById('declineCallBtn');
-
-        if (acceptCallBtn) {
-            acceptCallBtn.addEventListener('click', function() {
-                if (!currentActiveCall) return;
-                fetch("{{ route('client.conversation.call.respond', $conversation->slug ?? '') }}", {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({ action: 'accept' })
-                }).finally(() => {
-                    $('#incomingCallModal').modal('hide');
-                    const userName = "{{ Auth::user()->name }}";
-                    const jitsiUrl = `https://meet.jit.si/${currentActiveCall.room_id}#userInfo.displayName="${encodeURIComponent(userName)}"`;
-                    document.getElementById('consultationIframe').src = jitsiUrl;
-                    $('#consultationRoomModal').modal('show');
-                });
+        // Request a Voice or Video Call from Counsel
+        window.requestClientCall = function(type) {
+            const label = (type === 'video') ? 'video' : 'voice';
+            if (!confirm('Request a live ' + label + ' call with your assigned counsel?')) return;
+            fetch("{{ route('portal.call.request-call') }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    call_type: type,
+                    conversation_slug: '{{ $conversation->slug ?? "" }}'
+                })
+            })
+            .then(r => r.json())
+            .then(res => {
+                alert(res.message || 'Call request sent to assigned counsel.');
+            })
+            .catch(() => {
+                alert('Could not submit call request. Please try again.');
             });
-        }
+        };
 
-        if (declineCallBtn) {
-            declineCallBtn.addEventListener('click', function() {
-                fetch("{{ route('client.conversation.call.respond', $conversation->slug ?? '') }}", {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({ action: 'decline' })
-                }).finally(() => {
-                    $('#incomingCallModal').modal('hide');
-                });
-            });
-        }
-
-        // Live Message & Call Polling every 3.5 seconds
+        // Live Message Polling every 3.5 seconds
         @if(!empty($conversation) && !empty($conversation->slug))
             let lastMsgId = 0;
             const existingBubbles = container ? container.querySelectorAll('[data-msg-id]') : [];
@@ -778,34 +707,7 @@
                 })
                 .then(r => r.json())
                 .then(res => {
-                    // 1. Live Typing Draft Sneak-Peek
-                    const typingBox = document.getElementById('liveTypingPreviewBox');
-                    const typingDraftText = document.getElementById('typingDraftText');
-                    if (res && res.magic_typing && res.magic_typing.draft) {
-                        typingDraftText.innerText = res.magic_typing.draft;
-                        typingBox.classList.remove('d-none');
-                    } else {
-                        typingBox.classList.add('d-none');
-                    }
-
-                    // 2. Incoming Consultation Call
-                    if (res && res.active_call && res.active_call.status === 'ringing') {
-                        currentActiveCall = res.active_call;
-                        document.getElementById('incomingCallerName').innerText = res.active_call.caller_name || 'Counsel';
-                        document.getElementById('incomingCallTypeBadge').innerHTML = (res.active_call.call_type === 'video')
-                            ? '<i class="fas fa-video mr-1"></i> Incoming Video Consultation'
-                            : '<i class="fas fa-phone-alt mr-1"></i> Incoming Voice Consultation';
-                        if (!$('#incomingCallModal').hasClass('show') && !$('#consultationRoomModal').hasClass('show')) {
-                            playNotificationChime();
-                            $('#incomingCallModal').modal('show');
-                        }
-                    } else {
-                        if ($('#incomingCallModal').hasClass('show')) {
-                            $('#incomingCallModal').modal('hide');
-                        }
-                    }
-
-                    // 3. New Message Bubbles
+                    // New Message Bubbles
                     if (res && res.messages && res.messages.length > 0) {
                         res.messages.forEach(msg => {
                             if (msg.id > lastMsgId) lastMsgId = msg.id;

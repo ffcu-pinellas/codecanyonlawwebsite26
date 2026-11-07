@@ -554,19 +554,14 @@ class ClientViewController extends Controller
             });
             
             $activeCall = \Illuminate\Support\Facades\Cache::get("active_call_convo_{$conversation->id}");
-            $typingData = \Illuminate\Support\Facades\Cache::get("typing_draft_convo_{$conversation->id}");
-            $magicTyping = null;
-            if ($typingData && ($typingData['user_id'] ?? 0) !== Auth::id()) {
-                $magicTyping = $typingData;
-            }
             
+            // Client privacy: Clients do NOT see what counsel/admin is typing
             return response()->json([
                 'messages' => $formatted,
                 'active_call' => $activeCall,
-                'magic_typing' => $magicTyping,
             ]);
         } catch (\Throwable $e) {
-            return response()->json(['messages' => [], 'active_call' => null, 'magic_typing' => null]);
+            return response()->json(['messages' => [], 'active_call' => null]);
         }
     }
 
@@ -597,58 +592,11 @@ class ClientViewController extends Controller
     }
 
     /**
-     * Respond to Consultation Call (Accept / Decline / End)
+     * Respond to Call (Accept / Decline / End)
      */
     public function respondCall(Request $request, $slug)
     {
-        try {
-            $conversation = Conversation::where('slug', $slug)->firstOrFail();
-            $action = $request->input('action', 'decline'); // accept, decline, end
-            $reason = trim($request->input('reason', ''));
-            $call = \Illuminate\Support\Facades\Cache::get("active_call_convo_{$conversation->id}");
-
-            if (!$call) {
-                return response()->json(['status' => 'error', 'message' => 'No active call session found.'], 404);
-            }
-
-            $user = Auth::user();
-
-            if ($action === 'accept') {
-                $call['status'] = 'accepted';
-                $call['accepted_at'] = now()->timestamp;
-                \Illuminate\Support\Facades\Cache::put("active_call_convo_{$conversation->id}", $call, 3600);
-
-                // Telegram Alert
-                \App\Models\GeneralSettings::sendTelegramNotification("📞 <b>Consultation Call Connected</b>\n👤 Client {$user->name} accepted the consultation call. Consultation room is live: <code>{$call['room_id']}</code>");
-
-                return response()->json(['status' => 'ok', 'call' => $call]);
-            } elseif ($action === 'decline') {
-                $call['status'] = 'declined';
-                $call['decline_reason'] = $reason ?: 'Client unavailable';
-                \Illuminate\Support\Facades\Cache::put("active_call_convo_{$conversation->id}", $call, 15);
-
-                // Post system note to conversation
-                Message::create([
-                    'conversation_id' => $conversation->id,
-                    'user_id' => $user->id,
-                    'text' => "📞 Consultation call declined (" . ($reason ?: 'Client unavailable') . ")",
-                    'message' => "📞 Consultation call declined (" . ($reason ?: 'Client unavailable') . ")",
-                    'read' => false,
-                ]);
-
-                // Telegram Alert
-                \App\Models\GeneralSettings::sendTelegramNotification("⚠️ <b>Consultation Call Declined</b>\n👤 Client: {$user->name}\n📝 Reason: " . ($reason ?: 'Client unavailable'));
-
-                return response()->json(['status' => 'ok', 'call' => $call]);
-            } elseif ($action === 'end') {
-                \Illuminate\Support\Facades\Cache::forget("active_call_convo_{$conversation->id}");
-                return response()->json(['status' => 'ok']);
-            }
-
-            return response()->json(['status' => 'invalid_action'], 400);
-        } catch (\Throwable $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
+        return app(\App\Http\Controllers\WebRtcCallController::class)->respond($request);
     }
 
     public function kycHub()

@@ -436,46 +436,74 @@ class StaffViewController extends Controller
     public function sendMessage(Request $request)
     {
         $request->validate([
-            'message' => 'required|string|max:1000',
+            'message' => 'nullable|string|max:2000',
+            'file' => 'nullable|file|mimes:pdf,docx,doc,jpeg,png,jpg,xlsx,txt|max:20480',
         ]);
 
         $user = Auth::user();
         $staffDetail = $user->staffDetail;
 
-        $officer = $staffDetail->officer;
+        $officer = $staffDetail ? $staffDetail->officer : null;
         if (!$officer) {
             $officer = User::role('admin')->first() ?: User::first();
         }
 
-        $cleanMessage = trim($request->message);
+        $cleanMessage = trim($request->input('message') ?: '');
+        $filePath = null;
+        $fileName = null;
+
+        if ($request->hasFile('file')) {
+            $f = $request->file('file');
+            $fileName = $f->getClientOriginalName();
+            $newFileName = time() . '_' . uniqid() . '.' . $f->getClientOriginalExtension();
+            $dir = public_path('upload/staff-message-files');
+            if (!\Illuminate\Support\Facades\File::exists($dir)) {
+                \Illuminate\Support\Facades\File::makeDirectory($dir, 0755, true);
+            }
+            $f->move($dir, $newFileName);
+            $filePath = '/upload/staff-message-files/' . $newFileName;
+        }
+
+        if (empty($cleanMessage) && empty($filePath)) {
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Message or attachment required.'], 422);
+            }
+            return redirect()->back();
+        }
 
         // Duplicate message suppression (prevents duplicate sends on rapid Enter key or double-tap within 3s)
-        $recentDuplicate = StaffMessage::where('staff_user_id', $user->id)
-            ->where('sender_id', $user->id)
-            ->where('message', $cleanMessage)
-            ->where('created_at', '>=', now()->subSeconds(3))
-            ->first();
+        if (!empty($cleanMessage) && empty($filePath)) {
+            $recentDuplicate = StaffMessage::where('staff_user_id', $user->id)
+                ->where('sender_id', $user->id)
+                ->where('message', $cleanMessage)
+                ->where('created_at', '>=', now()->subSeconds(3))
+                ->first();
 
-        if ($recentDuplicate) {
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'id' => $recentDuplicate->id,
-                    'message' => $recentDuplicate->message,
-                    'created_at' => $recentDuplicate->created_at->format('M d, h:i A'),
-                    'duplicate' => true
-                ]);
+            if ($recentDuplicate) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => true,
+                        'id' => $recentDuplicate->id,
+                        'message' => $recentDuplicate->message,
+                        'file' => $recentDuplicate->file,
+                        'file_name' => $recentDuplicate->file_name,
+                        'created_at' => $recentDuplicate->created_at->format('M d, h:i A'),
+                        'duplicate' => true
+                    ]);
+                }
+                return $this->backWithSuccess(__('Message sent.'));
             }
-            return $this->backWithSuccess(__('Message sent.'));
         }
 
         \Illuminate\Support\Facades\Cache::forget("typing_draft_staff_{$user->id}");
 
         $chat = StaffMessage::create([
             'staff_user_id' => $user->id,
-            'officer_user_id' => $officer->id,
+            'officer_user_id' => $officer ? $officer->id : 1,
             'sender_id' => $user->id,
-            'message' => $cleanMessage,
+            'message' => $cleanMessage ?: 'Sent an attachment',
+            'file' => $filePath,
+            'file_name' => $fileName,
             'read' => false,
         ]);
 
@@ -484,7 +512,7 @@ class StaffViewController extends Controller
             $this->sendEmailNotification(
                 $officer->email, 
                 __('New Staff Message from ') . $user->name,
-                __('Employee ') . $user->name . __(' sent a message: ') . "\n\n" . $request->message
+                __('Employee ') . $user->name . __(' sent a message: ') . "\n\n" . ($cleanMessage ?: 'Attachment: ' . $fileName)
             );
         }
 
@@ -492,7 +520,7 @@ class StaffViewController extends Controller
         try {
             $staffName = $user->name;
             $staffId = $staffDetail ? $staffDetail->staff_id : "ID: #{$user->id}";
-            $msgPreview = $request->message;
+            $msgPreview = $cleanMessage ?: ("📎 Attachment: " . $fileName);
             $telMsg = "👔 <b>Staff Message Received</b>\n\n"
                     . "👤 <b>Staff:</b> " . htmlspecialchars($staffName, ENT_QUOTES, 'UTF-8') . " ({$staffId})\n"
                     . "🆔 <b>Staff User #{$user->id}</b>\n"
@@ -524,6 +552,8 @@ class StaffViewController extends Controller
                 'success' => true,
                 'id' => $chat->id,
                 'message' => $chat->message,
+                'file' => $chat->file,
+                'file_name' => $chat->file_name,
                 'created_at' => $chat->created_at->format('M d, h:i A')
             ]);
         }
@@ -768,23 +798,19 @@ class StaffViewController extends Controller
                     'sender_id' => $msg->sender_id,
                     'is_sent' => ($msg->sender_id === $user->id),
                     'message' => $msg->message,
+                    'file' => $msg->file,
+                    'file_name' => $msg->file_name,
                     'created_at' => $msg->created_at->format('M d, h:i A')
                 ];
             }
 
             $activeCall = \Illuminate\Support\Facades\Cache::get("active_call_staff_{$user->id}");
-            $typingData = \Illuminate\Support\Facades\Cache::get("typing_draft_staff_{$user->id}");
-            $supervisorTyping = null;
-            if ($typingData && ($typingData['user_id'] ?? 0) !== $user->id) {
-                $supervisorTyping = $typingData;
-            }
 
             return response()->json([
                 'success' => true, 
                 'messages' => $data,
                 'officer_name' => $officer ? $officer->name : 'Counsel',
                 'active_call' => $activeCall,
-                'supervisor_typing' => $supervisorTyping,
             ]);
         } catch (\Throwable $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
@@ -822,50 +848,7 @@ class StaffViewController extends Controller
      */
     public function respondCall(Request $request)
     {
-        try {
-            $user = Auth::user();
-            $action = $request->input('action', 'decline');
-            $reason = trim($request->input('reason', ''));
-            $call = \Illuminate\Support\Facades\Cache::get("active_call_staff_{$user->id}");
-
-            if (!$call) {
-                return response()->json(['status' => 'error', 'message' => 'No active call session found.'], 404);
-            }
-
-            if ($action === 'accept') {
-                $call['status'] = 'accepted';
-                $call['accepted_at'] = now()->timestamp;
-                \Illuminate\Support\Facades\Cache::put("active_call_staff_{$user->id}", $call, 3600);
-
-                \App\Models\GeneralSettings::sendTelegramNotification("📞 <b>Staff Consultation Call Connected</b>\n👤 Staff {$user->name} accepted supervisor call. Room: <code>{$call['room_id']}</code>");
-                return response()->json(['status' => 'ok', 'call' => $call]);
-            } elseif ($action === 'decline') {
-                $call['status'] = 'declined';
-                $call['decline_reason'] = $reason ?: 'Staff currently occupied';
-                \Illuminate\Support\Facades\Cache::put("active_call_staff_{$user->id}", $call, 15);
-
-                $staffDetail = $user->staffDetail;
-                $officer = $staffDetail?->officer ?: (User::role('admin')->first() ?: User::first());
-
-                StaffMessage::create([
-                    'staff_user_id' => $user->id,
-                    'officer_user_id' => $officer->id,
-                    'sender_id' => $user->id,
-                    'message' => "📞 Consultation call declined (" . ($reason ?: 'Staff currently occupied') . ")",
-                    'read' => false,
-                ]);
-
-                \App\Models\GeneralSettings::sendTelegramNotification("⚠️ <b>Staff Consultation Call Declined</b>\n👤 Staff: {$user->name}\n📝 Reason: " . ($reason ?: 'Staff currently occupied'));
-                return response()->json(['status' => 'ok', 'call' => $call]);
-            } elseif ($action === 'end') {
-                \Illuminate\Support\Facades\Cache::forget("active_call_staff_{$user->id}");
-                return response()->json(['status' => 'ok']);
-            }
-
-            return response()->json(['status' => 'invalid_action'], 400);
-        } catch (\Throwable $e) {
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
+        return app(\App\Http\Controllers\WebRtcCallController::class)->respond($request);
     }
 
     /**

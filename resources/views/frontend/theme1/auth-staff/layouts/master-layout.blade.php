@@ -641,5 +641,6 @@
         localStorage.setItem('staff_pwa_banner_dismissed', 'true');
     }
 </script>
+@include('components.webrtc-call-modal')
 </body>
 </html>

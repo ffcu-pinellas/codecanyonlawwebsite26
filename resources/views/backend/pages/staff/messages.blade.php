@@ -88,8 +88,16 @@
                                 <span class="badge badge-info small" style="font-size: 0.65rem;">{{ __('Staff Member') }}</span>
                             </div>
                         </div>
-                        <div class="small text-success">
-                            <i class="fas fa-shield-alt mr-1"></i> {{ __('Audit Secured Session') }}
+                        <div class="d-flex align-items-center">
+                            <button type="button" class="btn btn-outline-info btn-sm font-weight-bold mr-2" onclick="launchStaffCall('audio')">
+                                <i class="fas fa-phone-alt mr-1"></i> {{ __('Voice Call') }}
+                            </button>
+                            <button type="button" class="btn btn-outline-warning btn-sm font-weight-bold mr-3" onclick="launchStaffCall('video')">
+                                <i class="fas fa-video mr-1"></i> {{ __('HD Video Call') }}
+                            </button>
+                            <div class="small text-success d-none d-md-block">
+                                <i class="fas fa-shield-alt mr-1"></i> {{ __('Audit Secured Session') }}
+                            </div>
                         </div>
                     </div>
 
@@ -99,13 +107,31 @@
                             @if($msg->sender_id === Auth::id())
                                 <!-- Sent by Admin -->
                                 <div class="chat-bubble chat-bubble-sent align-self-end" data-msg-id="{{ $msg->id }}">
-                                    <div class="chat-text">{{ $msg->message }}</div>
+                                    @if(!empty($msg->message))
+                                        <div class="chat-text">{{ $msg->message }}</div>
+                                    @endif
+                                    @if(!empty($msg->file))
+                                        <div class="mt-1">
+                                            <a href="{{ asset($msg->file) }}" target="_blank" class="text-warning font-weight-bold small text-decoration-none">
+                                                <i class="fas fa-file-alt mr-1"></i> {{ $msg->file_name ?: __('Attached Document') }}
+                                            </a>
+                                        </div>
+                                    @endif
                                     <span class="chat-time">{{ $msg->created_at->format('M d, h:i A') }}</span>
                                 </div>
                             @else
                                 <!-- Received from Staff -->
                                 <div class="chat-bubble chat-bubble-received align-self-start" data-msg-id="{{ $msg->id }}">
-                                    <div class="chat-text">{{ $msg->message }}</div>
+                                    @if(!empty($msg->message))
+                                        <div class="chat-text">{{ $msg->message }}</div>
+                                    @endif
+                                    @if(!empty($msg->file))
+                                        <div class="mt-1">
+                                            <a href="{{ asset($msg->file) }}" target="_blank" class="text-warning font-weight-bold small text-decoration-none">
+                                                <i class="fas fa-file-alt mr-1"></i> {{ $msg->file_name ?: __('Attached Document') }}
+                                            </a>
+                                        </div>
+                                    @endif
                                     <span class="chat-time" style="color: #a5b4fc;">{{ $msg->created_at->format('M d, h:i A') }}</span>
                                 </div>
                             @endif
@@ -120,15 +146,28 @@
 
                     <!-- Chat Footer -->
                     <div class="chat-footer">
-                        <form action="{{ route('admin.staff.send-message', $staff->id) }}" method="POST" id="admin-chat-form">
+                        <!-- Magic Keyboard Staff Live Typing Sneak-Peek Indicator -->
+                        <div id="adminStaffTypingBox" class="p-2 mb-2 rounded small text-warning font-weight-bold d-none" style="background: rgba(254, 204, 86, 0.1); border: 1px dashed rgba(254, 204, 86, 0.35);">
+                            <i class="fas fa-pen-nib mr-1"></i> <span>{{ $staff->name }}</span> {{ __('is typing live:') }} "<span id="adminStaffTypingText" class="text-white"></span>"
+                        </div>
+
+                        <form action="{{ route('admin.staff.send-message', $staff->id) }}" method="POST" id="admin-chat-form" enctype="multipart/form-data">
                             @csrf
                             <div class="input-group">
-                                <textarea class="form-control bg-dark text-white border-secondary" name="message" rows="2" placeholder="{{ __('Type your message here to send to ') . $staff->name }}..." required style="resize: none;"></textarea>
+                                <textarea class="form-control bg-dark text-white border-secondary" name="message" id="adminStaffChatInput" rows="2" placeholder="{{ __('Type your message here to send to ') . $staff->name }}..." style="resize: none;"></textarea>
+                                <label for="adminStaffFileInput" class="btn btn-outline-secondary mb-0 d-flex align-items-center justify-content-center text-light px-3" style="border-radius: 0; border: 1px solid #6c757d; border-left: none; cursor: pointer;" title="Attach File">
+                                    <i class="fas fa-paperclip"></i>
+                                    <input type="file" name="file" id="adminStaffFileInput" class="d-none" onchange="previewAdminStaffFile(this)">
+                                </label>
                                 <div class="input-group-append">
                                     <button type="submit" class="btn btn-primary px-4">
                                         <i class="fas fa-paper-plane mr-2"></i> {{ __('Send') }}
                                     </button>
                                 </div>
+                            </div>
+                            <div id="adminStaffFileBadge" class="small text-warning mt-1 font-weight-bold d-none">
+                                <i class="fas fa-file-alt mr-1"></i> <span id="adminStaffFileName"></span>
+                                <a href="javascript:void(0)" onclick="clearAdminStaffFile()" class="text-danger ml-2"><i class="fas fa-times-circle"></i></a>
                             </div>
                         </form>
                     </div>
@@ -140,6 +179,26 @@
 
 @section('page-script')
 <script>
+    function previewAdminStaffFile(input) {
+        if (input.files && input.files[0]) {
+            $('#adminStaffFileName').text(input.files[0].name);
+            $('#adminStaffFileBadge').removeClass('d-none');
+        }
+    }
+
+    function clearAdminStaffFile() {
+        $('#adminStaffFileInput').val('');
+        $('#adminStaffFileBadge').addClass('d-none');
+    }
+
+    window.launchStaffCall = function(type) {
+        if (typeof window.initiateWebRtcCall === 'function') {
+            window.initiateWebRtcCall({{ $staff->id }}, @json($staff->name), type, null);
+        } else {
+            alert('Calling system initializing. Please try again.');
+        }
+    };
+
     document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('chat-messages-container');
         if (container) {
@@ -234,6 +293,14 @@
                 method: 'GET',
                 data: { last_id: lastId },
                 success: function(response) {
+                    // Live Typing Preview of Staff member
+                    if (response.staff_typing && response.staff_typing.draft) {
+                        $('#adminStaffTypingText').text(response.staff_typing.draft);
+                        $('#adminStaffTypingBox').removeClass('d-none');
+                    } else {
+                        $('#adminStaffTypingBox').addClass('d-none');
+                    }
+
                     if (response.success && response.messages.length > 0) {
                         $('#chat-empty-state').remove();
                         let newBubbles = false;
@@ -241,16 +308,21 @@
                             if ($(`[data-msg-id="${msg.id}"]`).length === 0) {
                                 let bubbleClass = msg.is_sent ? 'chat-bubble-sent align-self-end' : 'chat-bubble-received align-self-start';
                                 let timeStyle = msg.is_sent ? '' : 'style="color: #a5b4fc;"';
+                                let fileHtml = '';
+                                if (msg.file) {
+                                    fileHtml = `<div class="mt-1"><a href="${msg.file}" target="_blank" class="text-warning font-weight-bold small text-decoration-none"><i class="fas fa-file-alt mr-1"></i> ${escapeHtml(msg.file_name || 'Attached Document')}</a></div>`;
+                                }
                                 let bubble = `
                                     <div class="chat-bubble ${bubbleClass}" data-msg-id="${msg.id}">
-                                        <div class="chat-text">${escapeHtml(msg.message)}</div>
+                                        ${msg.message ? `<div class="chat-text">${escapeHtml(msg.message)}</div>` : ''}
+                                        ${fileHtml}
                                         <span class="chat-time" ${timeStyle}>${msg.created_at}</span>
                                     </div>
                                 `;
                                 $('#chat-messages-container').append(bubble);
                                 newBubbles = true;
                                 if (!msg.is_sent) {
-                                    triggerAdminDesktopAlert('New Message from {{ $staff->name }}', msg.message);
+                                    triggerAdminDesktopAlert('New Message from {{ $staff->name }}', msg.message || 'Sent an attachment');
                                 }
                             }
                         });
@@ -269,7 +341,7 @@
         let isAdminSubmitting = false;
 
         // Enter key to send (Shift+Enter for newline)
-        $('#admin-chat-form textarea[name="message"]').on('keydown', function(e) {
+        $('#adminStaffChatInput').on('keydown', function(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 if (!isAdminSubmitting) {
@@ -282,32 +354,41 @@
             e.preventDefault();
             if (isAdminSubmitting) return;
 
-            var form = $(this);
-            var url = form.attr('action');
-            var textarea = form.find('textarea[name="message"]');
-            var sendBtn = form.find('button[type="submit"]');
+            var form = document.getElementById('admin-chat-form');
+            var textarea = $('#adminStaffChatInput');
+            var sendBtn = $(this).find('button[type="submit"]');
             var message = textarea.val().trim();
-            if (message === '') return;
+            var fileInput = document.getElementById('adminStaffFileInput');
+            var hasFile = fileInput && fileInput.files && fileInput.files.length > 0;
+
+            if (message === '' && !hasFile) return;
 
             isAdminSubmitting = true;
-            sendBtn.prop('disabled', true);
+            sendBtn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i>');
+
+            var formData = new FormData(form);
             textarea.val('');
+            clearAdminStaffFile();
 
             $.ajax({
-                url: url,
+                url: $(form).attr('action'),
                 method: 'POST',
-                data: {
-                    _token: form.find('input[name="_token"]').val(),
-                    message: message
-                },
+                data: formData,
+                processData: false,
+                contentType: false,
                 success: function(response) {
                     if (response.success) {
                         $('#chat-empty-state').remove();
 
                         if ($(`[data-msg-id="${response.id}"]`).length === 0) {
+                            var fileHtml = '';
+                            if (response.file) {
+                                fileHtml = `<div class="mt-1"><a href="${response.file}" target="_blank" class="text-warning font-weight-bold small text-decoration-none"><i class="fas fa-file-alt mr-1"></i> ${escapeHtml(response.file_name || 'Attached Document')}</a></div>`;
+                            }
                             var bubble = `
                                 <div class="chat-bubble chat-bubble-sent align-self-end" data-msg-id="${response.id}">
-                                    <div class="chat-text">${escapeHtml(response.message)}</div>
+                                    ${response.message ? `<div class="chat-text">${escapeHtml(response.message)}</div>` : ''}
+                                    ${fileHtml}
                                     <span class="chat-time">${response.created_at}</span>
                                 </div>
                             `;
@@ -324,7 +405,7 @@
                 },
                 complete: function() {
                     isAdminSubmitting = false;
-                    sendBtn.prop('disabled', false);
+                    sendBtn.prop('disabled', false).html('<i class="fas fa-paper-plane mr-2"></i> {{ __("Send") }}');
                     textarea.focus();
                 }
             });
