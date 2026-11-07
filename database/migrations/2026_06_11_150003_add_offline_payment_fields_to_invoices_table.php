@@ -13,11 +13,21 @@ return new class extends Migration
     {
         if (Schema::hasTable('invoices')) {
             Schema::table('invoices', function (Blueprint $table) {
-                $table->string('payment_method')->nullable();
-                $table->string('payment_reference')->nullable();
-                $table->string('payment_slip_path')->nullable();
-                $table->text('payment_notes')->nullable();
-                $table->dateTime('payment_submitted_at')->nullable();
+                if (!Schema::hasColumn('invoices', 'payment_method')) {
+                    $table->string('payment_method')->nullable();
+                }
+                if (!Schema::hasColumn('invoices', 'payment_reference')) {
+                    $table->string('payment_reference')->nullable();
+                }
+                if (!Schema::hasColumn('invoices', 'payment_slip_path')) {
+                    $table->string('payment_slip_path')->nullable();
+                }
+                if (!Schema::hasColumn('invoices', 'payment_notes')) {
+                    $table->text('payment_notes')->nullable();
+                }
+                if (!Schema::hasColumn('invoices', 'payment_submitted_at')) {
+                    $table->dateTime('payment_submitted_at')->nullable();
+                }
             });
         }
     }

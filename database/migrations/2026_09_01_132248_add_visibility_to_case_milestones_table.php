@@ -11,10 +11,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('case_milestones', function (Blueprint $table) {
-            $table->string('visibility', 20)->nullable()->default('client_visible')->after('status');
-            $table->string('color', 20)->nullable()->default('completed')->after('visibility'); // completed|active|pending = green|yellow|blue
-        });
+        if (Schema::hasTable('case_milestones')) {
+            Schema::table('case_milestones', function (Blueprint $table) {
+                if (!Schema::hasColumn('case_milestones', 'visibility')) {
+                    $table->string('visibility', 20)->nullable()->default('client_visible')->after('status');
+                }
+                if (!Schema::hasColumn('case_milestones', 'color')) {
+                    $table->string('color', 20)->nullable()->default('completed')->after('visibility'); // completed|active|pending = green|yellow|blue
+                }
+            });
+        }
     }
 
     /**

@@ -13,12 +13,24 @@ return new class extends Migration
     {
         if (Schema::hasTable('staff_time_logs')) {
             Schema::table('staff_time_logs', function (Blueprint $table) {
-                $table->string('clock_in_ip')->nullable();
-                $table->string('clock_out_ip')->nullable();
-                $table->decimal('clock_in_latitude', 10, 8)->nullable();
-                $table->decimal('clock_in_longitude', 11, 8)->nullable();
-                $table->decimal('clock_out_latitude', 10, 8)->nullable();
-                $table->decimal('clock_out_longitude', 11, 8)->nullable();
+                if (!Schema::hasColumn('staff_time_logs', 'clock_in_ip')) {
+                    $table->string('clock_in_ip')->nullable();
+                }
+                if (!Schema::hasColumn('staff_time_logs', 'clock_out_ip')) {
+                    $table->string('clock_out_ip')->nullable();
+                }
+                if (!Schema::hasColumn('staff_time_logs', 'clock_in_latitude')) {
+                    $table->decimal('clock_in_latitude', 10, 8)->nullable();
+                }
+                if (!Schema::hasColumn('staff_time_logs', 'clock_in_longitude')) {
+                    $table->decimal('clock_in_longitude', 11, 8)->nullable();
+                }
+                if (!Schema::hasColumn('staff_time_logs', 'clock_out_latitude')) {
+                    $table->decimal('clock_out_latitude', 10, 8)->nullable();
+                }
+                if (!Schema::hasColumn('staff_time_logs', 'clock_out_longitude')) {
+                    $table->decimal('clock_out_longitude', 11, 8)->nullable();
+                }
             });
         }
     }
