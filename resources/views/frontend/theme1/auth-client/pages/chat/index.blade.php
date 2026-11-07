@@ -188,12 +188,33 @@
 
     @media (max-width: 768px) {
         .chat-portal-card {
-            height: calc(100dvh - 140px);
+            height: calc(100dvh - 120px) !important;
             border-radius: 0 !important;
-            min-height: 0;
+            min-height: calc(100dvh - 120px) !important;
         }
         .chat-portal-header {
-            padding: 10px 14px;
+            padding: 8px 10px;
+            position: sticky;
+            top: 0;
+            z-index: 30;
+        }
+        .chat-counsel-avatar {
+            width: 36px !important;
+            height: 36px !important;
+            font-size: 14px !important;
+            margin-right: 8px !important;
+        }
+        .chat-counsel-title {
+            font-size: 13px !important;
+            max-width: 140px;
+            white-space: nowrap !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            display: block !important;
+        }
+        .chat-header-actions .btn {
+            padding: 5px 8px !important;
+            font-size: 11.5px !important;
         }
         .chat-bubble { max-width: 92%; }
         .chat-footer-native {
@@ -228,19 +249,19 @@
 <div class="container-fluid px-0">
   <div class="chat-portal-card">
 
-    {{-- HEADER --}}
+    {{-- HEADER (Static pinned header with mobile-responsive counsel info) --}}
     <div class="chat-portal-header d-flex justify-content-between align-items-center">
       <div class="d-flex align-items-center" style="min-width: 0; flex: 1; margin-right: 8px;">
-        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mr-2 mr-sm-3 flex-shrink-0"
+        <div class="rounded-circle d-inline-flex align-items-center justify-content-center mr-2 mr-sm-3 flex-shrink-0 chat-counsel-avatar"
              style="width:42px;height:42px;background:rgba(254,204,86,0.15);color:#fecc56;font-size:17px;font-weight:bold;border:2px solid #fecc56;">
           {{ strtoupper(substr($counselName, 0, 1)) }}
         </div>
-        <div style="min-width: 0; overflow: hidden;">
-          <h6 class="font-weight-bold text-white mb-0 text-truncate" style="font-size:14px; line-height: 1.3;" title="{{ $counselName }}">{{ $counselName }}</h6>
-          <div class="d-flex align-items-center small flex-wrap" style="gap:6px; font-size:11px;">
-            <span class="text-success font-weight-bold text-nowrap" style="font-size:11px;"><i class="fas fa-circle mr-1" style="font-size:7px;"></i>{{ __('Counsel Online') }}</span>
-            <span class="text-muted d-none d-sm-inline">&bull;</span>
-            <span class="text-warning font-weight-bold text-nowrap" style="font-size:11px;">CLI-{{ sprintf('%05d', $u->id) }}</span>
+        <div style="min-width: 0; overflow: hidden; flex: 1;">
+          <h6 class="font-weight-bold text-white mb-0 chat-counsel-title" style="font-size:14px; line-height: 1.3;" title="{{ $counselName }}">{{ $counselName }}</h6>
+          <div class="d-flex align-items-center small" style="gap:5px; font-size:11px; white-space: nowrap;">
+            <span class="text-success font-weight-bold" style="font-size:11px;"><i class="fas fa-circle mr-1" style="font-size:6px;"></i>{{ __('Counsel Online') }}</span>
+            <span class="text-muted">&bull;</span>
+            <span class="text-warning font-weight-bold" style="font-size:11px;">CLI-{{ sprintf('%05d', $u->id) }}</span>
             @if($provider==='chatwoot')
               <span class="text-muted d-none d-sm-inline">&bull;</span>
               <span class="text-muted d-none d-sm-inline" style="font-size:11px;"><i class="fas fa-shield-alt text-success mr-1"></i>Chatwoot Live</span>
@@ -248,7 +269,7 @@
           </div>
         </div>
       </div>
-      <div class="d-flex align-items-center flex-shrink-0" style="gap:6px;">
+      <div class="d-flex align-items-center flex-shrink-0 chat-header-actions" style="gap:5px;">
         <button type="button" class="btn btn-sm btn-outline-warning text-warning px-2 px-sm-3 font-weight-bold" onclick="requestClientCall('audio')" title="{{ __('Request Live Voice Call with Counsel') }}">
           <i class="fas fa-phone-alt mr-1"></i> <span class="d-none d-sm-inline">{{ __('Request Call') }}</span><span class="d-inline d-sm-none">{{ __('Call') }}</span>
         </button>

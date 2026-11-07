@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Database\Schema\Blueprint;
 use App\Models\User;
 use App\Models\Conversation;
 use App\Models\Message;
@@ -14,11 +17,161 @@ use App\Models\GeneralSettings;
 class WebRtcCallController extends Controller
 {
     /**
+     * Auto-ensure call_sessions table exists in MySQL
+     */
+    protected function ensureTableExists()
+    {
+        try {
+            if (!Schema::hasTable('call_sessions')) {
+                Schema::create('call_sessions', function (Blueprint $table) {
+                    $table->id();
+                    $table->string('call_id', 64)->unique();
+                    $table->unsignedBigInteger('caller_id')->index();
+                    $table->unsignedBigInteger('recipient_id')->index();
+                    $table->string('caller_name', 255)->nullable();
+                    $table->string('caller_avatar', 255)->nullable();
+                    $table->string('recipient_name', 255)->nullable();
+                    $table->string('recipient_avatar', 255)->nullable();
+                    $table->string('call_type', 20)->default('audio');
+                    $table->string('status', 20)->default('ringing')->index();
+                    $table->longText('offer')->nullable();
+                    $table->longText('answer')->nullable();
+                    $table->longText('caller_candidates')->nullable();
+                    $table->longText('callee_candidates')->nullable();
+                    $table->string('conversation_slug', 100)->nullable()->index();
+                    $table->string('decline_reason', 255)->nullable();
+                    $table->unsignedBigInteger('connected_at')->nullable();
+                    $table->unsignedBigInteger('ended_at')->nullable();
+                    $table->timestamps();
+                });
+            }
+        } catch (\Throwable $e) {
+            // Table might have been created concurrently
+        }
+    }
+
+    /**
+     * Helper to normalize DB row or array into standardized call payload
+     */
+    protected function formatCallData($call): array
+    {
+        if (is_object($call)) {
+            $offer = $call->offer;
+            if (is_string($offer)) {
+                $decoded = json_decode($offer, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $offer = $decoded;
+                }
+            }
+
+            $answer = $call->answer;
+            if (is_string($answer)) {
+                $decoded = json_decode($answer, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $answer = $decoded;
+                }
+            }
+
+            $callerCands = $call->caller_candidates;
+            if (is_string($callerCands)) {
+                $decoded = json_decode($callerCands, true);
+                $callerCands = is_array($decoded) ? $decoded : [];
+            } elseif (!is_array($callerCands)) {
+                $callerCands = [];
+            }
+
+            $calleeCands = $call->callee_candidates;
+            if (is_string($calleeCands)) {
+                $decoded = json_decode($calleeCands, true);
+                $calleeCands = is_array($decoded) ? $decoded : [];
+            } elseif (!is_array($calleeCands)) {
+                $calleeCands = [];
+            }
+
+            return [
+                'call_id' => $call->call_id,
+                'caller_id' => (int)$call->caller_id,
+                'caller_name' => $call->caller_name ?: 'Counsel',
+                'caller_avatar' => $call->caller_avatar,
+                'recipient_id' => (int)$call->recipient_id,
+                'recipient_name' => $call->recipient_name,
+                'recipient_avatar' => $call->recipient_avatar,
+                'call_type' => $call->call_type ?: 'audio',
+                'status' => $call->status ?: 'ringing',
+                'offer' => $offer,
+                'caller_candidates' => $callerCands,
+                'answer' => $answer,
+                'callee_candidates' => $calleeCands,
+                'conversation_slug' => $call->conversation_slug,
+                'connected_at' => $call->connected_at ? (int)$call->connected_at : null,
+                'ended_at' => $call->ended_at ? (int)$call->ended_at : null,
+                'created_at' => $call->created_at ? strtotime((string)$call->created_at) : now()->timestamp,
+            ];
+        }
+
+        if (is_array($call)) {
+            $offer = $call['offer'] ?? null;
+            if (is_string($offer)) {
+                $decoded = json_decode($offer, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $offer = $decoded;
+                }
+            }
+            $answer = $call['answer'] ?? null;
+            if (is_string($answer)) {
+                $decoded = json_decode($answer, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    $answer = $decoded;
+                }
+            }
+            $call['offer'] = $offer;
+            $call['answer'] = $answer;
+            if (!isset($call['caller_candidates']) || !is_array($call['caller_candidates'])) {
+                $call['caller_candidates'] = [];
+            }
+            if (!isset($call['callee_candidates']) || !is_array($call['callee_candidates'])) {
+                $call['callee_candidates'] = [];
+            }
+            return $call;
+        }
+
+        return [];
+    }
+
+    /**
+     * Retrieve call session reliably from DB with Cache fallback
+     */
+    protected function getCallSession(string $callId): ?array
+    {
+        $this->ensureTableExists();
+
+        // 1. Check MySQL
+        try {
+            $dbRow = DB::table('call_sessions')->where('call_id', $callId)->first();
+            if ($dbRow) {
+                $formatted = $this->formatCallData($dbRow);
+                Cache::put("call_session_{$callId}", $formatted, 300);
+                return $formatted;
+            }
+        } catch (\Throwable $e) {}
+
+        // 2. Check Cache
+        $cached = Cache::get("call_session_{$callId}");
+        if ($cached && is_array($cached)) {
+            return $this->formatCallData($cached);
+        }
+
+        return null;
+    }
+
+    /**
      * Initiate a WebRTC Audio or Video Call
      * Restricted to Admins & Supervising Officers
      */
     public function initiate(Request $request)
     {
+        $this->ensureTableExists();
+
         $user = Auth::user();
         if (!$user) {
             return response()->json(['error' => 'Unauthenticated.'], 401);
@@ -45,42 +198,80 @@ class WebRtcCallController extends Controller
         $callId = 'call_' . uniqid() . '_' . rand(100, 999);
         $callType = $request->input('call_type', 'audio');
 
+        $offerInput = $request->input('offer');
+        $offerJson = is_array($offerInput) ? json_encode($offerInput) : (string)$offerInput;
+
+        $candsInput = $request->input('candidates', []);
+        $candsJson = is_array($candsInput) ? json_encode($candsInput) : json_encode([]);
+
+        $nowTs = now()->timestamp;
+        $convoSlug = $request->input('conversation_slug');
+
+        $callerAvatar = $user->profile_photo_url ? asset($user->profile_photo_url) : null;
+        $recipientAvatar = $recipient->profile_photo_url ? asset($recipient->profile_photo_url) : null;
+
+        // 1. Insert into MySQL call_sessions table for 100% durable signaling
+        try {
+            DB::table('call_sessions')->insert([
+                'call_id' => $callId,
+                'caller_id' => $user->id,
+                'recipient_id' => $recipient->id,
+                'caller_name' => $user->name ?: 'Assigned Counsel',
+                'caller_avatar' => $callerAvatar,
+                'recipient_name' => $recipient->name,
+                'recipient_avatar' => $recipientAvatar,
+                'call_type' => $callType,
+                'status' => 'ringing',
+                'offer' => $offerJson,
+                'answer' => null,
+                'caller_candidates' => $candsJson,
+                'callee_candidates' => json_encode([]),
+                'conversation_slug' => $convoSlug,
+                'decline_reason' => null,
+                'connected_at' => null,
+                'ended_at' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to insert call_sessions: ' . $e->getMessage());
+        }
+
         $callData = [
             'call_id' => $callId,
             'caller_id' => $user->id,
             'caller_name' => $user->name ?: 'Assigned Counsel',
-            'caller_avatar' => $user->profile_photo_url ? asset($user->profile_photo_url) : null,
+            'caller_avatar' => $callerAvatar,
             'recipient_id' => $recipient->id,
             'recipient_name' => $recipient->name,
-            'recipient_avatar' => $recipient->profile_photo_url ? asset($recipient->profile_photo_url) : null,
-            'call_type' => $callType, // 'audio' or 'video'
-            'status' => 'ringing', // 'ringing', 'connected', 'ended', 'declined', 'missed', 'cancelled'
-            'offer' => $request->input('offer'),
-            'caller_candidates' => $request->input('candidates', []),
+            'recipient_avatar' => $recipientAvatar,
+            'call_type' => $callType,
+            'status' => 'ringing',
+            'offer' => is_array($offerInput) ? $offerInput : json_decode($offerJson, true),
+            'caller_candidates' => is_array($candsInput) ? $candsInput : [],
             'answer' => null,
             'callee_candidates' => [],
-            'conversation_slug' => $request->input('conversation_slug'),
-            'created_at' => now()->timestamp,
+            'conversation_slug' => $convoSlug,
+            'created_at' => $nowTs,
             'connected_at' => null,
             'ended_at' => null,
         ];
 
-        // Cache call session with 120-second ringing TTL
-        Cache::put("call_session_{$callId}", $callData, 120);
-        Cache::put("user_active_call_{$recipient->id}", $callId, 60);
-        Cache::put("user_active_call_{$user->id}", $callId, 120);
+        // 2. Cache call session with 300-second TTL
+        Cache::put("call_session_{$callId}", $callData, 300);
+        Cache::put("user_active_call_{$recipient->id}", $callId, 120);
+        Cache::put("user_active_call_{$user->id}", $callId, 300);
 
-        if ($request->filled('conversation_slug')) {
-            $conversation = Conversation::where('slug', $request->conversation_slug)->first();
+        if (!empty($convoSlug)) {
+            $conversation = Conversation::where('slug', $convoSlug)->first();
             if ($conversation) {
-                Cache::put("active_call_convo_{$conversation->id}", $callData, 120);
+                Cache::put("active_call_convo_{$conversation->id}", $callData, 300);
             }
         } else {
-            // Staff call cache key
-            Cache::put("active_call_staff_{$recipient->id}", $callData, 120);
+            Cache::put("active_call_staff_{$recipient->id}", $callData, 300);
         }
 
-        // Telegram Notification
+        // 3. Telegram Notification
         $icon = ($callType === 'video') ? '🎥' : '📞';
         $typeLabel = ($callType === 'video') ? 'Video' : 'Voice';
         $telMsg = "{$icon} <b>{$typeLabel} Call Initiated</b>\n"
@@ -103,17 +294,38 @@ class WebRtcCallController extends Controller
      */
     public function check(Request $request)
     {
+        $this->ensureTableExists();
+
         $user = Auth::user();
         if (!$user) {
             return response()->json(['active_call' => null]);
         }
 
         $callId = Cache::get("user_active_call_{$user->id}");
+
+        // If cache has no active call key, query MySQL directly for ringing calls targeted at this user
+        if (!$callId) {
+            try {
+                $dbRinging = DB::table('call_sessions')
+                    ->where('recipient_id', $user->id)
+                    ->where('status', 'ringing')
+                    ->where('created_at', '>=', now()->subSeconds(60))
+                    ->latest()
+                    ->first();
+
+                if ($dbRinging) {
+                    $callId = $dbRinging->call_id;
+                    Cache::put("user_active_call_{$user->id}", $callId, 60);
+                }
+            } catch (\Throwable $e) {}
+        }
+
         if (!$callId) {
             return response()->json(['active_call' => null]);
         }
 
-        $callData = Cache::get("call_session_{$callId}");
+        $callData = $this->getCallSession($callId);
+
         if (!$callData || in_array($callData['status'], ['ended', 'declined', 'missed', 'cancelled'])) {
             Cache::forget("user_active_call_{$user->id}");
             return response()->json(['active_call' => null]);
@@ -123,6 +335,15 @@ class WebRtcCallController extends Controller
         if ($callData['status'] === 'ringing' && (now()->timestamp - $callData['created_at']) > 50) {
             $this->logCallOutcome($callData, 'missed');
             $callData['status'] = 'missed';
+
+            try {
+                DB::table('call_sessions')->where('call_id', $callId)->update([
+                    'status' => 'missed',
+                    'ended_at' => now()->timestamp,
+                    'updated_at' => now(),
+                ]);
+            } catch (\Throwable $e) {}
+
             Cache::put("call_session_{$callId}", $callData, 15);
             Cache::forget("user_active_call_{$callData['recipient_id']}");
             Cache::forget("user_active_call_{$callData['caller_id']}");
@@ -137,37 +358,64 @@ class WebRtcCallController extends Controller
      */
     public function signal(Request $request)
     {
+        $this->ensureTableExists();
+
         $request->validate([
             'call_id' => 'required|string',
             'action' => 'required|string|in:answer,candidate,candidates_batch,poll',
         ]);
 
         $callId = $request->input('call_id');
-        $callData = Cache::get("call_session_{$callId}");
+        $callData = $this->getCallSession($callId);
 
+        // Never return 404 to avoid console error spam; gracefully return status: ended
         if (!$callData) {
-            return response()->json(['status' => 'error', 'message' => 'Call session expired or ended.'], 404);
+            return response()->json([
+                'status' => 'ended',
+                'message' => 'Call session not found or ended.'
+            ], 200);
+        }
+
+        if (in_array($callData['status'], ['ended', 'declined', 'cancelled', 'missed'])) {
+            return response()->json([
+                'status' => 'ended',
+                'call' => $callData
+            ], 200);
         }
 
         $action = $request->input('action');
         $user = Auth::user();
 
         if ($action === 'answer') {
-            $callData['answer'] = $request->input('answer');
+            $answer = $request->input('answer');
+            $callData['answer'] = is_array($answer) ? $answer : json_decode($answer, true);
             $callData['status'] = 'connected';
             $callData['connected_at'] = now()->timestamp;
 
             if ($request->filled('candidates')) {
                 $candidates = $request->input('candidates');
-                $callData['callee_candidates'] = array_merge($callData['callee_candidates'] ?? [], is_array($candidates) ? $candidates : [$candidates]);
+                $newCands = is_array($candidates) ? $candidates : [$candidates];
+                $callData['callee_candidates'] = array_merge($callData['callee_candidates'] ?? [], $newCands);
             }
 
-            // Extend session TTL during active conversation (up to 2 hours)
+            // Persist to MySQL
+            try {
+                DB::table('call_sessions')->where('call_id', $callId)->update([
+                    'answer' => is_array($answer) ? json_encode($answer) : (string)$answer,
+                    'status' => 'connected',
+                    'connected_at' => $callData['connected_at'],
+                    'callee_candidates' => json_encode($callData['callee_candidates']),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to update call_sessions on answer: ' . $e->getMessage());
+            }
+
+            // Cache active session up to 2 hours
             Cache::put("call_session_{$callId}", $callData, 7200);
             Cache::put("user_active_call_{$callData['recipient_id']}", $callId, 7200);
             Cache::put("user_active_call_{$callData['caller_id']}", $callId, 7200);
 
-            // Update conversation active call cache
             if (!empty($callData['conversation_slug'])) {
                 $convo = Conversation::where('slug', $callData['conversation_slug'])->first();
                 if ($convo) {
@@ -181,28 +429,51 @@ class WebRtcCallController extends Controller
             GeneralSettings::sendTelegramNotification("{$icon} <b>Call Connected</b>\n👤 {$callData['recipient_name']} answered the call with {$callData['caller_name']}. Live session in progress.");
 
             return response()->json(['status' => 'ok', 'call' => $callData]);
+
         } elseif ($action === 'candidate') {
             $candidate = $request->input('candidate');
             if ($candidate) {
-                if ($user->id === $callData['caller_id']) {
+                $isCaller = ($user && $user->id === $callData['caller_id']);
+                if ($isCaller) {
                     $callData['caller_candidates'][] = $candidate;
                 } else {
                     $callData['callee_candidates'][] = $candidate;
                 }
+
+                try {
+                    $field = $isCaller ? 'caller_candidates' : 'callee_candidates';
+                    DB::table('call_sessions')->where('call_id', $callId)->update([
+                        $field => json_encode($isCaller ? $callData['caller_candidates'] : $callData['callee_candidates']),
+                        'updated_at' => now(),
+                    ]);
+                } catch (\Throwable $e) {}
+
                 Cache::put("call_session_{$callId}", $callData, 7200);
             }
             return response()->json(['status' => 'ok']);
+
         } elseif ($action === 'candidates_batch') {
             $candidates = $request->input('candidates', []);
             if (!empty($candidates) && is_array($candidates)) {
-                if ($user->id === $callData['caller_id']) {
+                $isCaller = ($user && $user->id === $callData['caller_id']);
+                if ($isCaller) {
                     $callData['caller_candidates'] = array_merge($callData['caller_candidates'] ?? [], $candidates);
                 } else {
                     $callData['callee_candidates'] = array_merge($callData['callee_candidates'] ?? [], $candidates);
                 }
+
+                try {
+                    $field = $isCaller ? 'caller_candidates' : 'callee_candidates';
+                    DB::table('call_sessions')->where('call_id', $callId)->update([
+                        $field => json_encode($isCaller ? $callData['caller_candidates'] : $callData['callee_candidates']),
+                        'updated_at' => now(),
+                    ]);
+                } catch (\Throwable $e) {}
+
                 Cache::put("call_session_{$callId}", $callData, 7200);
             }
             return response()->json(['status' => 'ok']);
+
         } elseif ($action === 'poll') {
             return response()->json(['status' => 'ok', 'call' => $callData]);
         }
@@ -215,6 +486,8 @@ class WebRtcCallController extends Controller
      */
     public function respond(Request $request)
     {
+        $this->ensureTableExists();
+
         $request->validate([
             'call_id' => 'required|string',
             'action' => 'required|string|in:accept,decline,end,cancel,missed',
@@ -222,7 +495,7 @@ class WebRtcCallController extends Controller
         ]);
 
         $callId = $request->input('call_id');
-        $callData = Cache::get("call_session_{$callId}");
+        $callData = $this->getCallSession($callId);
 
         if (!$callData) {
             return response()->json(['status' => 'ok', 'message' => 'Call session already terminated.']);
@@ -236,7 +509,16 @@ class WebRtcCallController extends Controller
             $callData['ended_at'] = now()->timestamp;
             $this->logCallOutcome($callData, $action, $reason);
 
-            Cache::put("call_session_{$callId}", $callData, 15);
+            try {
+                DB::table('call_sessions')->where('call_id', $callId)->update([
+                    'status' => $action,
+                    'decline_reason' => $reason,
+                    'ended_at' => $callData['ended_at'],
+                    'updated_at' => now(),
+                ]);
+            } catch (\Throwable $e) {}
+
+            Cache::put("call_session_{$callId}", $callData, 30);
             Cache::forget("user_active_call_{$callData['recipient_id']}");
             Cache::forget("user_active_call_{$callData['caller_id']}");
 
@@ -248,6 +530,7 @@ class WebRtcCallController extends Controller
             }
 
             return response()->json(['status' => 'ok', 'call' => $callData]);
+
         } elseif ($action === 'end') {
             $callData['status'] = 'ended';
             $callData['ended_at'] = now()->timestamp;
@@ -257,7 +540,15 @@ class WebRtcCallController extends Controller
 
             $this->logCallOutcome($callData, 'ended', '', $durationFormatted);
 
-            Cache::put("call_session_{$callId}", $callData, 15);
+            try {
+                DB::table('call_sessions')->where('call_id', $callId)->update([
+                    'status' => 'ended',
+                    'ended_at' => $callData['ended_at'],
+                    'updated_at' => now(),
+                ]);
+            } catch (\Throwable $e) {}
+
+            Cache::put("call_session_{$callId}", $callData, 30);
             Cache::forget("user_active_call_{$callData['recipient_id']}");
             Cache::forget("user_active_call_{$callData['caller_id']}");
 
@@ -377,4 +668,3 @@ class WebRtcCallController extends Controller
         GeneralSettings::sendTelegramNotification($telText);
     }
 }
-

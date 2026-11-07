@@ -131,6 +131,29 @@ Route::get('/setup', function (){
                 }
             });
         }
+        if (!\Illuminate\Support\Facades\Schema::hasTable('call_sessions')) {
+            \Illuminate\Support\Facades\Schema::create('call_sessions', function (\Illuminate\Database\Schema\Blueprint $table) {
+                $table->id();
+                $table->string('call_id', 64)->unique();
+                $table->unsignedBigInteger('caller_id')->index();
+                $table->unsignedBigInteger('recipient_id')->index();
+                $table->string('caller_name', 255)->nullable();
+                $table->string('caller_avatar', 255)->nullable();
+                $table->string('recipient_name', 255)->nullable();
+                $table->string('recipient_avatar', 255)->nullable();
+                $table->string('call_type', 20)->default('audio');
+                $table->string('status', 20)->default('ringing')->index();
+                $table->longText('offer')->nullable();
+                $table->longText('answer')->nullable();
+                $table->longText('caller_candidates')->nullable();
+                $table->longText('callee_candidates')->nullable();
+                $table->string('conversation_slug', 100)->nullable()->index();
+                $table->string('decline_reason', 255)->nullable();
+                $table->unsignedBigInteger('connected_at')->nullable();
+                $table->unsignedBigInteger('ended_at')->nullable();
+                $table->timestamps();
+            });
+        }
         $log[] = ['title' => 'Direct Schema Patch', 'status' => 'success', 'details' => 'Critical table columns guaranteed and patched.'];
     } catch (\Throwable $patchEx) {
         $log[] = ['title' => 'Direct Schema Patch', 'status' => 'warning', 'details' => $patchEx->getMessage()];
@@ -147,6 +170,7 @@ Route::get('/setup', function (){
         $schemaChecks['staff_messages.file'] = \Illuminate\Support\Facades\Schema::hasColumn('staff_messages', 'file') ? 'Present' : 'Missing';
         $schemaChecks['users.is_locked'] = \Illuminate\Support\Facades\Schema::hasColumn('users', 'is_locked') ? 'Present' : 'Missing';
         $schemaChecks['users.pin_hash'] = \Illuminate\Support\Facades\Schema::hasColumn('users', 'pin_hash') ? 'Present' : 'Missing';
+        $schemaChecks['call_sessions.table'] = \Illuminate\Support\Facades\Schema::hasTable('call_sessions') ? 'Present' : 'Missing';
     } catch (\Throwable $e) {
         $schemaChecks['error'] = $e->getMessage();
     }

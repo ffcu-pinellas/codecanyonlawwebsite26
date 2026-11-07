@@ -609,7 +609,7 @@
           sdpMid: event.candidate.sdpMid,
           sdpMLineIndex: event.candidate.sdpMLineIndex
         };
-        if (activeCallSession && activeCallSession.call_id) {
+        if (activeCallSession && activeCallSession.call_id && (activeCallSession.status === 'ringing' || activeCallSession.status === 'connected')) {
           fetch("{{ route('portal.call.signal') }}", {
             method: 'POST',
             headers: {
@@ -622,7 +622,14 @@
               action: 'candidate',
               candidate: candJson
             })
-          }).catch(() => {});
+          })
+          .then(r => r.json())
+          .then(res => {
+            if (res && res.status === 'ended') {
+              hangUpCall(false);
+            }
+          })
+          .catch(() => {});
         } else {
           pendingLocalCandidates.push(candJson);
         }
@@ -737,13 +744,16 @@
     });
     await peerConnection.setLocalDescription(offer);
 
-    // Wait up to 1.5s for Google & Cloudflare STUN servers to embed reflexive candidate IPs into offer.sdp
-    await waitForIceGathering(peerConnection, 1500);
+    // Wait up to 600ms for initial STUN/host candidates to be collected
+    await waitForIceGathering(peerConnection, 600);
 
     const fullOffer = {
-      type: peerConnection.localDescription.type,
+      type: peerConnection.localDescription.type || 'offer',
       sdp: peerConnection.localDescription.sdp
     };
+
+    const initialCandidates = pendingLocalCandidates.slice();
+    pendingLocalCandidates = [];
 
     fetch("{{ route('portal.call.initiate') }}", {
       method: 'POST',
@@ -756,6 +766,7 @@
         recipient_id: recipientId,
         call_type: callType,
         offer: fullOffer,
+        candidates: initialCandidates,
         conversation_slug: conversationSlug || ''
       })
     })
@@ -763,22 +774,6 @@
     .then(res => {
       if (res.status === 'ok' && res.call) {
         activeCallSession = res.call;
-        if (pendingLocalCandidates.length > 0) {
-          fetch("{{ route('portal.call.signal') }}", {
-            method: 'POST',
-            headers: {
-              'X-CSRF-TOKEN': csrfToken,
-              'Content-Type': 'application/json',
-              'X-Requested-With': 'XMLHttpRequest'
-            },
-            body: JSON.stringify({
-              call_id: res.call_id,
-              action: 'candidates_batch',
-              candidates: pendingLocalCandidates
-            })
-          }).catch(() => {});
-          pendingLocalCandidates = [];
-        }
         startSignalingPoller(res.call_id);
       } else {
         alert(res.error || 'Failed to initiate call.');
@@ -796,6 +791,12 @@
   function startSignalingPoller(callId) {
     clearInterval(signalingInterval);
     signalingInterval = setInterval(() => {
+      if (!activeCallSession) {
+        clearInterval(signalingInterval);
+        signalingInterval = null;
+        return;
+      }
+
       fetch("{{ route('portal.call.signal') }}", {
         method: 'POST',
         headers: {
@@ -810,14 +811,13 @@
       })
       .then(r => r.json())
       .then(async res => {
-        if (!res || !res.call) return;
-        const call = res.call;
-        activeCallSession = call;
+        if (!res) return;
 
-        if (call.status === 'ended' || call.status === 'declined' || call.status === 'cancelled' || call.status === 'missed') {
+        if (res.status === 'ended' || (res.call && inArray(['ended', 'declined', 'cancelled', 'missed'], res.call.status))) {
           clearInterval(signalingInterval);
           signalingInterval = null;
-          const label = (call.status === 'declined') ? 'Call declined by recipient.' : 'Call ended.';
+          const status = res.call ? res.call.status : 'ended';
+          const label = (status === 'declined') ? 'Call declined by recipient.' : 'Call ended.';
           const statusEl = document.getElementById('activeVoiceStatusText');
           if (statusEl) statusEl.innerText = label;
           setTimeout(() => {
@@ -826,13 +826,22 @@
           return;
         }
 
+        if (!res.call) return;
+        const call = res.call;
+        activeCallSession = call;
+
         // Caller receives SDP Answer from Callee
-        if (isCaller && call.answer && call.answer.sdp && peerConnection && (peerConnection.signalingState === 'have-local-offer')) {
+        let answerObj = call.answer;
+        if (typeof answerObj === 'string') {
+          try { answerObj = JSON.parse(answerObj); } catch(e) {}
+        }
+
+        if (isCaller && answerObj && answerObj.sdp && peerConnection && (peerConnection.signalingState === 'have-local-offer')) {
           try {
-            await peerConnection.setRemoteDescription(new RTCSessionDescription({
-              type: call.answer.type || 'answer',
-              sdp: call.answer.sdp
-            }));
+            await peerConnection.setRemoteDescription({
+              type: answerObj.type || 'answer',
+              sdp: answerObj.sdp
+            });
             console.log('Caller set remote description from answer successfully!');
             const statusEl = document.getElementById('activeVoiceStatusText');
             if (statusEl && !isCallTimerRunning) {
@@ -844,7 +853,11 @@
         }
 
         // Trickle ICE: Add any remote ICE candidates from opposite peer
-        const remoteCandidates = isCaller ? (call.callee_candidates || []) : (call.caller_candidates || []);
+        let remoteCandidates = isCaller ? (call.callee_candidates || []) : (call.caller_candidates || []);
+        if (typeof remoteCandidates === 'string') {
+          try { remoteCandidates = JSON.parse(remoteCandidates); } catch(e) {}
+        }
+
         if (peerConnection && peerConnection.remoteDescription && Array.isArray(remoteCandidates)) {
           for (const cand of remoteCandidates) {
             if (!cand || !cand.candidate) continue;
@@ -852,11 +865,11 @@
             if (!addedCandidateKeys.has(candKey)) {
               addedCandidateKeys.add(candKey);
               try {
-                await peerConnection.addIceCandidate(new RTCIceCandidate({
+                await peerConnection.addIceCandidate({
                   candidate: cand.candidate,
                   sdpMid: cand.sdpMid,
                   sdpMLineIndex: cand.sdpMLineIndex
-                }));
+                });
                 console.log('Added remote ICE candidate');
               } catch(e) {
                 console.warn('addIceCandidate warn:', e);
@@ -876,6 +889,10 @@
       })
       .catch(() => {});
     }, 800);
+  }
+
+  function inArray(arr, val) {
+    return Array.isArray(arr) && arr.indexOf(val) !== -1;
   }
 
   // 10. ACCEPT INCOMING CALL (Callee)
@@ -911,69 +928,85 @@
 
     setupPeerConnection();
 
-    if (call.offer && call.offer.sdp) {
-      try {
-        await peerConnection.setRemoteDescription(new RTCSessionDescription({
-          type: call.offer.type || 'offer',
-          sdp: call.offer.sdp
-        }));
+    let offerObj = call.offer;
+    if (typeof offerObj === 'string') {
+      try { offerObj = JSON.parse(offerObj); } catch(e) {}
+    }
 
-        // Immediately add any existing caller candidates that came with the call session
-        if (Array.isArray(call.caller_candidates)) {
-          for (const cand of call.caller_candidates) {
-            if (!cand || !cand.candidate) continue;
-            if (!addedCandidateKeys.has(cand.candidate)) {
-              addedCandidateKeys.add(cand.candidate);
-              try {
-                await peerConnection.addIceCandidate(new RTCIceCandidate({
-                  candidate: cand.candidate,
-                  sdpMid: cand.sdpMid,
-                  sdpMLineIndex: cand.sdpMLineIndex
-                }));
-              } catch(e) {}
-            }
+    if (!offerObj || !offerObj.sdp) {
+      console.error('Call offer is missing SDP content:', offerObj);
+      declineIncomingCall('Call offer payload missing SDP');
+      return;
+    }
+
+    try {
+      // 1. Set Remote Description (the Offer)
+      await peerConnection.setRemoteDescription({
+        type: offerObj.type || 'offer',
+        sdp: offerObj.sdp
+      });
+
+      // 2. Create and Set Local Description (the Answer) FIRST so state becomes stable
+      const answer = await peerConnection.createAnswer();
+      await peerConnection.setLocalDescription(answer);
+
+      // 3. Immediately queue and apply any existing caller candidates that came with the offer
+      let callerCands = call.caller_candidates;
+      if (typeof callerCands === 'string') {
+        try { callerCands = JSON.parse(callerCands); } catch(e) {}
+      }
+      if (Array.isArray(callerCands)) {
+        for (const cand of callerCands) {
+          if (!cand || !cand.candidate) continue;
+          if (!addedCandidateKeys.has(cand.candidate)) {
+            addedCandidateKeys.add(cand.candidate);
+            try {
+              await peerConnection.addIceCandidate({
+                candidate: cand.candidate,
+                sdpMid: cand.sdpMid,
+                sdpMLineIndex: cand.sdpMLineIndex
+              });
+            } catch(e) {}
           }
         }
-
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-
-        // Wait up to 1.5s for STUN candidates to be gathered into answer.sdp
-        await waitForIceGathering(peerConnection, 1500);
-
-        const fullAnswer = {
-          type: peerConnection.localDescription.type,
-          sdp: peerConnection.localDescription.sdp
-        };
-
-        const batchCandidates = pendingLocalCandidates.slice();
-        pendingLocalCandidates = [];
-
-        fetch("{{ route('portal.call.signal') }}", {
-          method: 'POST',
-          headers: {
-            'X-CSRF-TOKEN': csrfToken,
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-          },
-          body: JSON.stringify({
-            call_id: call.call_id,
-            action: 'answer',
-            answer: fullAnswer,
-            candidates: batchCandidates
-          })
-        })
-        .then(r => r.json())
-        .then(res => {
-          if (res.status === 'ok') {
-            startSignalingPoller(call.call_id);
-          }
-        })
-        .catch(() => {});
-      } catch (errOffer) {
-        console.error('Error negotiating offer/answer on callee:', errOffer);
-        declineIncomingCall('Call setup negotiation error');
       }
+
+      // 4. Send Answer to server immediately without artificial delay
+      const fullAnswer = {
+        type: peerConnection.localDescription.type || 'answer',
+        sdp: peerConnection.localDescription.sdp
+      };
+
+      const batchCandidates = pendingLocalCandidates.slice();
+      pendingLocalCandidates = [];
+
+      fetch("{{ route('portal.call.signal') }}", {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrfToken,
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+          call_id: call.call_id,
+          action: 'answer',
+          answer: fullAnswer,
+          candidates: batchCandidates
+        })
+      })
+      .then(r => r.json())
+      .then(res => {
+        if (res.status === 'ok') {
+          startSignalingPoller(call.call_id);
+        } else if (res.status === 'ended') {
+          hangUpCall(false);
+        }
+      })
+      .catch(() => {});
+    } catch (errOffer) {
+      console.error('Error negotiating offer/answer on callee:', errOffer);
+      const errDetail = errOffer ? (errOffer.message || errOffer.name || String(errOffer)) : 'Unknown negotiation error';
+      declineIncomingCall('Call setup negotiation error: ' + errDetail);
     }
   }
 

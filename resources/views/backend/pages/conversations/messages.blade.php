@@ -65,6 +65,19 @@
         .quick-emoji-bar .badge {
             flex-shrink: 0 !important;
         }
+        @media (max-width: 768px) {
+            .card-header-sticky {
+                top: 0px !important;
+                padding: 10px 12px !important;
+            }
+            .msg_card_body {
+                max-height: calc(100dvh - 240px) !important;
+                padding: 12px !important;
+            }
+            .msg_cotainer_send, .msg_cotainer {
+                max-width: 88% !important;
+            }
+        }
     </style>
 @endsection
 

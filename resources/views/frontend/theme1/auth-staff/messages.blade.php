@@ -128,11 +128,14 @@
     }
     @media (max-width: 768px) {
         .chat-card {
-            height: calc(100dvh - 160px);
+            height: calc(100dvh - 150px);
             border-radius: 0 !important;
         }
         .chat-header {
-            padding: 10px 14px;
+            padding: 8px 12px;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 30 !important;
         }
         .chat-bubble { max-width: 90%; }
         .chat-footer {

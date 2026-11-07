@@ -35,6 +35,21 @@
     .quick-emoji-bar .badge {
         flex-shrink: 0 !important;
     }
+    @media (max-width: 768px) {
+        .chat-card {
+            height: calc(100dvh - 200px) !important;
+            border-radius: 0 !important;
+        }
+        .chat-header {
+            padding: 10px 12px !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 30 !important;
+        }
+        .chat-bubble {
+            max-width: 88% !important;
+        }
+    }
     .chat-messages {
         flex: 1;
         padding: 20px;
