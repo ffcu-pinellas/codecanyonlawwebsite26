@@ -338,7 +338,7 @@
                                         <span class="font-weight-bold" style="color: #fecc56; font-size: 15px;">${{ number_format($request->amount, 2) }}</span>
                                         <small class="text-muted d-block">{{ $request->created_at->format('M d, Y h:i A') }}</small>
                                     </div>
-                                    <div>
+                                    <div class="d-flex align-items-center" style="gap: 6px;">
                                         @if($request->status === 'pending')
                                             <span class="badge badge-warning status-badge"><i class="fas fa-clock mr-1"></i> {{ __('Pending') }}</span>
                                         @elseif($request->status === 'approved')
@@ -348,6 +348,9 @@
                                         @elseif($request->status === 'rejected' || $request->status === 'declined')
                                             <span class="badge badge-danger status-badge"><i class="fas fa-times-circle mr-1"></i> {{ __('Declined') }}</span>
                                         @endif
+                                        <a href="{{ route('staff.payout.stub.download', $request->id) }}" class="btn btn-xs btn-outline-success font-weight-bold" title="{{ __('Download Official Paystub (PDF)') }}" target="_blank">
+                                            <i class="fas fa-file-invoice-dollar mr-1"></i>{{ __('Paystub') }}
+                                        </a>
                                     </div>
                                 </div>
                                 @if($request->notes)

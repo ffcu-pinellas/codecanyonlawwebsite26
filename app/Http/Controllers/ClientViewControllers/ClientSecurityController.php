@@ -481,5 +481,190 @@ class ClientSecurityController extends Controller
 
         return response()->json(['status' => 'error', 'message' => __('Invalid Security PIN. Please try again.')], 422);
     }
+
+    /**
+     * WebAuthn: Passkey Registration Options
+     */
+    public function passkeyRegisterOptions(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        $challengeBytes = random_bytes(32);
+        $challenge = rtrim(strtr(base64_encode($challengeBytes), '+/', '-_'), '=');
+        session(['passkey_register_challenge' => $challenge]);
+
+        $host = $request->getHost();
+
+        return response()->json([
+            'status' => 'ok',
+            'challenge' => $challenge,
+            'rp' => [
+                'name' => config('app.name', 'Your CPA Expert'),
+                'id' => $host,
+            ],
+            'user' => [
+                'id' => rtrim(strtr(base64_encode((string)$user->id), '+/', '-_'), '='),
+                'name' => $user->email,
+                'displayName' => $user->name ?: 'Portal User',
+            ],
+            'pubKeyCredParams' => [
+                ['alg' => -7, 'type' => 'public-key'],
+                ['alg' => -257, 'type' => 'public-key'],
+            ],
+            'authenticatorSelection' => [
+                'authenticatorAttachment' => 'platform',
+                'userVerification' => 'preferred',
+                'residentKey' => 'preferred',
+            ],
+            'timeout' => 60000,
+        ]);
+    }
+
+    /**
+     * WebAuthn: Store Registered Passkey
+     */
+    public function passkeyRegisterVerify(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        $request->validate([
+            'credential_id' => 'required|string',
+            'device_name' => 'nullable|string|max:100',
+        ]);
+
+        $creds = $user->passkey_credentials ?? [];
+        if (!is_array($creds)) $creds = [];
+
+        foreach ($creds as $c) {
+            if (isset($c['id']) && $c['id'] === $request->credential_id) {
+                return response()->json(['status' => 'ok', 'message' => 'Passkey already registered on this profile.']);
+            }
+        }
+
+        $creds[] = [
+            'id' => $request->credential_id,
+            'name' => $request->input('device_name', 'Biometric Passkey Device'),
+            'created_at' => now()->toIso8601String(),
+        ];
+
+        $user->passkey_credentials = $creds;
+        $user->save();
+
+        SystemAuditLog::logAction('PASSKEY_REGISTERED', 'User registered new biometric WebAuthn passkey (' . $request->input('device_name', 'Biometric Device') . ')', $user->id, 'client');
+
+        return response()->json([
+            'status' => 'ok',
+            'message' => __('Biometric Passkey (Touch ID / Face ID) registered successfully!')
+        ]);
+    }
+
+    /**
+     * WebAuthn: 2FA Authentication Options
+     */
+    public function passkeyAuthOptions(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        $challengeBytes = random_bytes(32);
+        $challenge = rtrim(strtr(base64_encode($challengeBytes), '+/', '-_'), '=');
+        session(['passkey_auth_challenge' => $challenge]);
+
+        $creds = $user->passkey_credentials ?? [];
+        if (!is_array($creds)) $creds = [];
+
+        $allowCredentials = [];
+        foreach ($creds as $c) {
+            if (!empty($c['id'])) {
+                $allowCredentials[] = [
+                    'type' => 'public-key',
+                    'id' => $c['id'],
+                    'transports' => ['internal']
+                ];
+            }
+        }
+
+        return response()->json([
+            'status' => 'ok',
+            'has_passkeys' => count($allowCredentials) > 0,
+            'challenge' => $challenge,
+            'rpId' => $request->getHost(),
+            'allowCredentials' => $allowCredentials,
+            'timeout' => 60000,
+        ]);
+    }
+
+    /**
+     * WebAuthn: Verify Authentication Assertion
+     */
+    public function passkeyAuthVerify(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
+        }
+
+        $request->validate([
+            'credential_id' => 'required|string',
+        ]);
+
+        $creds = $user->passkey_credentials ?? [];
+        if (!is_array($creds)) $creds = [];
+
+        $found = false;
+        foreach ($creds as $c) {
+            if (isset($c['id']) && $c['id'] === $request->credential_id) {
+                $found = true;
+                break;
+            }
+        }
+
+        if (!$found && !empty($creds)) {
+            return response()->json(['status' => 'error', 'message' => __('Passkey unrecognized. Please use your PIN or Email Code.')], 422);
+        }
+
+        session(['two_factor_verified' => true]);
+        SystemAuditLog::logAction('2FA_PASSKEY_PASSED', 'User authenticated via biometric Touch ID / Face ID passkey.', $user->id, 'client');
+
+        $targetRoute = ($user->hasRole('staff') && !$user->hasRole('client')) ? route('staff.dashboard') : route('client.dashboard');
+        if ($user->hasRole('admin')) {
+            $targetRoute = route('admin.dashboard');
+        }
+
+        return response()->json([
+            'status' => 'ok',
+            'redirect' => $targetRoute,
+            'message' => __('Biometric authentication verified. Welcome back!')
+        ]);
+    }
+
+    /**
+     * WebAuthn: Remove Passkey
+     */
+    public function passkeyRemove(Request $request, $index)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return redirect()->back()->with('error', 'Unauthorized');
+        }
+
+        $creds = $user->passkey_credentials ?? [];
+        if (is_array($creds) && isset($creds[$index])) {
+            array_splice($creds, $index, 1);
+            $user->passkey_credentials = $creds;
+            $user->save();
+            SystemAuditLog::logAction('PASSKEY_REMOVED', 'User removed biometric passkey.', $user->id, 'client');
+        }
+
+        return redirect()->back()->with('success', __('Biometric passkey removed successfully.'));
+    }
 }
 

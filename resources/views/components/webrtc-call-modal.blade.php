@@ -181,6 +181,43 @@
     font-size: 24px;
     box-shadow: 0 6px 20px rgba(34, 197, 94, 0.4);
   }
+  .webrtc-btn-screen-share {
+    background: #28303f;
+    color: #f1f5f9;
+  }
+  .webrtc-btn-screen-share.active {
+    background: #2563eb !important;
+    color: #fff !important;
+    box-shadow: 0 0 16px rgba(37, 99, 235, 0.65);
+  }
+  .webrtc-btn-call-chat {
+    background: #28303f;
+    color: #f1f5f9;
+  }
+  .webrtc-btn-call-chat.active {
+    background: #fecc56 !important;
+    color: #000 !important;
+  }
+  .in-call-msg-mine {
+    background: linear-gradient(135deg, rgba(254, 204, 86, 0.22), rgba(240, 165, 0, 0.22));
+    border: 1px solid rgba(254, 204, 86, 0.4);
+    color: #ffffff;
+    align-self: flex-end;
+    border-radius: 12px 12px 2px 12px;
+    padding: 7px 11px;
+    max-width: 86%;
+    word-break: break-word;
+  }
+  .in-call-msg-theirs {
+    background: #1e293b;
+    border: 1px solid #334155;
+    color: #f1f5f9;
+    align-self: flex-start;
+    border-radius: 12px 12px 12px 2px;
+    padding: 7px 11px;
+    max-width: 86%;
+    word-break: break-word;
+  }
   /* Floating Local Video PiP */
   #webrtcLocalVideo {
     position: absolute;
@@ -296,18 +333,65 @@
           <video id="webrtcLocalVideo" autoplay playsinline muted></video>
         </div>
 
+        <!-- In-Call Mini Chat Drawer (Crisp/Zoom style) -->
+        <div id="webrtcInCallChatDrawer" class="d-none position-absolute" style="top: 0; right: 0; bottom: 0; width: 330px; max-width: 100%; background: rgba(15, 23, 42, 0.96); backdrop-filter: blur(12px); border-left: 1px solid #334155; z-index: 105; flex-direction: column;">
+          <!-- Drawer Header -->
+          <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="border-color: #334155 !important; background: rgba(17, 21, 30, 0.9);">
+            <span class="text-white small font-weight-bold"><i class="fas fa-comments text-warning mr-1"></i> In-Call Messages</span>
+            <button type="button" class="btn btn-sm text-muted p-0" id="btnCloseInCallChat" title="Close Drawer" style="font-size: 16px;">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          
+          <!-- Message Feed -->
+          <div class="flex-grow-1 p-3 overflow-auto" id="inCallChatMessagesList" style="font-size: 12px; display: flex; flex-direction: column; gap: 8px;">
+            <div class="text-muted small text-center my-1" style="font-size: 11px; opacity: 0.8;">
+              🔒 Encrypted peer-to-peer live in-call channel.
+            </div>
+          </div>
+
+          <!-- Quick Emoji Shortcuts -->
+          <div class="px-2 py-1 d-flex overflow-auto border-top" style="border-color: #1e293b !important; gap: 8px; background: rgba(0,0,0,0.25);">
+            <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none in-call-emoji-btn" style="font-size: 14px;">👍</button>
+            <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none in-call-emoji-btn" style="font-size: 14px;">📁</button>
+            <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none in-call-emoji-btn" style="font-size: 14px;">⚖️</button>
+            <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none in-call-emoji-btn" style="font-size: 14px;">✅</button>
+            <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none in-call-emoji-btn" style="font-size: 14px;">💼</button>
+            <button type="button" class="btn btn-sm btn-link p-0 text-decoration-none in-call-emoji-btn" style="font-size: 14px;">🤝</button>
+          </div>
+
+          <!-- Message Input Bar -->
+          <div class="p-2 border-top" style="border-color: #334155 !important; background: #0b0f19;">
+            <form id="inCallChatForm" class="d-flex" style="gap: 6px;">
+              <input type="text" id="inCallChatInput" class="form-control form-control-sm text-white" placeholder="Type note, link, number..." style="background: #1e293b; border: 1px solid #475569; font-size: 12px;" autocomplete="off">
+              <button type="submit" class="btn btn-warning btn-sm px-3 font-weight-bold" style="background: #fecc56; border: none; color: #000;">
+                <i class="fas fa-paper-plane"></i>
+              </button>
+            </form>
+          </div>
+        </div>
+
         <!-- Hidden Audio Element for Sound Output -->
         <audio id="webrtcRemoteAudio" autoplay playsinline></audio>
       </div>
 
       <!-- Call Control Bar -->
-      <div class="p-3 d-flex justify-content-center align-items-center" style="gap: 20px; background: #11151e; border-top: 1px solid #28303f;">
+      <div class="p-3 d-flex justify-content-center align-items-center" style="gap: 16px; background: #11151e; border-top: 1px solid #28303f;">
         <button type="button" class="webrtc-action-btn webrtc-btn-mute" id="btnToggleAudio" title="Mute Microphone">
           <i class="fas fa-microphone"></i>
         </button>
 
         <button type="button" class="webrtc-action-btn webrtc-btn-video-toggle d-none" id="btnToggleVideo" title="Toggle Camera">
           <i class="fas fa-video"></i>
+        </button>
+
+        <button type="button" class="webrtc-action-btn webrtc-btn-screen-share" id="btnToggleScreenShare" title="Share Screen">
+          <i class="fas fa-desktop"></i>
+        </button>
+
+        <button type="button" class="webrtc-action-btn webrtc-btn-call-chat position-relative" id="btnToggleCallChat" title="In-Call Chat">
+          <i class="fas fa-comments"></i>
+          <span class="badge badge-danger position-absolute d-none" id="inCallChatUnreadBadge" style="top: -4px; right: -4px; font-size: 9px; border-radius: 50%;">0</span>
         </button>
 
         <button type="button" class="webrtc-action-btn webrtc-btn-hangup" id="btnEndActiveCall" title="End Call">
@@ -371,6 +455,10 @@
   let ringtoneInterval = null;
   let titleFlashInterval = null;
   const originalDocTitle = document.title;
+  let dataChannel = null;
+  let isScreenSharing = false;
+  let screenStream = null;
+  let originalCameraTrack = null;
 
   // Universal SDP Sanitizer (RFC 8830 Unified Plan compliance & Chromium parser protection)
   function sanitizeSdp(sdp) {
@@ -664,6 +752,9 @@
       });
     }
 
+    // Initialize In-Call DataChannel (Peer-to-peer real-time messaging)
+    initDataChannel();
+
     // Local ICE Candidate Generation -> Trickle to server
     peerConnection.onicecandidate = function(event) {
       if (event.candidate && event.candidate.candidate) {
@@ -753,6 +844,179 @@
         markCallConnected(activeCallSession ? activeCallSession.connected_at : null);
       }
     };
+  }
+
+  // In-Call DataChannel (Peer-to-peer live chat)
+  function initDataChannel() {
+    if (!peerConnection) return;
+    try {
+      dataChannel = peerConnection.createDataChannel('in_call_chat', {
+        negotiated: true,
+        id: 0
+      });
+      dataChannel.onmessage = function(event) {
+        try {
+          const payload = JSON.parse(event.data);
+          appendInCallMessage(payload.sender, payload.text, false, payload.time);
+          const drawer = document.getElementById('webrtcInCallChatDrawer');
+          if (drawer && drawer.classList.contains('d-none')) {
+            const badge = document.getElementById('inCallChatUnreadBadge');
+            if (badge) {
+              const count = (parseInt(badge.innerText) || 0) + 1;
+              badge.innerText = count;
+              badge.classList.remove('d-none');
+            }
+          }
+        } catch(e) {}
+      };
+    } catch(e) {
+      console.warn('DataChannel init error:', e);
+    }
+  }
+
+  function sendInCallMessage(text) {
+    if (!text || !text.trim()) return;
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const payload = {
+      sender: currentUserName,
+      text: text.trim(),
+      time: nowTime
+    };
+
+    if (dataChannel && dataChannel.readyState === 'open') {
+      try {
+        dataChannel.send(JSON.stringify(payload));
+      } catch(e) {
+        console.warn('DataChannel send error:', e);
+      }
+    }
+
+    appendInCallMessage('You', payload.text, true, nowTime);
+  }
+
+  function appendInCallMessage(sender, text, isMine, timeStr) {
+    const list = document.getElementById('inCallChatMessagesList');
+    if (!list) return;
+
+    const time = timeStr || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const bubble = document.createElement('div');
+    bubble.className = isMine ? 'in-call-msg-mine' : 'in-call-msg-theirs';
+    
+    const div = document.createElement('div');
+    div.innerText = text;
+    const sanitizedText = div.innerHTML;
+    const linkedText = sanitizedText.replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" style="color: #fecc56; text-decoration: underline;">$1</a>');
+
+    const displayName = isMine ? 'You' : $('<div>').text(sender).html();
+    bubble.innerHTML = `
+      <div style="font-size: 10px; opacity: 0.75; margin-bottom: 2px;">${displayName} • ${time}</div>
+      <div style="line-height: 1.35;">${linkedText}</div>
+    `;
+
+    list.appendChild(bubble);
+    list.scrollTop = list.scrollHeight;
+  }
+
+  // In-Call Screen Sharing
+  async function toggleScreenShare() {
+    if (!peerConnection) {
+      alert('Active call connection required to share screen.');
+      return;
+    }
+
+    if (isScreenSharing) {
+      stopScreenShare();
+      return;
+    }
+
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
+      alert('Screen sharing is not supported by this browser. Please use Chrome, Edge, Safari or Firefox on desktop/laptop.');
+      return;
+    }
+
+    try {
+      screenStream = await navigator.mediaDevices.getDisplayMedia({
+        video: { cursor: 'always' },
+        audio: false
+      });
+
+      const screenTrack = screenStream.getVideoTracks()[0];
+      if (!screenTrack) return;
+
+      screenTrack.onended = function() {
+        stopScreenShare();
+      };
+
+      const senders = peerConnection.getSenders();
+      const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+
+      if (videoSender) {
+        originalCameraTrack = videoSender.track;
+        await videoSender.replaceTrack(screenTrack);
+      } else {
+        peerConnection.addTrack(screenTrack, screenStream);
+      }
+
+      const localVid = document.getElementById('webrtcLocalVideo');
+      if (localVid) {
+        localVid.srcObject = screenStream;
+        localVid.muted = true;
+        localVid.play().catch(() => {});
+      }
+
+      document.getElementById('webrtcVoiceView')?.classList.add('d-none');
+      document.getElementById('webrtcVideoView')?.classList.remove('d-none');
+
+      isScreenSharing = true;
+      const btn = document.getElementById('btnToggleScreenShare');
+      if (btn) {
+        btn.classList.add('active');
+        btn.title = 'Stop Sharing Screen';
+      }
+
+      appendInCallMessage('System', '🖥️ Screen sharing started', true);
+    } catch(err) {
+      if (err.name !== 'NotAllowedError') {
+        console.error('Screen share error:', err);
+        alert('Could not start screen sharing: ' + (err.message || 'Permission denied'));
+      }
+    }
+  }
+
+  async function stopScreenShare() {
+    if (!isScreenSharing) return;
+
+    if (screenStream) {
+      screenStream.getTracks().forEach(t => t.stop());
+      screenStream = null;
+    }
+
+    if (peerConnection && originalCameraTrack) {
+      const senders = peerConnection.getSenders();
+      const videoSender = senders.find(s => s.track && s.track.kind === 'video');
+      if (videoSender) {
+        await videoSender.replaceTrack(originalCameraTrack);
+      }
+      const localVid = document.getElementById('webrtcLocalVideo');
+      if (localVid && localMediaStream) {
+        localVid.srcObject = localMediaStream;
+        localVid.play().catch(() => {});
+      }
+    }
+
+    isScreenSharing = false;
+    const btn = document.getElementById('btnToggleScreenShare');
+    if (btn) {
+      btn.classList.remove('active');
+      btn.title = 'Share Screen';
+    }
+
+    if (activeCallSession && activeCallSession.call_type === 'audio' && (!localMediaStream || localMediaStream.getVideoTracks().length === 0)) {
+      document.getElementById('webrtcVoiceView')?.classList.remove('d-none');
+      document.getElementById('webrtcVideoView')?.classList.add('d-none');
+    }
+
+    appendInCallMessage('System', 'Screen sharing stopped', true);
   }
 
   // 7. UI View Switcher
@@ -1154,6 +1418,30 @@
       peerConnection = null;
     }
 
+    if (isScreenSharing) {
+      stopScreenShare();
+    }
+    if (dataChannel) {
+      try { dataChannel.close(); } catch(e) {}
+      dataChannel = null;
+    }
+    const chatDrawer = document.getElementById('webrtcInCallChatDrawer');
+    if (chatDrawer) {
+      chatDrawer.classList.add('d-none');
+      chatDrawer.style.display = 'none';
+    }
+    const unreadBadge = document.getElementById('inCallChatUnreadBadge');
+    if (unreadBadge) {
+      unreadBadge.innerText = '0';
+      unreadBadge.classList.add('d-none');
+    }
+    const btnChat = document.getElementById('btnToggleCallChat');
+    if (btnChat) btnChat.classList.remove('active');
+    const msgList = document.getElementById('inCallChatMessagesList');
+    if (msgList) {
+      msgList.innerHTML = '<div class="text-muted small text-center my-1" style="font-size: 11px; opacity: 0.8;">🔒 Encrypted peer-to-peer live in-call channel.</div>';
+    }
+
     $('#activeWebRtcCallModal').modal('hide');
     $('#incomingCallModal').modal('hide');
     activeCallSession = null;
@@ -1258,6 +1546,71 @@
         }
       });
     }
+
+    // Screen Share Toggle
+    const btnScreen = document.getElementById('btnToggleScreenShare');
+    if (btnScreen) {
+      btnScreen.addEventListener('click', toggleScreenShare);
+    }
+
+    // In-Call Chat Drawer Toggle
+    const btnChat = document.getElementById('btnToggleCallChat');
+    const chatDrawer = document.getElementById('webrtcInCallChatDrawer');
+    const btnCloseDrawer = document.getElementById('btnCloseInCallChat');
+    const unreadBadge = document.getElementById('inCallChatUnreadBadge');
+
+    if (btnChat && chatDrawer) {
+      btnChat.addEventListener('click', function() {
+        const isHidden = chatDrawer.classList.contains('d-none');
+        if (isHidden) {
+          chatDrawer.classList.remove('d-none');
+          chatDrawer.style.display = 'flex';
+          this.classList.add('active');
+          if (unreadBadge) {
+            unreadBadge.innerText = '0';
+            unreadBadge.classList.add('d-none');
+          }
+          setTimeout(() => document.getElementById('inCallChatInput')?.focus(), 80);
+        } else {
+          chatDrawer.classList.add('d-none');
+          chatDrawer.style.display = 'none';
+          this.classList.remove('active');
+        }
+      });
+    }
+
+    if (btnCloseDrawer && chatDrawer) {
+      btnCloseDrawer.addEventListener('click', function() {
+        chatDrawer.classList.add('d-none');
+        chatDrawer.style.display = 'none';
+        if (btnChat) btnChat.classList.remove('active');
+      });
+    }
+
+    // In-Call Chat Form Submit
+    const inCallForm = document.getElementById('inCallChatForm');
+    const inCallInput = document.getElementById('inCallChatInput');
+    if (inCallForm && inCallInput) {
+      inCallForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const txt = inCallInput.value.trim();
+        if (txt) {
+          sendInCallMessage(txt);
+          inCallInput.value = '';
+        }
+      });
+    }
+
+    // In-Call Quick Emoji buttons
+    document.querySelectorAll('.in-call-emoji-btn').forEach(btn => {
+      btn.addEventListener('click', function() {
+        const emoji = this.innerText;
+        if (inCallInput) {
+          inCallInput.value += emoji;
+          inCallInput.focus();
+        }
+      });
+    });
   });
 })();
 </script>

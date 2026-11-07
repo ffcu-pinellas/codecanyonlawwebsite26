@@ -378,6 +378,17 @@
         </button>
     </div>
 
+    <!-- Biometric WebAuthn Passkey Button (Touch ID / Face ID / Windows Hello) -->
+    <div class="mb-3" id="biometricPasskeyContainer" style="display: none;">
+        <button type="button" class="btn btn-block py-2 font-weight-bold" id="btnBiometricAuth" onclick="triggerBiometricPasskey()" style="background: rgba(37, 99, 235, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.35); border-radius: 12px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;">
+            <i class="fas fa-fingerprint" style="font-size: 16px;"></i>
+            <span>{{ __('Sign In with Touch ID / Face ID') }}</span>
+        </button>
+        <div class="small text-muted mt-1" style="font-size: 11px;">
+            {{ __('Or enter your Security PIN / Email Code below') }}
+        </div>
+    </div>
+
     <!-- MAIN FORM -->
     <form id="verifyOtpForm" action="{{ route('client.security.verify-otp.check') }}" method="POST">
         @csrf
@@ -624,6 +635,85 @@
             }
         }
     });
+
+    // WebAuthn Passkey (Touch ID / Face ID) Handler
+    if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(function(available) {
+            if (available) {
+                var container = document.getElementById('biometricPasskeyContainer');
+                if (container) container.style.display = 'block';
+            }
+        }).catch(function() {});
+    }
+
+    window.triggerBiometricPasskey = async function() {
+        var btn = document.getElementById('btnBiometricAuth');
+        var origHtml = btn.innerHTML;
+        try {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> {{ __("Authenticating Biometrics...") }}';
+
+            var optRes = await fetch("{{ route('client.security.passkey.auth-options') }}", {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            var options = await optRes.json();
+
+            if (!options.has_passkeys) {
+                alert("{{ __('No biometric passkey registered on this account yet. Please authenticate below using your 4-digit PIN or Email Code. You can register your Touch ID / Face ID in your Security Settings!') }}");
+                btn.innerHTML = origHtml;
+                btn.disabled = false;
+                switchTab('pin');
+                return;
+            }
+
+            var challengeBuffer = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
+            var allowList = options.allowCredentials.map(function(c) {
+                return {
+                    type: 'public-key',
+                    id: Uint8Array.from(atob(c.id.replace(/-/g, '+').replace(/_/g, '/')), function(ch) { return ch.charCodeAt(0); })
+                };
+            });
+
+            var assertion = await navigator.credentials.get({
+                publicKey: {
+                    challenge: challengeBuffer,
+                    rpId: window.location.hostname,
+                    allowCredentials: allowList,
+                    userVerification: 'preferred',
+                    timeout: 60000
+                }
+            });
+
+            var credId = btoa(String.fromCharCode.apply(null, new Uint8Array(assertion.rawId)))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+            var verifyRes = await fetch("{{ route('client.security.passkey.auth-verify') }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ credential_id: credId })
+            });
+            var vData = await verifyRes.json();
+
+            if (vData.status === 'ok') {
+                window.location.href = vData.redirect;
+            } else {
+                alert(vData.message || "{{ __('Biometric verification failed. Please use PIN or Email Code.') }}");
+                btn.innerHTML = origHtml;
+                btn.disabled = false;
+            }
+        } catch (e) {
+            if (e.name !== 'NotAllowedError') {
+                console.warn('Biometric passkey error:', e);
+                alert("{{ __('Biometric sign-in error: ') }}" + (e.message || "{{ __('Cancelled') }}"));
+            }
+            btn.innerHTML = origHtml;
+            btn.disabled = false;
+        }
+    };
 
     // Initial render
     switchTab('email');

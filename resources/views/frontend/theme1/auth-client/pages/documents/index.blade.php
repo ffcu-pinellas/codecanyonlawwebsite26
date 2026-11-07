@@ -328,10 +328,20 @@
                                                                 <canvas id="sigCanvas-{{ $doc->id }}" class="signature-canvas"></canvas>
                                                                 <span class="signature-pad-placeholder" id="sigPlaceholder-{{ $doc->id }}">{{ __('Sign here with finger or mouse') }}</span>
                                                             </div>
-                                                            <div class="d-flex justify-content-end mb-2">
-                                                                <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 11px;" onclick="clearSignatureCanvas({{ $doc->id }})">
-                                                                    <i class="fas fa-eraser mr-1"></i> {{ __('Clear Signature') }}
-                                                                </button>
+                                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                                <div class="d-flex align-items-center" style="gap: 6px;">
+                                                                    <span class="small text-muted font-weight-bold" style="font-size: 11px;">Ink:</span>
+                                                                    <button type="button" class="btn btn-xs rounded-circle p-0" id="inkBlue-{{ $doc->id }}" style="width: 18px; height: 18px; background: #002060; border: 2px solid #fecc56; cursor: pointer;" title="Legal Navy Blue" onclick="setPenColor({{ $doc->id }}, '#002060')"></button>
+                                                                    <button type="button" class="btn btn-xs rounded-circle p-0" id="inkBlack-{{ $doc->id }}" style="width: 18px; height: 18px; background: #0f172a; border: 1px solid #475569; cursor: pointer;" title="Classic Black" onclick="setPenColor({{ $doc->id }}, '#0f172a')"></button>
+                                                                </div>
+                                                                <div class="d-flex align-items-center" style="gap: 6px;">
+                                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-weight-bold" style="font-size: 11px;" onclick="undoSignatureStroke({{ $doc->id }})">
+                                                                        <i class="fas fa-undo mr-1"></i> {{ __('Undo') }}
+                                                                    </button>
+                                                                    <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-weight-bold" style="font-size: 11px;" onclick="clearSignatureCanvas({{ $doc->id }})">
+                                                                        <i class="fas fa-eraser mr-1"></i> {{ __('Clear') }}
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
 
@@ -434,83 +444,179 @@
 @section('page-script')
 <script>
 var canvasMap = {};
-var isDrawingMap = {};
-var hasDrawnMap = {};
+var strokesMap = {};
+var penColorMap = {};
 var modeMap = {};
+var isDrawingMap = {};
 
 function initSignatureCanvas(docId) {
     var canvas = document.getElementById('sigCanvas-' + docId);
-    if (!canvas || canvasMap[docId]) return;
+    if (!canvas) return;
+
+    if (!penColorMap[docId]) penColorMap[docId] = '#002060';
+    if (!strokesMap[docId]) strokesMap[docId] = [];
+    modeMap[docId] = 'draw';
+
+    var container = canvas.parentElement;
+    var rect = container.getBoundingClientRect();
+    var cssWidth = rect.width > 20 ? rect.width : (canvas.offsetWidth || 380);
+    var cssHeight = 160;
+
+    // High-DPI scaling for crisp lines on mobile & retina screens
+    var dpr = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(cssWidth * dpr);
+    canvas.height = Math.floor(cssHeight * dpr);
+    canvas.style.width = cssWidth + 'px';
+    canvas.style.height = cssHeight + 'px';
 
     var ctx = canvas.getContext('2d');
-    var rect = canvas.getBoundingClientRect();
-    canvas.width = canvas.offsetWidth || 360;
-    canvas.height = 160;
-
-    ctx.strokeStyle = '#0f172a';
-    ctx.lineWidth = 2.5;
+    ctx.scale(dpr, dpr);
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
-    canvasMap[docId] = { canvas: canvas, ctx: ctx };
-    isDrawingMap[docId] = false;
-    hasDrawnMap[docId] = false;
-    modeMap[docId] = 'draw';
+    canvasMap[docId] = { canvas: canvas, ctx: ctx, dpr: dpr, cssWidth: cssWidth, cssHeight: cssHeight };
+    redrawAllStrokes(docId);
 
-    function getPos(e) {
+    if (canvas._boundEvents) return;
+    canvas._boundEvents = true;
+
+    var currentStroke = null;
+
+    function getCanvasCoordinates(e) {
         var cRect = canvas.getBoundingClientRect();
         var clientX = e.touches ? e.touches[0].clientX : e.clientX;
         var clientY = e.touches ? e.touches[0].clientY : e.clientY;
         return {
-            x: (clientX - cRect.left) * (canvas.width / cRect.width),
-            y: (clientY - cRect.top) * (canvas.height / cRect.height)
+            x: clientX - cRect.left,
+            y: clientY - cRect.top
         };
     }
 
-    function startDraw(e) {
+    function onPointerDown(e) {
         e.preventDefault();
         isDrawingMap[docId] = true;
-        hasDrawnMap[docId] = true;
+        var pt = getCanvasCoordinates(e);
+        currentStroke = {
+            color: penColorMap[docId] || '#002060',
+            width: 2.8,
+            points: [pt]
+        };
+
         var placeholder = document.getElementById('sigPlaceholder-' + docId);
         if (placeholder) placeholder.style.display = 'none';
 
-        var pos = getPos(e);
+        ctx.strokeStyle = currentStroke.color;
+        ctx.lineWidth = currentStroke.width;
         ctx.beginPath();
-        ctx.moveTo(pos.x, pos.y);
+        ctx.arc(pt.x, pt.y, currentStroke.width / 2, 0, Math.PI * 2, !0);
+        ctx.fillStyle = currentStroke.color;
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(pt.x, pt.y);
     }
 
-    function moveDraw(e) {
-        if (!isDrawingMap[docId]) return;
+    function onPointerMove(e) {
+        if (!isDrawingMap[docId] || !currentStroke) return;
         e.preventDefault();
-        var pos = getPos(e);
-        ctx.lineTo(pos.x, pos.y);
-        ctx.stroke();
+        var pt = getCanvasCoordinates(e);
+        currentStroke.points.push(pt);
+
+        var pts = currentStroke.points;
+        var len = pts.length;
+        if (len >= 3) {
+            var xc = (pts[len - 2].x + pts[len - 1].x) / 2;
+            var yc = (pts[len - 2].y + pts[len - 1].y) / 2;
+            ctx.quadraticCurveTo(pts[len - 2].x, pts[len - 2].y, xc, yc);
+            ctx.stroke();
+        } else {
+            ctx.lineTo(pt.x, pt.y);
+            ctx.stroke();
+        }
     }
 
-    function endDraw(e) {
+    function onPointerUp(e) {
         if (isDrawingMap[docId]) {
             isDrawingMap[docId] = false;
+            if (currentStroke && currentStroke.points.length > 0) {
+                strokesMap[docId].push(currentStroke);
+            }
+            currentStroke = null;
             ctx.closePath();
         }
     }
 
-    canvas.addEventListener('mousedown', startDraw);
-    canvas.addEventListener('mousemove', moveDraw);
-    window.addEventListener('mouseup', endDraw);
+    canvas.addEventListener('mousedown', onPointerDown);
+    canvas.addEventListener('mousemove', onPointerMove);
+    window.addEventListener('mouseup', onPointerUp);
 
-    canvas.addEventListener('touchstart', startDraw, { passive: false });
-    canvas.addEventListener('touchmove', moveDraw, { passive: false });
-    canvas.addEventListener('touchend', endDraw);
+    canvas.addEventListener('touchstart', onPointerDown, { passive: false });
+    canvas.addEventListener('touchmove', onPointerMove, { passive: false });
+    canvas.addEventListener('touchend', onPointerUp);
+}
+
+function redrawAllStrokes(docId) {
+    if (!canvasMap[docId]) return;
+    var c = canvasMap[docId].canvas;
+    var ctx = canvasMap[docId].ctx;
+    var strokes = strokesMap[docId] || [];
+
+    ctx.clearRect(0, 0, canvasMap[docId].cssWidth, canvasMap[docId].cssHeight);
+
+    var placeholder = document.getElementById('sigPlaceholder-' + docId);
+    if (placeholder) {
+        placeholder.style.display = (strokes.length === 0) ? 'block' : 'none';
+    }
+
+    for (var i = 0; i < strokes.length; i++) {
+        var strk = strokes[i];
+        var pts = strk.points;
+        if (!pts || pts.length === 0) continue;
+
+        ctx.strokeStyle = strk.color || '#002060';
+        ctx.lineWidth = strk.width || 2.8;
+        ctx.fillStyle = strk.color || '#002060';
+
+        if (pts.length === 1) {
+            ctx.beginPath();
+            ctx.arc(pts[0].x, pts[0].y, (strk.width || 2.8) / 2, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            ctx.beginPath();
+            ctx.moveTo(pts[0].x, pts[0].y);
+            for (var j = 1; j < pts.length - 1; j++) {
+                var xc = (pts[j].x + pts[j + 1].x) / 2;
+                var yc = (pts[j].y + pts[j + 1].y) / 2;
+                ctx.quadraticCurveTo(pts[j].x, pts[j].y, xc, yc);
+            }
+            ctx.lineTo(pts[pts.length - 1].x, pts[pts.length - 1].y);
+            ctx.stroke();
+            ctx.closePath();
+        }
+    }
 }
 
 function clearSignatureCanvas(docId) {
-    if (canvasMap[docId]) {
-        var c = canvasMap[docId].canvas;
-        var ctx = canvasMap[docId].ctx;
-        ctx.clearRect(0, 0, c.width, c.height);
-        hasDrawnMap[docId] = false;
-        var placeholder = document.getElementById('sigPlaceholder-' + docId);
-        if (placeholder) placeholder.style.display = 'block';
+    strokesMap[docId] = [];
+    redrawAllStrokes(docId);
+}
+
+function undoSignatureStroke(docId) {
+    if (strokesMap[docId] && strokesMap[docId].length > 0) {
+        strokesMap[docId].pop();
+        redrawAllStrokes(docId);
+    }
+}
+
+function setPenColor(docId, color) {
+    penColorMap[docId] = color;
+    var blueBtn = document.getElementById('inkBlue-' + docId);
+    var blackBtn = document.getElementById('inkBlack-' + docId);
+    if (color === '#002060') {
+        if (blueBtn) blueBtn.style.border = '2px solid #fecc56';
+        if (blackBtn) blackBtn.style.border = '1px solid #475569';
+    } else {
+        if (blueBtn) blueBtn.style.border = '1px solid #475569';
+        if (blackBtn) blackBtn.style.border = '2px solid #fecc56';
     }
 }
 
@@ -526,7 +632,7 @@ function setSignatureMode(docId, mode) {
         if (typeSec) typeSec.style.display = 'none';
         if (drawBtn) drawBtn.classList.add('active');
         if (typeBtn) typeBtn.classList.remove('active');
-        initSignatureCanvas(docId);
+        setTimeout(function() { initSignatureCanvas(docId); }, 60);
     } else {
         if (drawSec) drawSec.style.display = 'none';
         if (typeSec) typeSec.style.display = 'block';
@@ -545,9 +651,16 @@ function updateTypePreview(docId, val) {
 function handleSignatureSubmit(docId) {
     var mode = modeMap[docId] || 'draw';
     var dataInput = document.getElementById('sigDataInput-' + docId);
+    var strokes = strokesMap[docId] || [];
 
-    if (mode === 'draw' && canvasMap[docId] && hasDrawnMap[docId]) {
-        dataInput.value = canvasMap[docId].canvas.toDataURL('image/png');
+    if (mode === 'draw') {
+        if (strokes.length === 0) {
+            alert('Please sign on the canvas with your finger or mouse before submitting.');
+            return false;
+        }
+        if (canvasMap[docId]) {
+            dataInput.value = canvasMap[docId].canvas.toDataURL('image/png');
+        }
     } else {
         dataInput.value = '';
     }
@@ -557,9 +670,26 @@ function handleSignatureSubmit(docId) {
 $(document).ready(function() {
     @foreach($documents as $doc)
         @if(($doc->action_required === 'sign_upload' || $doc->action_required === 'sign_pin') && $doc->status !== 'signed')
-            initSignatureCanvas({{ $doc->id }});
+            setTimeout(function() { initSignatureCanvas({{ $doc->id }}); }, 120);
         @endif
     @endforeach
+
+    // Re-initialize when accordion collapse or modal opens
+    $('.collapse').on('shown.bs.collapse', function() {
+        var id = $(this).attr('id');
+        if (id && id.indexOf('signDocCollapse-') === 0) {
+            var docId = id.replace('signDocCollapse-', '');
+            initSignatureCanvas(docId);
+        }
+    });
+
+    $('a[data-toggle="tab"]').on('shown.bs.tab', function(e) {
+        var href = $(e.target).attr('href');
+        if (href && href.indexOf('#pane-esign-') === 0) {
+            var docId = href.replace('#pane-esign-', '');
+            initSignatureCanvas(docId);
+        }
+    });
 });
 </script>
 @endsection

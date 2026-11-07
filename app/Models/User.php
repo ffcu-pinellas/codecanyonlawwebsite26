@@ -33,6 +33,7 @@ class User extends Authenticatable
         'pin_hash', 'is_temp_password', 'is_first_login',
         'assigned_attorney_id', 'preferred_currency', 'device_history',
         'two_factor_enabled', 'otp_code', 'otp_expires_at', 'otp_method',
+        'passkey_credentials',
     ];
 
     /**
@@ -61,6 +62,7 @@ class User extends Authenticatable
         'is_first_login'     => 'boolean',
         'is_temp_password'   => 'boolean',
         'device_history'     => 'array',
+        'passkey_credentials' => 'array',
     ];
 
     /**

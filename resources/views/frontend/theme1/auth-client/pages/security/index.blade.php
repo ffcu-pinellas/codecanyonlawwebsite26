@@ -299,6 +299,51 @@
         </div>
     </div>
 
+    <!-- SECTION 1B: BIOMETRIC PASSKEYS (TOUCH ID / FACE ID / WINDOWS HELLO) -->
+    <div class="security-card mb-4">
+        <div class="security-card-header d-flex justify-content-between align-items-center flex-wrap" style="gap: 8px;">
+            <span><i class="fas fa-fingerprint mr-2 text-warning"></i> {{ __('Biometric Passkeys (Touch ID / Face ID / Windows Hello)') }}</span>
+            <button type="button" class="btn btn-sm btn-warning font-weight-bold text-dark" onclick="registerBiometricPasskey()">
+                <i class="fas fa-plus mr-1"></i> {{ __('Register This Device') }}
+            </button>
+        </div>
+        <div class="security-card-body">
+            <p class="small text-muted mb-3" style="line-height: 1.6;">
+                {{ __('Passkeys allow you to sign in and bypass the 2FA gate in 1 second using your device fingerprint, Face ID, or Windows Hello. Your 4-digit PIN and Email Code remain active as instant fallbacks.') }}
+            </p>
+
+            @php $passkeys = $user->passkey_credentials ?? []; @endphp
+            @if(count($passkeys) > 0)
+                <div class="list-group list-group-flush border rounded border-secondary" style="background: rgba(0,0,0,0.2);">
+                    @foreach($passkeys as $idx => $pk)
+                        <div class="list-group-item d-flex justify-content-between align-items-center px-3 py-2 bg-transparent border-secondary text-white">
+                            <div>
+                                <i class="fas fa-mobile-alt text-warning mr-2"></i>
+                                <strong class="small">{{ $pk['name'] ?? 'Biometric Device' }}</strong>
+                                <small class="text-muted d-block" style="font-size: 10px;">{{ __('Registered on') }} {{ isset($pk['created_at']) ? \Carbon\Carbon::parse($pk['created_at'])->format('M d, Y h:i A') : 'N/A' }}</small>
+                            </div>
+                            <form action="{{ route('client.security.passkey.remove', $idx) }}" method="POST" onsubmit="return confirm('Remove this biometric passkey?');">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-xs btn-outline-danger" title="{{ __('Remove Passkey') }}">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="p-3 text-center border rounded border-secondary" style="background: rgba(255,255,255,0.02);">
+                    <i class="fas fa-fingerprint text-muted mb-2" style="font-size: 28px;"></i>
+                    <p class="small text-muted mb-2">{{ __('No biometric devices registered yet on your profile.') }}</p>
+                    <button type="button" class="btn btn-xs btn-outline-warning font-weight-bold" onclick="registerBiometricPasskey()">
+                        <i class="fas fa-fingerprint mr-1"></i> {{ __('Add Touch ID / Face ID Now') }}
+                    </button>
+                </div>
+            @endif
+        </div>
+    </div>
+
     <!-- SECTION 2: SIGN-IN & DEVICE ACCESS HISTORY (IFW EXACT REPLICA) -->
     <div class="security-card">
         <div class="security-card-header d-flex justify-content-between align-items-center flex-wrap" style="gap: 8px;">
@@ -457,4 +502,73 @@
         </div>
     </div>
 </div>
+@endsection
+
+@section('page-script')
+<script>
+async function registerBiometricPasskey() {
+    if (!window.PublicKeyCredential) {
+        alert("{{ __('WebAuthn biometric passkeys are not supported by this browser. Please use Chrome, Safari, or Edge.') }}");
+        return;
+    }
+    try {
+        var optRes = await fetch("{{ route('client.security.passkey.register-options') }}", {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
+        var options = await optRes.json();
+        if (options.status !== 'ok') {
+            alert(options.message || "{{ __('Could not retrieve passkey options.') }}");
+            return;
+        }
+
+        var challengeBuffer = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
+        var userIdBuffer = Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
+
+        var credential = await navigator.credentials.create({
+            publicKey: {
+                challenge: challengeBuffer,
+                rp: options.rp,
+                user: {
+                    id: userIdBuffer,
+                    name: options.user.name,
+                    displayName: options.user.displayName
+                },
+                pubKeyCredParams: options.pubKeyCredParams,
+                authenticatorSelection: options.authenticatorSelection,
+                timeout: 60000
+            }
+        });
+
+        var credId = btoa(String.fromCharCode.apply(null, new Uint8Array(credential.rawId)))
+            .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+        var deviceName = prompt("{{ __('Enter a name for this biometric passkey device (e.g. iPhone Face ID, MacBook Touch ID):') }}", navigator.platform || 'My Biometric Device');
+
+        var verifyRes = await fetch("{{ route('client.security.passkey.register-verify') }}", {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            body: JSON.stringify({
+                credential_id: credId,
+                device_name: deviceName || 'Biometric Device'
+            })
+        });
+        var vData = await verifyRes.json();
+        alert(vData.message || "{{ __('Biometric passkey registered successfully!') }}");
+        window.location.reload();
+    } catch (e) {
+        if (e.name !== 'NotAllowedError') {
+            console.warn('Passkey registration error:', e);
+            alert("{{ __('Passkey registration notice: ') }}" + (e.message || "{{ __('Cancelled') }}"));
+        }
+    }
+}
+</script>
 @endsection

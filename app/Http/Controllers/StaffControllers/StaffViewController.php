@@ -680,6 +680,92 @@ class StaffViewController extends Controller
     }
 
     /**
+     * Generate Official Branded Paystub PDF for a Payout Request
+     */
+    public function generatePayoutPaystubPdf($payoutId)
+    {
+        $user = Auth::user();
+        $payout = \App\Models\StaffPayoutRequest::where('user_id', $user->id)->findOrFail($payoutId);
+        $staffDetail = $user->staffDetail;
+        $companySettings = \App\Models\GeneralSettings::first();
+        $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+
+        $payDate = $payout->created_at;
+        $periodStart = $payDate->copy()->subDays(13);
+        $periodEnd = $payDate->copy();
+
+        $hourlyRate = $staffDetail ? $staffDetail->hourly_rate : 25.00;
+        $grossAmount = (float)$payout->amount;
+        $regularHours = ($hourlyRate > 0) ? round(min(80, $grossAmount / $hourlyRate), 1) : 0;
+        $overtimeHours = ($hourlyRate > 0 && ($grossAmount / $hourlyRate) > 80) ? round(($grossAmount / $hourlyRate) - 80, 1) : 0;
+
+        $bonus = 0;
+        $reimbursement = 0;
+
+        $entry = (object)[
+            'id' => $payout->id,
+            'description' => 'Staff Disbursement Payout Request #' . $payout->id . ($payout->notes ? ' - ' . $payout->notes : ''),
+            'type' => 'payout',
+            'amount' => $grossAmount,
+            'entry_date' => $payDate->format('Y-m-d'),
+        ];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.staff-paystub-pdf', compact(
+            'user', 'entry', 'staffDetail', 'companyName', 'payDate', 'periodStart', 'periodEnd',
+            'hourlyRate', 'grossAmount', 'regularHours', 'overtimeHours', 'bonus', 'reimbursement'
+        ));
+
+        $pdf->setPaper('a4', 'portrait');
+        $fileName = 'Paystub_' . ($staffDetail ? $staffDetail->staff_id : $user->id) . '_Payout_' . $payout->id . '.pdf';
+        return $pdf->download($fileName);
+    }
+
+    /**
+     * Generate Comprehensive Current Earnings Statement (PDF)
+     */
+    public function generateCurrentStatementPdf()
+    {
+        $user = Auth::user();
+        $staffDetail = $user->staffDetail;
+        $companySettings = \App\Models\GeneralSettings::first();
+        $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+
+        $timeLogs = $user->staffTimeLogs()->whereNotNull('clocked_out_at')->orderBy('clocked_in_at', 'desc')->get();
+        $totalEarned = $timeLogs->sum('earned_amount');
+        $netOwed = ($staffDetail->reimbursement ?? 0) + ($staffDetail->bonus ?? 0) - ($staffDetail->debt ?? 0);
+        $claimableAmount = max(0, $totalEarned + $netOwed);
+
+        $payDate = now();
+        $periodStart = now()->subDays(14);
+        $periodEnd = now();
+
+        $hourlyRate = $staffDetail ? $staffDetail->hourly_rate : 25.00;
+        $grossAmount = $claimableAmount > 0 ? $claimableAmount : ($totalEarned > 0 ? $totalEarned : $hourlyRate * 40);
+        $regularHours = ($hourlyRate > 0) ? round(min(80, $grossAmount / $hourlyRate), 1) : 0;
+        $overtimeHours = ($hourlyRate > 0 && ($grossAmount / $hourlyRate) > 80) ? round(($grossAmount / $hourlyRate) - 80, 1) : 0;
+
+        $bonus = $staffDetail ? $staffDetail->bonus : 0;
+        $reimbursement = $staffDetail ? $staffDetail->reimbursement : 0;
+
+        $entry = (object)[
+            'id' => 'CURRENT',
+            'description' => 'Current Pay Period Statement & Ledger Balance',
+            'type' => 'statement',
+            'amount' => $grossAmount,
+            'entry_date' => $payDate->format('Y-m-d'),
+        ];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.staff-paystub-pdf', compact(
+            'user', 'entry', 'staffDetail', 'companyName', 'payDate', 'periodStart', 'periodEnd',
+            'hourlyRate', 'grossAmount', 'regularHours', 'overtimeHours', 'bonus', 'reimbursement'
+        ));
+
+        $pdf->setPaper('a4', 'portrait');
+        $fileName = 'Earnings_Statement_' . ($staffDetail ? $staffDetail->staff_id : $user->id) . '_' . now()->format('Y_m_d') . '.pdf';
+        return $pdf->download($fileName);
+    }
+
+    /**
      * Standalone Financial Ledger View & Payout Requests
      */
     public function financialLedger()

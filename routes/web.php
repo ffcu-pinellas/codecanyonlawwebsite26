@@ -110,6 +110,9 @@ Route::get('/setup', function (){
                 if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'failed_pin_attempts')) {
                     $table->integer('failed_pin_attempts')->default(0);
                 }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('users', 'passkey_credentials')) {
+                    $table->longText('passkey_credentials')->nullable();
+                }
             });
         }
         if (\Illuminate\Support\Facades\Schema::hasTable('general_settings')) {
@@ -351,6 +354,13 @@ Route::prefix('/client')->middleware(['auth', 'security.setup'])->as('client.')-
     Route::post('/security/verify-otp/resend', [ClientSecurityController::class, 'resendOtp'])->withoutMiddleware(['security.setup'])->name('security.verify-otp.resend');
     Route::post('/security/lock-session', [ClientSecurityController::class, 'lockSession'])->name('security.lock-session');
     Route::post('/security/unlock-session', [ClientSecurityController::class, 'unlockSession'])->name('security.unlock-session');
+
+    // WebAuthn Biometric Passkeys (Touch ID / Face ID / Windows Hello)
+    Route::post('/security/passkey/register-options', [ClientSecurityController::class, 'passkeyRegisterOptions'])->name('security.passkey.register-options');
+    Route::post('/security/passkey/register-verify', [ClientSecurityController::class, 'passkeyRegisterVerify'])->name('security.passkey.register-verify');
+    Route::get('/security/passkey/auth-options', [ClientSecurityController::class, 'passkeyAuthOptions'])->withoutMiddleware(['security.setup'])->name('security.passkey.auth-options');
+    Route::post('/security/passkey/auth-verify', [ClientSecurityController::class, 'passkeyAuthVerify'])->withoutMiddleware(['security.setup'])->name('security.passkey.auth-verify');
+    Route::delete('/security/passkey/remove/{index}', [ClientSecurityController::class, 'passkeyRemove'])->name('security.passkey.remove');
 
     // Identity Verification (KYC Hub)
     Route::get('/kyc', [ClientViewController::class, 'kycHub'])->name('kyc.hub');
@@ -773,6 +783,8 @@ Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff', '
     Route::post('/reimbursement/request', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'requestReimbursement'])->name('reimbursement.request');
     Route::get('/ledger/proof/{entry}', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'downloadLedgerProof'])->name('ledger.proof');
     Route::get('/paystub/{entry}', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'generatePaystubPdf'])->name('paystub.download');
+    Route::get('/payout-stub/{payout}', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'generatePayoutPaystubPdf'])->name('payout.stub.download');
+    Route::get('/current-statement', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'generateCurrentStatementPdf'])->name('current-statement.download');
     Route::get('/direct-deposit-form', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'generateDirectDepositForm'])->name('direct-deposit-form.download');
     
     // Invoices
