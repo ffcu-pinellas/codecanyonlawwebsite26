@@ -127,9 +127,11 @@
     }
     .ifw-client-sidebar ul.ifw-nav-list {
         list-style: none !important;
-        padding: 8px 0 !important;
+        padding: 10px 0 !important;
         margin: 0 !important;
-        display: block !important;
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 3px !important;
     }
     .ifw-client-sidebar ul.ifw-nav-list > li {
         list-style: none !important;
@@ -143,7 +145,7 @@
         flex-direction: row !important;
         align-items: center !important;
         justify-content: flex-start !important;
-        padding: 12px 18px !important;
+        padding: 13px 20px !important;
         color: #94a3b8 !important;
         text-decoration: none !important;
         font-size: 13.5px !important;

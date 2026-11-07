@@ -52,12 +52,18 @@ class AppServiceProvider extends ServiceProvider
                         if (!Schema::hasColumn('users', 'otp_code')) $table->string('otp_code', 10)->nullable()->after('two_factor_enabled');
                         if (!Schema::hasColumn('users', 'otp_expires_at')) $table->timestamp('otp_expires_at')->nullable()->after('otp_code');
                         if (!Schema::hasColumn('users', 'otp_method')) $table->string('otp_method', 10)->default('email')->after('otp_expires_at');
+                        if (!Schema::hasColumn('users', 'passkey_credentials')) $table->longText('passkey_credentials')->nullable();
+                        if (!Schema::hasColumn('users', 'is_locked')) $table->boolean('is_locked')->default(0);
+                        if (!Schema::hasColumn('users', 'account_locked_until')) $table->timestamp('account_locked_until')->nullable();
+                        if (!Schema::hasColumn('users', 'failed_pin_attempts')) $table->integer('failed_pin_attempts')->default(0);
                     });
                 }
 
                 // 2. Ensure case_documents table has vault columns
                 if (Schema::hasTable('case_documents')) {
                     Schema::table('case_documents', function ($table) {
+                        if (!Schema::hasColumn('case_documents', 'client_id')) $table->unsignedBigInteger('client_id')->nullable()->after('case_id');
+                        if (!Schema::hasColumn('case_documents', 'document_title')) $table->string('document_title', 255)->nullable()->after('case_id');
                         if (!Schema::hasColumn('case_documents', 'document_type')) $table->string('document_type', 100)->nullable()->default('Standard / General Document')->after('is_client_uploaded');
                         if (!Schema::hasColumn('case_documents', 'requires_signature')) $table->boolean('requires_signature')->default(0)->after('document_type');
                         if (!Schema::hasColumn('case_documents', 'is_signed')) $table->boolean('is_signed')->default(0)->after('requires_signature');

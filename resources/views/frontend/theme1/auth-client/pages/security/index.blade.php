@@ -528,17 +528,19 @@ async function registerBiometricPasskey() {
         var challengeBuffer = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
         var userIdBuffer = Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
 
+        var rpConfig = Object.assign({}, options.rp, { id: window.location.hostname });
+
         var credential = await navigator.credentials.create({
             publicKey: {
                 challenge: challengeBuffer,
-                rp: options.rp,
+                rp: rpConfig,
                 user: {
                     id: userIdBuffer,
                     name: options.user.name,
                     displayName: options.user.displayName
                 },
                 pubKeyCredParams: options.pubKeyCredParams,
-                authenticatorSelection: options.authenticatorSelection,
+                authenticatorSelection: options.authenticatorSelection || {},
                 timeout: 60000
             }
         });

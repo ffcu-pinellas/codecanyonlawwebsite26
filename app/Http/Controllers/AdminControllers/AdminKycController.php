@@ -107,6 +107,31 @@ class AdminKycController extends Controller
     }
 
     /**
+     * Get active configured KYC general settings
+     */
+    public static function getKycSettings(): array
+    {
+        try {
+            $general = GeneralSettings::first();
+            if ($general && !empty($general->kyc_settings)) {
+                $settings = is_array($general->kyc_settings) ? $general->kyc_settings : json_decode($general->kyc_settings, true);
+                if (is_array($settings)) {
+                    if (empty($settings['fields'])) {
+                        $settings['fields'] = self::getDefaultFields();
+                    }
+                    return $settings;
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        return [
+            'kyc_title' => __('Client Financial & Legal Document Intake'),
+            'kyc_subtitle' => __('Upload verified state-issued identification, tax forms, or business corporate filings.'),
+            'fields' => self::getDefaultFields(),
+        ];
+    }
+
+    /**
      * Save all fields array to Database
      */
     public static function saveFields(array $fields): void

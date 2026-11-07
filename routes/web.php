@@ -134,6 +134,16 @@ Route::get('/setup', function (){
                 }
             });
         }
+        if (\Illuminate\Support\Facades\Schema::hasTable('case_documents')) {
+            \Illuminate\Support\Facades\Schema::table('case_documents', function (\Illuminate\Database\Schema\Blueprint $table) {
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('case_documents', 'client_id')) {
+                    $table->unsignedBigInteger('client_id')->nullable()->after('case_id');
+                }
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('case_documents', 'document_title')) {
+                    $table->string('document_title', 255)->nullable()->after('case_id');
+                }
+            });
+        }
         if (!\Illuminate\Support\Facades\Schema::hasTable('call_sessions')) {
             \Illuminate\Support\Facades\Schema::create('call_sessions', function (\Illuminate\Database\Schema\Blueprint $table) {
                 $table->id();
@@ -436,6 +446,10 @@ Route::get('/cron/daily-digest', function () {
     \Illuminate\Support\Facades\Artisan::call('practice:daily-digest');
     return response()->json(['status' => 'Daily practice digest sent to Telegram.']);
 })->name('cron.daily-digest');
+Route::get('/cron/messages-unread-digest', function () {
+    \Illuminate\Support\Facades\Artisan::call('messages:notify-unread');
+    return response()->json(['status' => 'Unread messages digest executed.', 'output' => trim(\Illuminate\Support\Facades\Artisan::output())]);
+})->name('cron.messages-unread-digest');
 
 // Global In-App WebRTC Voice & Video Calling API (100% In-Portal, No 3rd Party Logins)
 Route::middleware(['auth'])->prefix('portal/call')->as('portal.call.')->group(function () {

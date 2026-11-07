@@ -153,7 +153,7 @@
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
 <div class="client-portal-wrapper" style="background-color: #0a0c10; min-height: calc(100vh - 60px); display: flex; flex-direction: row; align-items: flex-start;">
     <!-- Sidebar Column -->
-    <div class="client-sidebar-col d-none d-lg-block" style="width: 250px; flex-shrink: 0; padding: 20px 0 20px 16px;">
+    <div class="client-sidebar-col d-none d-lg-block" id="clientSidebarCol" style="width: 260px; flex-shrink: 0; padding: 20px 0 20px 16px;">
         @include('frontend.theme1.auth-client.menus.left-bar')
     </div>
 
@@ -319,18 +319,56 @@
     /* Content wrapper light */
     body.light-mode .client-content-container { background: #ffffff !important; border-color: #e2e8f0 !important; }
 
+    /* Desktop Client Sidebar Sticky & Max-Height */
+    @media (min-width: 992px) {
+        .client-sidebar-col {
+            position: sticky !important;
+            top: 70px !important;
+            height: calc(100vh - 85px) !important;
+            max-height: calc(100vh - 85px) !important;
+            display: flex !important;
+            flex-direction: column !important;
+        }
+        .client-sidebar-col .ifw-client-sidebar {
+            height: 100% !important;
+            max-height: 100% !important;
+            overflow-y: auto !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+        }
+    }
+
     /* Mobile Drawer Overlay */
     .sidebar-overlay { display: none; }
     .sidebar-overlay.active {
         display: block; position: fixed; top: 0; left: 0;
         width: 100vw; height: 100vh;
-        background: rgba(0,0,0,0.75); backdrop-filter: blur(3px); z-index: 1080;
+        background: rgba(0,0,0,0.75); backdrop-filter: blur(3px); z-index: 1090;
     }
-    /* Mobile: show sidebar as drawer, stack layout vertically */
+    /* Mobile: show sidebar as full-height drawer */
     @media (max-width: 991px) {
         html, body { overflow-x: hidden !important; width: 100% !important; max-width: 100vw !important; }
         .client-portal-wrapper { flex-direction: column !important; width: 100% !important; max-width: 100vw !important; overflow-x: hidden !important; }
-        .client-sidebar-col { width: 0 !important; padding: 0 !important; margin: 0 !important; display: block !important; }
+        .client-sidebar-col {
+            position: fixed !important;
+            top: 0 !important;
+            left: -290px !important;
+            width: 280px !important;
+            max-width: 85vw !important;
+            height: 100vh !important;
+            z-index: 1095 !important;
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+            overflow-y: auto !important;
+            background: #11151e !important;
+            padding: 0 !important;
+            display: block !important;
+        }
+        .client-sidebar-col.show, .client-sidebar-col.active {
+            left: 0 !important;
+            box-shadow: 10px 0 30px rgba(0,0,0,0.8) !important;
+            display: block !important;
+        }
         .client-content-col { padding: 12px 10px !important; width: 100% !important; max-width: 100vw !important; box-sizing: border-box !important; overflow-x: hidden !important; }
         .client-content-container { min-height: 60vh !important; max-width: 100% !important; overflow-x: hidden !important; }
     }
@@ -452,18 +490,24 @@
 
         // Mobile drawer controls
         const toggleBtn = document.getElementById('clientDashboardMenuBtn');
-        const sidebar = document.getElementById('ifwClientSidebar');
+        const sidebarCol = document.getElementById('clientSidebarCol');
         const overlay = document.getElementById('sidebarOverlay');
         const closeBtn = document.getElementById('mobileCloseSidebar');
 
         function openSidebar() {
-            if (sidebar) sidebar.classList.add('active');
+            if (sidebarCol) {
+                sidebarCol.classList.add('show');
+                sidebarCol.classList.add('active');
+            }
             if (overlay) overlay.classList.add('active');
             document.body.style.overflow = 'hidden';
         }
 
         function closeSidebar() {
-            if (sidebar) sidebar.classList.remove('active');
+            if (sidebarCol) {
+                sidebarCol.classList.remove('show');
+                sidebarCol.classList.remove('active');
+            }
             if (overlay) overlay.classList.remove('active');
             document.body.style.overflow = '';
         }

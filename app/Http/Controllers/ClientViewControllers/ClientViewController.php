@@ -1388,11 +1388,17 @@ class ClientViewController extends Controller
             $title = $kycSettings['kyc_title'] ?? __('Client Financial & Legal Document Intake');
             $user = Auth::user();
             $documents = \App\Models\ClientKycDocument::where('client_id', $user->id)->orderBy('id', 'desc')->get();
-            $cases = $user->clientCases()->get();
+            $cases = $user ? $user->clientCases()->get() : collect();
 
             return view('frontend.theme1.auth-client.pages.kyc.index', compact('title', 'user', 'documents', 'cases', 'kycSettings'));
         } catch (\Throwable $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            \Illuminate\Support\Facades\Log::warning('kycIndex fallback: ' . $e->getMessage());
+            $title = __('Client Financial & Legal Document Intake');
+            $user = Auth::user();
+            $documents = \App\Models\ClientKycDocument::where('client_id', $user->id)->orderBy('id', 'desc')->get();
+            $cases = $user ? $user->clientCases()->get() : collect();
+            $kycSettings = [];
+            return view('frontend.theme1.auth-client.pages.kyc.index', compact('title', 'user', 'documents', 'cases', 'kycSettings'));
         }
     }
 
@@ -1428,6 +1434,25 @@ class ClientViewController extends Controller
                 'file_size' => $fileSize,
                 'status' => 'Pending Review',
             ]);
+
+            // Mirror into CaseDocument vault
+            try {
+                \App\Models\CaseDocument::create([
+                    'case_id' => $request->case_id,
+                    'user_id' => $user->id,
+                    'client_id' => $user->id,
+                    'title' => $request->file_title,
+                    'document_title' => $request->file_title,
+                    'file_path' => $filePath,
+                    'file_type' => $extension,
+                    'file_size' => (int) round(file_exists(public_path($filePath)) ? filesize(public_path($filePath)) / 1024 : 0),
+                    'document_type' => $request->document_type,
+                    'is_client_uploaded' => true,
+                    'visibility' => 'client_visible',
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Mirror CaseDocument failed: ' . $e->getMessage());
+            }
 
             \App\Models\SystemAuditLog::logAction('KYC_DOCUMENT_UPLOADED', "Client uploaded KYC/Tax document: {$request->file_title} ({$request->document_type})", $user->id, 'client');
 

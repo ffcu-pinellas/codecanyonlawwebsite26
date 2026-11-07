@@ -36,6 +36,24 @@ class CaseDocument extends Model
         'signed_at'          => 'datetime',
     ];
 
+    protected static function booted()
+    {
+        static::saving(function ($doc) {
+            if (empty($doc->title) && !empty($doc->document_title)) {
+                $doc->title = $doc->document_title;
+            }
+            if (empty($doc->document_title) && !empty($doc->title)) {
+                $doc->document_title = $doc->title;
+            }
+            if (empty($doc->user_id) && !empty($doc->client_id)) {
+                $doc->user_id = $doc->client_id;
+            }
+            if (empty($doc->client_id) && !empty($doc->user_id)) {
+                $doc->client_id = $doc->user_id;
+            }
+        });
+    }
+
     public function clientCase()
     {
         return $this->belongsTo(ClientCase::class, 'case_id');

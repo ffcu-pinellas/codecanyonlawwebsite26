@@ -396,8 +396,8 @@
           <span class="badge px-3 py-1 font-weight-bold" id="activeCallTimer" style="font-size: 13px !important; font-weight: 800 !important; letter-spacing: 1px; background: #000000 !important; color: #fecc56 !important; border: 1.5px solid #fecc56 !important; text-shadow: 0 0 6px rgba(254,204,86,0.7) !important; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.5);">
             00:00
           </span>
-          <button type="button" class="btn btn-sm text-white p-0" id="btnMinimizeCall" title="Minimize Call (Floating PiP)" style="background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.25); border-radius: 6px; width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
-            <i class="fas fa-window-minimize" id="iconMinimizeCall" style="font-size: 11px; transform: translateY(-3px);"></i>
+          <button type="button" class="btn btn-sm" id="btnMinimizeCall" title="Minimize Call (Picture-in-Picture)" style="background: rgba(254, 204, 86, 0.15); border: 1px solid rgba(254, 204, 86, 0.4); color: #fecc56 !important; border-radius: 6px; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;">
+            <i class="fas fa-compress-alt" id="iconMinimizeCall" style="font-size: 12px;"></i>
           </button>
         </div>
       </div>
@@ -411,8 +411,8 @@
               <div class="call-avatar-placeholder" id="activeVoiceInitial">U</div>
             </div>
           </div>
-          <h4 class="font-weight-bold text-white mb-1" id="activeVoiceName">Participant</h4>
-          <span class="text-warning small font-weight-bold mb-2" id="activeVoiceStatusText">Direct In-App Voice Call</span>
+          <h4 class="font-weight-bold mb-1" id="activeVoiceName" style="color: #ffffff !important; font-size: 22px !important; text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9) !important;">Participant</h4>
+          <span class="small font-weight-bold mb-2" id="activeVoiceStatusText" style="color: #fecc56 !important; font-size: 14px !important; text-shadow: 0 1px 6px rgba(0, 0, 0, 0.8) !important;">Direct In-App Voice Call</span>
           
           <!-- Equalizer animation -->
           <div class="sound-wave-bars" id="activeVoiceWavebars" style="opacity: 0.4;">
@@ -1375,20 +1375,9 @@
           }
         }
 
-        // If connection is established on server, mark connected & sync timer
+        // If connection is established on server, mark connected & ensure timer is running
         if (call.status === 'connected') {
           markCallConnected(call.connected_at);
-
-          // Synchronize clock if server reports server_time and drift > 2s
-          if (res.server_time && call.connected_at) {
-            const serverElapsed = Math.max(0, parseInt(res.server_time) - parseInt(call.connected_at));
-            if (serverElapsed > 0 && Math.abs(callSeconds - serverElapsed) > 2) {
-              callSeconds = serverElapsed;
-              callStartTimeMs = Date.now() - (callSeconds * 1000);
-              const timerEl = document.getElementById('activeCallTimer');
-              if (timerEl) timerEl.innerText = formatCallTimer(callSeconds);
-            }
-          }
         }
       })
       .catch(() => {});
@@ -1649,8 +1638,8 @@
         backdrop.style.display = '';
       }
       if (iconEl) {
-        iconEl.className = 'fas fa-window-minimize';
-        iconEl.style.transform = 'translateY(-3px)';
+        iconEl.className = 'fas fa-compress-alt';
+        iconEl.style.transform = 'none';
       }
       if (btnEl) {
         btnEl.title = 'Minimize Call (Picture-in-Picture)';
@@ -1694,7 +1683,7 @@
 
   let lastNotifiedMsgId = null;
   let originalPageTitle = document.title;
-  let titleFlashInterval = null;
+  let msgTitleFlashInterval = null;
 
   function handleIncomingUnreadMessage(msg) {
     if (!msg || !msg.id) return;
@@ -1714,12 +1703,12 @@
     playMessageChime();
 
     // 2. Flash browser page title
-    if (!titleFlashInterval) {
+    if (!msgTitleFlashInterval) {
       let isAlt = false;
-      titleFlashInterval = setInterval(function() {
+      msgTitleFlashInterval = setInterval(function() {
         if (!document.hidden && isOnChatPage) {
-          clearInterval(titleFlashInterval);
-          titleFlashInterval = null;
+          clearInterval(msgTitleFlashInterval);
+          msgTitleFlashInterval = null;
           document.title = originalPageTitle;
           return;
         }

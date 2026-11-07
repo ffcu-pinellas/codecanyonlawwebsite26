@@ -149,17 +149,22 @@
       const challengeBytes = base64UrlToUint8Array(options.challenge);
       const userIdBytes = base64UrlToUint8Array(options.user.id);
 
+      // Enforce current hostname for RP ID to prevent domain mismatch
+      const rpConfig = Object.assign({}, options.rp, {
+        id: window.location.hostname
+      });
+
       const credential = await navigator.credentials.create({
         publicKey: {
           challenge: challengeBytes,
-          rp: options.rp,
+          rp: rpConfig,
           user: {
             id: userIdBytes,
             name: options.user.name,
             displayName: options.user.displayName
           },
           pubKeyCredParams: options.pubKeyCredParams,
-          authenticatorSelection: options.authenticatorSelection,
+          authenticatorSelection: options.authenticatorSelection || {},
           timeout: options.timeout || 60000
         }
       });
@@ -207,3 +212,4 @@
   });
 })();
 </script>
+

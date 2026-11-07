@@ -15,6 +15,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         \App\Console\Commands\SendWeeklyDatabaseBackup::class,
         \App\Console\Commands\SendDailyPracticeDigest::class,
+        \App\Console\Commands\SendUnreadMessagesDigest::class,
     ];
 
     /**
@@ -30,6 +31,9 @@ class Kernel extends ConsoleKernel
 
         // 2. Daily Practice Digest every day at 18:00
         $schedule->command('practice:daily-digest')->dailyAt('18:00');
+
+        // 3. Unread Messages Digest every 15 minutes (only for messages unread for 15+ minutes)
+        $schedule->command('messages:notify-unread')->everyFifteenMinutes();
     }
 
     /**

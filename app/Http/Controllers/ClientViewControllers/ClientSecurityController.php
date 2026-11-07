@@ -496,7 +496,7 @@ class ClientSecurityController extends Controller
         $challenge = rtrim(strtr(base64_encode($challengeBytes), '+/', '-_'), '=');
         session(['passkey_register_challenge' => $challenge]);
 
-        $host = $request->getHost();
+        $host = explode(':', $request->getHost())[0];
 
         return response()->json([
             'status' => 'ok',
@@ -511,11 +511,10 @@ class ClientSecurityController extends Controller
                 'displayName' => $user->name ?: 'Portal User',
             ],
             'pubKeyCredParams' => [
-                ['alg' => -7, 'type' => 'public-key'],
-                ['alg' => -257, 'type' => 'public-key'],
+                ['alg' => -7, 'type' => 'public-key'],   // ES256
+                ['alg' => -257, 'type' => 'public-key'], // RS256
             ],
             'authenticatorSelection' => [
-                'authenticatorAttachment' => 'platform',
                 'userVerification' => 'preferred',
                 'residentKey' => 'preferred',
             ],

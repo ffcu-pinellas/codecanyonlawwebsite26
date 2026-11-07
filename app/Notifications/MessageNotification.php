@@ -26,13 +26,14 @@ class MessageNotification extends Notification
 
     /**
      * Get the notification's delivery channels.
+     * Immediate emails are disabled on each message; digest emails are dispatched only for unread messages after 15-30 minutes.
      *
      * @param  mixed  $notifiable
      * @return array
      */
     public function via($notifiable)
     {
-        return ['mail'];
+        return [];
     }
 
     /**

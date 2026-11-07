@@ -140,7 +140,7 @@
         </li>
         <li class="nav-item">
             <a class="nav-link" id="security-tab" data-toggle="pill" href="#tab-security" role="tab" aria-controls="tab-security" aria-selected="false">
-                <i class="fas fa-key"></i> {{ __('Password & Security') }}
+                <i class="fas fa-fingerprint"></i> {{ __('Password, PIN & Biometrics') }}
             </a>
         </li>
         <li class="nav-item">
@@ -389,5 +389,18 @@
 
     </div>
 </div>
+
+@section('page-script')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.hash.includes('security') || window.location.search.includes('tab=security')) {
+        var secTab = document.getElementById('security-tab');
+        if (secTab) {
+            $(secTab).tab('show');
+        }
+    }
+});
+</script>
+@endsection
 @endsection
 

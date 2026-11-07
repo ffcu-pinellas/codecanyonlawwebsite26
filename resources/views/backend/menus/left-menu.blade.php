@@ -299,7 +299,7 @@
                     </a>
                     <ul class="dropdown-list">
                         <li><a href="{{ route('admin.settings.general') }}" class="nav-link"><i class="material-icons">chevron_right</i> <span class="link-text">{{ __('General Practice Info') }}</span></a></li>
-                        <li><a href="{{ route('admin.settings.security-pin') }}" class="nav-link"><i class="material-icons text-warning">vpn_key</i> <span class="link-text text-warning font-weight-bold">{{ __('Admin 2FA Gate PIN') }}</span></a></li>
+                        <li><a href="{{ route('admin.settings.security-pin') }}" class="nav-link"><i class="material-icons text-warning">fingerprint</i> <span class="link-text text-warning font-weight-bold">{{ __('2FA PIN & Biometrics') }}</span></a></li>
                         <li><a href="{{ route('admin.settings.payment') }}" class="nav-link"><i class="material-icons">chevron_right</i> <span class="link-text text-warning font-weight-bold">{{ __('Escrow & Payment Depository') }}</span></a></li>
                         <li><a href="{{ route('admin.settings.logo-favicon') }}" class="nav-link"><i class="material-icons">chevron_right</i> <span class="link-text">{{ __('Logo & Branding') }}</span></a></li>
                         <li><a href="{{ route('admin.menu.category.index') }}" class="nav-link"><i class="material-icons">chevron_right</i> <span class="link-text">{{ __('Public Navigation Menus') }}</span></a></li>

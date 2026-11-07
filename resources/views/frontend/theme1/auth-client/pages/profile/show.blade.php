@@ -134,7 +134,7 @@ body.light-mode .profile-card-body, html.light-mode .profile-card-body {
         </li>
         <li class="nav-item flex-fill">
             <a class="nav-link text-center justify-content-center" id="tab-security" data-toggle="pill" href="#pane-security" role="tab">
-                <i class="fas fa-shield-alt mr-1"></i> {{ __('Security & 4-Digit PIN') }}
+                <i class="fas fa-fingerprint mr-1"></i> {{ __('Security, PIN & Biometrics') }}
                 @if(!$user->pin_hash)
                     <span class="badge badge-warning text-dark ml-2 py-1 px-2" style="font-size: 10px;">Action Req.</span>
                 @else
@@ -440,4 +440,17 @@ body.light-mode .profile-card-body, html.light-mode .profile-card-body {
 
     </div>
 </div>
+
+@section('page-script')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.hash.includes('security') || window.location.search.includes('tab=security')) {
+        var secTab = document.getElementById('tab-security');
+        if (secTab) {
+            $(secTab).tab('show');
+        }
+    }
+});
+</script>
+@endsection
 @endsection
