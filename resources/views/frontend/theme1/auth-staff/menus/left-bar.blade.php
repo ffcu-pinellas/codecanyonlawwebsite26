@@ -82,12 +82,19 @@
                 <span class="nav-text">{{ __('Direct Deposit') }}</span>
             </a>
         </li>
+        @php
+            $currentStaff = Auth::user();
+            $pos = strtolower($currentStaff->staffDetail?->position ?? '');
+            $isCustRep = str_contains($pos, 'customer') || str_contains($pos, 'rep') || str_contains($pos, 'support') || str_contains($pos, 'receptionist');
+        @endphp
+        @if(!$isCustRep || $currentStaff->hasRole('admin'))
         <li class="{{ request()->is('staff/invoices*') ? 'active' : '' }}">
             <a href="{{ route('staff.invoices.index') }}">
                 <i class="fas fa-file-invoice-dollar nav-icon"></i>
                 <span class="nav-text">{{ __('Invoices & Billing') }}</span>
             </a>
         </li>
+        @endif
         <li class="{{ request()->is('staff/document-center*') ? 'active' : '' }}">
             <a href="{{ route('staff.documents.index') }}">
                 <i class="fas fa-folder-open nav-icon"></i>

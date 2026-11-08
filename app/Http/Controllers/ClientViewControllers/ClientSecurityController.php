@@ -467,19 +467,83 @@ class ClientSecurityController extends Controller
             return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
         }
 
-        // If no PIN set, allow unlock or check password
+        // If no PIN set, allow unlock
         if (empty($user->pin_hash)) {
             session()->forget('portal_session_locked');
+            session()->forget('session_locked');
             return response()->json(['status' => 'success', 'message' => 'Session unlocked']);
         }
 
-        if (Hash::check($request->pin, $user->pin_hash)) {
+        $pinMatch = Hash::check($request->pin, $user->pin_hash) || ($request->pin === $user->pin_hash);
+
+        // Auto-upgrade plain text pin to bcrypt hash
+        if ($pinMatch && $request->pin === $user->pin_hash) {
+            $user->pin_hash = Hash::make($request->pin);
+            $user->save();
+        }
+
+        if ($pinMatch) {
             session()->forget('portal_session_locked');
-            SystemAuditLog::logAction('SESSION_UNLOCKED', 'Client unlocked inactive session with PIN.', $user->id, 'client');
+            session()->forget('session_locked');
+            SystemAuditLog::logAction('SESSION_UNLOCKED', 'User unlocked inactive session with PIN.', $user->id, 'security');
             return response()->json(['status' => 'success', 'message' => 'Session unlocked successfully']);
         }
 
         return response()->json(['status' => 'error', 'message' => __('Invalid Security PIN. Please try again.')], 422);
+    }
+
+    /**
+     * Unlock session via WebAuthn Biometric Passkey
+     */
+    public function biometricUnlockSession(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
+        }
+
+        session()->forget('portal_session_locked');
+        session()->forget('session_locked');
+        SystemAuditLog::logAction('SESSION_UNLOCKED', 'User unlocked inactive session with Biometric Passkey.', $user->id, 'security');
+        return response()->json(['status' => 'success', 'message' => 'Session unlocked successfully via Biometrics!']);
+    }
+
+    /**
+     * Quick Register Biometric Passkey from Session Modal
+     */
+    public function quickRegisterPasskey(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
+        }
+
+        $credentialId = $request->input('credential_id');
+        $deviceName = $request->input('device_name') ?: 'Biometric Device';
+
+        if (!$credentialId) {
+            return response()->json(['status' => 'error', 'message' => 'Credential ID required'], 422);
+        }
+
+        $credentials = $user->passkey_credentials ?? [];
+        if (!is_array($credentials)) {
+            $credentials = [];
+        }
+
+        $credentials[] = [
+            'id' => $credentialId,
+            'name' => $deviceName,
+            'created_at' => now()->toIso8601String(),
+        ];
+
+        $user->passkey_credentials = $credentials;
+        $user->save();
+
+        session()->forget('portal_session_locked');
+        session()->forget('session_locked');
+
+        SystemAuditLog::logAction('PASSKEY_REGISTERED', 'User quickly registered biometric passkey on this device.', $user->id, 'security');
+        return response()->json(['status' => 'success', 'message' => 'Touch ID / Face ID registered successfully on this device!']);
     }
 
     /**
@@ -554,6 +618,10 @@ class ClientSecurityController extends Controller
 
         $user->passkey_credentials = $creds;
         $user->save();
+
+        session(['two_factor_verified' => true]);
+        session()->forget('session_locked');
+        session()->forget('portal_session_locked');
 
         SystemAuditLog::logAction('PASSKEY_REGISTERED', 'User registered new biometric WebAuthn passkey (' . $request->input('device_name', 'Biometric Device') . ')', $user->id, 'client');
 
@@ -631,6 +699,8 @@ class ClientSecurityController extends Controller
         }
 
         session(['two_factor_verified' => true]);
+        session()->forget('session_locked');
+        session()->forget('portal_session_locked');
         SystemAuditLog::logAction('2FA_PASSKEY_PASSED', 'User authenticated via biometric Touch ID / Face ID passkey.', $user->id, 'client');
 
         $targetRoute = ($user->hasRole('staff') && !$user->hasRole('client')) ? route('staff.dashboard') : route('client.dashboard');

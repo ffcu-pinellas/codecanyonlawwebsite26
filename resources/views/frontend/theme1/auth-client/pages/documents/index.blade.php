@@ -151,13 +151,75 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap" style="gap:10px;">
         <div>
             <h4 class="font-weight-bold text-white mb-1">
-                <i class="fas fa-file-contract text-warning mr-2"></i> {{ __('Document Center & Executed Agreements') }}
+                <i class="fas fa-file-contract text-warning mr-2"></i> {{ __('Legal Documents & Contracts') }}
             </h4>
-            <p class="text-muted small mb-0">{{ __('Official case retainers, fee agreements, powers of attorney, and cryptographic authorizations.') }}</p>
+            <p class="text-muted small mb-0">{{ __('Official case retainers, fee agreements, powers of attorney, custom deliverables, and client document vault.') }}</p>
         </div>
-        <a href="{{ route('client.dashboard') }}" class="btn btn-sm btn-outline-secondary text-light font-weight-bold px-3">
-            <i class="fas fa-arrow-left mr-1"></i> {{ __('Back to Dashboard') }}
-        </a>
+        <div class="d-flex align-items-center" style="gap: 8px;">
+            <button type="button" class="btn btn-gold btn-sm px-3 font-weight-bold" data-toggle="modal" data-target="#uploadVaultDocModal">
+                <i class="fas fa-cloud-upload-alt mr-1"></i> {{ __('Upload Document') }}
+            </button>
+            <a href="{{ route('client.dashboard') }}" class="btn btn-sm btn-outline-secondary text-light font-weight-bold px-3">
+                <i class="fas fa-arrow-left mr-1"></i> {{ __('Back to Dashboard') }}
+            </a>
+        </div>
+    </div>
+
+    <!-- Upload Document to Vault Modal -->
+    <div class="modal fade" id="uploadVaultDocModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content" style="background: #161a23; border: 1px solid #28303f; border-radius: 12px; color: #fff;">
+                <div class="modal-header border-bottom" style="border-color: #28303f !important;">
+                    <h5 class="modal-title font-weight-bold text-warning">
+                        <i class="fas fa-cloud-upload-alt mr-2"></i>{{ __('Upload Document to Vault') }}
+                    </h5>
+                    <button type="button" class="close text-muted" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form action="{{ route('client.documents.upload') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body p-4">
+                        <div class="form-group mb-3">
+                            <label class="small font-weight-bold text-white mb-1">{{ __('Select File (PDF, DOCX, PNG, JPG - Max 20MB)') }} <span class="text-danger">*</span></label>
+                            <input type="file" name="document_file" class="form-control-file p-2 rounded" style="background: #11151e; border: 1px solid #28303f; color: #cbd5e1; width: 100%;" required>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="small font-weight-bold text-white mb-1">{{ __('Document Title') }}</label>
+                            <input type="text" name="document_title" class="form-control text-white" style="background: #11151e; border: 1px solid #28303f;" placeholder="e.g. 2023 W2 Form, Tax Return, Bank Statement">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="small font-weight-bold text-white mb-1">{{ __('Document Category / Type') }}</label>
+                            <select name="document_type" class="form-control text-white" style="background: #11151e; border: 1px solid #28303f;">
+                                <option value="Tax Return & Schedule">{{ __('Tax Return & Schedule') }}</option>
+                                <option value="IRS / State Notice">{{ __('IRS / State Notice') }}</option>
+                                <option value="Financial & Bank Statements">{{ __('Financial & Bank Statements') }}</option>
+                                <option value="Identity & KYC Verification">{{ __('Identity & Verification File') }}</option>
+                                <option value="Power of Attorney / Legal">{{ __('Power of Attorney / Legal File') }}</option>
+                                <option value="Other Client Documentation" selected>{{ __('Other Client Documentation') }}</option>
+                            </select>
+                        </div>
+                        @if(isset($userCases) && count($userCases) > 0)
+                        <div class="form-group mb-2">
+                            <label class="small font-weight-bold text-white mb-1">{{ __('Attach to Case (Optional)') }}</label>
+                            <select name="case_id" class="form-control text-white" style="background: #11151e; border: 1px solid #28303f;">
+                                <option value="">-- {{ __('General Client Vault (No specific case)') }} --</option>
+                                @foreach($userCases as $c)
+                                    <option value="{{ $c->id }}">{{ $c->case_number }} - {{ $c->title }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @endif
+                    </div>
+                    <div class="modal-footer border-top" style="border-color: #28303f !important;">
+                        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">{{ __('Cancel') }}</button>
+                        <button type="submit" class="btn btn-gold btn-sm px-4 font-weight-bold">
+                            <i class="fas fa-upload mr-1"></i> {{ __('Upload & Encrypt') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     @if(session('message'))
@@ -254,21 +316,66 @@
                             @if($vDoc->requires_signature && !$vDoc->is_signed)
                                 <div class="collapse mt-3 text-left" id="signCollapse-{{ $vDoc->id }}">
                                     <div class="p-3 rounded border border-warning" style="background: #11151e;">
-                                        <h6 class="text-warning font-weight-bold small mb-2">
-                                            <i class="fas fa-pen mr-1"></i> {{ __('Adopt Electronic Signature') }}
-                                        </h6>
-                                        <form action="{{ route('client.documents.sign-case-doc', $vDoc->id) }}" method="POST">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <h6 class="text-warning font-weight-bold small mb-0">
+                                                <i class="fas fa-file-signature mr-1"></i> {{ __('Adopt Electronic Signature') }}
+                                            </h6>
+                                            <div class="btn-group btn-group-sm" role="group">
+                                                <button type="button" class="btn btn-outline-warning active btn-sm font-weight-bold" id="drawModeBtn-case_{{ $vDoc->id }}" onclick="setSignatureMode('case_{{ $vDoc->id }}', 'draw')">
+                                                    <i class="fas fa-pen-nib mr-1"></i> {{ __('Draw') }}
+                                                </button>
+                                                <button type="button" class="btn btn-outline-warning btn-sm font-weight-bold" id="typeModeBtn-case_{{ $vDoc->id }}" onclick="setSignatureMode('case_{{ $vDoc->id }}', 'type')">
+                                                    <i class="fas fa-keyboard mr-1"></i> {{ __('Type') }}
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <form action="{{ route('client.documents.sign-case-doc', $vDoc->id) }}" method="POST" id="sigForm-case_{{ $vDoc->id }}" onsubmit="return handleSignatureSubmit('case_{{ $vDoc->id }}');">
                                             @csrf
+                                            <input type="hidden" name="signature_data" id="sigDataInput-case_{{ $vDoc->id }}">
+
+                                            <!-- Draw Mode Canvas -->
+                                            <div id="drawSection-case_{{ $vDoc->id }}">
+                                                <div class="signature-pad-container" id="sigContainer-case_{{ $vDoc->id }}">
+                                                    <canvas id="sigCanvas-case_{{ $vDoc->id }}" class="signature-canvas"></canvas>
+                                                    <span class="signature-pad-placeholder" id="sigPlaceholder-case_{{ $vDoc->id }}">{{ __('Sign here with finger or mouse') }}</span>
+                                                </div>
+                                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                                    <div class="d-flex align-items-center" style="gap: 6px;">
+                                                        <span class="small text-muted font-weight-bold" style="font-size: 11px;">Ink:</span>
+                                                        <button type="button" class="btn btn-xs rounded-circle p-0" id="inkBlue-case_{{ $vDoc->id }}" style="width: 18px; height: 18px; background: #002060; border: 2px solid #fecc56; cursor: pointer;" title="Legal Navy Blue" onclick="setPenColor('case_{{ $vDoc->id }}', '#002060')"></button>
+                                                        <button type="button" class="btn btn-xs rounded-circle p-0" id="inkBlack-case_{{ $vDoc->id }}" style="width: 18px; height: 18px; background: #0f172a; border: 1px solid #475569; cursor: pointer;" title="Classic Black" onclick="setPenColor('case_{{ $vDoc->id }}', '#0f172a')"></button>
+                                                    </div>
+                                                    <div class="d-flex align-items-center" style="gap: 6px;">
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-weight-bold" style="font-size: 11px;" onclick="undoSignatureStroke('case_{{ $vDoc->id }}')">
+                                                            <i class="fas fa-undo mr-1"></i> {{ __('Undo') }}
+                                                        </button>
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2 font-weight-bold" style="font-size: 11px;" onclick="clearSignatureCanvas('case_{{ $vDoc->id }}')">
+                                                            <i class="fas fa-eraser mr-1"></i> {{ __('Clear') }}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Type Mode Input & Live Cursive Preview -->
+                                            <div id="typeSection-case_{{ $vDoc->id }}" style="display: none;">
+                                                <div class="sig-type-preview" id="typeSigPreview-case_{{ $vDoc->id }}">
+                                                    {{ Auth::user()->name }}
+                                                </div>
+                                            </div>
+
                                             <div class="form-group mb-2">
                                                 <label class="small text-white font-weight-bold">{{ __('Full Legal Name (Electronic Signature):') }}</label>
-                                                <input type="text" name="signature_text" class="form-control form-control-sm text-white" value="{{ Auth::user()->name }}" required style="background: #161a23; border: 1px solid #28303f;">
+                                                <input type="text" name="signature_text" id="sigTextInput-case_{{ $vDoc->id }}" class="form-control form-control-sm text-white font-weight-bold" value="{{ Auth::user()->name }}" required style="background: #161a23; border: 1px solid #28303f;" oninput="updateTypePreview('case_{{ $vDoc->id }}', this.value)">
                                             </div>
+
                                             <div class="custom-control custom-checkbox mb-3">
                                                 <input type="checkbox" class="custom-control-input" id="caseCheck-{{ $vDoc->id }}" name="agreement_accepted" value="1" required>
-                                                <label class="custom-control-label small text-muted" for="caseCheck-{{ $vDoc->id }}">
-                                                    {{ __('I understand that submitting this electronic signature constitutes a legally binding document execution under the U.S. E-SIGN Act.') }}
+                                                <label class="custom-control-label small text-muted font-weight-semibold" for="caseCheck-{{ $vDoc->id }}">
+                                                    {{ __('I understand that submitting this electronic signature constitutes an authorized, legally binding execution under the federal ESIGN & UETA Acts.') }}
                                                 </label>
                                             </div>
+
                                             <button type="submit" class="btn btn-success btn-sm btn-block font-weight-bold">
                                                 <i class="fas fa-check mr-1"></i> {{ __('Confirm & Execute Electronic Signature') }}
                                             </button>
@@ -788,12 +895,21 @@ $(document).ready(function() {
         @endif
     @endforeach
 
+    @foreach($vaultDocuments ?? [] as $vDoc)
+        @if($vDoc->requires_signature && !$vDoc->is_signed)
+            setTimeout(function() { initSignatureCanvas('case_{{ $vDoc->id }}'); }, 150);
+        @endif
+    @endforeach
+
     // Re-initialize when accordion collapse or modal opens
     $('.collapse').on('shown.bs.collapse', function() {
         var id = $(this).attr('id');
         if (id && id.indexOf('signDocCollapse-') === 0) {
             var docId = id.replace('signDocCollapse-', '');
             initSignatureCanvas(docId);
+        } else if (id && id.indexOf('signCollapse-') === 0) {
+            var vDocId = id.replace('signCollapse-', '');
+            initSignatureCanvas('case_' + vDocId);
         }
     });
 

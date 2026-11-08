@@ -36,8 +36,8 @@
                     <!-- header dropdown buttons end-->
                     <a class="navbar-brand" href="{{ route('home') }}">
                         <img id="logo_img" src="{{ $logoFavicon?$logoFavicon->logo:'' }}" alt="" style="max-height: 50px; width: auto; max-width: 100%; object-fit: contain;"></a>
-                    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapse-1" aria-controls="navbar-collapse-1" aria-expanded="false" aria-label="Toggle navigation">
-                        <span class="navbar-toggler-icon"></span>
+                    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapse-1" aria-controls="navbar-collapse-1" aria-expanded="false" aria-label="Toggle navigation" style="border: 1.5px solid #fecc56 !important; background: rgba(17, 21, 30, 0.95) !important; padding: 6px 10px; border-radius: 8px;">
+                        <span class="navbar-toggler-icon" style="filter: invert(85%) sepia(50%) saturate(1000%) hue-rotate(350deg) brightness(105%);"></span>
                     </button>
 
 
@@ -66,6 +66,52 @@
         </div>
         <!-- main-navigation end -->
     </div>
+
+<style>
+@media (max-width: 991px) {
+    #navbar-collapse-1 {
+        background: #0e131d !important;
+        border: 1px solid #28303f !important;
+        border-radius: 12px !important;
+        padding: 16px 20px !important;
+        margin-top: 12px !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.85) !important;
+    }
+    #navbar-collapse-1 ul.navbar-nav > li > a {
+        color: #f1f5f9 !important;
+        padding: 10px 0 !important;
+        border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+        font-weight: 600 !important;
+    }
+    #navbar-collapse-1 ul.navbar-nav > li > a:hover {
+        color: #fecc56 !important;
+    }
+    #navbar-collapse-1 .nav-active {
+        background: linear-gradient(135deg, #fecc56, #f0a500) !important;
+        color: #000 !important;
+        font-weight: 700 !important;
+        border-radius: 8px !important;
+        text-align: center !important;
+        margin-top: 10px !important;
+        padding: 8px 16px !important;
+    }
+}
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    var toggler = document.querySelector('.navbar-toggler');
+    var collapseTarget = document.getElementById('navbar-collapse-1');
+    if (toggler && collapseTarget) {
+        toggler.addEventListener('click', function(e) {
+            if (window.jQuery && typeof jQuery(collapseTarget).collapse === 'function') {
+                jQuery(collapseTarget).collapse('toggle');
+            } else {
+                collapseTarget.classList.toggle('show');
+            }
+        });
+    }
+});
+</script>
 
 </header>
 <!-- Header Section End -->

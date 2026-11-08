@@ -416,10 +416,10 @@
           <span class="text-white font-weight-bold small text-truncate" id="activeCallParticipantName" style="max-width: 140px;">Connecting...</span>
         </div>
         <div class="d-flex align-items-center" style="gap: 8px;">
-          <span class="badge px-3 py-1 font-weight-bold" id="activeCallTimer" style="font-size: 13px !important; font-weight: 800 !important; letter-spacing: 1px; background: #000000 !important; color: #fecc56 !important; border: 1.5px solid #fecc56 !important; text-shadow: 0 0 6px rgba(254,204,86,0.7) !important; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.5);">
+          <span class="badge px-3 py-1 font-weight-bold" id="activeCallTimer" style="font-size: 14px !important; font-weight: 900 !important; font-family: monospace, sans-serif !important; letter-spacing: 1.5px !important; background: #000000 !important; color: #fecc56 !important; border: 2px solid #fecc56 !important; border-radius: 8px !important; padding: 4px 10px !important; box-shadow: 0 0 10px rgba(254,204,86,0.3) !important;">
             00:00
           </span>
-          <button type="button" class="btn btn-sm font-weight-bold text-dark" id="btnMinimizeCall" title="Minimize Call (Pin to Top Bar)" style="background: linear-gradient(135deg, #fecc56, #f0a500) !important; color: #000000 !important; border: 1.5px solid #ffffff !important; border-radius: 8px; padding: 4px 10px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 10px rgba(254, 204, 86, 0.4); cursor: pointer;">
+          <button type="button" class="btn btn-sm font-weight-bold text-dark" id="btnMinimizeCall" onclick="toggleCallMinimize()" title="Minimize Call (Pin to Top Bar)" style="background: linear-gradient(135deg, #fecc56, #f0a500) !important; color: #000000 !important; border: 1.5px solid #ffffff !important; border-radius: 8px; padding: 4px 10px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 10px rgba(254, 204, 86, 0.4); cursor: pointer;">
             <i class="fas fa-compress-alt" id="iconMinimizeCall" style="font-size: 12px; color: #000000 !important;"></i>
             <span style="font-size: 11px; font-weight: 800; color: #000000 !important;">Minimize</span>
           </button>
@@ -1655,6 +1655,10 @@
     isCallMinimized = false;
     const topBarEl = document.getElementById('webrtcTopPinnedCallBar');
     if (topBarEl) topBarEl.style.display = 'none';
+    document.body.classList.remove('modal-open');
+    document.querySelectorAll('.modal-backdrop').forEach(function(b) {
+      b.style.display = '';
+    });
 
     $('#activeWebRtcCallModal').modal('hide');
     $('#incomingCallModal').modal('hide');
@@ -1704,9 +1708,9 @@
         modalEl.classList.remove('show');
       }
       document.body.classList.remove('modal-open');
-      if (backdrop) {
-        backdrop.style.display = 'none';
-      }
+      document.querySelectorAll('.modal-backdrop').forEach(function(b) {
+        b.style.display = 'none';
+      });
 
       // Show top-pinned dynamic bar
       if (topBarEl) {
@@ -1724,9 +1728,9 @@
         modalEl.classList.add('show');
       }
       document.body.classList.add('modal-open');
-      if (backdrop) {
-        backdrop.style.display = '';
-      }
+      document.querySelectorAll('.modal-backdrop').forEach(function(b) {
+        b.style.display = '';
+      });
     }
   }
   window.toggleCallMinimize = toggleCallMinimize;
@@ -1842,8 +1846,8 @@
           handleIncomingUnreadMessage(res.latest_unread);
         }
 
-        // Don't process incoming calls if already in an active call modal
-        if ($('#activeWebRtcCallModal').hasClass('show')) return;
+        // Don't process incoming calls if already in an active call modal or minimized
+        if ($('#activeWebRtcCallModal').hasClass('show') || isCallMinimized || (activeCallSession && (activeCallSession.status === 'connected' || activeCallSession.status === 'ringing'))) return;
 
         if (!res || !res.active_call) {
           if ($('#incomingCallModal').hasClass('show')) {
@@ -2002,12 +2006,6 @@
         }
       });
     });
-
-    // Minimize Call Button
-    const btnMin = document.getElementById('btnMinimizeCall');
-    if (btnMin) {
-      btnMin.addEventListener('click', toggleCallMinimize);
-    }
 
     // Top Pinned Floating Call Bar Actions
     const pipBtnMute = document.getElementById('pipBtnMute');

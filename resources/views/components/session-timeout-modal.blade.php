@@ -216,7 +216,7 @@
             </div>
         </div>
 
-        <!-- Session Locked View (PIN Challenge) -->
+        <!-- Session Locked View (PIN & Biometric Challenge) -->
         <div id="timeoutLockedView" class="pin-unlock-container">
             <div class="session-modal-body">
                 <div class="hourglass-circle" style="background: rgba(254,204,86,0.15); border-color: rgba(254,204,86,0.4); color: #fecc56;">
@@ -224,10 +224,27 @@
                 </div>
                 <div class="timeout-headline">{{ __('Session Locked') }}</div>
                 <div class="timeout-desc">
-                    {{ __('Your confidential session has been locked due to inactivity. Enter your 4-digit Security PIN to resume:') }}
+                    {{ __('Your confidential session has been locked due to inactivity. Authenticate via Touch ID / Face ID or enter your 4-digit Security PIN to resume:') }}
                 </div>
 
                 <div id="pinUnlockErrorMsg" class="alert alert-danger font-weight-bold py-1 px-2 mb-2" style="display:none; font-size:12px; border-radius:6px;"></div>
+
+                <!-- Biometric WebAuthn Unlock (Touch ID / Face ID / Windows Hello) -->
+                <div class="mb-3">
+                    <button type="button" class="btn btn-block py-2 font-weight-bold" id="btnTimeoutBiometricUnlock" onclick="unlockSessionWithBiometrics()" style="background: rgba(37, 99, 235, 0.15); color: #60a5fa; border: 1.5px solid rgba(96, 165, 250, 0.4); border-radius: 10px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;">
+                        <i class="fas fa-fingerprint" style="font-size: 17px;"></i>
+                        <span>{{ __('Unlock with Touch ID / Face ID') }}</span>
+                    </button>
+                    <div class="mt-2 text-center" id="sessionBiometricSetupRow">
+                        <a href="javascript:void(0)" onclick="quickSetupBiometricFromModal()" class="small text-warning font-weight-bold text-decoration-none" style="font-size: 11.5px;">
+                            <i class="fas fa-plus-circle mr-1"></i> {{ __('Register Touch ID / Face ID on This Device Now') }}
+                        </a>
+                    </div>
+                </div>
+
+                <div class="small text-muted mb-2 text-center" style="font-size: 11px;">
+                    — {{ __('or enter your 4-digit Security PIN below') }} —
+                </div>
 
                 <input type="password" id="sessionUnlockPinInput" maxlength="6" class="pin-unlock-box" placeholder="••••" autocomplete="off">
             </div>
@@ -353,6 +370,165 @@
         .catch(function(err) {
             showUnlockError("{{ __('Invalid Security PIN. Access denied.') }}");
         });
+    };
+
+    window.unlockSessionWithBiometrics = async function() {
+        if (!window.PublicKeyCredential) {
+            showUnlockError("{{ __('Biometric authentication is not supported on this browser.') }}");
+            return;
+        }
+
+        var btn = document.getElementById('btnTimeoutBiometricUnlock');
+        var origText = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> {{ __("Scanning Touch ID / Face ID...") }}';
+        }
+
+        try {
+            var optRes = await fetch("{{ route('auth.passkey.auth-options') }}", {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            });
+            var options = await optRes.json();
+
+            if (!options || !options.has_passkeys) {
+                var doRegister = confirm("{{ __('No biometric passkey registered on this device yet. Would you like to register Touch ID / Face ID on this device now?') }}");
+                if (doRegister) {
+                    await window.quickSetupBiometricFromModal();
+                } else {
+                    showUnlockError("{{ __('Please enter your 4-digit PIN to resume.') }}");
+                }
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = origText;
+                }
+                return;
+            }
+
+            var challengeBuffer = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
+            var allowList = (options.allowCredentials || []).map(function(c) {
+                return {
+                    type: 'public-key',
+                    id: Uint8Array.from(atob(c.id.replace(/-/g, '+').replace(/_/g, '/')), function(ch) { return ch.charCodeAt(0); })
+                };
+            });
+
+            var assertion = await navigator.credentials.get({
+                publicKey: {
+                    challenge: challengeBuffer,
+                    rpId: window.location.hostname,
+                    allowCredentials: allowList,
+                    userVerification: 'preferred',
+                    timeout: 60000
+                }
+            });
+
+            var credId = btoa(String.fromCharCode.apply(null, new Uint8Array(assertion.rawId)))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+            var verifyRes = await fetch("{{ route('auth.passkey.auth-verify') }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ credential_id: credId })
+            });
+
+            var vData = await verifyRes.json();
+            if (vData.status === 'ok') {
+                if (errorMsg) errorMsg.style.display = 'none';
+                resetInactivityTimer();
+            } else {
+                showUnlockError(vData.message || "{{ __('Biometric unlock failed. Please use PIN.') }}");
+            }
+        } catch(e) {
+            if (e.name !== 'NotAllowedError') {
+                showUnlockError(e.message || "{{ __('Biometric authentication cancelled or unavailable.') }}");
+            }
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = origText;
+            }
+        }
+    };
+
+    window.quickSetupBiometricFromModal = async function() {
+        if (!window.PublicKeyCredential) {
+            alert("{{ __('Biometric authentication is not supported by this browser.') }}");
+            return;
+        }
+
+        try {
+            var optRes = await fetch("{{ route('auth.passkey.register-options') }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+            var options = await optRes.json();
+            if (!options || options.status !== 'ok') {
+                throw new Error(options?.message || 'Could not initiate biometric challenge');
+            }
+
+            var challengeBytes = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
+            var userIdBytes = Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
+
+            var credential = await navigator.credentials.create({
+                publicKey: {
+                    challenge: challengeBytes,
+                    rp: { name: options.rp.name || 'Your CPA Expert', id: window.location.hostname },
+                    user: {
+                        id: userIdBytes,
+                        name: options.user.name,
+                        displayName: options.user.displayName
+                    },
+                    pubKeyCredParams: options.pubKeyCredParams || [
+                        { alg: -7, type: 'public-key' },
+                        { alg: -257, type: 'public-key' }
+                    ],
+                    authenticatorSelection: { userVerification: 'preferred' },
+                    timeout: 60000
+                }
+            });
+
+            if (!credential) throw new Error('Biometric registration was cancelled.');
+
+            var credId = btoa(String.fromCharCode.apply(null, new Uint8Array(credential.rawId)))
+                .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+            var devName = (/iPhone|iPad|Macintosh/i.test(navigator.userAgent) ? 'Apple Device (Touch/Face ID)' : (/Android/i.test(navigator.userAgent) ? 'Android Biometrics' : 'Windows Hello Device'));
+
+            var saveRes = await fetch("{{ route('auth.passkey.register-verify') }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}",
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    credential_id: credId,
+                    device_name: devName
+                })
+            });
+
+            var sData = await saveRes.json();
+            if (sData && sData.status === 'ok') {
+                alert("{{ __('Touch ID / Face ID registered successfully on this device! Session unlocked.') }}");
+                if (errorMsg) errorMsg.style.display = 'none';
+                resetInactivityTimer();
+            } else {
+                throw new Error(sData?.message || 'Registration failed');
+            }
+        } catch(err) {
+            if (err.name !== 'NotAllowedError') {
+                showUnlockError(err.message || "{{ __('Could not register biometrics on this device.') }}");
+            }
+        }
     };
 
     function showUnlockError(msg) {

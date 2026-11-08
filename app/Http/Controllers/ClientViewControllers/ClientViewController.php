@@ -1121,32 +1121,82 @@ class ClientViewController extends Controller
     public function documentCenter()
     {
         try {
-            $title = __('Client Document Center');
+            $title = __('Legal Documents & Contracts');
             $user = Auth::user();
             $documents = \App\Models\DocumentLog::where('client_id', $user->id)
                 ->whereNotNull('content')
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            $userCaseIds = $user ? $user->clientCases()->pluck('id')->toArray() : [];
-            $hasClientIdCol = false;
-            try { $hasClientIdCol = \Illuminate\Support\Facades\Schema::hasColumn('case_documents', 'client_id'); } catch (\Throwable $e) {}
+            $userCases = $user ? $user->clientCases()->get() : collect([]);
+            $userCaseIds = $userCases->pluck('id')->toArray();
 
             $vaultDocuments = \App\Models\CaseDocument::with(['clientCase'])
-                ->where(function($q) use ($user, $userCaseIds, $hasClientIdCol) {
-                    $q->where('user_id', $user->id);
+                ->where(function($q) use ($user, $userCaseIds) {
+                    $q->where('client_id', $user->id)
+                      ->orWhere('user_id', $user->id);
                     if (!empty($userCaseIds)) {
                         $q->orWhereIn('case_id', $userCaseIds);
-                    }
-                    if ($hasClientIdCol) {
-                        $q->orWhere('client_id', $user->id);
                     }
                 })
                 ->where('visibility', '!=', 'internal_only')
                 ->orderBy('created_at', 'desc')
                 ->get();
 
-            return view('frontend.theme1.auth-client.pages.documents.index', compact('title', 'documents', 'vaultDocuments'));
+            return view('frontend.theme1.auth-client.pages.documents.index', compact('title', 'documents', 'vaultDocuments', 'userCases'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    public function uploadClientDocument(Request $request)
+    {
+        $request->validate([
+            'document_file' => 'required|file|mimes:pdf,jpg,jpeg,png,docx,doc|max:20480',
+            'document_title' => 'nullable|string|max:255',
+            'document_type' => 'nullable|string|max:100',
+            'case_id' => 'nullable|integer',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $file = $request->file('document_file');
+            $originalName = $file->getClientOriginalName();
+            $title = $request->input('document_title') ?: pathinfo($originalName, PATHINFO_FILENAME);
+            $docType = $request->input('document_type') ?: 'Client Uploaded Document';
+
+            $uploadPath = public_path('upload/case-documents');
+            if (!\Illuminate\Support\Facades\File::exists($uploadPath)) {
+                \Illuminate\Support\Facades\File::makeDirectory($uploadPath, 0755, true);
+            }
+
+            $fileName = 'client_' . $user->id . '_' . time() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $originalName);
+            $file->move($uploadPath, $fileName);
+            $savedRelativePath = 'upload/case-documents/' . $fileName;
+
+            $caseId = $request->case_id ?: null;
+            if ($caseId) {
+                $ownsCase = $user->clientCases()->where('id', $caseId)->exists();
+                if (!$ownsCase) $caseId = null;
+            }
+
+            $doc = \App\Models\CaseDocument::create([
+                'case_id' => $caseId,
+                'client_id' => $user->id,
+                'user_id' => $user->id,
+                'document_title' => $title,
+                'document_type' => $docType,
+                'file_path' => $savedRelativePath,
+                'is_client_uploaded' => true,
+                'requires_signature' => false,
+                'is_signed' => false,
+                'visibility' => 'client_visible',
+            ]);
+
+            \App\Models\SystemAuditLog::logAction('DOCUMENT_UPLOADED', 'Client uploaded document: ' . $title, $user->id, 'client');
+            \App\Models\GeneralSettings::sendTelegramNotification("📤 <b>Client Document Uploaded</b>\n👤 Client: {$user->name}\n📄 Document: {$title}\n📁 Type: {$docType}");
+
+            return redirect()->back()->with('message', __('Document successfully uploaded to your secure legal vault!'));
         } catch (\Throwable $e) {
             return $this->backWithError($e->getMessage());
         }

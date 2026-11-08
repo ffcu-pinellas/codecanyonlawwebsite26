@@ -373,6 +373,8 @@ Route::prefix('/client')->middleware(['auth', 'security.setup'])->as('client.')-
     Route::post('/security/verify-otp/resend', [ClientSecurityController::class, 'resendOtp'])->withoutMiddleware(['security.setup'])->name('security.verify-otp.resend');
     Route::post('/security/lock-session', [ClientSecurityController::class, 'lockSession'])->name('security.lock-session');
     Route::post('/security/unlock-session', [ClientSecurityController::class, 'unlockSession'])->name('security.unlock-session');
+    Route::post('/security/biometric-unlock-session', [ClientSecurityController::class, 'biometricUnlockSession'])->name('security.biometric-unlock-session');
+    Route::post('/security/quick-register-passkey', [ClientSecurityController::class, 'quickRegisterPasskey'])->name('security.quick-register-passkey');
 
     // WebAuthn Biometric Passkeys (Touch ID / Face ID / Windows Hello)
     Route::post('/security/passkey/register-options', [ClientSecurityController::class, 'passkeyRegisterOptions'])->name('security.passkey.register-options');
@@ -426,6 +428,7 @@ Route::prefix('/client')->middleware(['auth', 'security.setup'])->as('client.')-
 
     // client document center
     Route::get('/document-center', [ClientViewController::class, 'documentCenter'])->name('documents.index');
+    Route::post('/document-center/upload', [ClientViewController::class, 'uploadClientDocument'])->name('documents.upload');
     Route::get('/document-center/{id}/print', [ClientViewController::class, 'viewDocument'])->name('documents.print');
     Route::post('/document-center/{id}/approve', [ClientViewController::class, 'approveDocument'])->name('documents.approve');
     Route::post('/document-center/{id}/sign-electronic', [ClientViewController::class, 'signDocumentElectronically'])->name('documents.sign-electronic');

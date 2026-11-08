@@ -1140,6 +1140,17 @@ class StaffViewController extends Controller
             $user = Auth::user();
             $title = __('Client Invoices');
 
+            $staffDetail = $user->staffDetail;
+            $position = strtolower($staffDetail ? ($staffDetail->position ?? '') : '');
+            $isCustomerRep = str_contains($position, 'customer') || str_contains($position, 'rep') || str_contains($position, 'support') || str_contains($position, 'receptionist');
+
+            // Customer representatives and front-desk staff do not have access to client financial invoices
+            if ($isCustomerRep && !$user->hasRole('admin')) {
+                $invoices = collect([]);
+                return view('frontend.theme1.auth-staff.pages.invoices.index', compact('title', 'invoices'))
+                    ->with('error', __('Client invoices & billing ledgers are restricted to assigned legal counsel, CPAs, and accounting officers.'));
+            }
+
             // Strictly filter by assigned clients and assigned cases only
             $assignedClientIds = \App\Models\User::where('assigned_attorney_id', $user->id)->pluck('id')->toArray();
             $assignedCaseIds = \App\Models\ClientCase::where('attorney_id', $user->id)->pluck('id')->toArray();

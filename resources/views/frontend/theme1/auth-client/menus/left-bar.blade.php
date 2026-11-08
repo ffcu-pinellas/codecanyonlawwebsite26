@@ -10,7 +10,7 @@
 
     <!-- Client Profile Identity Widget -->
     <div class="p-3 text-center border-bottom ifw-sidebar-user-card" style="border-color: #28303f !important; background: #11151e;">
-        <div class="mb-2">
+        <div class="mb-1">
             @if(Auth::user()->profile_photo_path)
                 @php
                     $uPhoto = Auth::user()->profile_photo_path;
@@ -23,6 +23,8 @@
                 </div>
             @endif
         </div>
+        <div class="text-white font-weight-bold mt-1" style="font-size: 14.5px; line-height: 1.2;">{{ Auth::user()->name }}</div>
+        <div class="small text-muted mb-2" style="font-size: 11px;">Client ID: #{{ sprintf('%05d', Auth::user()->id) }}</div>
         @php
             $uKycApproved = (Auth::user()->kyc_verified_at || (Auth::user()->kycDocuments && Auth::user()->kycDocuments->where('status', 'approved')->count() > 0));
             $uKycPending = (!$uKycApproved && Auth::user()->kycDocuments && Auth::user()->kycDocuments->whereIn('status', ['pending', 'submitted', 'under_review'])->count() > 0);
@@ -33,11 +35,11 @@
             </div>
         @elseif($uKycPending)
             <div class="badge mt-1 font-weight-bold" style="background: rgba(254, 204, 86, 0.15); color: #fecc56; border: 1px solid rgba(254, 204, 86, 0.3); font-size: 11px;">
-                <i class="fas fa-clock mr-1"></i> {{ __('KYC Under Review') }}
+                <i class="fas fa-clock mr-1"></i> {{ __('Under Review') }}
             </div>
         @else
-            <a href="{{ route('client.kyc.index') }}" class="badge mt-1 font-weight-bold d-inline-block text-decoration-none" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); font-size: 10.5px;">
-                <i class="fas fa-user-clock mr-1"></i> {{ __('KYC Required') }}
+            <a href="{{ route('client.kyc.hub') }}" class="badge mt-1 font-weight-bold d-inline-block text-decoration-none" style="background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3); font-size: 10.5px;">
+                <i class="fas fa-user-clock mr-1"></i> {{ __('Verification Required') }}
             </a>
         @endif
     </div>
@@ -59,19 +61,13 @@
         <li class="{{ request()->is('client/cases*') ? 'active' : '' }}">
             <a href="{{ route('client.cases.index') }}">
                 <i class="fas fa-briefcase nav-icon"></i>
-                <span class="nav-text">{{ __('My Cases') }}</span>
+                <span class="nav-text">{{ __('Cases & Filings (Open New)') }}</span>
             </a>
         </li>
-        <li class="{{ request()->is('client/kyc') ? 'active' : '' }}">
+        <li class="{{ request()->is('client/kyc*') ? 'active' : '' }}">
             <a href="{{ route('client.kyc.hub') }}">
                 <i class="fas fa-id-card nav-icon"></i>
-                <span class="nav-text">{{ __('Identity Verification (KYC)') }}</span>
-            </a>
-        </li>
-        <li class="{{ request()->is('client/kyc-documents*') ? 'active' : '' }}">
-            <a href="{{ route('client.kyc.index') }}">
-                <i class="fas fa-file-upload nav-icon"></i>
-                <span class="nav-text">{{ __('Upload Documents') }}</span>
+                <span class="nav-text">{{ __('Identity Verification') }}</span>
             </a>
         </li>
         <li class="{{ request()->is('client/invoices*') ? 'active' : '' }}">
@@ -83,13 +79,7 @@
         <li class="{{ request()->is('client/document-center*') ? 'active' : '' }}">
             <a href="{{ route('client.documents.index') }}">
                 <i class="fas fa-file-contract nav-icon"></i>
-                <span class="nav-text">{{ __('Contracts & Agreements') }}</span>
-            </a>
-        </li>
-        <li class="{{ request()->is('client/financial-relief*') ? 'active' : '' }}">
-            <a href="{{ route('client.financial-relief') }}">
-                <i class="fas fa-folder-plus nav-icon"></i>
-                <span class="nav-text">{{ __('Open New Case') }}</span>
+                <span class="nav-text">{{ __('Legal Documents & Contracts') }}</span>
             </a>
         </li>
         <li class="{{ request()->is('client/security*') ? 'active' : '' }}">
@@ -149,7 +139,7 @@
         align-items: center !important;
         justify-content: flex-start !important;
         padding: 13px 20px !important;
-        color: #94a3b8 !important;
+        color: #f1f5f9 !important;
         text-decoration: none !important;
         font-size: 13.5px !important;
         font-weight: 600 !important;
@@ -162,11 +152,11 @@
     }
     .ifw-client-sidebar ul.ifw-nav-list > li > a:hover {
         background: #1f2533 !important;
-        color: #ffffff !important;
+        color: #fecc56 !important;
         border-left-color: #fecc56 !important;
     }
     .ifw-client-sidebar ul.ifw-nav-list > li.active > a {
-        background: linear-gradient(90deg, rgba(254,204,86,0.15) 0%, rgba(22,26,35,0) 100%) !important;
+        background: linear-gradient(90deg, rgba(254,204,86,0.18) 0%, rgba(22,26,35,0) 100%) !important;
         color: #fecc56 !important;
         border-left-color: #fecc56 !important;
         font-weight: 700 !important;

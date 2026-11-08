@@ -155,7 +155,7 @@ class SendUnreadMessagesDigest extends Command
                     $msg->to($user->email, $user->name)->subject($subject);
                 });
 
-                Cache::put($throttleKey, true, now()->addMinutes(60));
+                Cache::put($throttleKey, true, now()->addHours(4));
                 $sentCount++;
                 $this->info("Dispatched digest to {$user->email} for {$count} unread message(s).");
             } catch (\Throwable $e) {

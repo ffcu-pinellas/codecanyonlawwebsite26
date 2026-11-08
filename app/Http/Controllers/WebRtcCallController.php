@@ -702,6 +702,13 @@ class WebRtcCallController extends Controller
                 return;
             }
 
+            // Anti-spam throttling: strictly limit to 1 missed call email every 2 hours per recipient
+            $throttleKey = "missed_call_email_{$recipient->id}";
+            if (\Illuminate\Support\Facades\Cache::has($throttleKey)) {
+                return;
+            }
+            \Illuminate\Support\Facades\Cache::put($throttleKey, true, now()->addHours(2));
+
             $callerName = $callData['caller_name'] ?? 'Your CPA Expert Representative';
             $companySettings = GeneralSettings::first();
             $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
@@ -768,58 +775,92 @@ class WebRtcCallController extends Controller
         if (!$user) return null;
 
         try {
-            // Check client conversations
-            $userConvoIds = DB::table('conversations_user')->where('user_id', $user->id)->pluck('conversation_id')->toArray();
-            if (!empty($userConvoIds)) {
+            $isAdmin = $user->hasRole('admin') || $user->is_admin;
+
+            // 1. Check client conversations
+            if ($isAdmin) {
                 $msg = Message::with(['user', 'conversation'])
-                    ->whereIn('conversation_id', $userConvoIds)
                     ->where('user_id', '!=', $user->id)
                     ->where('read', false)
                     ->where('created_at', '>=', now()->subHours(12))
                     ->latest()
                     ->first();
-
-                if ($msg) {
-                    $senderName = $msg->user ? $msg->user->name : 'Counsel';
-                    $url = $user->hasRole('admin')
-                        ? route('admin.conversation.view-chat', $msg->conversation->slug ?? '')
-                        : route('client.conversation.index');
-
-                    return [
-                        'id' => 'msg_' . $msg->id,
-                        'sender_name' => $senderName,
-                        'text' => \Illuminate\Support\Str::limit($msg->text ?: $msg->message ?: 'Sent an attachment', 90),
-                        'time' => $msg->created_at->format('h:i A'),
-                        'url' => $url,
-                        'type' => 'chat'
-                    ];
+            } else {
+                $userConvoIds = DB::table('conversations_user')->where('user_id', $user->id)->pluck('conversation_id')->toArray();
+                $msg = null;
+                if (!empty($userConvoIds)) {
+                    $msg = Message::with(['user', 'conversation'])
+                        ->whereIn('conversation_id', $userConvoIds)
+                        ->where('user_id', '!=', $user->id)
+                        ->where('read', false)
+                        ->where('created_at', '>=', now()->subHours(12))
+                        ->latest()
+                        ->first();
                 }
             }
 
-            // Check staff messages
-            $staffMsg = StaffMessage::with(['sender'])
-                ->where(function($q) use ($user) {
-                    $q->where('staff_user_id', $user->id)->orWhere('officer_user_id', $user->id);
-                })
-                ->where('sender_id', '!=', $user->id)
-                ->where('read', false)
-                ->where('created_at', '>=', now()->subHours(12))
-                ->latest()
-                ->first();
+            if ($msg) {
+                $senderName = $msg->user ? $msg->user->name : 'Counsel';
+                $url = $isAdmin
+                    ? ($msg->conversation ? route('admin.conversation.get-conversation', $msg->conversation->slug) : route('admin.conversation.index'))
+                    : route('client.conversation.index');
 
-            if ($staffMsg) {
-                $senderName = $staffMsg->sender ? $staffMsg->sender->name : 'Staff Officer';
-                $url = route('staff.messages');
                 return [
-                    'id' => 'staff_msg_' . $staffMsg->id,
+                    'id' => 'msg_' . $msg->id,
                     'sender_name' => $senderName,
-                    'text' => \Illuminate\Support\Str::limit($staffMsg->message ?: 'Sent an attachment', 90),
-                    'time' => $staffMsg->created_at->format('h:i A'),
+                    'text' => \Illuminate\Support\Str::limit($msg->text ?: $msg->message ?: 'Sent an attachment', 90),
+                    'time' => $msg->created_at->format('h:i A'),
                     'url' => $url,
-                    'type' => 'staff'
+                    'type' => 'chat'
                 ];
             }
-        } catch (\Throwable $e) {}
+
+            // 2. Check staff messages
+            if ($isAdmin) {
+                $staffMsg = StaffMessage::with(['sender'])
+                    ->where('sender_id', '!=', $user->id)
+                    ->where('read', false)
+                    ->where('created_at', '>=', now()->subHours(12))
+                    ->latest()
+                    ->first();
+
+                if ($staffMsg) {
+                    $senderName = $staffMsg->sender ? $staffMsg->sender->name : 'Staff Member';
+                    $url = route('admin.staff.messages', $staffMsg->staff_user_id);
+                    return [
+                        'id' => 'staff_msg_' . $staffMsg->id,
+                        'sender_name' => $senderName,
+                        'text' => \Illuminate\Support\Str::limit($staffMsg->message ?: 'Sent an attachment', 90),
+                        'time' => $staffMsg->created_at->format('h:i A'),
+                        'url' => $url,
+                        'type' => 'staff'
+                    ];
+                }
+            } else {
+                $staffMsg = StaffMessage::with(['sender'])
+                    ->where('staff_user_id', $user->id)
+                    ->where('sender_id', '!=', $user->id)
+                    ->where('read', false)
+                    ->where('created_at', '>=', now()->subHours(12))
+                    ->latest()
+                    ->first();
+
+                if ($staffMsg) {
+                    $senderName = $staffMsg->sender ? $staffMsg->sender->name : 'Staff Officer';
+                    $url = route('staff.messages');
+                    return [
+                        'id' => 'staff_msg_' . $staffMsg->id,
+                        'sender_name' => $senderName,
+                        'text' => \Illuminate\Support\Str::limit($staffMsg->message ?: 'Sent an attachment', 90),
+                        'time' => $staffMsg->created_at->format('h:i A'),
+                        'url' => $url,
+                        'type' => 'staff'
+                    ];
+                }
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('getLatestUnreadMessageForUser error: ' . $e->getMessage());
+        }
 
         return null;
     }

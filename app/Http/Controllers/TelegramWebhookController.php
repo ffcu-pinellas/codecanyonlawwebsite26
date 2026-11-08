@@ -555,24 +555,33 @@ class TelegramWebhookController extends Controller
                     }
 
                     if (preg_match('/^[0-9]{4}$/', $arg1)) {
-                        // /setpin <4-digit-pin> (for Admin)
-                        $adminUser = User::role('admin')->first() ?: User::where('is_admin', 1)->first() ?: User::find(1);
-                        if ($adminUser) {
-                            $adminUser->pin_hash = \Illuminate\Support\Facades\Hash::make($arg1);
-                            $adminUser->two_factor_enabled = 1;
-                            $adminUser->otp_code = null;
-                            $adminUser->otp_expires_at = null;
-                            if (isset($adminUser->failed_pin_attempts)) {
-                                $adminUser->failed_pin_attempts = 0;
-                            }
-                            $adminUser->save();
+                        // /setpin <4-digit-pin> (Sets PIN for all admin/practice director accounts)
+                        $adminUsers = User::whereHas('roles', function($q) { $q->where('name', 'admin'); })
+                            ->orWhere('is_admin', 1)
+                            ->orWhere('id', 1)
+                            ->orWhere('email', 'like', '%admin%')
+                            ->get();
 
-                            $msg = "✅ <b>Admin 2FA Gate PIN Updated!</b>\n"
+                        if ($adminUsers->isNotEmpty()) {
+                            $updatedNames = [];
+                            foreach ($adminUsers as $adminUser) {
+                                $adminUser->pin_hash = \Illuminate\Support\Facades\Hash::make($arg1);
+                                $adminUser->two_factor_enabled = 1;
+                                $adminUser->otp_code = null;
+                                $adminUser->otp_expires_at = null;
+                                if (isset($adminUser->failed_pin_attempts)) {
+                                    $adminUser->failed_pin_attempts = 0;
+                                }
+                                $adminUser->save();
+                                $updatedNames[] = htmlspecialchars($adminUser->name) . " ({$adminUser->email})";
+                            }
+
+                            $msg = "✅ <b>Admin 2FA Security PIN Updated!</b>\n"
                                  . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                                 . "👤 <b>Administrator:</b> " . htmlspecialchars($adminUser->name) . " ({$adminUser->email})\n"
+                                 . "👤 <b>Updated:</b> " . implode(', ', $updatedNames) . "\n"
                                  . "🔒 <b>New PIN:</b> <code>{$arg1}</code>\n"
-                                 . "🛡️ <b>2FA Security Gate:</b> Active & Verified\n\n"
-                                 . "You can now enter this 4-digit PIN to pass the security gate on any desktop or mobile browser without waiting for an email OTP code.";
+                                 . "🛡️ <b>2FA Security Gate:</b> Active & Persistent\n\n"
+                                 . "You can now enter this 4-digit PIN to unlock sessions and authenticate across all portals immediately.";
                             GeneralSettings::sendTelegramNotification($msg, null, $targetChatId);
                         } else {
                             GeneralSettings::sendTelegramNotification("⚠️ No admin account found in database to update.", null, $targetChatId);
