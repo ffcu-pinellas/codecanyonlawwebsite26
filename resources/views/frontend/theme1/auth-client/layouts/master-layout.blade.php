@@ -36,8 +36,98 @@
             </span>
         </div>
 
-        <!-- Right Header Utility Controls (Dark/Light, Currency, Language, Profile) -->
+        <!-- Right Header Utility Controls (Notifications, Dark/Light, Currency, Language, Profile) -->
         <div class="d-flex align-items-center" style="gap: 8px;">
+
+            <!-- 0. Header Notification Bell Dropdown -->
+            @php
+                $headerClientId = Auth::id();
+                $headerUnreadMsgs = 0;
+                $headerPendingDocs = 0;
+                try {
+                    $uConvoIds = \Illuminate\Support\Facades\DB::table('conversations_user')->where('user_id', $headerClientId)->pluck('conversation_id')->toArray();
+                    if (!empty($uConvoIds)) {
+                        $headerUnreadMsgs = \App\Models\Message::whereIn('conversation_id', $uConvoIds)
+                            ->where('user_id', '!=', $headerClientId)
+                            ->where('read', false)
+                            ->count();
+                    }
+
+                    $hPendingLogs = \App\Models\DocumentLog::where('client_id', $headerClientId)
+                        ->whereIn('action_required', ['sign_upload', 'sign_pin', 'upload_required'])
+                        ->where('status', '!=', 'signed')
+                        ->count();
+
+                    $hCaseIds = Auth::user()->clientCases()->pluck('id')->toArray();
+                    $hasCId = \Illuminate\Support\Facades\Schema::hasColumn('case_documents', 'client_id');
+                    $hPendingCaseDocs = \App\Models\CaseDocument::where(function($q) use ($headerClientId, $hCaseIds, $hasCId) {
+                            $q->where('user_id', $headerClientId);
+                            if (!empty($hCaseIds)) {
+                                $q->orWhereIn('case_id', $hCaseIds);
+                            }
+                            if ($hasCId) {
+                                $q->orWhere('client_id', $headerClientId);
+                            }
+                        })
+                        ->where('requires_signature', true)
+                        ->where('is_signed', false)
+                        ->count();
+
+                    $headerPendingDocs = $hPendingLogs + $hPendingCaseDocs;
+                } catch (\Throwable $e) {}
+                $headerTotalAlerts = $headerUnreadMsgs + $headerPendingDocs;
+            @endphp
+            <div class="dropdown">
+                <button class="btn btn-sm btn-dark position-relative p-2" type="button" id="clientNotificationBellDropdown" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Notifications & Pending Actions" style="background: #161a23; border: 1px solid #28303f; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-bell text-warning" style="font-size: 13.5px;"></i>
+                    @if($headerTotalAlerts > 0)
+                        <span class="position-absolute badge badge-danger rounded-circle font-weight-bold" style="top: -4px; right: -4px; font-size: 9.5px; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);">
+                            {{ $headerTotalAlerts > 9 ? '9+' : $headerTotalAlerts }}
+                        </span>
+                    @endif
+                </button>
+                <div class="dropdown-menu dropdown-menu-right shadow-lg p-0" aria-labelledby="clientNotificationBellDropdown" style="background: #161a23; border: 1px solid #28303f; min-width: 290px; border-radius: 8px; overflow: hidden;">
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="background: #11151e; border-color: #28303f !important;">
+                        <span class="font-weight-bold text-white small text-uppercase" style="letter-spacing: 0.5px;">Notifications</span>
+                        <span class="badge {{ $headerTotalAlerts > 0 ? 'badge-warning text-dark' : 'badge-secondary' }} font-weight-bold" style="font-size: 10px;">
+                            {{ $headerTotalAlerts }} Pending
+                        </span>
+                    </div>
+                    <div class="p-2" style="max-height: 280px; overflow-y: auto;">
+                        @if($headerUnreadMsgs > 0)
+                            <a href="{{ route('client.conversation.index') }}" class="dropdown-item py-2 px-2 text-light rounded d-flex align-items-center mb-1" style="font-size: 12px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2);">
+                                <div class="mr-2 text-danger" style="font-size: 16px;"><i class="fas fa-comments"></i></div>
+                                <div style="min-width: 0;">
+                                    <div class="font-weight-bold text-white text-truncate">{{ $headerUnreadMsgs }} Unread Message(s)</div>
+                                    <small class="text-muted">Counsel sent new communication</small>
+                                </div>
+                            </a>
+                        @endif
+
+                        @if($headerPendingDocs > 0)
+                            <a href="{{ route('client.documents.index') }}" class="dropdown-item py-2 px-2 text-light rounded d-flex align-items-center mb-1" style="font-size: 12px; background: rgba(254, 204, 86, 0.08); border: 1px solid rgba(254, 204, 86, 0.2);">
+                                <div class="mr-2 text-warning" style="font-size: 16px;"><i class="fas fa-signature"></i></div>
+                                <div style="min-width: 0;">
+                                    <div class="font-weight-bold text-white text-truncate">{{ $headerPendingDocs }} Document(s) Awaiting E-Sign</div>
+                                    <small class="text-muted">Requires your cryptographic signature</small>
+                                </div>
+                            </a>
+                        @endif
+
+                        @if($headerTotalAlerts == 0)
+                            <div class="text-center py-3 text-muted small">
+                                <i class="fas fa-check-circle text-success fa-2x mb-2 d-block"></i>
+                                <span>{{ __('All caught up! No pending actions.') }}</span>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="p-2 text-center border-top" style="border-color: #28303f !important; background: #11151e;">
+                        <a href="{{ route('client.documents.index') }}" class="small text-warning font-weight-bold text-decoration-none" style="font-size: 11px;">
+                            {{ __('View Secure Document Center') }} &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
 
             <!-- 1. Dark / Light Mode Switcher -->
             <button type="button" id="themeModeToggle" class="btn btn-sm btn-outline-secondary font-weight-bold d-flex align-items-center" onclick="toggleThemeMode()" title="Toggle Dark / Light Mode" style="border-radius: 20px; padding: 4px 10px; font-size: 11.5px; border-color: #3b4252; color: #cbd5e1; background: #161a23;">

@@ -679,8 +679,8 @@ function initSignatureCanvas(docId) {
     modeMap[docId] = 'draw';
 
     var container = canvas.parentElement;
-    var rect = container.getBoundingClientRect();
-    var cssWidth = rect.width > 20 ? rect.width : (canvas.offsetWidth || 380);
+    var rect = container ? container.getBoundingClientRect() : { width: 0 };
+    var cssWidth = rect.width > 50 ? rect.width : (container.offsetWidth || canvas.parentElement.clientWidth || 380);
     var cssHeight = 160;
 
     // High-DPI scaling for crisp lines on mobile & retina screens

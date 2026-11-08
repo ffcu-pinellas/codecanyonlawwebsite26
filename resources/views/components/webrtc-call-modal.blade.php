@@ -419,7 +419,7 @@
           <span class="badge px-3 py-1 font-weight-bold" id="activeCallTimer" style="font-size: 14px !important; font-weight: 900 !important; font-family: monospace, sans-serif !important; letter-spacing: 1.5px !important; background: #000000 !important; color: #fecc56 !important; border: 2px solid #fecc56 !important; border-radius: 8px !important; padding: 4px 10px !important; box-shadow: 0 0 10px rgba(254,204,86,0.3) !important;">
             00:00
           </span>
-          <button type="button" class="btn btn-sm font-weight-bold text-dark" id="btnMinimizeCall" onclick="toggleCallMinimize()" title="Minimize Call (Pin to Top Bar)" style="background: linear-gradient(135deg, #fecc56, #f0a500) !important; color: #000000 !important; border: 1.5px solid #ffffff !important; border-radius: 8px; padding: 4px 10px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 10px rgba(254, 204, 86, 0.4); cursor: pointer;">
+          <button type="button" class="btn btn-sm font-weight-bold text-dark" id="btnMinimizeCall" title="Minimize Call (Pin to Top Bar)" style="background: linear-gradient(135deg, #fecc56, #f0a500) !important; color: #000000 !important; border: 1.5px solid #ffffff !important; border-radius: 8px; padding: 4px 10px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 10px rgba(254, 204, 86, 0.4); cursor: pointer;">
             <i class="fas fa-compress-alt" id="iconMinimizeCall" style="font-size: 12px; color: #000000 !important;"></i>
             <span style="font-size: 11px; font-weight: 800; color: #000000 !important;">Minimize</span>
           </button>
@@ -652,6 +652,10 @@
         osc2.start(now);
         osc1.stop(now + 2.0);
         osc2.stop(now + 2.0);
+
+        if ('vibrate' in navigator) {
+          try { navigator.vibrate([400, 200, 400, 200, 800]); } catch(e) {}
+        }
       }
 
       ringBurst();
@@ -665,6 +669,9 @@
     if (ringtoneInterval) {
       clearInterval(ringtoneInterval);
       ringtoneInterval = null;
+    }
+    if ('vibrate' in navigator) {
+      try { navigator.vibrate(0); } catch(e) {}
     }
   }
 
@@ -691,39 +698,52 @@
     if (!('Notification' in window)) return;
     const targetUrl = clickUrl || window.location.href;
     const iconUrl = '{{ asset("assets/images/logo/logo.png") }}';
+    const isCall = title.toLowerCase().includes('call');
 
     if (Notification.permission === 'granted') {
-      // 1. Android Chrome & PWA: Requires ServiceWorkerRegistration.showNotification()
-      if ('serviceWorker' in navigator && navigator.serviceWorker.ready) {
-        navigator.serviceWorker.ready.then(function(reg) {
-          if (reg && reg.showNotification) {
-            reg.showNotification(title, {
-              body: body,
-              icon: iconUrl,
-              badge: iconUrl,
-              vibrate: [250, 100, 250],
-              data: { url: targetUrl }
-            });
-            return;
-          }
-        }).catch(function() {});
+      const notifOptions = {
+        body: body,
+        icon: iconUrl,
+        badge: iconUrl,
+        vibrate: isCall ? [500, 250, 500, 250, 1000, 500, 500, 250, 500, 250, 1000] : [200, 100, 200],
+        tag: isCall ? 'incoming-call' : ('chat-msg-' + Date.now()),
+        renotify: true,
+        requireInteraction: isCall,
+        data: { url: targetUrl }
+      };
+
+      if (isCall && 'vibrate' in navigator) {
+        try { navigator.vibrate([500, 250, 500, 250, 1000, 500, 500, 250, 500, 250, 1000]); } catch(e) {}
       }
-      // 2. Desktop Browser standard Notification fallback
-      try {
-        const notif = new Notification(title, {
-          body: body,
-          icon: iconUrl,
-          requireInteraction: true
+
+      // Check service worker registration first for mobile Android/PWA
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(function(reg) {
+          if (reg && reg.showNotification) {
+            reg.showNotification(title, notifOptions);
+          } else {
+            fallbackShowNotification(title, notifOptions, targetUrl);
+          }
+        }).catch(function() {
+          fallbackShowNotification(title, notifOptions, targetUrl);
         });
-        notif.onclick = function() {
-          window.focus();
-          if (targetUrl) window.location.href = targetUrl;
-          this.close();
-        };
-      } catch (e) {}
+      } else {
+        fallbackShowNotification(title, notifOptions, targetUrl);
+      }
     } else if (Notification.permission === 'default') {
       Notification.requestPermission().catch(() => {});
     }
+  }
+
+  function fallbackShowNotification(title, options, targetUrl) {
+    try {
+      const notif = new Notification(title, options);
+      notif.onclick = function() {
+        window.focus();
+        if (targetUrl) window.location.href = targetUrl;
+        this.close();
+      };
+    } catch(e) {}
   }
 
   let callStartTimeMs = null;
@@ -1676,13 +1696,21 @@
 
   // PiP Call Window Minimization (WhatsApp & FaceTime Top-Pinned Dynamic Island Style)
   let isCallMinimized = false;
+  let lastMinimizeToggleTime = 0;
 
-  function toggleCallMinimize() {
+  function toggleCallMinimize(forceState) {
+    const now = Date.now();
+    if (now - lastMinimizeToggleTime < 250) return;
+    lastMinimizeToggleTime = now;
+
+    if (typeof forceState === 'boolean') {
+      isCallMinimized = forceState;
+    } else {
+      isCallMinimized = !isCallMinimized;
+    }
+
     const modalEl = document.getElementById('activeWebRtcCallModal');
     const topBarEl = document.getElementById('webrtcTopPinnedCallBar');
-    const backdrop = document.querySelector('.modal-backdrop');
-
-    isCallMinimized = !isCallMinimized;
 
     if (isCallMinimized) {
       // Sync peer name, timer and call type badge to top-pinned bar
@@ -1896,7 +1924,47 @@
     if (btnEnd) btnEnd.addEventListener('click', () => hangUpCall(true));
 
     const btnMin = document.getElementById('btnMinimizeCall');
-    if (btnMin) btnMin.addEventListener('click', toggleCallMinimize);
+    if (btnMin) {
+      btnMin.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleCallMinimize(true);
+      });
+    }
+
+    const pipMute = document.getElementById('pipBtnMute');
+    if (pipMute) {
+      pipMute.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (localMediaStream) {
+          const track = localMediaStream.getAudioTracks()[0];
+          if (track) {
+            track.enabled = !track.enabled;
+            this.innerHTML = track.enabled ? '<i class="fas fa-microphone" style="font-size: 12px;"></i>' : '<i class="fas fa-microphone-slash text-danger" style="font-size: 12px;"></i>';
+            const btnA = document.getElementById('btnToggleAudio');
+            if (btnA) {
+              if (track.enabled) {
+                btnA.classList.remove('active');
+                btnA.innerHTML = '<i class="fas fa-microphone"></i>';
+              } else {
+                btnA.classList.add('active');
+                btnA.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+              }
+            }
+          }
+        }
+      });
+    }
+
+    const pipHang = document.getElementById('pipBtnHangup');
+    if (pipHang) {
+      pipHang.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        hangUpCall(true);
+      });
+    }
 
     // One-time prompt for browser notifications on first user gesture
     window.addEventListener('click', function reqPerm() {

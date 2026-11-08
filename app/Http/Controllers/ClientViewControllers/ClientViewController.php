@@ -942,8 +942,24 @@ class ClientViewController extends Controller
                 }
             }
 
-            $filePath = public_path($document->file_path);
-            if (!File::exists($filePath)) {
+            // Option to view interactive HTML preview
+            if ($request->has('html') && !empty($document->custom_content)) {
+                return view('backend.pages.cases.view-custom-doc', [
+                    'document' => $document,
+                    'case'     => $document->clientCase,
+                    'content'  => $document->custom_content,
+                ]);
+            }
+
+            $filePath = !empty($document->file_path) ? public_path($document->file_path) : null;
+            if (!$filePath || !File::exists($filePath)) {
+                if (!empty($document->custom_content)) {
+                    return view('backend.pages.cases.view-custom-doc', [
+                        'document' => $document,
+                        'case'     => $document->clientCase,
+                        'content'  => $document->custom_content,
+                    ]);
+                }
                 abort(404, 'File not found on server.');
             }
 
@@ -1223,11 +1239,73 @@ class ClientViewController extends Controller
             }
 
             $sigData = $request->signature_data ?: $request->signature_text;
+
+            // Save canvas image as physical PNG for robust PDF embedding
+            $sigPublicUrl = null;
+            $sigLocalPath = null;
+            if ($request->filled('signature_data') && str_starts_with($request->signature_data, 'data:image')) {
+                try {
+                    $sigDir = public_path('upload/signatures');
+                    if (!\Illuminate\Support\Facades\File::exists($sigDir)) {
+                        \Illuminate\Support\Facades\File::makeDirectory($sigDir, 0755, true);
+                    }
+                    $imgData = preg_replace('/^data:image\/\w+;base64,/', '', $request->signature_data);
+                    $decodedImg = base64_decode($imgData);
+                    if ($decodedImg) {
+                        $sigFileName = 'sig_case_' . $doc->id . '_' . time() . '.png';
+                        $sigLocalPath = $sigDir . '/' . $sigFileName;
+                        file_put_contents($sigLocalPath, $decodedImg);
+                        $sigPublicUrl = asset('upload/signatures/' . $sigFileName);
+                        $sigData = 'upload/signatures/' . $sigFileName;
+                    }
+                } catch (\Throwable $e) {}
+            }
+
             $doc->update([
                 'is_signed' => true,
                 'signed_at' => now(),
                 'signature_data' => $sigData,
             ]);
+
+            // Re-render and permanently seal PDF with embedded signature and official corporate stamp
+            if (!empty($doc->custom_content)) {
+                try {
+                    $client = $doc->client ?: $user;
+                    $clientCase = $doc->clientCase;
+                    $companySettings = \App\Models\GeneralSettings::first();
+                    $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+                    $title = $doc->document_title ?: 'Legal Document';
+                    $content = $doc->custom_content;
+                    $dateStr = \Carbon\Carbon::parse($doc->signed_at)->format('F d, Y');
+                    $isPdf = true;
+                    $isSigned = true;
+                    $signatureData = $sigLocalPath ?: ($sigPublicUrl ?: $sigData);
+                    $attorneyName = ($client && $client->assignedAttorney) ? $client->assignedAttorney->name : 'Gerald W. Allen, Esq.';
+                    $attorneyTitle = 'Senior Lead Counsel & Practice Director';
+                    $caseNumber = $clientCase ? $clientCase->case_number : 'YCE-' . date('Y');
+                    $document = $doc;
+
+                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', compact(
+                        'title', 'content', 'client', 'companyName', 'dateStr', 'isPdf',
+                        'attorneyName', 'attorneyTitle', 'caseNumber', 'isSigned', 'signatureData', 'document'
+                    ));
+
+                    $targetFilePath = !empty($doc->file_path) ? public_path($doc->file_path) : null;
+                    if (empty($targetFilePath) || !\Illuminate\Support\Facades\File::exists(dirname($targetFilePath))) {
+                        $uploadDir = public_path('upload/case-documents');
+                        if (!\Illuminate\Support\Facades\File::exists($uploadDir)) {
+                            \Illuminate\Support\Facades\File::makeDirectory($uploadDir, 0755, true);
+                        }
+                        $fileName = 'doc_' . time() . '_' . $doc->id . '_signed.pdf';
+                        $targetFilePath = $uploadDir . '/' . $fileName;
+                        $doc->file_path = 'upload/case-documents/' . $fileName;
+                        $doc->save();
+                    }
+                    $pdf->save($targetFilePath);
+                } catch (\Throwable $pe) {
+                    \Illuminate\Support\Facades\Log::warning('Could not recompile signed case document PDF: ' . $pe->getMessage());
+                }
+            }
 
             \App\Models\GeneralSettings::sendTelegramNotification("✍️ <b>Document E-Signed</b>\n👤 Client {$user->name} executed: " . ($doc->document_title ?: 'Case Document'));
 
@@ -1262,7 +1340,7 @@ class ClientViewController extends Controller
                 ]);
             }
 
-            return view('frontend.theme1.auth-client.pages.documents.print', compact('title', 'content', 'user', 'companyName'));
+            return view('frontend.theme1.auth-client.pages.documents.print', compact('title', 'content', 'user', 'companyName', 'document'));
         } catch (\Throwable $e) {
             return $this->backWithError($e->getMessage());
         }

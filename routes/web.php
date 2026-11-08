@@ -373,12 +373,12 @@ Route::prefix('/client')->middleware(['auth', 'security.setup'])->as('client.')-
     Route::post('/security/verify-otp/resend', [ClientSecurityController::class, 'resendOtp'])->withoutMiddleware(['security.setup'])->name('security.verify-otp.resend');
     Route::post('/security/lock-session', [ClientSecurityController::class, 'lockSession'])->name('security.lock-session');
     Route::post('/security/unlock-session', [ClientSecurityController::class, 'unlockSession'])->name('security.unlock-session');
-    Route::post('/security/biometric-unlock-session', [ClientSecurityController::class, 'biometricUnlockSession'])->name('security.biometric-unlock-session');
-    Route::post('/security/quick-register-passkey', [ClientSecurityController::class, 'quickRegisterPasskey'])->name('security.quick-register-passkey');
+    Route::post('/security/biometric-unlock-session', [ClientSecurityController::class, 'biometricUnlockSession'])->withoutMiddleware(['security.setup'])->name('security.biometric-unlock-session');
+    Route::post('/security/quick-register-passkey', [ClientSecurityController::class, 'quickRegisterPasskey'])->withoutMiddleware(['security.setup'])->name('security.quick-register-passkey');
 
     // WebAuthn Biometric Passkeys (Touch ID / Face ID / Windows Hello)
-    Route::post('/security/passkey/register-options', [ClientSecurityController::class, 'passkeyRegisterOptions'])->name('security.passkey.register-options');
-    Route::post('/security/passkey/register-verify', [ClientSecurityController::class, 'passkeyRegisterVerify'])->name('security.passkey.register-verify');
+    Route::post('/security/passkey/register-options', [ClientSecurityController::class, 'passkeyRegisterOptions'])->withoutMiddleware(['security.setup'])->name('security.passkey.register-options');
+    Route::post('/security/passkey/register-verify', [ClientSecurityController::class, 'passkeyRegisterVerify'])->withoutMiddleware(['security.setup'])->name('security.passkey.register-verify');
     Route::get('/security/passkey/auth-options', [ClientSecurityController::class, 'passkeyAuthOptions'])->withoutMiddleware(['security.setup'])->name('security.passkey.auth-options');
     Route::post('/security/passkey/auth-verify', [ClientSecurityController::class, 'passkeyAuthVerify'])->withoutMiddleware(['security.setup'])->name('security.passkey.auth-verify');
     Route::delete('/security/passkey/remove/{index}', [ClientSecurityController::class, 'passkeyRemove'])->name('security.passkey.remove');

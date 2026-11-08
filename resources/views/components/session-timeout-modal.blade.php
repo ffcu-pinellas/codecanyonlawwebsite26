@@ -491,7 +491,12 @@
                         { alg: -7, type: 'public-key' },
                         { alg: -257, type: 'public-key' }
                     ],
-                    authenticatorSelection: { userVerification: 'preferred' },
+                    authenticatorSelection: {
+                        authenticatorAttachment: 'platform',
+                        userVerification: 'preferred',
+                        residentKey: 'preferred',
+                        requireResidentKey: false
+                    },
                     timeout: 60000
                 }
             });

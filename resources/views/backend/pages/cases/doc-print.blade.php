@@ -220,14 +220,27 @@
             <tr>
                 <td style="width: 50%; vertical-align: top;">
                     <div style="font-size: 12px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
-                        {{ __('For the Firm') }}
+                        {{ __('Authorized Client / Principal Signatory') }}
                     </div>
                     <div class="signature-line">
                         @if(!empty($isSigned) || (isset($document) && $document->is_signed))
                             @php
                                 $sigContent = isset($document) ? $document->signature_data : ($signatureData ?? null);
+                                $isSigFile = false;
+                                $sigImgPath = null;
+                                if (!empty($sigContent)) {
+                                    if (str_starts_with($sigContent, 'upload/') && file_exists(public_path($sigContent))) {
+                                        $isSigFile = true;
+                                        $sigImgPath = !empty($isPdf) ? public_path($sigContent) : asset($sigContent);
+                                    } elseif (file_exists($sigContent)) {
+                                        $isSigFile = true;
+                                        $sigImgPath = $sigContent;
+                                    }
+                                }
                             @endphp
-                            @if(!empty($sigContent) && str_starts_with($sigContent, 'data:image'))
+                            @if($isSigFile)
+                                <img src="{{ $sigImgPath }}" alt="Client Signature" style="max-height: 48px; max-width: 200px; display: block; margin-bottom: 4px;">
+                            @elseif(!empty($sigContent) && str_starts_with($sigContent, 'data:image'))
                                 <img src="{{ $sigContent }}" alt="Client Signature" style="max-height: 48px; max-width: 200px; display: block; margin-bottom: 4px;">
                             @else
                                 <div style="font-family: 'Brush Script MT', 'Dancing Script', 'Caveat', cursive; font-size: 24px; color: #0b1a30; line-height: 1; margin-bottom: 4px;">

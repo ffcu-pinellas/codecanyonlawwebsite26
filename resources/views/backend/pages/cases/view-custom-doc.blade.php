@@ -158,11 +158,17 @@
                     </div>
                     <div class="signature-line">
                         @if($document->is_signed)
-                            @if(!empty($document->signature_data) && str_starts_with($document->signature_data, 'data:image'))
-                                <img src="{{ $document->signature_data }}" alt="Client Signature" style="max-height: 52px; max-width: 220px; display: block; margin-bottom: 4px;">
+                            @php
+                                $dSig = $document->signature_data;
+                                $isImgFile = !empty($dSig) && (str_starts_with($dSig, 'upload/') || file_exists(public_path($dSig)));
+                            @endphp
+                            @if($isImgFile)
+                                <img src="{{ asset($dSig) }}" alt="Client Signature" style="max-height: 52px; max-width: 220px; display: block; margin-bottom: 4px;">
+                            @elseif(!empty($dSig) && str_starts_with($dSig, 'data:image'))
+                                <img src="{{ $dSig }}" alt="Client Signature" style="max-height: 52px; max-width: 220px; display: block; margin-bottom: 4px;">
                             @else
                                 <div style="font-family: 'Brush Script MT', 'Dancing Script', 'Caveat', cursive; font-size: 26px; color: #0b1a30; line-height: 1; margin-bottom: 4px;">
-                                    {{ $document->signature_data ?: ($clientObj ? $clientObj->name : 'Client Signatory') }}
+                                    {{ $dSig ?: ($clientObj ? $clientObj->name : 'Client Signatory') }}
                                 </div>
                             @endif
                         @endif

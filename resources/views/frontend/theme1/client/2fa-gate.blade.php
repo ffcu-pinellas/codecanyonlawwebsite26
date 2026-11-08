@@ -664,7 +664,7 @@
             var options = await optRes.json();
 
             if (!options.has_passkeys) {
-                var doRegister = confirm("{{ __('No biometric passkey registered on this device yet. Would you like to register Touch ID / Face ID / Windows Hello on this device now?') }}");
+                var doRegister = confirm("{{ __('No biometric passkey registered on this device yet. Would you like to register Touch ID / Face ID / Fingerprint on this device now?') }}");
                 if (doRegister) {
                     await window.setupBiometricsDirectlyFromGate();
                 } else {
@@ -715,9 +715,13 @@
                 btn.disabled = false;
             }
         } catch (e) {
-            if (e.name !== 'NotAllowedError') {
-                console.warn('Biometric passkey error:', e);
-                alert("{{ __('Biometric sign-in error: ') }}" + (e.message || "{{ __('Cancelled') }}"));
+            console.warn('Biometric passkey authentication check:', e);
+            // If device has no local passkey matching credentials from another device (e.g. mobile accessing PC account)
+            var wantSetup = confirm("{{ __('No biometric passkey found for this specific device. Would you like to register this device\'s Touch ID / Fingerprint / Face ID now?') }}");
+            if (wantSetup) {
+                await window.setupBiometricsDirectlyFromGate();
+            } else {
+                switchTab('pin');
             }
             btn.innerHTML = origHtml;
             btn.disabled = false;
@@ -726,17 +730,25 @@
 
     window.setupBiometricsDirectlyFromGate = async function() {
         if (!window.PublicKeyCredential) {
-            alert("{{ __('Biometric authentication is not supported by this browser.') }}");
+            alert("{{ __('Biometric authentication is not supported by this browser. Please use modern Chrome, Safari, or Edge.') }}");
             return;
         }
 
+        var btn = document.getElementById('btnBiometricAuth');
+        var origHtml = btn ? btn.innerHTML : '';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> {{ __("Touch Fingerprint / Face ID sensor...") }}';
+        }
+
         try {
-            var optRes = await fetch("{{ route('auth.passkey.register-options') }}", {
+            var optRes = await fetch("{{ route('client.security.passkey.register-options') }}", {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': "{{ csrf_token() }}",
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             });
             var options = await optRes.json();
@@ -760,7 +772,12 @@
                         { alg: -7, type: 'public-key' },
                         { alg: -257, type: 'public-key' }
                     ],
-                    authenticatorSelection: { userVerification: 'preferred' },
+                    authenticatorSelection: {
+                        authenticatorAttachment: 'platform',
+                        userVerification: 'preferred',
+                        residentKey: 'preferred',
+                        requireResidentKey: false
+                    },
                     timeout: 60000
                 }
             });
@@ -772,12 +789,13 @@
 
             var devName = (/iPhone|iPad|Macintosh/i.test(navigator.userAgent) ? 'Apple Device (Touch/Face ID)' : (/Android/i.test(navigator.userAgent) ? 'Android Biometrics' : 'Windows Hello Device'));
 
-            var saveRes = await fetch("{{ route('auth.passkey.register-verify') }}", {
+            var saveRes = await fetch("{{ route('client.security.passkey.register-verify') }}", {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': "{{ csrf_token() }}",
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: JSON.stringify({
                     credential_id: credId,
@@ -787,6 +805,22 @@
 
             var sData = await saveRes.json();
             if (sData && sData.status === 'ok') {
+                sessionStorage.setItem('biometric_registered', '1');
+                window.location.href = "{{ route('client.dashboard') }}";
+            } else {
+                throw new Error(sData?.message || 'Registration failed');
+            }
+        } catch(err) {
+            console.warn('Passkey registration error:', err);
+            if (err.name !== 'NotAllowedError') {
+                alert(err.message || "{{ __('Could not register biometrics on this device. Please use PIN or Email Code.') }}");
+            }
+            if (btn) {
+                btn.innerHTML = origHtml;
+                btn.disabled = false;
+            }
+        }
+    };
                 // Instantly authenticate session
                 sessionStorage.setItem('biometric_registered', '1');
                 window.location.reload();

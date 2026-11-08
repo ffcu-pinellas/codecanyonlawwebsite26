@@ -40,11 +40,15 @@ self.addEventListener('push', function(event) {
     try { data = event.data.json(); } catch(e) { data = { body: event.data.text() }; }
   }
   const title = data.title || 'Your CPA Expert';
+  const isCall = title.toLowerCase().includes('call') || (data.type && data.type.includes('call'));
   const options = {
     body: data.body || 'New encrypted message in your workspace.',
     icon: data.icon || '/assets/images/logo/logo.png',
     badge: '/assets/images/logo/logo.png',
-    vibrate: [250, 100, 250],
+    vibrate: isCall ? [500, 250, 500, 250, 1000, 500, 500, 250, 500, 250, 1000] : [200, 100, 200],
+    tag: isCall ? 'incoming-call' : ('cpa-msg-' + Date.now()),
+    renotify: true,
+    requireInteraction: isCall,
     data: { url: data.url || '/' }
   };
   event.waitUntil(self.registration.showNotification(title, options));
@@ -59,6 +63,9 @@ self.addEventListener('notificationclick', function(event) {
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
         if (client.url && 'focus' in client) {
+          if ('navigate' in client && urlToOpen !== '/') {
+            client.navigate(urlToOpen);
+          }
           return client.focus();
         }
       }

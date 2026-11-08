@@ -28,6 +28,48 @@
         @php
             $uKycApproved = (Auth::user()->kyc_verified_at || (Auth::user()->kycDocuments && Auth::user()->kycDocuments->where('status', 'approved')->count() > 0));
             $uKycPending = (!$uKycApproved && Auth::user()->kycDocuments && Auth::user()->kycDocuments->whereIn('status', ['pending', 'submitted', 'under_review'])->count() > 0);
+
+            // Real-time notification counters for navigation
+            $sidebarClientId = Auth::id();
+            $unreadChatCount = 0;
+            $pendingDocCount = 0;
+            $activeCasesCount = 0;
+            try {
+                // 1. Unread chat messages from counsel/staff
+                $userConvoIds = \Illuminate\Support\Facades\DB::table('conversations_user')->where('user_id', $sidebarClientId)->pluck('conversation_id')->toArray();
+                if (!empty($userConvoIds)) {
+                    $unreadChatCount = \App\Models\Message::whereIn('conversation_id', $userConvoIds)
+                        ->where('user_id', '!=', $sidebarClientId)
+                        ->where('read', false)
+                        ->count();
+                }
+
+                // 2. Pending documents needing signature or upload
+                $pendingDocLogs = \App\Models\DocumentLog::where('client_id', $sidebarClientId)
+                    ->whereIn('action_required', ['sign_upload', 'sign_pin', 'upload_required'])
+                    ->where('status', '!=', 'signed')
+                    ->count();
+
+                $userCaseIds = Auth::user()->clientCases()->pluck('id')->toArray();
+                $hasClientId = \Illuminate\Support\Facades\Schema::hasColumn('case_documents', 'client_id');
+                $pendingCaseDocs = \App\Models\CaseDocument::where(function($q) use ($sidebarClientId, $userCaseIds, $hasClientId) {
+                        $q->where('user_id', $sidebarClientId);
+                        if (!empty($userCaseIds)) {
+                            $q->orWhereIn('case_id', $userCaseIds);
+                        }
+                        if ($hasClientId) {
+                            $q->orWhere('client_id', $sidebarClientId);
+                        }
+                    })
+                    ->where('requires_signature', true)
+                    ->where('is_signed', false)
+                    ->count();
+
+                $pendingDocCount = $pendingDocLogs + $pendingCaseDocs;
+
+                // 3. Active cases
+                $activeCasesCount = Auth::user()->clientCases()->where('status', '!=', 'closed')->count();
+            } catch (\Throwable $e) {}
         @endphp
         @if($uKycApproved)
             <div class="badge mt-1 font-weight-bold" style="background: rgba(34, 197, 94, 0.15); color: #4ade80; border: 1px solid rgba(34, 197, 94, 0.3); font-size: 11px;">
@@ -53,15 +95,29 @@
             </a>
         </li>
         <li class="{{ request()->is('client/conversation*') ? 'active' : '' }}">
-            <a href="{{ route('client.conversation.index') }}">
-                <i class="fas fa-comments nav-icon"></i>
-                <span class="nav-text">{{ __('Live Support & Chat') }}</span>
+            <a href="{{ route('client.conversation.index') }}" class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-comments nav-icon mr-2"></i>
+                    <span class="nav-text">{{ __('Live Support & Chat') }}</span>
+                </div>
+                @if($unreadChatCount > 0)
+                    <span class="badge badge-danger font-weight-bold" style="font-size: 10px; padding: 2px 7px; border-radius: 10px; box-shadow: 0 0 8px rgba(239, 68, 68, 0.6); animation: pulse 1.8s infinite;">
+                        {{ $unreadChatCount }}
+                    </span>
+                @endif
             </a>
         </li>
         <li class="{{ request()->is('client/cases*') ? 'active' : '' }}">
-            <a href="{{ route('client.cases.index') }}">
-                <i class="fas fa-briefcase nav-icon"></i>
-                <span class="nav-text">{{ __('Cases & Filings') }}</span>
+            <a href="{{ route('client.cases.index') }}" class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-briefcase nav-icon mr-2"></i>
+                    <span class="nav-text">{{ __('Cases & Filings') }}</span>
+                </div>
+                @if($activeCasesCount > 0)
+                    <span class="badge font-weight-bold text-muted" style="background: rgba(148, 163, 184, 0.15); font-size: 10px; padding: 2px 6px; border-radius: 6px;">
+                        {{ $activeCasesCount }}
+                    </span>
+                @endif
             </a>
         </li>
         <li class="{{ request()->is('client/kyc*') ? 'active' : '' }}">
@@ -77,9 +133,16 @@
             </a>
         </li>
         <li class="{{ request()->is('client/document-center*') ? 'active' : '' }}">
-            <a href="{{ route('client.documents.index') }}">
-                <i class="fas fa-file-contract nav-icon"></i>
-                <span class="nav-text">{{ __('Documents & Contracts') }}</span>
+            <a href="{{ route('client.documents.index') }}" class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-file-contract nav-icon mr-2"></i>
+                    <span class="nav-text">{{ __('Documents & Contracts') }}</span>
+                </div>
+                @if($pendingDocCount > 0)
+                    <span class="badge badge-warning text-dark font-weight-bold" style="font-size: 10px; padding: 2px 7px; border-radius: 10px; box-shadow: 0 0 8px rgba(254, 204, 86, 0.5);" title="{{ $pendingDocCount }} document(s) pending signature">
+                        <i class="fas fa-signature mr-1" style="font-size: 9px;"></i>{{ $pendingDocCount }}
+                    </span>
+                @endif
             </a>
         </li>
         <li class="{{ request()->is('client/security*') ? 'active' : '' }}">
