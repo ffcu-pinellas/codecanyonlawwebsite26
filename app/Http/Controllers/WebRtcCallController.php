@@ -366,7 +366,7 @@ class WebRtcCallController extends Controller
 
         $request->validate([
             'call_id' => 'required|string',
-            'action' => 'required|string|in:answer,candidate,candidates_batch,poll',
+            'action' => 'required|string|in:answer,candidate,candidates_batch,poll,reconnect_offer',
         ]);
 
         $callId = $request->input('call_id');
@@ -437,6 +437,21 @@ class WebRtcCallController extends Controller
                 'server_time' => now()->timestamp,
                 'call' => $callData
             ]);
+
+        } elseif ($action === 'reconnect_offer') {
+            $offer = $request->input('offer');
+            if ($offer) {
+                $callData['offer'] = is_array($offer) ? $offer : json_decode($offer, true);
+                $callData['reconnected_at'] = now()->timestamp;
+                try {
+                    DB::table('call_sessions')->where('call_id', $callId)->update([
+                        'offer' => is_array($offer) ? json_encode($offer) : (string)$offer,
+                        'updated_at' => now(),
+                    ]);
+                } catch (\Throwable $e) {}
+                Cache::put("call_session_{$callId}", $callData, 7200);
+            }
+            return response()->json(['status' => 'ok', 'call' => $callData]);
 
         } elseif ($action === 'candidate') {
             $candidate = $request->input('candidate');

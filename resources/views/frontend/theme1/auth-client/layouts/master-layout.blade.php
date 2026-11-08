@@ -10,6 +10,29 @@
 <!-- Google Translate Container (Hidden Engine) -->
 <div id="google_translate_element" style="display:none;"></div>
 
+<style>
+  @media (max-width: 767.98px) {
+    #clientNotificationMenu {
+      position: fixed !important;
+      top: 56px !important;
+      left: 12px !important;
+      right: 12px !important;
+      width: auto !important;
+      max-width: calc(100vw - 24px) !important;
+      transform: none !important;
+      margin: 0 !important;
+      z-index: 1060 !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85) !important;
+    }
+  }
+  @media (min-width: 768px) {
+    #clientNotificationMenu {
+      right: 0 !important;
+      left: auto !important;
+    }
+  }
+</style>
+
 <!-- Dedicated Executive App Navigation Header (IFW Replica) -->
 <header class="client-portal-navbar py-2 px-3 px-lg-4" style="background: #11151e; border-bottom: 1px solid #28303f; position: sticky; top: 0; z-index: 1020; box-shadow: 0 4px 16px rgba(0,0,0,0.4);">
     <div class="container-fluid px-0 d-flex justify-content-between align-items-center">
@@ -77,7 +100,7 @@
                 } catch (\Throwable $e) {}
                 $headerTotalAlerts = $headerUnreadMsgs + $headerPendingDocs;
             @endphp
-            <div class="dropdown">
+            <div class="dropdown position-relative">
                 <button class="btn btn-sm btn-dark position-relative p-2" type="button" id="clientNotificationBellDropdown" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Notifications & Pending Actions" style="background: #161a23; border: 1px solid #28303f; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
                     <i class="fas fa-bell text-warning" style="font-size: 13.5px;"></i>
                     @if($headerTotalAlerts > 0)
@@ -86,7 +109,7 @@
                         </span>
                     @endif
                 </button>
-                <div class="dropdown-menu dropdown-menu-right shadow-lg p-0" aria-labelledby="clientNotificationBellDropdown" style="background: #161a23; border: 1px solid #28303f; min-width: 290px; border-radius: 8px; overflow: hidden;">
+                <div class="dropdown-menu shadow-lg p-0" id="clientNotificationMenu" aria-labelledby="clientNotificationBellDropdown" style="background: #161a23; border: 1px solid #28303f; width: 290px; max-width: calc(100vw - 24px); border-radius: 8px; overflow: hidden;">
                     <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="background: #11151e; border-color: #28303f !important;">
                         <span class="font-weight-bold text-white small text-uppercase" style="letter-spacing: 0.5px;">Notifications</span>
                         <span class="badge {{ $headerTotalAlerts > 0 ? 'badge-warning text-dark' : 'badge-secondary' }} font-weight-bold" style="font-size: 10px;">
@@ -135,7 +158,7 @@
                 <span id="themeModeText" class="d-none d-sm-inline ml-1">Light Mode</span>
             </button>
 
-            <!-- 2. Currency Switcher Dropdown -->
+            <!-- 2. Currency Switcher Dropdown (Hidden on Mobile / Small Screens to Free Header Space) -->
             @php
                 $userCurrency = Auth::user()->preferred_currency ?: 'USD';
                 $currencies = [
@@ -146,7 +169,7 @@
                     'AUD' => ['sym' => '$', 'name' => 'AUD ($)'],
                 ];
             @endphp
-            <div class="dropdown">
+            <div class="dropdown d-none d-md-block">
                 <button class="btn btn-sm btn-dark dropdown-toggle font-weight-bold text-light px-2 py-1" type="button" id="currencyDropdown" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background: #161a23; border: 1px solid #28303f; border-radius: 6px; font-size: 11.5px;">
                     <i class="fas fa-dollar-sign text-warning mr-1"></i> <span id="currentCurrencyLabel">{{ $userCurrency }}</span>
                 </button>

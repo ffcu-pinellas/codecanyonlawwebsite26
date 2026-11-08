@@ -381,24 +381,25 @@
 </div>
 
 <!-- 1B. Top-Pinned Floating Call Dynamic Bar (WhatsApp & FaceTime Style) -->
-<div id="webrtcTopPinnedCallBar" style="position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 99999999; display: none; background: #0b0f17; border: 2px solid #fecc56; border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.95), 0 0 25px rgba(254,204,86,0.4); padding: 7px 16px; align-items: center; gap: 12px; max-width: 95vw; backdrop-filter: blur(16px);">
-  <div class="d-flex align-items-center" style="gap: 8px; cursor: pointer;" onclick="toggleCallMinimize()" title="Click to Return to Full Call Window">
-    <span style="width: 10px; height: 10px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px #22c55e; display: inline-block;"></span>
-    <span class="badge px-2 py-1 font-weight-bold" id="pipCallBadge" style="background: rgba(254,204,86,0.2); color: #fecc56; font-size: 11px;">
+<div id="webrtcTopPinnedCallBar" style="position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 99999999; display: none; background: #0b0f17; border: 2px solid #fecc56; border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.95), 0 0 25px rgba(254,204,86,0.4); padding: 5px 12px; align-items: center; justify-content: space-between; gap: 8px; width: max-content; max-width: calc(100vw - 16px); box-sizing: border-box; overflow: hidden; backdrop-filter: blur(16px);">
+  <div class="d-flex align-items-center" style="gap: 6px; cursor: pointer; min-width: 0;" onclick="toggleCallMinimize()" title="Click to Return to Full Call Window">
+    <span style="width: 9px; height: 9px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; display: inline-block; flex-shrink: 0;"></span>
+    <span class="badge px-2 py-1 font-weight-bold d-none d-md-inline-flex" id="pipCallBadge" style="background: rgba(254,204,86,0.2); color: #fecc56; font-size: 10.5px; flex-shrink: 0;">
       <i class="fas fa-phone-alt mr-1"></i> Live Call
     </span>
-    <strong class="text-white text-truncate" id="pipCallPeerName" style="max-width: 140px; font-size: 12.5px;">Caller</strong>
-    <span class="badge px-2 py-1 font-weight-bold" id="pipCallTimer" style="background: #000; color: #fecc56; border: 1.5px solid #fecc56; font-size: 12px; font-family: monospace;">00:00</span>
+    <span class="text-truncate font-weight-bold" id="pipCallPeerName" style="color: #ffffff !important; max-width: 105px; font-size: 11.5px; display: inline-block;">Caller</span>
+    <span class="badge px-2 py-1 font-weight-bold" id="pipCallTimer" style="background: #000000 !important; color: #fecc56 !important; border: 1.5px solid #fecc56 !important; font-size: 11px; font-family: monospace; letter-spacing: 0.5px; flex-shrink: 0;">00:00</span>
   </div>
-  <div class="d-flex align-items-center" style="gap: 8px;">
-    <button type="button" class="btn btn-sm text-white rounded-circle p-0" id="pipBtnMute" title="Mute/Unmute" style="width: 32px; height: 32px; background: #1e293b; border: 1px solid #475569; display: inline-flex; align-items: center; justify-content: center;">
-      <i class="fas fa-microphone" style="font-size: 12px;"></i>
+  <div class="d-flex align-items-center flex-shrink-0" style="gap: 6px;">
+    <button type="button" class="btn btn-sm text-white rounded-circle p-0" id="pipBtnMute" title="Mute/Unmute" style="width: 28px; height: 28px; background: #1e293b; border: 1px solid #475569; display: inline-flex; align-items: center; justify-content: center;">
+      <i class="fas fa-microphone" style="font-size: 11px;"></i>
     </button>
-    <button type="button" class="btn btn-sm btn-danger rounded-circle p-0" id="pipBtnHangup" title="End Call" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,0.5);">
-      <i class="fas fa-phone-slash" style="font-size: 12px;"></i>
+    <button type="button" class="btn btn-sm btn-danger rounded-circle p-0" id="pipBtnHangup" title="End Call" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,0.5);">
+      <i class="fas fa-phone-slash" style="font-size: 11px;"></i>
     </button>
-    <button type="button" class="btn btn-sm font-weight-bold text-dark px-3 py-1" onclick="toggleCallMinimize()" title="Expand Call Window" style="background: linear-gradient(135deg, #fecc56, #f0a500); border: 1.5px solid #ffffff; border-radius: 20px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(254,204,86,0.4);">
-      <i class="fas fa-expand-alt"></i> Expand
+    <button type="button" class="btn btn-sm font-weight-bold text-dark px-2 px-sm-3 py-1" onclick="toggleCallMinimize()" title="Expand Call Window" style="background: linear-gradient(135deg, #fecc56, #f0a500); border: 1.5px solid #ffffff; border-radius: 20px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(254,204,86,0.4);">
+      <i class="fas fa-expand-alt" style="font-size: 11px;"></i>
+      <span class="d-none d-sm-inline"> Expand</span>
     </button>
   </div>
 </div>
@@ -712,8 +713,14 @@
         data: { url: targetUrl }
       };
 
-      if (isCall && 'vibrate' in navigator) {
-        try { navigator.vibrate([500, 250, 500, 250, 1000, 500, 500, 250, 500, 250, 1000]); } catch(e) {}
+      if ('vibrate' in navigator) {
+        try {
+          if (isCall) {
+            navigator.vibrate([500, 250, 500, 250, 1000, 500, 500, 250, 500, 250, 1000]);
+          } else {
+            navigator.vibrate([180, 80, 180]);
+          }
+        } catch(e) {}
       }
 
       // Check service worker registration first for mobile Android/PWA
@@ -1861,55 +1868,281 @@
     }
   }
 
-  // 13. Global Call & Message Check Loop (Runs every 3 seconds across master layouts)
-  if (currentUserId > 0) {
-    setInterval(() => {
+  // 13. Global Call & Message Check Loop (with Web Worker to prevent mobile background throttling)
+  let lastRingingNotifTime = 0;
+
+  function handleCallPollResponse(res) {
+    if (!res) return;
+
+    // Handle unread messages globally across all pages
+    if (res.latest_unread) {
+      handleIncomingUnreadMessage(res.latest_unread);
+    }
+
+    const call = res.active_call;
+
+    // A. Auto-mount and recover active connected call across page switches or browser reloads
+    if (call && call.status === 'connected' && (call.recipient_id === currentUserId || call.caller_id === currentUserId)) {
+      if (!activeCallSession) {
+        activeCallSession = call;
+        isCaller = (call.caller_id === currentUserId);
+        const otherPartyName = isCaller ? (call.recipient_name || 'Participant') : (call.caller_name || 'Counsel');
+
+        updateCallModalUi(call.call_type, otherPartyName, call.caller_avatar);
+
+        const elapsedSec = Math.max(0, Math.floor(Date.now() / 1000) - (call.connected_at || call.created_at || Math.floor(Date.now() / 1000)));
+        startCallTimer(elapsedSec);
+
+        // Keep top-pinned bar alive and functional
+        toggleCallMinimize(true);
+        reconnectPeerConnection(call);
+      }
+      return;
+    }
+
+    // B. If call was ended or cancelled on server, dismiss all active call views
+    if (!call || inArray(['ended', 'declined', 'missed', 'cancelled'], call.status)) {
+      if ($('#incomingCallModal').hasClass('show')) {
+        stopTelephoneRing();
+        stopTitleFlash();
+        $('#incomingCallModal').modal('hide');
+      }
+      if (activeCallSession && activeCallSession.status === 'connected') {
+        hangUpCall(false);
+      }
+      return;
+    }
+
+    // C. Handle incoming ringing call
+    if (call.status === 'ringing' && call.recipient_id === currentUserId) {
+      activeCallSession = call;
+
+      const isVideo = (call.call_type === 'video');
+      const callerName = call.caller_name || 'Counsel';
+      document.getElementById('incomingCallerName').innerText = callerName;
+      document.getElementById('incomingCallTypeBadge').innerHTML = isVideo
+        ? '<i class="fas fa-video mr-1"></i> Incoming Video Call'
+        : '<i class="fas fa-phone-alt mr-1"></i> Incoming Voice Call';
+
+      const initial = callerName.charAt(0).toUpperCase();
+      document.getElementById('incomingCallerInitial').innerText = initial;
+
+      if (!$('#incomingCallModal').hasClass('show') && !$('#activeWebRtcCallModal').hasClass('show') && !isCallMinimized) {
+        playTelephoneRing();
+        startTitleFlash('Incoming ' + (isVideo ? 'Video' : 'Voice') + ' Call (' + callerName + ')...');
+        showDesktopNotification('Incoming ' + (isVideo ? 'Video' : 'Voice') + ' Call', callerName + ' is calling you...');
+        $('#incomingCallModal').modal('show');
+        lastRingingNotifTime = Date.now();
+      } else if (document.hidden && (Date.now() - lastRingingNotifTime > 3200)) {
+        // Repeatedly re-notify & vibrate off-browser tab in rhythm with telephone ring cadence
+        showDesktopNotification('Incoming ' + (isVideo ? 'Video' : 'Voice') + ' Call', callerName + ' is calling you...');
+        lastRingingNotifTime = Date.now();
+      }
+    }
+  }
+
+  async function reconnectPeerConnection(call) {
+    try {
+      await acquireMediaStream(call.call_type);
+      setupPeerConnection();
+
+      if (isCaller) {
+        const offer = await peerConnection.createOffer();
+        await peerConnection.setLocalDescription(offer);
+        fetch("{{ route('portal.call.signal') }}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({
+            call_id: call.call_id,
+            action: 'reconnect_offer',
+            offer: offer
+          })
+        }).catch(() => {});
+      } else {
+        fetch("{{ route('portal.call.signal') }}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
+          },
+          body: JSON.stringify({
+            call_id: call.call_id,
+            action: 'poll'
+          })
+        }).catch(() => {});
+      }
+      pollSignalingUpdates(call.call_id);
+    } catch(e) {
+      console.warn('Call recovery media warning:', e);
+    }
+  }
+
+  function initBackgroundCallWatcher() {
+    if (currentUserId <= 0) return;
+
+    function pollCheck() {
       fetch("{{ route('portal.call.check') }}", {
         headers: { 'X-Requested-With': 'XMLHttpRequest' }
       })
       .then(r => r.json())
-      .then(res => {
-        // Handle unread messages globally across all pages
-        if (res && res.latest_unread) {
-          handleIncomingUnreadMessage(res.latest_unread);
-        }
-
-        // Don't process incoming calls if already in an active call modal or minimized
-        if ($('#activeWebRtcCallModal').hasClass('show') || isCallMinimized || (activeCallSession && (activeCallSession.status === 'connected' || activeCallSession.status === 'ringing'))) return;
-
-        if (!res || !res.active_call) {
-          if ($('#incomingCallModal').hasClass('show')) {
-            stopTelephoneRing();
-            stopTitleFlash();
-            $('#incomingCallModal').modal('hide');
-          }
-          return;
-        }
-
-        const call = res.active_call;
-        if (call.status === 'ringing' && call.recipient_id === currentUserId) {
-          activeCallSession = call;
-
-          const isVideo = (call.call_type === 'video');
-          document.getElementById('incomingCallerName').innerText = call.caller_name || 'Counsel';
-          document.getElementById('incomingCallTypeBadge').innerHTML = isVideo
-            ? '<i class="fas fa-video mr-1"></i> Incoming Video Call'
-            : '<i class="fas fa-phone-alt mr-1"></i> Incoming Voice Call';
-
-          const initial = call.caller_name ? call.caller_name.charAt(0).toUpperCase() : 'C';
-          document.getElementById('incomingCallerInitial').innerText = initial;
-
-          if (!$('#incomingCallModal').hasClass('show') && !$('#activeWebRtcCallModal').hasClass('show')) {
-            playTelephoneRing();
-            startTitleFlash('Incoming ' + (isVideo ? 'Video' : 'Voice') + ' Call (' + (call.caller_name || 'Counsel') + ')...');
-            showDesktopNotification('Incoming ' + (isVideo ? 'Video' : 'Voice') + ' Call', (call.caller_name || 'Counsel') + ' is calling you...');
-            $('#incomingCallModal').modal('show');
-          }
-        }
-      })
+      .then(res => handleCallPollResponse(res))
       .catch(() => {});
-    }, 3000);
+    }
+
+    // Try unthrottled Web Worker (immune to mobile background timer throttling)
+    try {
+      const blobCode = "setInterval(function() { postMessage('tick'); }, 2500);";
+      const blob = new Blob([blobCode], { type: 'application/javascript' });
+      const worker = new Worker(URL.createObjectURL(blob));
+      worker.onmessage = function() {
+        pollCheck();
+      };
+    } catch(e) {
+      setInterval(pollCheck, 2500);
+    }
   }
+  initBackgroundCallWatcher();
+
+  // 14. In-Portal Seamless Navigation (Preserves active WebRTC calls across page switches)
+  function isCallActiveOrMinimized() {
+    return (activeCallSession && (activeCallSession.status === 'connected' || activeCallSession.status === 'ringing')) || isCallMinimized;
+  }
+
+  async function navigateSeamlesslyDuringCall(targetUrl) {
+    try {
+      let contentContainer = document.querySelector('.client-content-container') ||
+                             document.querySelector('.client-content-col') ||
+                             document.querySelector('.staff-content-container') ||
+                             document.querySelector('.staff-content-col') ||
+                             document.querySelector('.main-content') ||
+                             document.querySelector('#main-content') ||
+                             document.querySelector('.content-wrapper');
+
+      if (!contentContainer) {
+        window.location.href = targetUrl;
+        return;
+      }
+
+      contentContainer.style.transition = 'opacity 0.15s ease';
+      contentContainer.style.opacity = '0.5';
+
+      const res = await fetch(targetUrl, {
+        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+      });
+      if (!res.ok) {
+        window.location.href = targetUrl;
+        return;
+      }
+
+      const html = await res.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, 'text/html');
+
+      let newContent = doc.querySelector('.client-content-container') ||
+                        doc.querySelector('.client-content-col') ||
+                        doc.querySelector('.staff-content-container') ||
+                        doc.querySelector('.staff-content-col') ||
+                        doc.querySelector('.main-content') ||
+                        doc.querySelector('#main-content') ||
+                        doc.querySelector('.content-wrapper');
+
+      if (newContent) {
+        contentContainer.innerHTML = newContent.innerHTML;
+        contentContainer.style.opacity = '1';
+
+        if (doc.title) {
+          originalPageTitle = doc.title;
+          originalDocTitle = doc.title;
+          document.title = doc.title;
+        }
+
+        window.history.pushState({ seamless: true, url: targetUrl }, '', targetUrl);
+        updateSidebarActiveNav(targetUrl);
+
+        // Execute new scripts
+        const scripts = contentContainer.querySelectorAll('script');
+        scripts.forEach(oldScript => {
+          const newScript = document.createElement('script');
+          Array.from(oldScript.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+          newScript.appendChild(document.createTextNode(oldScript.innerHTML));
+          oldScript.parentNode.replaceChild(newScript, oldScript);
+        });
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        const topBarEl = document.getElementById('webrtcTopPinnedCallBar');
+        if (topBarEl && isCallMinimized) {
+          topBarEl.style.display = 'flex';
+        }
+      } else {
+        window.location.href = targetUrl;
+      }
+    } catch (err) {
+      console.warn('Seamless navigation error during call:', err);
+      window.location.href = targetUrl;
+    }
+  }
+
+  function updateSidebarActiveNav(targetUrl) {
+    try {
+      const parsedTarget = new URL(targetUrl, window.location.origin).pathname;
+      document.querySelectorAll('#ifwClientSidebar li, .ifw-nav-list li, .staff-nav-list li').forEach(li => {
+        const link = li.querySelector('a');
+        if (link && link.href) {
+          const linkPath = new URL(link.href, window.location.origin).pathname;
+          if (parsedTarget === linkPath || (linkPath !== '/' && parsedTarget.startsWith(linkPath))) {
+            li.classList.add('active');
+          } else {
+            li.classList.remove('active');
+          }
+        }
+      });
+    } catch(e) {}
+  }
+
+  // Intercept in-portal link clicks when call is active
+  document.addEventListener('click', function(e) {
+    if (!isCallActiveOrMinimized()) return;
+
+    const link = e.target.closest('a');
+    if (!link || !link.href) return;
+
+    const rawHref = link.getAttribute('href') || '';
+    if (rawHref.startsWith('#') || rawHref.startsWith('javascript:') || rawHref.startsWith('tel:') || rawHref.startsWith('mailto:')) return;
+    if (link.target === '_blank' || link.hasAttribute('download')) return;
+
+    try {
+      const url = new URL(link.href, window.location.origin);
+      if (url.origin !== window.location.origin) return;
+      if (url.pathname.includes('/logout') || url.pathname.includes('/download')) return;
+
+      if (url.pathname.startsWith('/client') || url.pathname.startsWith('/staff') || url.pathname.startsWith('/admin')) {
+        e.preventDefault();
+        e.stopPropagation();
+        navigateSeamlesslyDuringCall(url.href);
+      }
+    } catch(e) {}
+  }, true);
+
+  window.addEventListener('popstate', function(e) {
+    if (isCallActiveOrMinimized()) {
+      navigateSeamlesslyDuringCall(window.location.href);
+    }
+  });
+
+  // Accidental close protection during live calls
+  window.addEventListener('beforeunload', function(e) {
+    if (activeCallSession && (activeCallSession.status === 'connected' || activeCallSession.status === 'ringing')) {
+      e.preventDefault();
+      e.returnValue = 'You are currently in an active consultation call. Leaving will end the call.';
+      return e.returnValue;
+    }
+  });
 
   // UI Event Bindings
   document.addEventListener('DOMContentLoaded', function() {
@@ -1929,40 +2162,6 @@
         e.preventDefault();
         e.stopPropagation();
         toggleCallMinimize(true);
-      });
-    }
-
-    const pipMute = document.getElementById('pipBtnMute');
-    if (pipMute) {
-      pipMute.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        if (localMediaStream) {
-          const track = localMediaStream.getAudioTracks()[0];
-          if (track) {
-            track.enabled = !track.enabled;
-            this.innerHTML = track.enabled ? '<i class="fas fa-microphone" style="font-size: 12px;"></i>' : '<i class="fas fa-microphone-slash text-danger" style="font-size: 12px;"></i>';
-            const btnA = document.getElementById('btnToggleAudio');
-            if (btnA) {
-              if (track.enabled) {
-                btnA.classList.remove('active');
-                btnA.innerHTML = '<i class="fas fa-microphone"></i>';
-              } else {
-                btnA.classList.add('active');
-                btnA.innerHTML = '<i class="fas fa-microphone-slash"></i>';
-              }
-            }
-          }
-        }
-      });
-    }
-
-    const pipHang = document.getElementById('pipBtnHangup');
-    if (pipHang) {
-      pipHang.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        hangUpCall(true);
       });
     }
 
