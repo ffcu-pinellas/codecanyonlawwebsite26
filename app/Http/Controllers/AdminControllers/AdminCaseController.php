@@ -274,8 +274,52 @@ class AdminCaseController extends Controller
             $case = $document->clientCase;
 
             // Restrict access
-            if (!Auth::user()->hasRole('admin') && $case->attorney_id !== Auth::id()) {
+            if (!Auth::user()->hasRole('admin') && $case && $case->attorney_id !== Auth::id()) {
                 abort(403, 'Unauthorized access.');
+            }
+
+            // Raw direct file download if explicitly requested
+            if (request()->has('raw') && !empty($document->file_path) && File::exists(public_path($document->file_path))) {
+                return response()->file(public_path($document->file_path));
+            }
+
+            // If signed or custom content, display the certified document view with signature, cert ID and stamps
+            if ($document->is_signed || !empty($document->custom_content)) {
+                $content = $document->custom_content;
+                if (empty($content) && !empty($document->file_path)) {
+                    $fileExt = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
+                    $fileName = basename($document->file_path);
+                    $fileUrl = asset($document->file_path);
+                    $content = '
+                    <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 25px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                            <div>
+                                <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #1e3c72; background: #e0e7ff; padding: 4px 10px; border-radius: 20px;">' . htmlspecialchars($document->document_type ?: 'Legal & Tax Instrument') . '</span>
+                                <h3 style="margin: 10px 0 4px 0; color: #0f172a; font-size: 18px;">' . htmlspecialchars($document->document_title ?: $document->title) . '</h3>
+                                <p style="margin: 0; color: #64748b; font-size: 13px;">Attached Certified Instrument: <strong style="color: #334155;">' . htmlspecialchars($fileName) . '</strong></p>
+                            </div>
+                            <div>
+                                <a href="' . $fileUrl . '" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: #1e3c72; color: #fff; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 13px; text-decoration: none; box-shadow: 0 4px 12px rgba(30,60,114,0.25);">
+                                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                                    Open Raw Vault Attachment
+                                </a>
+                            </div>
+                        </div>
+                        ' . ($fileExt === 'pdf' ? '
+                        <div style="margin-top: 20px; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #fff;">
+                            <iframe src="' . $fileUrl . '#toolbar=0" style="width: 100%; height: 550px; border: none;"></iframe>
+                        </div>' : '') . '
+                    </div>
+                    <div style="padding: 15px 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; color: #166534; font-size: 13px; margin-bottom: 25px;">
+                        <strong>Legal Attestation:</strong> This document and its associated legal instrument have been formally reviewed, executed, and counter-sealed under the electronic signature standards of the U.S. Electronic Signatures in Global and National Commerce Act (E-SIGN Act, 15 U.S.C. § 7001) and the Uniform Electronic Transactions Act (UETA).
+                    </div>';
+                }
+
+                return view('backend.pages.cases.view-custom-doc', [
+                    'document' => $document,
+                    'case'     => $case,
+                    'content'  => $content,
+                ]);
             }
 
             $filePath = public_path($document->file_path);
@@ -531,26 +575,7 @@ class AdminCaseController extends Controller
      */
     public function viewCustomDocument($doc_id)
     {
-        try {
-            $document = CaseDocument::with('clientCase')->findOrFail($doc_id);
-            $case = $document->clientCase;
-
-            if (!Auth::user()->hasRole('admin') && $case->attorney_id !== Auth::id()) {
-                abort(403, 'Unauthorized access.');
-            }
-
-            if ($document->file_type !== 'custom' || empty($document->custom_content)) {
-                abort(404, 'Custom document content not found.');
-            }
-
-            return response()->view('backend.pages.cases.view-custom-doc', [
-                'document' => $document,
-                'case'     => $case,
-                'content'  => $document->custom_content,
-            ]);
-        } catch (\Throwable $e) {
-            return redirect()->back()->with('error', $e->getMessage());
-        }
+        return $this->previewDocument($doc_id);
     }
 
     /**

@@ -928,7 +928,7 @@ class ClientViewController extends Controller
         }
     }
 
-    public function previewDocument($id)
+    public function previewDocument(Request $request, $id)
     {
         try {
             $document = CaseDocument::findOrFail($id);
@@ -942,24 +942,52 @@ class ClientViewController extends Controller
                 }
             }
 
-            // Option to view interactive HTML preview
-            if ($request->has('html') && !empty($document->custom_content)) {
+            // Raw direct file download if explicitly requested
+            if ($request->has('raw') && !empty($document->file_path) && File::exists(public_path($document->file_path))) {
+                return response()->file(public_path($document->file_path));
+            }
+
+            // If signed or custom content, display the certified document view with signature, cert ID and stamps
+            if ($document->is_signed || !empty($document->custom_content)) {
+                $content = $document->custom_content;
+                if (empty($content) && !empty($document->file_path)) {
+                    $fileExt = strtolower(pathinfo($document->file_path, PATHINFO_EXTENSION));
+                    $fileName = basename($document->file_path);
+                    $fileUrl = asset($document->file_path);
+                    $content = '
+                    <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 12px; padding: 24px; margin-bottom: 25px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
+                            <div>
+                                <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; color: #1e3c72; background: #e0e7ff; padding: 4px 10px; border-radius: 20px;">' . htmlspecialchars($document->document_type ?: 'Legal & Tax Instrument') . '</span>
+                                <h3 style="margin: 10px 0 4px 0; color: #0f172a; font-size: 18px;">' . htmlspecialchars($document->document_title ?: $document->title) . '</h3>
+                                <p style="margin: 0; color: #64748b; font-size: 13px;">Attached Certified Instrument: <strong style="color: #334155;">' . htmlspecialchars($fileName) . '</strong></p>
+                            </div>
+                            <div>
+                                <a href="' . $fileUrl . '" target="_blank" style="display: inline-flex; align-items: center; gap: 8px; background: #1e3c72; color: #fff; padding: 10px 18px; border-radius: 8px; font-weight: 600; font-size: 13px; text-decoration: none; box-shadow: 0 4px 12px rgba(30,60,114,0.25);">
+                                    <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+                                    Open Raw Vault Attachment
+                                </a>
+                            </div>
+                        </div>
+                        ' . ($fileExt === 'pdf' ? '
+                        <div style="margin-top: 20px; border: 1px solid #cbd5e1; border-radius: 8px; overflow: hidden; background: #fff;">
+                            <iframe src="' . $fileUrl . '#toolbar=0" style="width: 100%; height: 550px; border: none;"></iframe>
+                        </div>' : '') . '
+                    </div>
+                    <div style="padding: 15px 20px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; color: #166534; font-size: 13px; margin-bottom: 25px;">
+                        <strong>Legal Attestation:</strong> This document and its associated legal instrument have been formally reviewed, executed, and counter-sealed under the electronic signature standards of the U.S. Electronic Signatures in Global and National Commerce Act (E-SIGN Act, 15 U.S.C. § 7001) and the Uniform Electronic Transactions Act (UETA).
+                    </div>';
+                }
+
                 return view('backend.pages.cases.view-custom-doc', [
                     'document' => $document,
                     'case'     => $document->clientCase,
-                    'content'  => $document->custom_content,
+                    'content'  => $content,
                 ]);
             }
 
             $filePath = !empty($document->file_path) ? public_path($document->file_path) : null;
             if (!$filePath || !File::exists($filePath)) {
-                if (!empty($document->custom_content)) {
-                    return view('backend.pages.cases.view-custom-doc', [
-                        'document' => $document,
-                        'case'     => $document->clientCase,
-                        'content'  => $document->custom_content,
-                    ]);
-                }
                 abort(404, 'File not found on server.');
             }
 
@@ -983,12 +1011,40 @@ class ClientViewController extends Controller
                 }
             }
 
-            $filePath = public_path($document->file_path);
-            if (!File::exists($filePath)) {
-                abort(404, 'File not found on server.');
+            $filePath = !empty($document->file_path) ? public_path($document->file_path) : null;
+            if ($filePath && File::exists($filePath)) {
+                $downloadName = $document->document_title ?: $document->title ?: basename($filePath);
+                $ext = pathinfo($filePath, PATHINFO_EXTENSION);
+                if ($ext && !str_ends_with(strtolower($downloadName), '.' . strtolower($ext))) {
+                    $downloadName .= '.' . $ext;
+                }
+                return response()->download($filePath, $downloadName);
             }
 
-            return response()->download($filePath);
+            if (!empty($document->custom_content)) {
+                $client = $document->client ?: $user;
+                $clientCase = $document->clientCase;
+                $companySettings = \App\Models\GeneralSettings::first();
+                $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+                $title = $document->document_title ?: $document->title ?: 'Legal Document';
+                $content = $document->custom_content;
+                $dateStr = $document->signed_at ? \Carbon\Carbon::parse($document->signed_at)->format('F d, Y') : date('F d, Y');
+                $isPdf = true;
+                $isSigned = (bool) $document->is_signed;
+                $signatureData = $document->signature_data;
+                $attorneyName = ($client && $client->assignedAttorney) ? $client->assignedAttorney->name : 'Gerald W. Allen, Esq.';
+                $attorneyTitle = 'Senior Lead Counsel & Practice Director';
+                $caseNumber = $clientCase ? $clientCase->case_number : 'YCE-' . date('Y');
+
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', compact(
+                    'title', 'content', 'client', 'companyName', 'dateStr', 'isPdf',
+                    'attorneyName', 'attorneyTitle', 'caseNumber', 'isSigned', 'signatureData', 'document'
+                ));
+
+                return $pdf->download(preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $title) . '.pdf');
+            }
+
+            abort(404, 'File not found on server.');
         } catch (\Throwable $e) {
             return $this->backWithError($e->getMessage());
         }
@@ -1243,12 +1299,13 @@ class ClientViewController extends Controller
             // Save canvas image as physical PNG for robust PDF embedding
             $sigPublicUrl = null;
             $sigLocalPath = null;
+            $sigDir = public_path('upload/signatures');
+            if (!\Illuminate\Support\Facades\File::exists($sigDir)) {
+                \Illuminate\Support\Facades\File::makeDirectory($sigDir, 0755, true);
+            }
+
             if ($request->filled('signature_data') && str_starts_with($request->signature_data, 'data:image')) {
                 try {
-                    $sigDir = public_path('upload/signatures');
-                    if (!\Illuminate\Support\Facades\File::exists($sigDir)) {
-                        \Illuminate\Support\Facades\File::makeDirectory($sigDir, 0755, true);
-                    }
                     $imgData = preg_replace('/^data:image\/\w+;base64,/', '', $request->signature_data);
                     $decodedImg = base64_decode($imgData);
                     if ($decodedImg) {
@@ -1258,6 +1315,11 @@ class ClientViewController extends Controller
                         $sigPublicUrl = asset('upload/signatures/' . $sigFileName);
                         $sigData = 'upload/signatures/' . $sigFileName;
                     }
+                } catch (\Throwable $e) {}
+            } elseif ($request->filled('signature_text')) {
+                try {
+                    $txtFileName = 'sig_case_' . $doc->id . '_text.txt';
+                    file_put_contents($sigDir . '/' . $txtFileName, trim($request->signature_text));
                 } catch (\Throwable $e) {}
             }
 

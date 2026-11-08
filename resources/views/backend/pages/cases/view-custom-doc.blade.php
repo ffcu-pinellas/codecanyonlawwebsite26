@@ -138,7 +138,7 @@
     </div>
 
     @php
-        $clientObj = $document->client ?: (isset($case) ? $case->client : null);
+        $clientObj = $document->client ?: ($document->client_id ? \App\Models\User::find($document->client_id) : (isset($case) ? $case->client : null));
         $attorneyDisplayName = ($clientObj && $clientObj->assignedAttorney) ? $clientObj->assignedAttorney->name : 'Gerald W. Allen, Esq.';
         $attorneyDisplayTitle = 'Senior Lead Counsel & Practice Director';
         $companySettings = \App\Models\GeneralSettings::first();
@@ -160,6 +160,17 @@
                         @if($document->is_signed)
                             @php
                                 $dSig = $document->signature_data;
+                                if (empty($dSig)) {
+                                    $sigFiles = glob(public_path('upload/signatures/sig_case_' . $document->id . '_*.png'));
+                                    if (!empty($sigFiles)) {
+                                        $dSig = 'upload/signatures/' . basename(end($sigFiles));
+                                    } else {
+                                        $txtFile = public_path('upload/signatures/sig_case_' . $document->id . '_text.txt');
+                                        if (file_exists($txtFile)) {
+                                            $dSig = trim(file_get_contents($txtFile));
+                                        }
+                                    }
+                                }
                                 $isImgFile = !empty($dSig) && (str_starts_with($dSig, 'upload/') || file_exists(public_path($dSig)));
                             @endphp
                             @if($isImgFile)

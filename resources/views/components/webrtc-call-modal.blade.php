@@ -380,6 +380,9 @@
   </div>
 </div>
 
+<!-- Dedicated Top-Level WebRTC Audio Element (Never affected by modal display toggles or minimize mode) -->
+<audio id="webrtcRemoteAudio" autoplay playsinline style="position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; z-index: -1;"></audio>
+
 <!-- 1B. Top-Pinned Floating Call Dynamic Bar (WhatsApp & FaceTime Style) -->
 <div id="webrtcTopPinnedCallBar" style="position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 99999999; display: none; background: #0b0f17; border: 2px solid #fecc56; border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.95), 0 0 25px rgba(254,204,86,0.4); padding: 5px 12px; align-items: center; justify-content: space-between; gap: 8px; width: max-content; max-width: calc(100vw - 16px); box-sizing: border-box; overflow: hidden; backdrop-filter: blur(16px);">
   <div class="d-flex align-items-center" style="gap: 6px; cursor: pointer; min-width: 0;" onclick="toggleCallMinimize()" title="Click to Return to Full Call Window">
@@ -493,9 +496,6 @@
             </form>
           </div>
         </div>
-
-        <!-- Hidden Audio Element for Sound Output -->
-        <audio id="webrtcRemoteAudio" autoplay playsinline></audio>
       </div>
 
       <!-- Call Control Bar -->
@@ -583,29 +583,30 @@
   let screenStream = null;
   let originalCameraTrack = null;
 
-  // Universal SDP Sanitizer (RFC 8830 Unified Plan compliance & Chromium parser protection)
+  // Universal SDP Sanitizer (RFC 8830 Unified Plan compliance & line ending normalization)
   function sanitizeSdp(sdp) {
     if (!sdp || typeof sdp !== 'string') return sdp;
 
     // 1. Normalize line endings to standard CRLF (\r\n)
     let rawLines = sdp.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
 
-    // 2. Filter out problematic legacy duplicate ssrc msid lines that crash modern Chromium parsers:
-    // e.g. "a=ssrc:XXXX msid:YYYY ZZZZ Invalid SDP line."
     let cleanLines = [];
     for (let i = 0; i < rawLines.length; i++) {
-      const line = rawLines[i].trim();
+      let line = rawLines[i].trim();
       if (!line) continue; // skip accidental blank lines
 
-      // If line is legacy Plan B "a=ssrc:... msid:...", filter it out.
-      // Modern Unified Plan uses "a=msid:..." at the media section level per RFC 8830.
+      // Clean any accidental trailing parser error tokens on ssrc msid lines
+      // Format: a=ssrc:<id> msid:<stream-id> [track-id]
       if (line.startsWith('a=ssrc:') && line.indexOf(' msid:') !== -1) {
-        continue;
+        const parts = line.split(/\s+/);
+        if (parts.length > 3) {
+          line = parts.slice(0, 3).join(' ');
+        }
       }
       cleanLines.push(line);
     }
 
-    // 3. Strict RFC 4566 line termination with trailing CRLF
+    // 2. Strict RFC 4566 line termination with trailing CRLF
     return cleanLines.join('\r\n') + '\r\n';
   }
 
@@ -988,18 +989,11 @@
       const isActualVideoCall = activeCallSession && (activeCallSession.call_type === 'video');
 
       if (event.track.kind === 'video' && remoteVideo) {
-        if (event.streams && event.streams[0]) {
-          remoteVideo.srcObject = event.streams[0];
-        } else {
-          if (!remoteVideo.srcObject) {
-            remoteVideo.srcObject = new MediaStream();
-          }
-          remoteVideo.srcObject.addTrack(event.track);
-        }
-        remoteVideo.play().catch(e => {
-          remoteVideo.muted = true;
-          remoteVideo.play().catch(() => {});
-        });
+        event.track.enabled = true;
+        const vStream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([event.track]);
+        remoteVideo.srcObject = vStream;
+        remoteVideo.muted = true; // Video element strictly muted so it never conflicts with remoteAudio or triggers autoplay lock
+        remoteVideo.play().catch(e => console.warn('Remote video play warning:', e));
 
         // ONLY switch stage to video view if this is actually a video call or actively screen-sharing!
         if (isActualVideoCall || isScreenSharing) {
@@ -1011,17 +1005,28 @@
           document.getElementById('webrtcVideoView')?.classList.add('d-none');
         }
       } else if (event.track.kind === 'audio' && remoteAudio) {
-        if (event.streams && event.streams[0]) {
-          remoteAudio.srcObject = event.streams[0];
-        } else {
-          if (!remoteAudio.srcObject) {
-            remoteAudio.srcObject = new MediaStream();
-          }
-          remoteAudio.srcObject.addTrack(event.track);
-        }
+        event.track.enabled = true;
+        const aStream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([event.track]);
+        remoteAudio.srcObject = aStream;
         remoteAudio.muted = false;
         remoteAudio.volume = 1.0;
-        remoteAudio.play().catch(e => console.warn('Remote audio autoplay warning:', e));
+        const playPromise = remoteAudio.play();
+        if (playPromise !== undefined) {
+          playPromise.then(() => {
+            console.log('WebRTC remote audio stream outputting sound successfully!');
+          }).catch(err => {
+            console.warn('Remote audio autoplay blocked, unlocking on next touch/click:', err);
+            const unlockAudio = () => {
+              remoteAudio.muted = false;
+              remoteAudio.volume = 1.0;
+              remoteAudio.play().catch(() => {});
+              document.removeEventListener('click', unlockAudio);
+              document.removeEventListener('touchstart', unlockAudio);
+            };
+            document.addEventListener('click', unlockAudio, { once: true });
+            document.addEventListener('touchstart', unlockAudio, { once: true });
+          });
+        }
       }
       markCallConnected(activeCallSession ? activeCallSession.connected_at : null);
     };
@@ -1308,6 +1313,14 @@
     const timerBadgeInit = document.getElementById('activeCallTimer');
     if (timerBadgeInit) timerBadgeInit.innerText = '00:00';
 
+    // Pre-prime remote audio playback during caller user gesture
+    const remoteAudio = document.getElementById('webrtcRemoteAudio');
+    if (remoteAudio) {
+      remoteAudio.muted = false;
+      remoteAudio.volume = 1.0;
+      remoteAudio.play().catch(() => {});
+    }
+
     try {
       await acquireMediaStream(callType);
     } catch (e) {
@@ -1491,6 +1504,8 @@
     // User gesture audio unlock
     const remoteAudio = document.getElementById('webrtcRemoteAudio');
     if (remoteAudio) {
+      remoteAudio.muted = false;
+      remoteAudio.volume = 1.0;
       remoteAudio.play().catch(() => {});
     }
 
@@ -1653,6 +1668,17 @@
     if (peerConnection) {
       peerConnection.close();
       peerConnection = null;
+    }
+
+    const remoteAudio = document.getElementById('webrtcRemoteAudio');
+    if (remoteAudio) {
+      try { remoteAudio.pause(); } catch(e) {}
+      remoteAudio.srcObject = null;
+    }
+    const remoteVideo = document.getElementById('webrtcRemoteVideo');
+    if (remoteVideo) {
+      try { remoteVideo.pause(); } catch(e) {}
+      remoteVideo.srcObject = null;
     }
 
     if (isScreenSharing) {

@@ -25,6 +25,7 @@ class CaseDocument extends Model
         'requires_signature',
         'is_signed',
         'signed_at',
+        'signature_data',
         'custom_content',
         'visibility',
     ];
@@ -60,10 +61,15 @@ class CaseDocument extends Model
                 } elseif (empty($doc->document_title) && !empty($doc->title)) {
                     $doc->document_title = $doc->title;
                 }
+
+                if (!\Illuminate\Support\Facades\Schema::hasColumn('case_documents', 'signature_data')) {
+                    unset($doc->signature_data);
+                }
             } catch (\Throwable $e) {
                 // If schema check fails, safely unset newly added columns
                 unset($doc->client_id);
                 unset($doc->document_title);
+                unset($doc->signature_data);
             }
         });
     }

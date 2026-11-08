@@ -348,7 +348,7 @@
                         @forelse($vaultedDocs ?? [] as $doc)
                         <tr>
                             <td>
-                                <a href="{{ asset($doc->file_path) }}" target="_blank" class="text-warning font-weight-bold text-decoration-none">
+                                <a href="{{ route('admin.cases.document.preview', $doc->id) }}" target="_blank" class="text-warning font-weight-bold text-decoration-none" title="{{ __('View Certified Document') }}">
                                     <i class="fas fa-file-pdf text-warning mr-2"></i> {{ $doc->document_title ?: basename($doc->file_path) }}
                                 </a>
                                 @if(!empty($doc->client))
@@ -369,6 +369,14 @@
                                 {{ $doc->created_at ? $doc->created_at->format('M d, Y H:i') : 'N/A' }}
                             </td>
                             <td>
+                                <a href="{{ route('admin.cases.document.preview', $doc->id) }}" target="_blank" class="btn btn-sm btn-outline-warning mr-1" title="{{ __('View Document & Verified Signature') }}">
+                                    <i class="fas fa-eye"></i> {{ __('View') }}
+                                </a>
+                                @if(!empty($doc->file_path))
+                                    <a href="{{ asset($doc->file_path) }}" target="_blank" class="btn btn-sm btn-outline-info mr-1" title="{{ __('Download Raw Vault File') }}">
+                                        <i class="fas fa-file-download"></i>
+                                    </a>
+                                @endif
                                 <form action="{{ route('admin.document-templates.destroy', $doc->id ?? 0) }}" method="POST" onsubmit="return confirm('Delete this vaulted document?');" class="d-inline">
                                     @csrf
                                     @method('DELETE')
@@ -498,7 +506,7 @@
                         @forelse($vaultedDocs ?? [] as $doc)
                         <tr>
                             <td>
-                                <a href="{{ asset($doc->file_path) }}" target="_blank" class="text-warning font-weight-bold text-decoration-none">
+                                <a href="{{ route('admin.cases.document.preview', $doc->id) }}" target="_blank" class="text-warning font-weight-bold text-decoration-none" title="{{ __('View Certified Document') }}">
                                     <i class="fas fa-file-pdf text-warning mr-2"></i> {{ $doc->document_title ?: basename($doc->file_path) }}
                                 </a>
                                 @if(!empty($doc->client))
@@ -519,6 +527,14 @@
                                 {{ $doc->created_at ? $doc->created_at->format('M d, Y H:i') : 'N/A' }}
                             </td>
                             <td>
+                                <a href="{{ route('admin.cases.document.preview', $doc->id) }}" target="_blank" class="btn btn-sm btn-outline-warning mr-1" title="{{ __('View Document & Verified Signature') }}">
+                                    <i class="fas fa-eye"></i> {{ __('View') }}
+                                </a>
+                                @if(!empty($doc->file_path))
+                                    <a href="{{ asset($doc->file_path) }}" target="_blank" class="btn btn-sm btn-outline-info mr-1" title="{{ __('Download Raw Vault File') }}">
+                                        <i class="fas fa-file-download"></i>
+                                    </a>
+                                @endif
                                 <form action="{{ route('admin.document-templates.destroy', $doc->id ?? 0) }}" method="POST" onsubmit="return confirm('Delete this vaulted document?');" class="d-inline">
                                     @csrf
                                     @method('DELETE')
