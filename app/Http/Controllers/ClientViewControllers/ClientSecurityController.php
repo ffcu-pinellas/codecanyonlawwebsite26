@@ -278,11 +278,19 @@ class ClientSecurityController extends Controller
     }
 
     /**
+     * Get active authenticated user across all guards (web or admin)
+     */
+    protected function getActiveUser()
+    {
+        return Auth::guard('admin')->user() ?: Auth::user();
+    }
+
+    /**
      * Show 2FA Security Access Gate / OTP Verification (IFW EXACT REPLICA)
      */
     public function show2faGate(Request $request)
     {
-        $user = Auth::user();
+        $user = $this->getActiveUser();
         if (!$user) {
             return redirect()->route('login');
         }
@@ -374,7 +382,7 @@ class ClientSecurityController extends Controller
      */
     public function verifyOtp(Request $request)
     {
-        $user = Auth::user();
+        $user = $this->getActiveUser();
         if (!$user) {
             return redirect()->route('login');
         }
@@ -462,7 +470,7 @@ class ClientSecurityController extends Controller
             'pin' => 'required|string',
         ]);
 
-        $user = Auth::user();
+        $user = $this->getActiveUser();
         if (!$user) {
             return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
         }
@@ -497,7 +505,7 @@ class ClientSecurityController extends Controller
      */
     public function biometricUnlockSession(Request $request)
     {
-        $user = Auth::user();
+        $user = $this->getActiveUser();
         if (!$user) {
             return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
         }
@@ -513,7 +521,7 @@ class ClientSecurityController extends Controller
      */
     public function quickRegisterPasskey(Request $request)
     {
-        $user = Auth::user();
+        $user = $this->getActiveUser();
         if (!$user) {
             return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
         }
@@ -551,7 +559,7 @@ class ClientSecurityController extends Controller
      */
     public function passkeyRegisterOptions(Request $request)
     {
-        $user = Auth::user();
+        $user = $this->getActiveUser();
         if (!$user) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
@@ -593,7 +601,7 @@ class ClientSecurityController extends Controller
      */
     public function passkeyRegisterVerify(Request $request)
     {
-        $user = Auth::user();
+        $user = $this->getActiveUser();
         if (!$user) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
@@ -627,9 +635,15 @@ class ClientSecurityController extends Controller
 
         SystemAuditLog::logAction('PASSKEY_REGISTERED', 'User registered new biometric WebAuthn passkey (' . $request->input('device_name', 'Biometric Device') . ')', $user->id, 'client');
 
+        $targetRoute = ($user->hasRole('staff') && !$user->hasRole('client')) ? route('staff.dashboard') : route('client.dashboard');
+        if ($user->hasRole('admin')) {
+            $targetRoute = route('admin.dashboard');
+        }
+
         return response()->json([
             'status' => 'ok',
-            'message' => __('Biometric Passkey (Touch ID / Face ID) registered successfully!')
+            'message' => __('Biometric Passkey (Touch ID / Face ID) registered successfully!'),
+            'redirect' => $targetRoute
         ]);
     }
 
@@ -638,7 +652,7 @@ class ClientSecurityController extends Controller
      */
     public function passkeyAuthOptions(Request $request)
     {
-        $user = Auth::user();
+        $user = $this->getActiveUser();
         if (!$user) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
@@ -676,7 +690,7 @@ class ClientSecurityController extends Controller
      */
     public function passkeyAuthVerify(Request $request)
     {
-        $user = Auth::user();
+        $user = $this->getActiveUser();
         if (!$user) {
             return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 401);
         }
@@ -722,7 +736,7 @@ class ClientSecurityController extends Controller
      */
     public function passkeyRemove(Request $request, $index)
     {
-        $user = Auth::user();
+        $user = $this->getActiveUser();
         if (!$user) {
             return redirect()->back()->with('error', 'Unauthorized');
         }

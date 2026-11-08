@@ -379,7 +379,7 @@
     </div>
 
     <!-- Biometric WebAuthn Passkey Button (Touch ID / Face ID / Windows Hello) -->
-    <div class="mb-3" id="biometricPasskeyContainer" style="display: none;">
+    <div class="mb-3" id="biometricPasskeyContainer">
         <button type="button" class="btn btn-block py-2 font-weight-bold" id="btnBiometricAuth" onclick="triggerBiometricPasskey()" style="background: rgba(37, 99, 235, 0.15); color: #60a5fa; border: 1px solid rgba(96, 165, 250, 0.35); border-radius: 12px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;">
             <i class="fas fa-fingerprint" style="font-size: 16px;"></i>
             <span>{{ __('Sign In with Touch ID / Face ID') }}</span>
@@ -642,13 +642,9 @@
     });
 
     // WebAuthn Passkey (Touch ID / Face ID) Handler
-    if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
-        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(function(available) {
-            if (available) {
-                var container = document.getElementById('biometricPasskeyContainer');
-                if (container) container.style.display = 'block';
-            }
-        }).catch(function() {});
+    if (!window.PublicKeyCredential) {
+        var container = document.getElementById('biometricPasskeyContainer');
+        if (container) container.style.display = 'none';
     }
 
     window.triggerBiometricPasskey = async function() {
@@ -806,7 +802,7 @@
             var sData = await saveRes.json();
             if (sData && sData.status === 'ok') {
                 sessionStorage.setItem('biometric_registered', '1');
-                window.location.href = "{{ route('client.dashboard') }}";
+                window.location.href = sData.redirect || "{{ route('client.dashboard') }}";
             } else {
                 throw new Error(sData?.message || 'Registration failed');
             }
@@ -818,18 +814,6 @@
             if (btn) {
                 btn.innerHTML = origHtml;
                 btn.disabled = false;
-            }
-        }
-    };
-                // Instantly authenticate session
-                sessionStorage.setItem('biometric_registered', '1');
-                window.location.reload();
-            } else {
-                throw new Error(sData?.message || 'Registration failed');
-            }
-        } catch(err) {
-            if (err.name !== 'NotAllowedError') {
-                alert(err.message || "{{ __('Could not register biometrics on this device.') }}");
             }
         }
     };

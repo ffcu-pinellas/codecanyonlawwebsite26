@@ -147,7 +147,10 @@ class AdminController extends Controller
             if ($request->hasFile('photo')) {
                 $input['photo'] = $request->photo[0];
             }
-            $user = Auth::user();
+            $user = Auth::guard('admin')->user() ?: Auth::user();
+            if (!$user) {
+                return redirect()->route('admin.login')->with('error', 'Session expired. Please log in again.');
+            }
 
 
             Validator::make($input, [
@@ -196,7 +199,10 @@ class AdminController extends Controller
                 'pin.confirmed' => 'PIN confirmation does not match.',
             ]);
 
-            $user = Auth::user();
+            $user = Auth::guard('admin')->user() ?: Auth::user();
+            if (!$user) {
+                return redirect()->route('admin.login')->with('error', 'Session expired. Please log in again.');
+            }
 
             if ($request->filled('current_password') && !Hash::check($request->current_password, $user->password)) {
                 return redirect()->back()->with('error', 'Current password does not match our records.');
@@ -239,7 +245,10 @@ class AdminController extends Controller
     {
         //return $this->backWithWarning('Create, update and delete is not allowed to demo version');
         try {
-            $user = Auth::user();
+            $user = Auth::guard('admin')->user() ?: Auth::user();
+            if (!$user) {
+                return redirect()->route('admin.login')->with('error', 'Session expired. Please log in again.');
+            }
             if (!isset($request->password) || !Hash::check($request->password, $user->password)) {
                 $notification = array(
                     'message' => 'The provided password does not match your current password.',
