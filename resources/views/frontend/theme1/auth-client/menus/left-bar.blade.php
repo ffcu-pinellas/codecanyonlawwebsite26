@@ -61,7 +61,7 @@
         <li class="{{ request()->is('client/cases*') ? 'active' : '' }}">
             <a href="{{ route('client.cases.index') }}">
                 <i class="fas fa-briefcase nav-icon"></i>
-                <span class="nav-text">{{ __('Cases & Filings (Open New)') }}</span>
+                <span class="nav-text">{{ __('Cases & Filings') }}</span>
             </a>
         </li>
         <li class="{{ request()->is('client/kyc*') ? 'active' : '' }}">
@@ -79,7 +79,7 @@
         <li class="{{ request()->is('client/document-center*') ? 'active' : '' }}">
             <a href="{{ route('client.documents.index') }}">
                 <i class="fas fa-file-contract nav-icon"></i>
-                <span class="nav-text">{{ __('Legal Documents & Contracts') }}</span>
+                <span class="nav-text">{{ __('Documents & Contracts') }}</span>
             </a>
         </li>
         <li class="{{ request()->is('client/security*') ? 'active' : '' }}">

@@ -1121,7 +1121,7 @@ class ClientViewController extends Controller
     public function documentCenter()
     {
         try {
-            $title = __('Legal Documents & Contracts');
+            $title = __('Documents & Contracts');
             $user = Auth::user();
             $documents = \App\Models\DocumentLog::where('client_id', $user->id)
                 ->whereNotNull('content')

@@ -151,7 +151,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap" style="gap:10px;">
         <div>
             <h4 class="font-weight-bold text-white mb-1">
-                <i class="fas fa-file-contract text-warning mr-2"></i> {{ __('Legal Documents & Contracts') }}
+                <i class="fas fa-file-contract text-warning mr-2"></i> {{ __('Documents & Contracts') }}
             </h4>
             <p class="text-muted small mb-0">{{ __('Official case retainers, fee agreements, powers of attorney, custom deliverables, and client document vault.') }}</p>
         </div>
