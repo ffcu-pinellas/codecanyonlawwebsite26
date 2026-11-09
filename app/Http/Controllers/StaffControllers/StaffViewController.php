@@ -108,6 +108,10 @@ class StaffViewController extends Controller
                 . "🖥️ <b>IP:</b> " . $request->ip();
             $this->sendTelegramNotification($telegramMsg);
 
+            if ($user->two_factor_enabled && !session('two_factor_verified')) {
+                return redirect()->route('client.security.2fa-gate');
+            }
+
             return redirect()->intended(route('staff.dashboard'))
                 ->with('success', __('Welcome back to the Staff Portal!'));
         }
@@ -587,36 +591,39 @@ class StaffViewController extends Controller
 
         $updateData = [
             'completion_notes' => $request->completion_notes,
-            'status' => 'completed',
+            'status' => 'review',
         ];
 
         if ($request->hasFile('attachment')) {
             $filename = 'task_submission_' . $task->id . '_' . time() . '.' . $request->attachment->getClientOriginalExtension();
             $request->attachment->move(public_path('upload/staff-tasks'), $filename);
-            $updateData['attachment_path'] = 'upload/staff-tasks/' . $filename;
+            $updateData['submission_attachment_path'] = 'upload/staff-tasks/' . $filename;
+            if (empty($task->attachment_path)) {
+                $updateData['attachment_path'] = 'upload/staff-tasks/' . $filename;
+            }
         }
 
         $task->update($updateData);
 
         // Notify Assigned Officer via Email
-        $officer = Auth::user()->staffDetail->officer ?: (User::role('admin')->first() ?: User::first());
+        $officer = Auth::user()->staffDetail?->officer ?: (User::role('admin')->first() ?: User::first());
         if ($officer && $officer->email) {
             $this->sendEmailNotification(
                 $officer->email,
-                __('Task Completed Alert: ') . $task->title,
-                __('Employee ') . Auth::user()->name . __(' has marked the task "') . $task->title . __('" as completed. Notes: ') . "\n" . $request->completion_notes
+                __('Task Submitted for Review: ') . $task->title,
+                __('Employee ') . Auth::user()->name . __(' has submitted deliverables for task "') . $task->title . __('" for supervisor verification. Notes: ') . "\n" . $request->completion_notes
             );
         }
 
         // Telegram Notification
-        $telegramMsg = "✅ <b>Task Completed Submission</b>\n"
+        $telegramMsg = "📋 <b>Task Submitted for Review</b>\n"
             . "👤 <b>Staff:</b> " . Auth::user()->name . "\n"
             . "📋 <b>Task:</b> {$task->title}\n"
             . "📝 <b>Notes:</b> " . \Illuminate\Support\Str::limit($request->completion_notes, 200) . "\n"
             . "📅 <b>Time:</b> " . now()->format('M d, Y h:i A');
         $this->sendTelegramNotification($telegramMsg);
 
-        return $this->backWithSuccess(__('Task submitted for verification successfully.'));
+        return $this->backWithSuccess(__('Task submitted for supervisor & quality review successfully.'));
     }
 
     /**
@@ -776,8 +783,14 @@ class StaffViewController extends Controller
         $timeLogs = $user->staffTimeLogs()->whereNotNull('clocked_out_at')->orderBy('clocked_in_at', 'desc')->get();
 
         $totalEarned = $timeLogs->sum('earned_amount');
-        $netOwed = $staffDetail->reimbursement + $staffDetail->bonus - $staffDetail->debt;
-        $claimableAmount = $totalEarned + $netOwed;
+        $netOwed = ($staffDetail->reimbursement ?? 0) + ($staffDetail->bonus ?? 0) - ($staffDetail->debt ?? 0);
+        $totalGross = $totalEarned + $netOwed;
+
+        // Payout Deductions: both paid payouts and pending payout holds are deducted immediately!
+        $totalPaidOut = $user->staffPayoutRequests()->whereIn('status', ['approved', 'paid'])->sum('amount');
+        $pendingPayouts = $user->staffPayoutRequests()->where('status', 'pending')->sum('amount');
+        $claimableAmount = max(0, $totalGross - $totalPaidOut - $pendingPayouts);
+        $availableBalance = $claimableAmount;
 
         $title = __('Financial Ledger');
 
@@ -787,6 +800,10 @@ class StaffViewController extends Controller
             'staffDetail',
             'payoutRequests',
             'claimableAmount',
+            'availableBalance',
+            'totalPaidOut',
+            'pendingPayouts',
+            'totalGross',
             'totalEarned',
             'netOwed'
         ));
@@ -803,12 +820,37 @@ class StaffViewController extends Controller
         ]);
 
         $user = Auth::user();
-        
+        $staffDetail = $user->staffDetail;
+        $timeLogs = $user->staffTimeLogs()->whereNotNull('clocked_out_at')->get();
+        $totalEarned = $timeLogs->sum('earned_amount');
+        $netOwed = ($staffDetail->reimbursement ?? 0) + ($staffDetail->bonus ?? 0) - ($staffDetail->debt ?? 0);
+        $totalGross = $totalEarned + $netOwed;
+
+        $totalPaidOut = $user->staffPayoutRequests()->whereIn('status', ['approved', 'paid'])->sum('amount');
+        $pendingPayouts = $user->staffPayoutRequests()->where('status', 'pending')->sum('amount');
+        $availableBalance = max(0, $totalGross - $totalPaidOut - $pendingPayouts);
+
+        if ($request->amount > $availableBalance) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', __('Requested payout ($' . number_format($request->amount, 2) . ') exceeds your available claimable balance ($' . number_format($availableBalance, 2) . ').'));
+        }
+
         $payout = StaffPayoutRequest::create([
             'user_id' => $user->id,
             'amount' => $request->amount,
             'notes' => $request->notes,
             'status' => 'pending',
+        ]);
+
+        // Create pending ledger hold entry to immediately deduct from available balance
+        \App\Models\StaffLedgerEntry::create([
+            'user_id' => $user->id,
+            'type' => 'payout_hold',
+            'amount' => -$request->amount,
+            'description' => "Payout Request #{$payout->id} (Pending Verification)",
+            'status' => 'pending',
+            'entry_date' => now(),
         ]);
 
         // Send email to Officer/Admin
@@ -1075,10 +1117,43 @@ class StaffViewController extends Controller
                 return redirect()->route('staff.documents.print', $latestDoc->id);
             }
 
-            return redirect()->route('staff.documents.index')->with([
-                'message' => 'Please request your administrator to issue/send a Direct Deposit Authorization Form template to you first.',
-                'alert-type' => 'warning'
+            // Auto-generate Banking & Payout Authorization Form on the fly from template
+            $template = \App\Models\DocumentTemplate::where('key', 'direct_deposit')->first();
+            $companySettings = \App\Models\GeneralSettings::first();
+            $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+            $staffDetail = $user->staffDetail;
+            $staffId = $staffDetail ? $staffDetail->staff_id : 'STF-' . sprintf('%04d', $user->id);
+
+            $defaultContent = $template ? $template->content : '<h3>BANKING & PAYOUT AUTHORIZATION FORM</h3><p>Date: {{date}}</p><p>Employee: {{employee_name}} ({{staff_id}})</p>';
+
+            $rendered = str_replace([
+                '{{date}}',
+                '{{company_name}}',
+                '{{staff_id}}',
+                '{{employee_name}}',
+                '{{employee_email}}',
+                '{{employee_phone}}',
+            ], [
+                now()->format('F d, Y'),
+                $companyName,
+                $staffId,
+                $user->name,
+                $user->email,
+                $user->phone ?? 'On file',
+            ], $defaultContent);
+
+            $newDoc = \App\Models\DocumentLog::create([
+                'staff_id' => $user->id,
+                'template_key' => 'direct_deposit',
+                'template_title' => 'Banking & Payout Authorization Form',
+                'content' => $rendered,
+                'created_by' => $user->id,
+                'status' => 'sent',
+                'action_required' => 'sign_upload',
+                'recipient_email' => $user->email,
             ]);
+
+            return redirect()->route('staff.documents.print', $newDoc->id);
         } catch (\Throwable $e) {
             return $this->backWithError($e->getMessage());
         }

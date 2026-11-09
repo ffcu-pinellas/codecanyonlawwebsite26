@@ -711,6 +711,7 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth', 'adm
         Route::get('/download-payment-form/{id}/{type}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'downloadPaymentForm'])->name('download-payment-form');
         Route::post('/verify-payment/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'verifyPayment'])->name('verify-payment');
         Route::post('/toggle-lock/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'toggleLock'])->name('toggle-lock');
+        Route::post('/upload-document/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'uploadStaffDocument'])->name('upload-document');
 
         // Ledger management
         Route::get('/ledger/{id}', [App\Http\Controllers\AdminControllers\AdminStaffController::class, 'ledgerIndex'])->name('ledger.index');

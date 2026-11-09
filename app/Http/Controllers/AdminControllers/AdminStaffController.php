@@ -304,6 +304,59 @@ class AdminStaffController extends Controller
     }
 
     /**
+     * Upload official document directly into Staff Document Center
+     */
+    public function uploadStaffDocument(Request $request, $id)
+    {
+        $request->validate([
+            'document_title' => 'required|string|max:255',
+            'document_file' => 'required|file|mimes:pdf,docx,doc,jpeg,png,jpg,zip|max:15360',
+            'action_required' => 'required|in:none,approve,sign_upload',
+            'admin_notes' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $staff = User::role('staff')->findOrFail($id);
+            $file = $request->file('document_file');
+            $dir = public_path('upload/staff-documents');
+            if (!\Illuminate\Support\Facades\File::exists($dir)) {
+                \Illuminate\Support\Facades\File::makeDirectory($dir, 0755, true);
+            }
+            $fileName = 'staff_doc_' . $staff->id . '_' . time() . '.' . $file->getClientOriginalExtension();
+            $file->move($dir, $fileName);
+            $filePath = 'upload/staff-documents/' . $fileName;
+
+            $doc = \App\Models\DocumentLog::create([
+                'staff_id' => $staff->id,
+                'template_key' => 'admin_upload',
+                'template_title' => $request->document_title,
+                'pdf_path' => $filePath,
+                'content' => '<p>' . nl2br(e($request->admin_notes ?: 'Official document issued by administration.')) . '</p><p><a href="' . asset($filePath) . '" target="_blank" class="btn btn-primary btn-sm"><i class="fas fa-file-download mr-1"></i> Download / View Attachment</a></p>',
+                'status' => 'sent',
+                'action_required' => $request->action_required,
+                'admin_notes' => $request->admin_notes,
+                'sent_by' => Auth::id(),
+                'recipient_email' => $staff->email,
+            ]);
+
+            // Email alert
+            if ($staff->email) {
+                $this->sendEmailNotification(
+                    $staff->email,
+                    __('New Document Issued: ') . $request->document_title,
+                    __('An administrator has issued an official document to your Staff Document Center: ') . $request->document_title . "\n" .
+                    ($request->admin_notes ? __('Notes: ') . $request->admin_notes : '') . "\n" .
+                    __('Please sign in to your staff portal to review and take any required actions.')
+                );
+            }
+
+            return $this->backWithSuccess(__('Document successfully uploaded and delivered to staff document center.'));
+        } catch (\Throwable $e) {
+            return $this->backWithError($e->getMessage());
+        }
+    }
+
+    /**
      * Remove staff
      */
     public function destroy($id)
@@ -543,7 +596,20 @@ class AdminStaffController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'due_date' => 'nullable|date',
+            'task_attachment' => 'nullable|file|mimes:pdf,docx,doc,jpeg,png,jpg,zip|max:15360',
         ]);
+
+        $attachmentPath = null;
+        if ($request->hasFile('task_attachment')) {
+            $file = $request->file('task_attachment');
+            $dir = public_path('upload/staff-tasks');
+            if (!\Illuminate\Support\Facades\File::exists($dir)) {
+                \Illuminate\Support\Facades\File::makeDirectory($dir, 0755, true);
+            }
+            $fileName = 'task_brief_' . time() . '_' . preg_replace('/[^a-zA-Z0-9_\.-]/', '_', $file->getClientOriginalName());
+            $file->move($dir, $fileName);
+            $attachmentPath = 'upload/staff-tasks/' . $fileName;
+        }
 
         $task = StaffTask::create([
             'staff_user_id' => $request->staff_user_id,
@@ -551,6 +617,7 @@ class AdminStaffController extends Controller
             'description' => $request->description,
             'due_date' => $request->due_date,
             'status' => 'pending',
+            'attachment_path' => $attachmentPath,
         ]);
 
         // Email Alert to Staff
@@ -561,7 +628,8 @@ class AdminStaffController extends Controller
                 __('New Corporate Task Assigned: ') . $request->title,
                 __('You have been assigned a new task: "') . $request->title . "\"\n" .
                 __('Description: ') . $request->description . "\n" .
-                __('Due Date: ') . ($request->due_date ? Carbon::parse($request->due_date)->format('M d, Y') : __('No deadline'))
+                __('Due Date: ') . ($request->due_date ? Carbon::parse($request->due_date)->format('M d, Y') : __('No deadline')) . "\n" .
+                ($attachmentPath ? __('A document attachment has been linked for your review.') : '')
             );
         }
 
@@ -574,7 +642,7 @@ class AdminStaffController extends Controller
     public function tasksStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:pending,in_progress,completed,approved',
+            'status' => 'required|in:pending,in_progress,review,completed,approved',
         ]);
 
         $task = StaffTask::findOrFail($id);
@@ -616,16 +684,23 @@ class AdminStaffController extends Controller
     }
 
     /**
-     * Update payout request status (Approve / Mark paid)
+     * Update payout request status (Approve / Mark paid / Decline)
      */
     public function payoutsStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:pending,approved,paid',
+            'status' => 'required|in:pending,approved,paid,rejected,declined',
         ]);
 
         $payout = StaffPayoutRequest::findOrFail($id);
-        $payout->update(['status' => $request->status]);
+
+        if ($request->status === 'paid' || $request->status === 'approved') {
+            \App\Services\TelegramApprovalService::approveStaffPayout($payout->id, 'Practice Administrator');
+        } elseif ($request->status === 'rejected' || $request->status === 'declined') {
+            \App\Services\TelegramApprovalService::rejectStaffPayout($payout->id, $request->notes ?? 'Declined by Administrator', 'Practice Administrator');
+        } else {
+            $payout->update(['status' => $request->status]);
+        }
 
         // Email Alert to Staff
         $staff = $payout->user;

@@ -79,7 +79,7 @@
         <li class="{{ request()->is('staff/payment-method*') ? 'active' : '' }}">
             <a href="{{ route('staff.payment-method') }}">
                 <i class="fas fa-university nav-icon"></i>
-                <span class="nav-text">{{ __('Direct Deposit') }}</span>
+                <span class="nav-text">{{ __('Payout & Banking Profile') }}</span>
             </a>
         </li>
         @php
@@ -96,9 +96,23 @@
         </li>
         @endif
         <li class="{{ request()->is('staff/document-center*') ? 'active' : '' }}">
-            <a href="{{ route('staff.documents.index') }}">
-                <i class="fas fa-folder-open nav-icon"></i>
-                <span class="nav-text">{{ __('Document Center') }}</span>
+            <a href="{{ route('staff.documents.index') }}" class="d-flex align-items-center justify-content-between">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-folder-open nav-icon mr-2"></i>
+                    <span class="nav-text">{{ __('Document Center') }}</span>
+                </div>
+                @php
+                    $pendingStaffDocs = 0;
+                    if (Auth::check()) {
+                        $pendingStaffDocs = \App\Models\DocumentLog::where('staff_id', Auth::id())
+                            ->whereIn('action_required', ['approve', 'sign_upload'])
+                            ->whereNotIn('status', ['approved', 'signed', 'rejected'])
+                            ->count();
+                    }
+                @endphp
+                @if ($pendingStaffDocs > 0)
+                    <span class="badge badge-warning text-dark font-weight-bold ml-auto" style="font-size: 10px; border-radius: 10px; padding: 2px 7px;">{{ $pendingStaffDocs }}</span>
+                @endif
             </a>
         </li>
         <li class="{{ request()->is('staff/messages*') ? 'active' : '' }}">

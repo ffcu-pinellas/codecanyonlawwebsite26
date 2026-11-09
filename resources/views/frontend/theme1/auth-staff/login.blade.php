@@ -14,6 +14,12 @@
         </div>
 
         <div class="p-4" style="background: #111; border-top: 1px solid rgba(255,255,255,0.05);">
+            @if(request()->has('expired'))
+                <div class="alert alert-warning font-weight-bold py-2 small mb-3 text-center" style="background: rgba(254, 204, 86, 0.15); color: #fecc56; border: 1px solid rgba(254, 204, 86, 0.35); border-radius: 8px;">
+                    <i class="fas fa-clock mr-1"></i> {{ __('Your confidential session has expired due to inactivity. Please sign in again.') }}
+                </div>
+            @endif
+
             @if(session('error'))
                 <div class="alert alert-danger mb-3" role="alert">
                     {{ session('error') }}

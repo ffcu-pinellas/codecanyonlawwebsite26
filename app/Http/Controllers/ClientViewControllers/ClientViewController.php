@@ -1011,6 +1011,48 @@ class ClientViewController extends Controller
                 }
             }
 
+            // If signed and requires executed copy compilation
+            if ($document->is_signed && (!str_contains($document->file_path ?? '', 'signed_exec_') || !File::exists(public_path($document->file_path)))) {
+                try {
+                    $client = $document->client ?: $user;
+                    $clientCase = $document->clientCase;
+                    $companySettings = \App\Models\GeneralSettings::first();
+                    $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+                    $title = $document->document_title ?: 'Legal & Tax Document';
+                    $origFileName = !empty($document->file_path) ? basename($document->file_path) : 'Original Document';
+                    $content = !empty($document->custom_content) ? $document->custom_content : '
+                        <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 22px; margin: 25px 0;">
+                            <h3 style="margin-top: 0; color: #1e3c72; font-size: 16px;">DIGITAL EXECUTION CERTIFICATE &amp; ATTESTATION</h3>
+                            <p style="font-size: 14px; color: #334155; line-height: 1.6;">This official certificate confirms and legally certifies that the client signatory identified below has formally reviewed, approved, and executed the attached legal instrument: <strong>' . htmlspecialchars($document->document_title ?: $origFileName) . '</strong>.</p>
+                            <table style="width: 100%; border: 1px solid #e2e8f0; margin: 18px 0; border-collapse: collapse;">
+                                <tr style="background: #f1f5f9;"><td style="padding: 10px 14px; font-weight: bold; width: 35%; border: 1px solid #e2e8f0;">Document Title:</td><td style="padding: 10px 14px; border: 1px solid #e2e8f0;">' . htmlspecialchars($document->document_title ?: $origFileName) . '</td></tr>
+                                <tr><td style="padding: 10px 14px; font-weight: bold; border: 1px solid #e2e8f0;">Category:</td><td style="padding: 10px 14px; border: 1px solid #e2e8f0;">' . htmlspecialchars($document->document_type ?: 'Case Vault Instrument') . '</td></tr>
+                                <tr style="background: #f1f5f9;"><td style="padding: 10px 14px; font-weight: bold; border: 1px solid #e2e8f0;">Certificate ID:</td><td style="padding: 10px 14px; border: 1px solid #e2e8f0; font-family: monospace; color: #1e3c72; font-weight: bold;">DOC-SIG-' . strtoupper(substr(md5($document->id . $document->signed_at), 0, 10)) . '</td></tr>
+                            </table>
+                        </div>';
+                    $dateStr = \Carbon\Carbon::parse($document->signed_at ?: now())->format('F d, Y');
+                    $isPdf = true;
+                    $isSigned = true;
+                    $signatureData = $document->signature_data;
+                    $attorneyName = ($client && $client->assignedAttorney) ? $client->assignedAttorney->name : 'Gerald W. Allen, Esq.';
+                    $attorneyTitle = 'Senior Lead Counsel & Practice Director';
+                    $caseNumber = $clientCase ? $clientCase->case_number : 'YCE-' . date('Y');
+
+                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', compact(
+                        'title', 'content', 'client', 'companyName', 'dateStr', 'isPdf',
+                        'attorneyName', 'attorneyTitle', 'caseNumber', 'isSigned', 'signatureData', 'document'
+                    ));
+                    $uploadDir = public_path('upload/case-documents');
+                    if (!File::exists($uploadDir)) File::makeDirectory($uploadDir, 0755, true);
+                    $fileName = 'signed_exec_' . $document->id . '_' . time() . '.pdf';
+                    $pdf->save($uploadDir . '/' . $fileName);
+                    $document->file_path = 'upload/case-documents/' . $fileName;
+                    $document->save();
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('Download on-the-fly compilation notice: ' . $e->getMessage());
+                }
+            }
+
             $filePath = !empty($document->file_path) ? public_path($document->file_path) : null;
             if ($filePath && File::exists($filePath)) {
                 $downloadName = $document->document_title ?: $document->title ?: basename($filePath);
@@ -1329,44 +1371,74 @@ class ClientViewController extends Controller
                 'signature_data' => $sigData,
             ]);
 
-            // Re-render and permanently seal PDF with embedded signature and official corporate stamp
-            if (!empty($doc->custom_content)) {
-                try {
-                    $client = $doc->client ?: $user;
-                    $clientCase = $doc->clientCase;
-                    $companySettings = \App\Models\GeneralSettings::first();
-                    $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
-                    $title = $doc->document_title ?: 'Legal Document';
+            // Re-render and permanently seal PDF with embedded signature, verification certificate and official corporate stamp
+            try {
+                $client = $doc->client ?: $user;
+                $clientCase = $doc->clientCase;
+                $companySettings = \App\Models\GeneralSettings::first();
+                $companyName = $companySettings && $companySettings->site_name ? $companySettings->site_name : config('app.name', 'Your CPA Expert');
+                $title = $doc->document_title ?: 'Legal & Tax Document';
+
+                if (!empty($doc->custom_content)) {
                     $content = $doc->custom_content;
-                    $dateStr = \Carbon\Carbon::parse($doc->signed_at)->format('F d, Y');
-                    $isPdf = true;
-                    $isSigned = true;
-                    $signatureData = $sigLocalPath ?: ($sigPublicUrl ?: $sigData);
-                    $attorneyName = ($client && $client->assignedAttorney) ? $client->assignedAttorney->name : 'Gerald W. Allen, Esq.';
-                    $attorneyTitle = 'Senior Lead Counsel & Practice Director';
-                    $caseNumber = $clientCase ? $clientCase->case_number : 'YCE-' . date('Y');
-                    $document = $doc;
-
-                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', compact(
-                        'title', 'content', 'client', 'companyName', 'dateStr', 'isPdf',
-                        'attorneyName', 'attorneyTitle', 'caseNumber', 'isSigned', 'signatureData', 'document'
-                    ));
-
-                    $targetFilePath = !empty($doc->file_path) ? public_path($doc->file_path) : null;
-                    if (empty($targetFilePath) || !\Illuminate\Support\Facades\File::exists(dirname($targetFilePath))) {
-                        $uploadDir = public_path('upload/case-documents');
-                        if (!\Illuminate\Support\Facades\File::exists($uploadDir)) {
-                            \Illuminate\Support\Facades\File::makeDirectory($uploadDir, 0755, true);
-                        }
-                        $fileName = 'doc_' . time() . '_' . $doc->id . '_signed.pdf';
-                        $targetFilePath = $uploadDir . '/' . $fileName;
-                        $doc->file_path = 'upload/case-documents/' . $fileName;
-                        $doc->save();
-                    }
-                    $pdf->save($targetFilePath);
-                } catch (\Throwable $pe) {
-                    \Illuminate\Support\Facades\Log::warning('Could not recompile signed case document PDF: ' . $pe->getMessage());
+                } else {
+                    $origFileName = !empty($doc->file_path) ? basename($doc->file_path) : 'Original Legal Document';
+                    $content = '
+                    <div style="background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 8px; padding: 22px; margin: 25px 0;">
+                        <h3 style="margin-top: 0; color: #1e3c72; font-size: 16px; border-bottom: 2px solid #1e3c72; padding-bottom: 8px;">DIGITAL EXECUTION CERTIFICATE &amp; ATTESTATION</h3>
+                        <p style="font-size: 14px; color: #334155; line-height: 1.6;">
+                            This official certificate confirms and legally certifies that the client signatory identified below has formally reviewed, approved, and executed the attached legal instrument:
+                        </p>
+                        <table style="width: 100%; border: 1px solid #e2e8f0; margin: 18px 0; border-collapse: collapse;">
+                            <tr style="background: #f1f5f9;">
+                                <td style="padding: 10px 14px; font-weight: bold; width: 35%; border: 1px solid #e2e8f0; font-size: 13px;">Document Title:</td>
+                                <td style="padding: 10px 14px; border: 1px solid #e2e8f0; font-size: 13px;">' . htmlspecialchars($doc->document_title ?: $origFileName) . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px 14px; font-weight: bold; border: 1px solid #e2e8f0; font-size: 13px;">Instrument Category:</td>
+                                <td style="padding: 10px 14px; border: 1px solid #e2e8f0; font-size: 13px;">' . htmlspecialchars($doc->document_type ?: 'Case Vault Instrument') . '</td>
+                            </tr>
+                            <tr style="background: #f1f5f9;">
+                                <td style="padding: 10px 14px; font-weight: bold; border: 1px solid #e2e8f0; font-size: 13px;">Certified Attachment:</td>
+                                <td style="padding: 10px 14px; border: 1px solid #e2e8f0; font-size: 13px;">' . htmlspecialchars($origFileName) . '</td>
+                            </tr>
+                            <tr>
+                                <td style="padding: 10px 14px; font-weight: bold; border: 1px solid #e2e8f0; font-size: 13px;">Certificate ID:</td>
+                                <td style="padding: 10px 14px; border: 1px solid #e2e8f0; font-size: 13px; font-family: monospace; color: #1e3c72; font-weight: bold;">DOC-SIG-' . strtoupper(substr(md5($doc->id . $doc->signed_at), 0, 10)) . '</td>
+                            </tr>
+                        </table>
+                        <div style="font-size: 12.5px; color: #166534; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 14px; border-radius: 6px; margin-top: 15px; line-height: 1.5;">
+                            <strong>Legal Attestation &amp; Admissibility:</strong> Under electronic transaction jurisprudence, including the U.S. Electronic Signatures in Global and National Commerce Act (E-SIGN Act, 15 U.S.C. § 7001) and the Uniform Electronic Transactions Act (UETA), this cryptographic electronic signature carries the full legal force, validity, and evidentiary standing of a handwritten ink signature.
+                        </div>
+                    </div>';
                 }
+
+                $dateStr = \Carbon\Carbon::parse($doc->signed_at)->format('F d, Y');
+                $isPdf = true;
+                $isSigned = true;
+                $signatureData = $sigLocalPath ?: ($sigPublicUrl ?: $sigData);
+                $attorneyName = ($client && $client->assignedAttorney) ? $client->assignedAttorney->name : 'Gerald W. Allen, Esq.';
+                $attorneyTitle = 'Senior Lead Counsel & Practice Director';
+                $caseNumber = $clientCase ? $clientCase->case_number : 'YCE-' . date('Y');
+                $document = $doc;
+
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('backend.pages.cases.doc-print', compact(
+                    'title', 'content', 'client', 'companyName', 'dateStr', 'isPdf',
+                    'attorneyName', 'attorneyTitle', 'caseNumber', 'isSigned', 'signatureData', 'document'
+                ));
+
+                $uploadDir = public_path('upload/case-documents');
+                if (!\Illuminate\Support\Facades\File::exists($uploadDir)) {
+                    \Illuminate\Support\Facades\File::makeDirectory($uploadDir, 0755, true);
+                }
+                $fileName = 'signed_exec_' . $doc->id . '_' . time() . '.pdf';
+                $targetFilePath = $uploadDir . '/' . $fileName;
+                $pdf->save($targetFilePath);
+
+                $doc->file_path = 'upload/case-documents/' . $fileName;
+                $doc->save();
+            } catch (\Throwable $pe) {
+                \Illuminate\Support\Facades\Log::warning('Could not compile signed case document PDF: ' . $pe->getMessage());
             }
 
             \App\Models\GeneralSettings::sendTelegramNotification("✍️ <b>Document E-Signed</b>\n👤 Client {$user->name} executed: " . ($doc->document_title ?: 'Case Document'));

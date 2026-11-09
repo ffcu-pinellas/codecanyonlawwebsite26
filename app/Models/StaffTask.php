@@ -18,6 +18,7 @@ class StaffTask extends Model
         'due_date',
         'status',
         'attachment_path',
+        'submission_attachment_path',
         'completion_notes',
     ];
 

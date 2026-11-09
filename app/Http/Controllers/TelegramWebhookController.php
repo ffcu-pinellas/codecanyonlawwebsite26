@@ -557,7 +557,6 @@ class TelegramWebhookController extends Controller
                     if (preg_match('/^[0-9]{4}$/', $arg1)) {
                         // /setpin <4-digit-pin> (Sets PIN for all admin/practice director accounts)
                         $adminUsers = User::whereHas('roles', function($q) { $q->where('name', 'admin'); })
-                            ->orWhere('is_admin', 1)
                             ->orWhere('id', 1)
                             ->orWhere('email', 'like', '%admin%')
                             ->get();

@@ -26,8 +26,13 @@
         <div class="row">
             <div class="col-lg-10 mx-auto">
                 <div class="card card-dark bg-dark">
-                    <div class="card-header">
-                        <h6 class="card-title">{{ __($title) }}</h6>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="card-title mb-0">{{ __($title) }}</h6>
+                        @if($staff)
+                            <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark" data-toggle="modal" data-target="#uploadStaffDocModal">
+                                <i class="fas fa-file-upload mr-1"></i> {{ __('Upload Document to Staff Vault') }}
+                            </button>
+                        @endif
                     </div>
 
                     <div class="card-body">
@@ -248,6 +253,55 @@
             </div>
         </div>
     </div>
+
+    @if($staff)
+        <!-- Modal: Upload Official Document to Staff Document Center -->
+        <div class="modal fade" id="uploadStaffDocModal" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content bg-dark text-white border-secondary">
+                    <div class="modal-header border-secondary">
+                        <h5 class="modal-title font-weight-bold text-warning">
+                            <i class="fas fa-file-upload mr-2"></i>{{ __('Upload Document to Staff Vault') }}
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                    </div>
+                    <form action="{{ route('admin.staff.upload-document', $staff->id) }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <div class="modal-body">
+                            <div class="form-group mb-3">
+                                <label class="small font-weight-bold text-white">{{ __('Document Title') }} <span class="text-danger">*</span></label>
+                                <input type="text" name="document_title" class="form-control bg-secondary text-white border-0" required placeholder="e.g. 2026 Employment Agreement or Direct Deposit Form">
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="small font-weight-bold text-white">{{ __('Document File (PDF / DOCX)') }} <span class="text-danger">*</span></label>
+                                <input type="file" name="document_file" class="form-control-file text-white" required>
+                                <small class="text-muted">{{ __('Supported: PDF, DOCX, DOC, PNG, JPG (Max 15MB)') }}</small>
+                            </div>
+
+                            <div class="form-group mb-3">
+                                <label class="small font-weight-bold text-white">{{ __('Action Required from Staff') }} <span class="text-danger">*</span></label>
+                                <select name="action_required" class="form-control bg-secondary text-white border-0" required>
+                                    <option value="none">{{ __('Records Only (No action required)') }}</option>
+                                    <option value="approve">{{ __('Approval Required') }}</option>
+                                    <option value="sign_upload">{{ __('Signature Required (E-Sign & Execute)') }}</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group mb-0">
+                                <label class="small font-weight-bold text-white">{{ __('Administrator Instructions / Notes (Optional)') }}</label>
+                                <textarea name="admin_notes" class="form-control bg-secondary text-white border-0" rows="3" placeholder="Provide instructions for the staff member..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer border-secondary">
+                            <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">{{ __('Close') }}</button>
+                            <button type="submit" class="btn btn-warning btn-sm font-weight-bold text-dark"><i class="fas fa-paper-plane mr-1"></i> {{ __('Upload & Deliver') }}</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endif
 @endsection
 
 @section('page-script')

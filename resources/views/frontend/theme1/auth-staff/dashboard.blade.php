@@ -252,11 +252,15 @@
                     <div class="d-flex align-items-center flex-wrap mb-1" style="gap: 8px;">
                         <h4 class="font-weight-bold text-white mb-0">{{ $user->name }}</h4>
                         <span class="badge-exec-gold"><i class="fas fa-id-badge mr-1"></i> {{ $staffDetail->staff_id }}</span>
-                        @if(!empty($staffDetail->bank_account_number) || !empty($staffDetail->payment_info))
-                            <span class="badge-exec-green"><i class="fas fa-university mr-1"></i> {{ __('Direct Deposit Active') }}</span>
+                        @if(!empty($staffDetail->bank_name) && !empty($staffDetail->account_number))
+                            @if(!empty($staffDetail->payment_verified))
+                                <span class="badge-exec-green"><i class="fas fa-check-circle mr-1"></i> {{ __('Payout Profile Active') }}</span>
+                            @else
+                                <span class="badge-exec-gold" style="background: rgba(254, 204, 86, 0.15); color: #fecc56; border: 1px solid rgba(254, 204, 86, 0.3);"><i class="fas fa-clock mr-1"></i> {{ __('Payout Profile Pending Verification') }}</span>
+                            @endif
                         @else
                             <a href="{{ route('staff.payment-method') }}" class="badge-exec-warn text-decoration-none">
-                                <i class="fas fa-exclamation-triangle mr-1"></i> {{ __('Direct Deposit Needed') }}
+                                <i class="fas fa-exclamation-triangle mr-1"></i> {{ __('Payout & Banking Profile Required') }}
                             </a>
                         @endif
                     </div>
@@ -427,7 +431,7 @@
                         <i class="fas fa-tasks"></i>
                     </div>
                     <div>
-                        <div class="font-weight-bold text-white">{{ __('Kanban Task Board') }}</div>
+                        <div class="font-weight-bold text-white">{{ __('Operations Task Workflow') }}</div>
                         <div class="text-muted small">{{ __('Manage assigned client cases & deliverables') }}</div>
                     </div>
                 </a>
@@ -487,8 +491,8 @@
                         <i class="fas fa-file-pdf"></i>
                     </div>
                     <div>
-                        <div class="font-weight-bold text-white">{{ __('Official Direct Deposit PDF') }}</div>
-                        <div class="text-muted small">{{ __('Pre-filled banking authorization document') }}</div>
+                        <div class="font-weight-bold text-white">{{ __('Banking & Payout Authorization Form') }}</div>
+                        <div class="text-muted small">{{ __('Pre-filled banking authorization & direct deposit form') }}</div>
                     </div>
                 </a>
             </div>

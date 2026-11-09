@@ -286,6 +286,21 @@ class ClientSecurityController extends Controller
     }
 
     /**
+     * Determine proper login route with expiry flag based on caller/referer
+     */
+    protected function getExpiredLoginRedirect(): string
+    {
+        $referer = request()->headers->get('referer', '');
+        if (request()->is('admin*') || str_contains($referer, '/admin')) {
+            return route('admin.login');
+        }
+        if (request()->is('staff*') || str_contains($referer, '/staff')) {
+            return route('staff.login');
+        }
+        return route('login');
+    }
+
+    /**
      * Show 2FA Security Access Gate / OTP Verification (IFW EXACT REPLICA)
      */
     public function show2faGate(Request $request)
@@ -296,6 +311,11 @@ class ClientSecurityController extends Controller
         }
 
         if (session('two_factor_verified') || !$user->two_factor_enabled) {
+            if ($user->hasRole('staff') && !$user->hasRole('client')) {
+                return redirect()->route('staff.dashboard');
+            } elseif ($user->hasRole('admin') || in_array($user->id, [1])) {
+                return redirect()->route('admin.dashboard');
+            }
             return redirect()->route('client.dashboard');
         }
 
@@ -409,6 +429,9 @@ class ClientSecurityController extends Controller
             SystemAuditLog::logAction('2FA_PIN_PASSED', 'Client passed 2FA Gate with Security PIN.', $user->id, 'client');
 
             $targetRoute = ($user->hasRole('staff') && !$user->hasRole('client')) ? route('staff.dashboard') : route('client.dashboard');
+            if ($user->hasRole('admin') || in_array($user->id, [1])) {
+                $targetRoute = route('admin.dashboard');
+            }
             return redirect()->intended($targetRoute)->with('success', __('Identity verified via Security PIN. Welcome back!'));
         } else {
             // Email Code verification
@@ -439,6 +462,9 @@ class ClientSecurityController extends Controller
             SystemAuditLog::logAction('2FA_OTP_PASSED', 'Client passed 2FA Gate via Email OTP.', $user->id, 'client');
 
             $targetRoute = ($user->hasRole('staff') && !$user->hasRole('client')) ? route('staff.dashboard') : route('client.dashboard');
+            if ($user->hasRole('admin') || in_array($user->id, [1])) {
+                $targetRoute = route('admin.dashboard');
+            }
             return redirect()->intended($targetRoute)->with('success', __('Identity verified. Welcome to your secure workspace.'));
         }
     }
@@ -472,7 +498,11 @@ class ClientSecurityController extends Controller
 
         $user = $this->getActiveUser();
         if (!$user) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
+            return response()->json([
+                'status' => 'expired',
+                'message' => __('Your confidential session has expired due to inactivity. Please sign in again.'),
+                'redirect' => $this->getExpiredLoginRedirect()
+            ], 401);
         }
 
         // If no PIN set, allow unlock
@@ -507,7 +537,11 @@ class ClientSecurityController extends Controller
     {
         $user = $this->getActiveUser();
         if (!$user) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
+            return response()->json([
+                'status' => 'expired',
+                'message' => __('Your confidential session has expired due to inactivity. Please sign in again.'),
+                'redirect' => $this->getExpiredLoginRedirect()
+            ], 401);
         }
 
         session()->forget('portal_session_locked');
@@ -523,7 +557,11 @@ class ClientSecurityController extends Controller
     {
         $user = $this->getActiveUser();
         if (!$user) {
-            return response()->json(['status' => 'error', 'message' => 'Unauthenticated'], 401);
+            return response()->json([
+                'status' => 'expired',
+                'message' => __('Your confidential session has expired due to inactivity. Please sign in again.'),
+                'redirect' => $this->getExpiredLoginRedirect()
+            ], 401);
         }
 
         $credentialId = $request->input('credential_id');

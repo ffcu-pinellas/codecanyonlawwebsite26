@@ -358,9 +358,19 @@
     function launchDirectCall(userId, userName, callType, conversationSlug) {
         if (typeof window.initiateWebRtcCall === 'function') {
             window.initiateWebRtcCall(userId, userName, callType, conversationSlug || null);
-        } else {
-            alert('Calling engine is initializing. Please try again.');
+            return;
         }
+        let attempts = 0;
+        const checkInterval = setInterval(function() {
+            attempts++;
+            if (typeof window.initiateWebRtcCall === 'function') {
+                clearInterval(checkInterval);
+                window.initiateWebRtcCall(userId, userName, callType, conversationSlug || null);
+            } else if (attempts >= 40) {
+                clearInterval(checkInterval);
+                alert('Calling system initializing. Please allow microphone permissions and try again.');
+            }
+        }, 150);
     }
 </script>
 @endsection

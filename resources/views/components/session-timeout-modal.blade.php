@@ -230,12 +230,16 @@
                 <div id="pinUnlockErrorMsg" class="alert alert-danger font-weight-bold py-1 px-2 mb-2" style="display:none; font-size:12px; border-radius:6px;"></div>
 
                 <!-- Biometric WebAuthn Unlock (Touch ID / Face ID / Windows Hello) -->
+                @php
+                    $activeUserObj = Auth::guard('admin')->user() ?: Auth::user();
+                    $hasRegisteredBiometrics = $activeUserObj && !empty($activeUserObj->passkey_credentials) && is_array($activeUserObj->passkey_credentials) && count($activeUserObj->passkey_credentials) > 0;
+                @endphp
                 <div class="mb-3">
                     <button type="button" class="btn btn-block py-2 font-weight-bold" id="btnTimeoutBiometricUnlock" onclick="unlockSessionWithBiometrics()" style="background: rgba(37, 99, 235, 0.15); color: #60a5fa; border: 1.5px solid rgba(96, 165, 250, 0.4); border-radius: 10px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;">
                         <i class="fas fa-fingerprint" style="font-size: 17px;"></i>
                         <span>{{ __('Unlock with Touch ID / Face ID') }}</span>
                     </button>
-                    <div class="mt-2 text-center" id="sessionBiometricSetupRow">
+                    <div class="mt-2 text-center" id="sessionBiometricSetupRow" style="{{ $hasRegisteredBiometrics ? 'display: none;' : '' }}">
                         <a href="javascript:void(0)" onclick="quickSetupBiometricFromModal()" class="small text-warning font-weight-bold text-decoration-none" style="font-size: 11.5px;">
                             <i class="fas fa-plus-circle mr-1"></i> {{ __('Register Touch ID / Face ID on This Device Now') }}
                         </a>
@@ -359,16 +363,31 @@
             },
             body: JSON.stringify({ pin: pin })
         })
-        .then(function(res) {
-            if (!res.ok) throw res;
-            return res.json();
+        .then(async function(res) {
+            var data = null;
+            try { data = await res.json(); } catch(e) {}
+            if (!res.ok) {
+                if (res.status === 401 || (data && data.status === 'expired')) {
+                    var redir = (data && data.redirect) ? data.redirect : "{{ route('login') }}";
+                    window.location.href = redir + (redir.indexOf('?') >= 0 ? '&' : '?') + 'expired=1';
+                    return;
+                }
+                throw new Error((data && data.message) ? data.message : "{{ __('Invalid Security PIN. Access denied.') }}");
+            }
+            return data;
         })
         .then(function(data) {
+            if (!data) return;
+            if (data.status === 'expired') {
+                var redir = data.redirect || "{{ route('login') }}";
+                window.location.href = redir + (redir.indexOf('?') >= 0 ? '&' : '?') + 'expired=1';
+                return;
+            }
             if (errorMsg) errorMsg.style.display = 'none';
             resetInactivityTimer();
         })
         .catch(function(err) {
-            showUnlockError("{{ __('Invalid Security PIN. Access denied.') }}");
+            showUnlockError(err.message || "{{ __('Invalid Security PIN. Access denied.') }}");
         });
     };
 
@@ -437,7 +456,12 @@
             });
 
             var vData = await verifyRes.json();
-            if (vData.status === 'ok') {
+            if (verifyRes.status === 401 || (vData && vData.status === 'expired')) {
+                var redir = (vData && vData.redirect) ? vData.redirect : "{{ route('login') }}";
+                window.location.href = redir + (redir.indexOf('?') >= 0 ? '&' : '?') + 'expired=1';
+                return;
+            }
+            if (vData.status === 'ok' || vData.status === 'success') {
                 if (errorMsg) errorMsg.style.display = 'none';
                 resetInactivityTimer();
             } else {
@@ -522,7 +546,10 @@
             });
 
             var sData = await saveRes.json();
-            if (sData && sData.status === 'ok') {
+            if (sData && (sData.status === 'ok' || sData.status === 'success')) {
+                localStorage.setItem('biometric_device_registered', 'true');
+                var setupRow = document.getElementById('sessionBiometricSetupRow');
+                if (setupRow) setupRow.style.display = 'none';
                 alert("{{ __('Touch ID / Face ID registered successfully on this device! Session unlocked.') }}");
                 if (errorMsg) errorMsg.style.display = 'none';
                 resetInactivityTimer();

@@ -5,6 +5,7 @@
 
 <body id="body" class="dark-mode" style="background-color: #0a0c10 !important; color: #f1f5f9; min-height: 100vh; overflow-x: hidden;">
 @include('components.impersonation-bar')
+@include('components.session-timeout-modal')
 @include('frontend.theme1.auth-client.layouts.pre-loader')
 
 <!-- Google Translate Container -->
@@ -38,6 +39,94 @@
 
         <!-- Right Header Utility Controls (Dark/Light, Currency, Language, Profile) -->
         <div class="d-flex align-items-center" style="gap: 8px;">
+
+            <!-- Staff Top Notification Bell Dropdown -->
+            @php
+                $staffBellUnreadChat = 0;
+                $staffBellPendingTasks = 0;
+                $staffBellPendingDocs = 0;
+                try {
+                    $staffUser = Auth::user();
+                    if ($staffUser) {
+                        $staffOfficer = $staffUser->staffDetail?->officer ?: (\App\Models\User::role('admin')->first() ?: \App\Models\User::first());
+                        if ($staffOfficer) {
+                            $staffBellUnreadChat = \App\Models\StaffMessage::where('staff_user_id', $staffUser->id)
+                                ->where('sender_id', $staffOfficer->id)
+                                ->where('read', false)
+                                ->count();
+                        }
+                        $staffBellPendingTasks = \App\Models\StaffTask::where('staff_user_id', $staffUser->id)
+                            ->whereIn('status', ['pending', 'in_progress'])
+                            ->count();
+                        $staffBellPendingDocs = \App\Models\DocumentLog::where('staff_id', $staffUser->id)
+                            ->whereIn('action_required', ['approve', 'sign_upload'])
+                            ->whereNotIn('status', ['approved', 'signed', 'rejected'])
+                            ->count();
+                    }
+                } catch (\Throwable $e) {}
+                $staffBellTotal = $staffBellUnreadChat + $staffBellPendingTasks + $staffBellPendingDocs;
+            @endphp
+            <div class="dropdown position-relative">
+                <button class="btn btn-sm btn-dark position-relative p-2" type="button" id="staffNotificationBellDropdown" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" title="Pending Actions & Notifications" style="background: #161a23; border: 1px solid #28303f; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center;">
+                    <i class="fas fa-bell text-warning" style="font-size: 13.5px;"></i>
+                    @if($staffBellTotal > 0)
+                        <span class="position-absolute badge badge-danger rounded-circle font-weight-bold" style="top: -4px; right: -4px; font-size: 9.5px; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 8px rgba(239, 68, 68, 0.8);">
+                            {{ $staffBellTotal > 9 ? '9+' : $staffBellTotal }}
+                        </span>
+                    @endif
+                </button>
+                <div class="dropdown-menu dropdown-menu-right dropdown-menu-end shadow-lg p-0" id="staffNotificationMenu" aria-labelledby="staffNotificationBellDropdown" style="background: #161a23; border: 1px solid #28303f; width: 290px; max-width: calc(100vw - 24px); border-radius: 8px; overflow: hidden; right: 0 !important; left: auto !important;">
+                    <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="background: #11151e; border-color: #28303f !important;">
+                        <span class="font-weight-bold text-white small text-uppercase" style="letter-spacing: 0.5px;">Staff Notifications</span>
+                        <span class="badge {{ $staffBellTotal > 0 ? 'badge-warning text-dark' : 'badge-secondary' }} font-weight-bold" style="font-size: 10px;">
+                            {{ $staffBellTotal }} Pending
+                        </span>
+                    </div>
+                    <div class="p-2" style="max-height: 280px; overflow-y: auto;">
+                        @if($staffBellUnreadChat > 0)
+                            <a href="{{ route('staff.messages') }}" class="dropdown-item py-2 px-2 text-light rounded d-flex align-items-center mb-1" style="font-size: 12px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.2);">
+                                <div class="mr-2 text-danger" style="font-size: 16px;"><i class="fas fa-comments"></i></div>
+                                <div style="min-width: 0;">
+                                    <div class="font-weight-bold text-white text-truncate">{{ $staffBellUnreadChat }} Unread Team Chat</div>
+                                    <small class="text-muted">Supervisor or counsel sent communication</small>
+                                </div>
+                            </a>
+                        @endif
+
+                        @if($staffBellPendingTasks > 0)
+                            <a href="{{ route('staff.tasks.index') }}" class="dropdown-item py-2 px-2 text-light rounded d-flex align-items-center mb-1" style="font-size: 12px; background: rgba(254, 204, 86, 0.08); border: 1px solid rgba(254, 204, 86, 0.2);">
+                                <div class="mr-2 text-warning" style="font-size: 16px;"><i class="fas fa-tasks"></i></div>
+                                <div style="min-width: 0;">
+                                    <div class="font-weight-bold text-white text-truncate">{{ $staffBellPendingTasks }} Assigned Task(s) Pending</div>
+                                    <small class="text-muted">Awaiting your progression or review</small>
+                                </div>
+                            </a>
+                        @endif
+
+                        @if($staffBellPendingDocs > 0)
+                            <a href="{{ route('staff.documents.index') }}" class="dropdown-item py-2 px-2 text-light rounded d-flex align-items-center mb-1" style="font-size: 12px; background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2);">
+                                <div class="mr-2 text-primary" style="font-size: 16px;"><i class="fas fa-file-contract"></i></div>
+                                <div style="min-width: 0;">
+                                    <div class="font-weight-bold text-white text-truncate">{{ $staffBellPendingDocs }} Document(s) Awaiting Action</div>
+                                    <small class="text-muted">Review, approve, or sign uploaded documents</small>
+                                </div>
+                            </a>
+                        @endif
+
+                        @if($staffBellTotal == 0)
+                            <div class="text-center py-3 text-muted small">
+                                <i class="fas fa-check-circle text-success fa-2x mb-2 d-block"></i>
+                                <span>{{ __('All caught up! No pending tasks or messages.') }}</span>
+                            </div>
+                        @endif
+                    </div>
+                    <div class="p-2 text-center border-top" style="border-color: #28303f !important; background: #11151e;">
+                        <a href="{{ route('staff.tasks.index') }}" class="small text-warning font-weight-bold text-decoration-none" style="font-size: 11px;">
+                            {{ __('View Operations Workflow') }} &rarr;
+                        </a>
+                    </div>
+                </div>
+            </div>
 
             <!-- Dark / Light Mode Switcher -->
             <button type="button" id="themeModeToggle" class="btn btn-sm btn-outline-secondary font-weight-bold d-flex align-items-center" onclick="toggleThemeMode()" title="Toggle Dark / Light Mode" style="border-radius: 20px; padding: 4px 10px; font-size: 11.5px; border-color: #3b4252; color: #cbd5e1; background: #161a23;">
@@ -647,10 +736,24 @@
         }
     });
 
-    // PWA Service Worker Registration & Install Prompt
+    // PWA Service Worker Registration & Smart Install Banner
     let deferredPwaPrompt = null;
     const pwaBanner = document.getElementById('pwaInstallBanner');
     const pwaInstallBtn = document.getElementById('pwaInstallBtn');
+
+    const isPwaInstalled = window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true
+        || (document.referrer && document.referrer.includes('android-app://'))
+        || localStorage.getItem('staff_pwa_installed') === 'true';
+
+    if (isPwaInstalled && pwaBanner) {
+        pwaBanner.remove();
+    }
+
+    window.addEventListener('appinstalled', () => {
+        localStorage.setItem('staff_pwa_installed', 'true');
+        if (pwaBanner) pwaBanner.remove();
+    });
 
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
@@ -661,6 +764,9 @@
     }
 
     window.addEventListener('beforeinstallprompt', (e) => {
+        if (isPwaInstalled || localStorage.getItem('staff_pwa_installed') === 'true') {
+            return;
+        }
         e.preventDefault();
         deferredPwaPrompt = e;
         if (!localStorage.getItem('staff_pwa_banner_dismissed')) {
@@ -674,7 +780,8 @@
             deferredPwaPrompt.prompt();
             const { outcome } = await deferredPwaPrompt.userChoice;
             if (outcome === 'accepted') {
-                if (pwaBanner) pwaBanner.classList.add('d-none');
+                localStorage.setItem('staff_pwa_installed', 'true');
+                if (pwaBanner) pwaBanner.remove();
             }
             deferredPwaPrompt = null;
         });

@@ -307,7 +307,7 @@
                                     <i class="fas fa-download mr-1"></i> {{ __('Download') }}
                                 </a>
                                 @if($vDoc->requires_signature && !$vDoc->is_signed)
-                                    <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark px-3" data-toggle="collapse" data-target="#signCollapse-{{ $vDoc->id }}">
+                                    <button type="button" class="btn btn-warning btn-sm font-weight-bold text-dark px-3" data-toggle="collapse" data-target="#signCollapse-{{ $vDoc->id }}" onclick="setTimeout(function(){ initSignatureCanvas('case_{{ $vDoc->id }}'); }, 200);">
                                         <i class="fas fa-signature mr-1"></i> {{ __('E-Sign Now') }}
                                     </button>
                                 @endif

@@ -275,9 +275,19 @@
             $('#initiateCallModal').modal('hide');
             if (typeof window.initiateWebRtcCall === 'function') {
                 window.initiateWebRtcCall({{ $client ? $client->id : 0 }}, @json($title), type, @json($conversation->slug));
-            } else {
-                alert('Calling engine is initializing. Please try again in a moment.');
+                return;
             }
+            let attempts = 0;
+            const checkInterval = setInterval(function() {
+                attempts++;
+                if (typeof window.initiateWebRtcCall === 'function') {
+                    clearInterval(checkInterval);
+                    window.initiateWebRtcCall({{ $client ? $client->id : 0 }}, @json($title), type, @json($conversation->slug));
+                } else if (attempts >= 40) {
+                    clearInterval(checkInterval);
+                    alert('Calling system initializing. Please allow microphone permissions and try again.');
+                }
+            }, 150);
         }
 
         document.addEventListener('DOMContentLoaded', function() {

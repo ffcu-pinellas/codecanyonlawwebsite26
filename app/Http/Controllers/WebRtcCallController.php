@@ -178,7 +178,7 @@ class WebRtcCallController extends Controller
         }
 
         // Strict role check: Only Admins and Supervising Officers can initiate calls
-        $isAdminOrSupervisor = $user->hasAnyRole(['admin', 'supervisor']) || $user->is_admin;
+        $isAdminOrSupervisor = $user->hasAnyRole(['admin', 'supervisor']) || (!empty($user->is_admin));
         if (!$isAdminOrSupervisor) {
             return response()->json([
                 'error' => 'Permission denied. Only practice supervisors and administrators can initiate direct calls.'
@@ -790,7 +790,7 @@ class WebRtcCallController extends Controller
         if (!$user) return null;
 
         try {
-            $isAdmin = $user->hasRole('admin') || $user->is_admin;
+            $isAdmin = $user->hasRole('admin') || (!empty($user->is_admin));
 
             // 1. Check client conversations
             if ($isAdmin) {

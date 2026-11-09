@@ -139,7 +139,7 @@
         <!-- COLUMN 3: REVIEW -->
         <div class="kanban-column" data-status="review">
             <div class="kanban-col-header" style="border-color: #8b5cf6;">
-                <h6 class="kanban-col-title" style="color: #8b5cf6;"><i class="fas fa-search mr-1"></i> {{ __('CPA Review') }}</h6>
+                <h6 class="kanban-col-title" style="color: #8b5cf6;"><i class="fas fa-search mr-1"></i> {{ __('Supervisor & Quality Review') }}</h6>
                 <span class="badge font-weight-bold text-white" style="background: #8b5cf6;">{{ $tasks->where('status', 'review')->count() }}</span>
             </div>
             <div class="kanban-cards-wrapper" id="col-review">
@@ -200,27 +200,37 @@
     <!-- Preview Modal -->
     <div class="modal fade" id="previewModal-{{ $task->id }}" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title font-weight-bold text-dark">{{ __('Task Briefing') }}</h5>
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+            <div class="modal-content" style="background: #11151e; border: 1px solid #28303f; color: #f1f5f9;">
+                <div class="modal-header" style="border-bottom: 1px solid #28303f;">
+                    <h5 class="modal-title font-weight-bold text-white"><i class="fas fa-file-alt text-warning mr-2"></i>{{ __('Task Briefing') }}</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
                 </div>
                 <div class="modal-body">
-                    <h6 class="font-weight-bold text-primary mb-2">{{ $task->title }}</h6>
-                    <p class="text-muted small mb-3">{{ $task->description ?: __('No detailed instructions provided.') }}</p>
-                    <div class="row small bg-light p-3 rounded mb-2">
+                    <h6 class="font-weight-bold text-warning mb-2" style="font-size: 16px;">{{ $task->title }}</h6>
+                    <p class="text-light small mb-3" style="line-height: 1.5;">{{ $task->description ?: __('No detailed instructions provided.') }}</p>
+                    
+                    @if($task->attachment_path)
+                        <div class="p-3 mb-3 rounded" style="background: rgba(254, 204, 86, 0.08); border: 1px solid rgba(254, 204, 86, 0.25);">
+                            <span class="small font-weight-bold text-warning d-block mb-2"><i class="fas fa-paperclip mr-1"></i> {{ __('Attached Briefing / Document:') }}</span>
+                            <a href="{{ asset($task->attachment_path) }}" target="_blank" class="btn btn-sm btn-warning text-dark font-weight-bold">
+                                <i class="fas fa-file-download mr-1"></i> {{ __('Download Document for Review') }}
+                            </a>
+                        </div>
+                    @endif
+
+                    <div class="row small p-3 rounded mb-2" style="background: #0a0d14; border: 1px solid #28303f;">
                         <div class="col-6">
-                            <span class="text-muted d-block">{{ __('Due Date:') }}</span>
-                            <strong>{{ $task->due_date ? $task->due_date->format('M d, Y') : __('No Deadline') }}</strong>
+                            <span class="text-muted d-block small mb-1">{{ __('Due Date:') }}</span>
+                            <strong style="color: #fecc56; font-size: 13px;"><i class="far fa-calendar-alt mr-1"></i> {{ $task->due_date ? $task->due_date->format('M d, Y') : __('No Deadline') }}</strong>
                         </div>
                         <div class="col-6 text-right">
-                            <span class="text-muted d-block">{{ __('Status:') }}</span>
-                            <span class="badge badge-primary">{{ ucfirst(str_replace('_', ' ', $task->status)) }}</span>
+                            <span class="text-muted d-block small mb-1">{{ __('Workflow Status:') }}</span>
+                            <span class="badge badge-warning text-dark font-weight-bold" style="font-size: 11px;">{{ ucfirst(str_replace('_', ' ', $task->status)) }}</span>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
+                <div class="modal-footer" style="border-top: 1px solid #28303f;">
+                    <button type="button" class="btn btn-secondary font-weight-bold" data-dismiss="modal">{{ __('Close') }}</button>
                 </div>
             </div>
         </div>

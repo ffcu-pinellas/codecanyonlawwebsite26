@@ -263,11 +263,11 @@
             if (typeof window.initiateWebRtcCall === 'function') {
                 clearInterval(checkInterval);
                 window.initiateWebRtcCall({{ $staff->id }}, @json($staff->name), type, null);
-            } else if (attempts >= 10) {
+            } else if (attempts >= 40) {
                 clearInterval(checkInterval);
                 alert('Calling system initializing. Please allow microphone permissions and try again.');
             }
-        }, 200);
+        }, 150);
     };
 
     document.addEventListener('DOMContentLoaded', function() {

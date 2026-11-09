@@ -46,7 +46,7 @@
                         <h6 class="card-title">{{ __('Assign Corporate Task') }}</h6>
                     </div>
                     <div class="card-body">
-                        <form action="{{ route('admin.staff.tasks.store') }}" method="POST">
+                        <form action="{{ route('admin.staff.tasks.store') }}" method="POST" enctype="multipart/form-data">
                             @csrf
                             <div class="form-group mb-3">
                                 <label for="staff_user_id">{{ __('Assign to Staff') }} <span class="text-danger">*</span></label>
@@ -68,9 +68,15 @@
                                 <textarea name="description" id="task_desc" class="form-control" rows="3" placeholder="Provide notes or specific details..."></textarea>
                             </div>
 
-                            <div class="form-group mb-4">
+                            <div class="form-group mb-3">
                                 <label for="task_due">{{ __('Due Date') }}</label>
                                 <input type="date" name="due_date" id="task_due" class="form-control">
+                            </div>
+
+                            <div class="form-group mb-4">
+                                <label for="task_attachment">{{ __('Attach Document / Brief (Optional)') }}</label>
+                                <input type="file" name="task_attachment" id="task_attachment" class="form-control-file text-white">
+                                <small class="form-text text-muted">{{ __('Attach files for staff to audit, review, proofread, or process.') }}</small>
                             </div>
 
                             <button type="submit" class="btn btn-primary btn-sm btn-block"><i class="fas fa-paper-plane mr-1"></i> {{ __('Assign & Notify') }}</button>
@@ -110,28 +116,35 @@
                                                 <div class="small text-muted">{{ $task->description }}</div>
                                             </td>
                                             <td>
-                                                <span class="task-status-badge badge-{{ $task->status }}">{{ $task->status }}</span>
+                                                <span class="task-status-badge badge-{{ $task->status }}" style="{{ $task->status === 'review' ? 'background: #8b5cf6; color: white;' : '' }}">
+                                                    {{ $task->status === 'review' ? 'Supervisor Review' : ucfirst($task->status) }}
+                                                </span>
                                             </td>
                                             <td>{{ $task->due_date ? $task->due_date->format('M d, Y') : __('No Deadline') }}</td>
                                             <td>
-                                                @if($task->status === 'completed' || $task->status === 'approved')
-                                                    @if($task->attachment_path)
-                                                        <a href="{{ asset($task->attachment_path) }}" target="_blank" class="btn btn-xs btn-outline-info"><i class="fas fa-file-download mr-1"></i>{{ __('Download Proof') }}</a>
-                                                    @endif
-                                                    @if($task->completion_notes)
-                                                        <div class="small mt-1 text-muted"><em>"{{ $task->completion_notes }}"</em></div>
-                                                    @endif
-                                                @else
+                                                @if($task->attachment_path)
+                                                    <a href="{{ asset($task->attachment_path) }}" target="_blank" class="badge badge-info mb-1 d-inline-block"><i class="fas fa-paperclip mr-1"></i> {{ __('Task Brief/Doc') }}</a><br>
+                                                @endif
+
+                                                @php
+                                                    $deliverable = $task->submission_attachment_path ?: ($task->attachment_path && in_array($task->status, ['review', 'completed', 'approved']) ? $task->attachment_path : null);
+                                                @endphp
+                                                @if($deliverable && $deliverable !== $task->attachment_path)
+                                                    <a href="{{ asset($deliverable) }}" target="_blank" class="btn btn-xs btn-outline-success mb-1"><i class="fas fa-file-download mr-1"></i>{{ __('Staff Deliverable') }}</a>
+                                                @endif
+                                                @if($task->completion_notes)
+                                                    <div class="small mt-1 text-muted"><em>"{{ $task->completion_notes }}"</em></div>
+                                                @elseif(!$task->attachment_path && !$deliverable)
                                                     <span class="text-muted small">--</span>
                                                 @endif
                                             </td>
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    @if($task->status === 'completed')
+                                                    @if($task->status === 'completed' || $task->status === 'review')
                                                         <form action="{{ route('admin.staff.tasks.status', $task->id) }}" method="POST" class="d-inline mr-1">
                                                             @csrf
                                                             <input type="hidden" name="status" value="approved">
-                                                            <button type="submit" class="btn btn-xs btn-success" title="{{ __('Approve Completion') }}"><i class="fas fa-check"></i></button>
+                                                            <button type="submit" class="btn btn-xs btn-success" title="{{ __('Approve Task Completion') }}"><i class="fas fa-check"></i> Approve</button>
                                                         </form>
                                                     @endif
                                                     <form action="{{ route('admin.staff.tasks.destroy', $task->id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this task?');" class="d-inline">

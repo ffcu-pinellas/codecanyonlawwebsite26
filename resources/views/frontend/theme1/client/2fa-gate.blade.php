@@ -384,7 +384,10 @@
             <i class="fas fa-fingerprint" style="font-size: 16px;"></i>
             <span>{{ __('Sign In with Touch ID / Face ID') }}</span>
         </button>
-        <div class="mt-2 text-center" id="gateBiometricSetupRow">
+        @php
+            $hasPasskeys = !empty($user->passkey_credentials) && is_array($user->passkey_credentials) && count($user->passkey_credentials) > 0;
+        @endphp
+        <div class="mt-2 text-center" id="gateBiometricSetupRow" style="{{ $hasPasskeys ? 'display: none;' : '' }}">
             <a href="javascript:void(0)" onclick="setupBiometricsDirectlyFromGate()" class="small text-warning font-weight-bold text-decoration-none" style="font-size: 11.5px;">
                 <i class="fas fa-plus-circle mr-1"></i> {{ __('Register Touch ID / Face ID on This Device Now') }}
             </a>
@@ -800,7 +803,10 @@
             });
 
             var sData = await saveRes.json();
-            if (sData && sData.status === 'ok') {
+            if (sData && (sData.status === 'ok' || sData.status === 'success')) {
+                localStorage.setItem('biometric_device_registered', 'true');
+                var setupRow = document.getElementById('gateBiometricSetupRow');
+                if (setupRow) setupRow.style.display = 'none';
                 sessionStorage.setItem('biometric_registered', '1');
                 window.location.href = sData.redirect || "{{ route('client.dashboard') }}";
             } else {

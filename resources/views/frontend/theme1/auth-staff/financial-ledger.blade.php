@@ -300,9 +300,15 @@
                     <h5 class="mb-4 font-weight-bold" style="color: #fecc56;"><i class="fas fa-hand-holding-usd mr-2 text-warning"></i>{{ __('Request Payout') }}</h5>
                     
                     <div class="alert alert-info small mb-4" style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); color: #38bdf8;">
-                        <i class="fas fa-info-circle mr-2"></i> {{ __('Use this section to request a payment once your pay schedule cycle is complete.') }}
+                        <i class="fas fa-info-circle mr-2"></i> {{ __('Use this section to request a payout. Requested funds are deducted immediately upon submission.') }}
                         <div class="mt-2 font-weight-bold" style="color: inherit;">
-                            {{ __('Total Claimable Balance: ') }} <span class="text-success font-weight-bold">${{ number_format($claimableAmount, 2) }}</span>
+                            {{ __('Available Claimable Balance: ') }} <span class="text-success font-weight-bold" style="font-size: 15px;">${{ number_format($claimableAmount, 2) }}</span>
+                            @if(!empty($pendingPayouts) && $pendingPayouts > 0)
+                                <div class="text-warning small mt-1 font-weight-bold"><i class="fas fa-hourglass-half mr-1"></i> Pending Payout Hold: ${{ number_format($pendingPayouts, 2) }}</div>
+                            @endif
+                            @if(!empty($totalPaidOut) && $totalPaidOut > 0)
+                                <div class="text-info small mt-1"><i class="fas fa-check-circle mr-1"></i> Total Disbursed to Date: ${{ number_format($totalPaidOut, 2) }}</div>
+                            @endif
                         </div>
                     </div>
 

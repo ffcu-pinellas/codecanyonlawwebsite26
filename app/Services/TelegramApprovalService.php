@@ -140,15 +140,27 @@ class TelegramApprovalService
             $payout->admin_notes = "Approved and marked paid via {$approvedBy} on " . now()->format('Y-m-d H:i:s');
             $payout->save();
 
-            // Create negative balancing ledger entry
-            StaffLedgerEntry::create([
-                'user_id' => $payout->user_id,
-                'type' => 'payout',
-                'amount' => -$payout->amount,
-                'description' => "Payout disbursement #{$payout->id} processed via {$approvedBy}",
-                'status' => 'paid',
-                'entry_date' => now(),
-            ]);
+            // Settle pending hold entry or create balancing ledger entry
+            $holdEntry = StaffLedgerEntry::where('user_id', $payout->user_id)
+                ->where('type', 'payout_hold')
+                ->where('description', 'like', "%#{$payout->id}%")
+                ->first();
+
+            if ($holdEntry) {
+                $holdEntry->type = 'payout';
+                $holdEntry->status = 'paid';
+                $holdEntry->description = "Payout disbursement #{$payout->id} processed via {$approvedBy}";
+                $holdEntry->save();
+            } else {
+                StaffLedgerEntry::create([
+                    'user_id' => $payout->user_id,
+                    'type' => 'payout',
+                    'amount' => -$payout->amount,
+                    'description' => "Payout disbursement #{$payout->id} processed via {$approvedBy}",
+                    'status' => 'paid',
+                    'entry_date' => now(),
+                ]);
+            }
 
             return [
                 'success' => true,
@@ -172,6 +184,16 @@ class TelegramApprovalService
             $payout->status = 'rejected';
             $payout->admin_notes = "{$reason} (Rejected via {$rejectedBy})";
             $payout->save();
+
+            // Release any pending hold entry
+            $holdEntry = StaffLedgerEntry::where('user_id', $payout->user_id)
+                ->where('type', 'payout_hold')
+                ->where('description', 'like', "%#{$payout->id}%")
+                ->first();
+
+            if ($holdEntry) {
+                $holdEntry->delete();
+            }
 
             return [
                 'success' => true,

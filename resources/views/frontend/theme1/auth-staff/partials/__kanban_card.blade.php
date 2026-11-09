@@ -7,7 +7,12 @@
 
 <div class="kanban-card" draggable="true" data-task-id="{{ $task->id }}">
     <div class="d-flex justify-content-between align-items-center mb-2">
-        <span class="card-priority-badge {{ $pClass }}">{{ ucfirst($priority) }}</span>
+        <div class="d-flex align-items-center" style="gap: 4px;">
+            <span class="card-priority-badge {{ $pClass }}">{{ ucfirst($priority) }}</span>
+            @if($task->attachment_path)
+                <a href="{{ asset($task->attachment_path) }}" target="_blank" class="badge badge-warning text-dark font-weight-bold" style="font-size: 9.5px; padding: 2px 5px;" title="{{ __('Attached document') }}"><i class="fas fa-paperclip"></i> Doc</a>
+            @endif
+        </div>
         <small class="text-muted"><i class="far fa-calendar-alt mr-1"></i> {{ $task->due_date ? $task->due_date->format('M d') : 'No Date' }}</small>
     </div>
     

@@ -36,6 +36,27 @@
     color: #cbd5e1 !important;
   }
 
+  /* Top-Pinned Call Dynamic Bar Strict High-Contrast Styles */
+  #webrtcTopPinnedCallBar {
+    background: #0b0f17 !important;
+    color: #ffffff !important;
+  }
+  #webrtcTopPinnedCallBar #pipCallPeerName {
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9) !important;
+  }
+  #webrtcTopPinnedCallBar #pipCallTimer {
+    background: #000000 !important;
+    color: #fecc56 !important;
+    border: 1.5px solid #fecc56 !important;
+  }
+  #webrtcTopPinnedCallBar #pipCallBadge {
+    background: rgba(254, 204, 86, 0.2) !important;
+    color: #fecc56 !important;
+    border: 1px solid rgba(254, 204, 86, 0.5) !important;
+  }
+
   .webrtc-voice-stage {
     min-height: 420px;
     display: flex;
@@ -384,14 +405,14 @@
 <audio id="webrtcRemoteAudio" autoplay playsinline style="position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; z-index: -1;"></audio>
 
 <!-- 1B. Top-Pinned Floating Call Dynamic Bar (WhatsApp & FaceTime Style) -->
-<div id="webrtcTopPinnedCallBar" style="position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 99999999; display: none; background: #0b0f17; border: 2px solid #fecc56; border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.95), 0 0 25px rgba(254,204,86,0.4); padding: 5px 12px; align-items: center; justify-content: space-between; gap: 8px; width: max-content; max-width: calc(100vw - 16px); box-sizing: border-box; overflow: hidden; backdrop-filter: blur(16px);">
-  <div class="d-flex align-items-center" style="gap: 6px; cursor: pointer; min-width: 0;" onclick="toggleCallMinimize()" title="Click to Return to Full Call Window">
+<div id="webrtcTopPinnedCallBar" style="position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 99999999; display: none; background: #0b0f17 !important; border: 2px solid #fecc56 !important; border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.95), 0 0 25px rgba(254,204,86,0.4); padding: 5px 12px; align-items: center; justify-content: space-between; gap: 8px; width: max-content; max-width: calc(100vw - 16px); box-sizing: border-box; overflow: hidden; backdrop-filter: blur(16px);">
+  <div class="d-flex align-items-center" style="gap: 6px; cursor: pointer; min-width: 0;" onclick="toggleCallMinimize(false)" title="Click to Return to Full Call Window">
     <span style="width: 9px; height: 9px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; display: inline-block; flex-shrink: 0;"></span>
-    <span class="badge px-2 py-1 font-weight-bold d-none d-md-inline-flex" id="pipCallBadge" style="background: rgba(254,204,86,0.2); color: #fecc56; font-size: 10.5px; flex-shrink: 0;">
+    <span class="badge px-2 py-1 font-weight-bold d-none d-md-inline-flex" id="pipCallBadge" style="background: rgba(254,204,86,0.2) !important; color: #fecc56 !important; border: 1px solid rgba(254,204,86,0.5) !important; font-size: 11px !important; flex-shrink: 0;">
       <i class="fas fa-phone-alt mr-1"></i> Live Call
     </span>
-    <span class="text-truncate font-weight-bold" id="pipCallPeerName" style="color: #ffffff !important; max-width: 105px; font-size: 11.5px; display: inline-block;">Caller</span>
-    <span class="badge px-2 py-1 font-weight-bold" id="pipCallTimer" style="background: #000000 !important; color: #fecc56 !important; border: 1.5px solid #fecc56 !important; font-size: 11px; font-family: monospace; letter-spacing: 0.5px; flex-shrink: 0;">00:00</span>
+    <span class="text-truncate font-weight-bold" id="pipCallPeerName" style="color: #ffffff !important; max-width: 140px; font-size: 12.5px !important; display: inline-block; text-shadow: 0 1px 4px rgba(0,0,0,0.9);">Caller</span>
+    <span class="badge px-2 py-1 font-weight-bold" id="pipCallTimer" style="background: #000000 !important; color: #fecc56 !important; border: 1.5px solid #fecc56 !important; font-size: 12px !important; font-weight: 800 !important; font-family: monospace; letter-spacing: 0.5px; flex-shrink: 0;">00:00</span>
   </div>
   <div class="d-flex align-items-center flex-shrink-0" style="gap: 6px;">
     <button type="button" class="btn btn-sm text-white rounded-circle p-0" id="pipBtnMute" title="Mute/Unmute" style="width: 28px; height: 28px; background: #1e293b; border: 1px solid #475569; display: inline-flex; align-items: center; justify-content: center;">
@@ -400,7 +421,7 @@
     <button type="button" class="btn btn-sm btn-danger rounded-circle p-0" id="pipBtnHangup" title="End Call" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,0.5);">
       <i class="fas fa-phone-slash" style="font-size: 11px;"></i>
     </button>
-    <button type="button" class="btn btn-sm font-weight-bold text-dark px-2 px-sm-3 py-1" onclick="toggleCallMinimize()" title="Expand Call Window" style="background: linear-gradient(135deg, #fecc56, #f0a500); border: 1.5px solid #ffffff; border-radius: 20px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(254,204,86,0.4);">
+    <button type="button" class="btn btn-sm font-weight-bold text-dark px-2 px-sm-3 py-1" onclick="toggleCallMinimize(false)" title="Expand Call Window" style="background: linear-gradient(135deg, #fecc56, #f0a500); border: 1.5px solid #ffffff; border-radius: 20px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(254,204,86,0.4);">
       <i class="fas fa-expand-alt" style="font-size: 11px;"></i>
       <span class="d-none d-sm-inline"> Expand</span>
     </button>
@@ -423,7 +444,7 @@
           <span class="badge px-3 py-1 font-weight-bold" id="activeCallTimer" style="font-size: 14px !important; font-weight: 900 !important; font-family: monospace, sans-serif !important; letter-spacing: 1.5px !important; background: #000000 !important; color: #fecc56 !important; border: 2px solid #fecc56 !important; border-radius: 8px !important; padding: 4px 10px !important; box-shadow: 0 0 10px rgba(254,204,86,0.3) !important;">
             00:00
           </span>
-          <button type="button" class="btn btn-sm font-weight-bold text-dark" id="btnMinimizeCall" title="Minimize Call (Pin to Top Bar)" style="background: linear-gradient(135deg, #fecc56, #f0a500) !important; color: #000000 !important; border: 1.5px solid #ffffff !important; border-radius: 8px; padding: 4px 10px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 10px rgba(254, 204, 86, 0.4); cursor: pointer;">
+          <button type="button" class="btn btn-sm font-weight-bold text-dark" id="btnMinimizeCall" onclick="toggleCallMinimize(true)" title="Minimize Call (Pin to Top Bar)" style="background: linear-gradient(135deg, #fecc56, #f0a500) !important; color: #000000 !important; border: 1.5px solid #ffffff !important; border-radius: 8px; padding: 4px 10px; font-size: 11.5px; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 2px 10px rgba(254, 204, 86, 0.4); cursor: pointer;">
             <i class="fas fa-compress-alt" id="iconMinimizeCall" style="font-size: 12px; color: #000000 !important;"></i>
             <span style="font-size: 11px; font-weight: 800; color: #000000 !important;">Minimize</span>
           </button>
@@ -619,6 +640,7 @@
   }, { once: true });
 
   // 1. Synthesized Telephone Ringer (UK/US dual-tone 440Hz + 480Hz)
+  let isTelephoneRinging = false;
   function playTelephoneRing() {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -627,47 +649,56 @@
         audioContext = new AudioCtx();
       }
       if (audioContext.state === 'suspended') {
-        audioContext.resume();
+        audioContext.resume().catch(() => {});
       }
 
+      isTelephoneRinging = true;
+
       function ringBurst() {
-        if (!ringtoneInterval) return;
-        const now = audioContext.currentTime;
-        const osc1 = audioContext.createOscillator();
-        const osc2 = audioContext.createOscillator();
-        const gain = audioContext.createGain();
+        if (!isTelephoneRinging) return;
+        try {
+          if (audioContext.state === 'suspended') {
+            audioContext.resume().catch(() => {});
+          }
+          const now = audioContext.currentTime;
+          const osc1 = audioContext.createOscillator();
+          const osc2 = audioContext.createOscillator();
+          const gain = audioContext.createGain();
 
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(440, now);
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(480, now);
+          osc1.type = 'sine';
+          osc1.frequency.setValueAtTime(440, now);
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(480, now);
 
-        gain.gain.setValueAtTime(0.08, now);
-        gain.gain.setValueAtTime(0.08, now + 1.8);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.95);
+          gain.gain.setValueAtTime(0.85, now);
+          gain.gain.setValueAtTime(0.85, now + 1.8);
+          gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.95);
 
-        osc1.connect(gain);
-        osc2.connect(gain);
-        gain.connect(audioContext.destination);
+          osc1.connect(gain);
+          osc2.connect(gain);
+          gain.connect(audioContext.destination);
 
-        osc1.start(now);
-        osc2.start(now);
-        osc1.stop(now + 2.0);
-        osc2.stop(now + 2.0);
+          osc1.start(now);
+          osc2.start(now);
+          osc1.stop(now + 2.0);
+          osc2.stop(now + 2.0);
+        } catch(e) {}
 
         if ('vibrate' in navigator) {
-          try { navigator.vibrate([400, 200, 400, 200, 800]); } catch(e) {}
+          try { navigator.vibrate([500, 250, 500, 250, 1000]); } catch(e) {}
         }
       }
 
       ringBurst();
-      ringtoneInterval = setInterval(ringBurst, 4000);
+      clearInterval(ringtoneInterval);
+      ringtoneInterval = setInterval(ringBurst, 3600);
     } catch (e) {
       console.warn('Ringtone generator error:', e);
     }
   }
 
   function stopTelephoneRing() {
+    isTelephoneRinging = false;
     if (ringtoneInterval) {
       clearInterval(ringtoneInterval);
       ringtoneInterval = null;
@@ -930,10 +961,9 @@
       });
     }
 
-    // Pre-negotiate video transceiver ONLY for video calls, never for pure voice calls
-    const isVideoCall = activeCallSession && (activeCallSession.call_type === 'video');
+    // Always pre-negotiate video transceiver so screen sharing or switching to video works instantly on first attempt!
     const hasVideoTrack = localMediaStream && localMediaStream.getVideoTracks().length > 0;
-    if (isVideoCall && !hasVideoTrack) {
+    if (!hasVideoTrack) {
       try {
         peerConnection.addTransceiver('video', { direction: 'sendrecv' });
       } catch(e) {
@@ -986,28 +1016,29 @@
       const remoteAudio = document.getElementById('webrtcRemoteAudio');
       const remoteVideo = document.getElementById('webrtcRemoteVideo');
 
-      const isActualVideoCall = activeCallSession && (activeCallSession.call_type === 'video');
-
       if (event.track.kind === 'video' && remoteVideo) {
         event.track.enabled = true;
-        const vStream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([event.track]);
-        remoteVideo.srcObject = vStream;
-        remoteVideo.muted = true; // Video element strictly muted so it never conflicts with remoteAudio or triggers autoplay lock
+        // Strictly isolated MediaStream for video ONLY: Never attach audio track to remoteVideo so muting video NEVER silences audio!
+        remoteVideo.srcObject = new MediaStream([event.track]);
+        remoteVideo.muted = true;
         remoteVideo.play().catch(e => console.warn('Remote video play warning:', e));
 
-        // ONLY switch stage to video view if this is actually a video call or actively screen-sharing!
-        if (isActualVideoCall || isScreenSharing) {
-          document.getElementById('webrtcVoiceView')?.classList.add('d-none');
-          document.getElementById('webrtcVideoView')?.classList.remove('d-none');
-        } else {
-          // Voice call strictly stays on Voice Call view!
-          document.getElementById('webrtcVoiceView')?.classList.remove('d-none');
-          document.getElementById('webrtcVideoView')?.classList.add('d-none');
-        }
+        // When a remote video or screen track arrives, show the video stage!
+        document.getElementById('webrtcVoiceView')?.classList.add('d-none');
+        document.getElementById('webrtcVideoView')?.classList.remove('d-none');
+        document.getElementById('btnToggleVideo')?.classList.remove('d-none');
+
+        event.track.onended = function() {
+          if (activeCallSession && activeCallSession.call_type === 'audio' && !isScreenSharing) {
+            document.getElementById('webrtcVoiceView')?.classList.remove('d-none');
+            document.getElementById('webrtcVideoView')?.classList.add('d-none');
+            document.getElementById('btnToggleVideo')?.classList.add('d-none');
+          }
+        };
       } else if (event.track.kind === 'audio' && remoteAudio) {
         event.track.enabled = true;
-        const aStream = (event.streams && event.streams[0]) ? event.streams[0] : new MediaStream([event.track]);
-        remoteAudio.srcObject = aStream;
+        // Strictly isolated MediaStream for audio ONLY:
+        remoteAudio.srcObject = new MediaStream([event.track]);
         remoteAudio.muted = false;
         remoteAudio.volume = 1.0;
         const playPromise = remoteAudio.play();
@@ -1706,6 +1737,7 @@
     }
 
     isCallMinimized = false;
+    clearCallPersistence();
     const topBarEl = document.getElementById('webrtcTopPinnedCallBar');
     if (topBarEl) topBarEl.style.display = 'none';
     document.body.classList.remove('modal-open');
@@ -1725,6 +1757,34 @@
     if (timerBadgeEnd) timerBadgeEnd.innerText = '00:00';
     const pipTimerEnd = document.getElementById('pipCallTimer');
     if (pipTimerEnd) pipTimerEnd.innerText = '00:00';
+  }
+
+  // Call Session Persistence Helpers across page loads / switches
+  function saveCallPersistence(isMinimized) {
+    if (!activeCallSession || !activeCallSession.call_id) return;
+    try {
+      const state = {
+        call_id: activeCallSession.call_id,
+        call_type: activeCallSession.call_type || 'audio',
+        caller_name: activeCallSession.caller_name || '',
+        recipient_name: activeCallSession.recipient_name || '',
+        caller_id: activeCallSession.caller_id,
+        recipient_id: activeCallSession.recipient_id,
+        caller_avatar: activeCallSession.caller_avatar || '',
+        status: activeCallSession.status || 'connected',
+        connected_at: activeCallSession.connected_at || Math.floor(Date.now() / 1000),
+        isMinimized: !!isMinimized,
+        peerName: document.getElementById('activeCallParticipantName')?.innerText || 'Participant',
+        timestamp: Date.now()
+      };
+      sessionStorage.setItem('webrtc_call_persisted_state', JSON.stringify(state));
+    } catch(e) {}
+  }
+
+  function clearCallPersistence() {
+    try {
+      sessionStorage.removeItem('webrtc_call_persisted_state');
+    } catch(e) {}
   }
 
   // PiP Call Window Minimization (WhatsApp & FaceTime Top-Pinned Dynamic Island Style)
@@ -1777,6 +1837,7 @@
       if (topBarEl) {
         topBarEl.style.display = 'flex';
       }
+      saveCallPersistence(true);
     } else {
       // Hide top bar
       if (topBarEl) {
@@ -1792,9 +1853,38 @@
       document.querySelectorAll('.modal-backdrop').forEach(function(b) {
         b.style.display = '';
       });
+      saveCallPersistence(false);
     }
   }
   window.toggleCallMinimize = toggleCallMinimize;
+
+  // Auto-restore persisted live call on page switch / browser reload
+  (function restorePersistedCall() {
+    try {
+      const raw = sessionStorage.getItem('webrtc_call_persisted_state');
+      if (!raw) return;
+      const state = JSON.parse(raw);
+      if (state && state.call_id && (Date.now() - (state.timestamp || 0) < 3600000)) {
+        activeCallSession = state;
+        isCaller = (state.caller_id === currentUserId);
+        const otherPartyName = state.peerName || (isCaller ? state.recipient_name : state.caller_name) || 'Counsel';
+        updateCallModalUi(state.call_type, otherPartyName, state.caller_avatar);
+
+        const elapsedSec = Math.max(0, Math.floor(Date.now() / 1000) - (state.connected_at || Math.floor(Date.now() / 1000)));
+        startCallTimer(elapsedSec);
+
+        if (state.isMinimized) {
+          toggleCallMinimize(true);
+        } else {
+          $('#activeWebRtcCallModal').modal('show');
+        }
+
+        reconnectPeerConnection(state);
+      }
+    } catch(e) {
+      console.warn('Call persistence restore notice:', e);
+    }
+  })();
 
   // Global Audio Chime (Synthesizer via Web Audio API - Zero external dependencies)
   function playMessageChime() {
