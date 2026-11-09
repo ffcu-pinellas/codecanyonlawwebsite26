@@ -5,7 +5,7 @@
   "display": "standalone",
   "background_color": "#11151e",
   "theme_color": "#1e3c72",
-  "orientation": "any",
+    "orientation": "any",
   "icons": [
     {
       "src": "/upload/settings/logo.png",
