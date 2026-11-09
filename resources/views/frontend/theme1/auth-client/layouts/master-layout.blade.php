@@ -109,7 +109,7 @@
                         </span>
                     @endif
                 </button>
-                <div class="dropdown-menu shadow-lg p-0" id="clientNotificationMenu" aria-labelledby="clientNotificationBellDropdown" style="background: #161a23; border: 1px solid #28303f; width: 310px; max-width: calc(100vw - 24px); border-radius: 8px; overflow: hidden; left: 0 !important; right: auto !important; top: 100% !important; margin-top: 8px !important;">
+                <div class="dropdown-menu shadow-lg p-0" id="clientNotificationMenu" aria-labelledby="clientNotificationBellDropdown" style="background: #161a23; border: 1px solid #28303f; width: 310px; max-width: calc(100vw - 24px); border-radius: 8px; overflow: hidden; margin-top: 8px !important;">
                     <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="background: #11151e; border-color: #28303f !important;">
                         <span class="font-weight-bold text-white small text-uppercase" style="letter-spacing: 0.5px;">Notifications</span>
                         <span class="badge {{ $headerTotalAlerts > 0 ? 'badge-warning text-dark' : 'badge-secondary' }} font-weight-bold" style="font-size: 10px;">
@@ -158,7 +158,7 @@
                 <span id="themeModeText" class="d-none d-sm-inline ml-1">Light Mode</span>
             </button>
 
-            <!-- 2. Currency Switcher Dropdown (Hidden on Mobile / Small Screens to Free Header Space) -->
+            <!-- 2. Currency Switcher Dropdown (Hidden on Mobile & Small Screens to Free Header Space) -->
             @php
                 $userCurrency = Auth::user()->preferred_currency ?: 'USD';
                 $currencies = [
@@ -169,7 +169,7 @@
                     'AUD' => ['sym' => '$', 'name' => 'AUD ($)'],
                 ];
             @endphp
-            <div class="dropdown d-none d-md-block">
+            <div class="dropdown d-none d-lg-block">
                 <button class="btn btn-sm btn-dark dropdown-toggle font-weight-bold text-light px-2 py-1" type="button" id="currencyDropdown" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background: #161a23; border: 1px solid #28303f; border-radius: 6px; font-size: 11.5px;">
                     <i class="fas fa-dollar-sign text-warning mr-1"></i> <span id="currentCurrencyLabel">{{ $userCurrency }}</span>
                 </button>
@@ -274,19 +274,72 @@
     <div class="client-content-col" style="flex: 1; min-width: 0; padding: 20px 16px 20px 16px;">
         <div class="client-content-container p-3 p-md-4 rounded" style="background: #11151e; border: 1px solid #28303f; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-height: 80vh;">
             
-            <!-- Mobile PWA Install Notification (Sleek Compact Gold Pill) -->
-            <div id="clientPwaInstallBanner" class="alert d-none mb-3 shadow-sm border-0 d-flex flex-wrap align-items-center justify-content-between py-2 px-3" style="border-radius: 8px; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(254, 204, 86, 0.35) !important; color: #fff;">
-                <div class="d-flex align-items-center my-1">
-                    <i class="fas fa-mobile-alt text-warning mr-2" style="font-size: 1.1rem;"></i>
-                    <span class="small font-weight-bold">{{ __('Install Client Portal App for instant mobile case tracking, document uploads & direct counsel access') }}</span>
+            <!-- Mobile PWA Install Notification (High-Contrast Golden Pill) -->
+            <div id="clientPwaInstallBanner" class="alert d-none mb-3 shadow border-0 d-flex flex-wrap align-items-center justify-content-between py-2 px-3" style="border-radius: 10px; background: #0f172a !important; border: 1.5px solid #fecc56 !important; color: #ffffff !important; box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;">
+                <div class="d-flex align-items-center my-1" style="min-width: 0;">
+                    <i class="fas fa-mobile-alt text-warning mr-2" style="font-size: 1.15rem; color: #fecc56 !important; flex-shrink: 0;"></i>
+                    <span class="small font-weight-bold" style="color: #ffffff !important; font-size: 12.5px;">{{ __('Install Client Portal App for instant mobile case tracking, document uploads & direct counsel access') }}</span>
                 </div>
-                <div class="d-flex align-items-center my-1">
-                    <button type="button" id="clientPwaInstallBtn" class="btn btn-warning btn-sm font-weight-bold text-dark px-3 py-1 shadow-sm mr-2" style="font-size: 11.5px; border-radius: 6px;">
+                <div class="d-flex align-items-center my-1 flex-shrink-0">
+                    <button type="button" id="clientPwaInstallBtn" class="btn btn-sm font-weight-bold shadow-sm mr-2" style="background: #fecc56 !important; color: #0f172a !important; border: none !important; font-size: 12px; font-weight: 700; border-radius: 6px; padding: 5px 14px;">
                         <i class="fas fa-download mr-1"></i> {{ __('Install App') }}
                     </button>
-                    <button type="button" class="btn btn-link text-white btn-sm p-0 ml-1" onclick="dismissClientPwaBanner()" title="Dismiss">
-                        <i class="fas fa-times"></i>
+                    <button type="button" id="clientPwaDismissBtn" class="btn btn-link btn-sm p-0 ml-1" onclick="dismissClientPwaBanner(event)" title="Dismiss" style="color: #94a3b8 !important; text-decoration: none;">
+                        <i class="fas fa-times" style="font-size: 15px;"></i>
                     </button>
+                </div>
+            </div>
+
+            <!-- Global Client PWA Installation Instructions Modal -->
+            <div class="modal fade" id="clientPwaGuideModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 99999;">
+                <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 440px;">
+                    <div class="modal-content" style="background: #0f172a; border: 1.5px solid #fecc56; border-radius: 16px; color: #ffffff; box-shadow: 0 20px 60px rgba(0,0,0,0.85);">
+                        <div class="modal-header border-bottom py-3 px-4" style="border-color: #1e293b !important;">
+                            <div class="d-flex align-items-center">
+                                <div class="mr-3" style="width: 38px; height: 38px; border-radius: 50%; background: rgba(254, 204, 86, 0.2); border: 1px solid #fecc56; display: flex; align-items: center; justify-content: center; color: #fecc56;">
+                                    <i class="fas fa-landmark"></i>
+                                </div>
+                                <div>
+                                    <h6 class="modal-title font-weight-bold mb-0 text-white" style="font-size: 15px;">{{ __('Install Client Portal App') }}</h6>
+                                    <small style="color: #94a3b8;">{{ __('Fast mobile case access & direct attorney chat') }}</small>
+                                </div>
+                            </div>
+                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.8;">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body p-4" style="font-size: 13px; line-height: 1.6; color: #cbd5e1;">
+                            <div id="clientPwaIosGuide" class="d-none">
+                                <div class="p-3 mb-3 rounded" style="background: #1e293b; border: 1px solid #334155;">
+                                    <strong class="text-white d-block mb-2"><i class="fab fa-apple mr-1 text-warning"></i> {{ __('How to install on iPhone & iPad') }}:</strong>
+                                    <ol class="pl-3 mb-0" style="color: #cbd5e1;">
+                                        <li class="mb-2">{{ __('Tap the') }} <strong class="text-white">{{ __('Share') }}</strong> {{ __('button') }} <i class="fas fa-share-square text-info"></i> {{ __('in Safari toolbar.') }}</li>
+                                        <li class="mb-2">{{ __('Scroll down and tap') }} <strong class="text-white">{{ __('Add to Home Screen') }}</strong> <i class="fas fa-plus-square text-warning"></i>.</li>
+                                        <li>{{ __('Tap') }} <strong class="text-white">{{ __('Add') }}</strong> {{ __('in top-right corner to complete.') }}</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <div id="clientPwaGenericGuide">
+                                <div class="p-3 mb-3 rounded" style="background: #1e293b; border: 1px solid #334155;">
+                                    <strong class="text-white d-block mb-2"><i class="fas fa-mobile-alt mr-1 text-warning"></i> {{ __('How to install on Android / Chrome / Edge') }}:</strong>
+                                    <ol class="pl-3 mb-0" style="color: #cbd5e1;">
+                                        <li class="mb-2">{{ __('Tap browser menu') }} (<strong class="text-white">&#8942;</strong> {{ __('or') }} <strong class="text-white">&#8230;</strong>) {{ __('in corner of browser.') }}</li>
+                                        <li class="mb-2">{{ __('Tap') }} <strong class="text-white">{{ __('Install app') }}</strong> {{ __('or') }} <strong class="text-white">{{ __('Add to Home screen') }}</strong>.</li>
+                                        <li>{{ __('Confirm to add Client Portal to your home screen or desktop.') }}</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <div class="text-muted small text-center">
+                                <i class="fas fa-shield-alt text-warning mr-1"></i> {{ __('Receive instant off-browser ringing & encrypted push notifications.') }}
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top py-2 px-4 justify-content-between" style="border-color: #1e293b !important;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-light" data-dismiss="modal">{{ __('Got It') }}</button>
+                            <button type="button" class="btn btn-sm font-weight-bold" onclick="markClientPwaAsInstalled()" style="background: #fecc56; color: #0f172a; border-radius: 6px;">
+                                <i class="fas fa-check mr-1"></i> {{ __('I\'ve Added to Home Screen') }}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -735,6 +788,14 @@
         });
     }
 
+    const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isIos) {
+        const iosGuide = document.getElementById('clientPwaIosGuide');
+        const genericGuide = document.getElementById('clientPwaGenericGuide');
+        if (iosGuide) iosGuide.classList.remove('d-none');
+        if (genericGuide) genericGuide.classList.add('d-none');
+    }
+
     window.addEventListener('beforeinstallprompt', (e) => {
         if (isClientPwaInstalled || localStorage.getItem('client_pwa_installed') === 'true') {
             return;
@@ -746,22 +807,55 @@
         }
     });
 
+    // Auto-show banner on mobile if not dismissed or installed
+    const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    if (isMobileDevice && !isClientPwaInstalled && !localStorage.getItem('client_pwa_banner_dismissed')) {
+        if (clientBanner) clientBanner.classList.remove('d-none');
+    }
+
     if (clientInstallBtn) {
-        clientInstallBtn.addEventListener('click', async () => {
-            if (!deferredClientPrompt) return;
-            deferredClientPrompt.prompt();
-            const { outcome } = await deferredClientPrompt.userChoice;
-            if (outcome === 'accepted') {
-                localStorage.setItem('client_pwa_installed', 'true');
-                if (clientBanner) clientBanner.remove();
+        clientInstallBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (deferredClientPrompt) {
+                try {
+                    deferredClientPrompt.prompt();
+                    const { outcome } = await deferredClientPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        localStorage.setItem('client_pwa_installed', 'true');
+                        if (clientBanner) clientBanner.remove();
+                    }
+                    deferredClientPrompt = null;
+                    return;
+                } catch(err) {
+                    console.warn('Install prompt error:', err);
+                }
             }
-            deferredClientPrompt = null;
+            // Fallback: Show clear step-by-step installation instructions modal
+            if (typeof $ !== 'undefined') {
+                $('#clientPwaGuideModal').modal('show');
+            } else {
+                const modal = document.getElementById('clientPwaGuideModal');
+                if (modal) modal.style.display = 'block';
+            }
         });
     }
 
-    window.dismissClientPwaBanner = function() {
-        if (clientBanner) clientBanner.classList.add('d-none');
+    window.dismissClientPwaBanner = function(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (clientBanner) {
+            clientBanner.style.display = 'none';
+            clientBanner.classList.add('d-none');
+        }
         localStorage.setItem('client_pwa_banner_dismissed', 'true');
+    };
+
+    window.markClientPwaAsInstalled = function() {
+        localStorage.setItem('client_pwa_installed', 'true');
+        if (clientBanner) clientBanner.remove();
+        if (typeof $ !== 'undefined') {
+            $('#clientPwaGuideModal').modal('hide');
+        }
     };
 })();
 </script>

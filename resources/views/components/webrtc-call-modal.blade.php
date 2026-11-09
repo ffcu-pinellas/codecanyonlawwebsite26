@@ -40,21 +40,48 @@
   #webrtcTopPinnedCallBar {
     background: #0b0f17 !important;
     color: #ffffff !important;
+    border: 2px solid #fecc56 !important;
+    max-width: calc(100vw - 20px) !important;
+    width: auto !important;
+  }
+  #webrtcTopPinnedCallBar, #webrtcTopPinnedCallBar * {
+    box-sizing: border-box !important;
   }
   #webrtcTopPinnedCallBar #pipCallPeerName {
     color: #ffffff !important;
     font-weight: 700 !important;
-    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.9) !important;
+    text-shadow: none !important;
   }
   #webrtcTopPinnedCallBar #pipCallTimer {
     background: #000000 !important;
     color: #fecc56 !important;
     border: 1.5px solid #fecc56 !important;
+    text-shadow: none !important;
   }
   #webrtcTopPinnedCallBar #pipCallBadge {
     background: rgba(254, 204, 86, 0.2) !important;
     color: #fecc56 !important;
     border: 1px solid rgba(254, 204, 86, 0.5) !important;
+  }
+  @media (max-width: 575.98px) {
+    #webrtcTopPinnedCallBar {
+      top: 8px !important;
+      padding: 4px 8px !important;
+      gap: 4px !important;
+    }
+    #webrtcTopPinnedCallBar #pipCallPeerName {
+      max-width: 76px !important;
+      font-size: 11px !important;
+    }
+    #webrtcTopPinnedCallBar #pipCallTimer {
+      font-size: 10.5px !important;
+      padding: 2px 4px !important;
+    }
+    #webrtcTopPinnedCallBar #pipBtnMute,
+    #webrtcTopPinnedCallBar #pipBtnHangup {
+      width: 28px !important;
+      height: 28px !important;
+    }
   }
 
   .webrtc-voice-stage {
@@ -405,25 +432,25 @@
 <audio id="webrtcRemoteAudio" autoplay playsinline style="position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; z-index: -1;"></audio>
 
 <!-- 1B. Top-Pinned Floating Call Dynamic Bar (WhatsApp & FaceTime Style) -->
-<div id="webrtcTopPinnedCallBar" style="position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2147483647 !important; display: none; background: #0b0f17 !important; border: 2px solid #fecc56 !important; border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.95), 0 0 25px rgba(254,204,86,0.4); padding: 5px 10px; align-items: center; justify-content: space-between; gap: 6px; width: max-content; max-width: calc(100vw - 16px); box-sizing: border-box; backdrop-filter: blur(16px);">
+<div id="webrtcTopPinnedCallBar" style="position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2147483647 !important; display: none; background: #0b0f17 !important; border: 2px solid #fecc56 !important; border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.95), 0 0 25px rgba(254,204,86,0.4); padding: 5px 10px; align-items: center; justify-content: space-between; gap: 6px; width: auto; max-width: calc(100vw - 20px); box-sizing: border-box; backdrop-filter: blur(16px);">
   <div class="d-flex align-items-center" style="gap: 5px; cursor: pointer; min-width: 0;" onclick="toggleCallMinimize(false)" title="Click to Return to Full Call Window">
     <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; display: inline-block; flex-shrink: 0;"></span>
-    <span class="badge px-2 py-1 font-weight-bold d-none d-sm-inline-flex" id="pipCallBadge" style="background: rgba(254,204,86,0.2) !important; color: #fecc56 !important; border: 1px solid rgba(254,204,86,0.5) !important; font-size: 10.5px !important; flex-shrink: 0;">
+    <span class="badge px-2 py-1 font-weight-bold d-none d-md-inline-flex" id="pipCallBadge" style="background: rgba(254,204,86,0.2) !important; color: #fecc56 !important; border: 1px solid rgba(254,204,86,0.5) !important; font-size: 10.5px !important; flex-shrink: 0;">
       <i class="fas fa-phone-alt mr-1"></i> Live
     </span>
-    <span class="text-truncate font-weight-bold" id="pipCallPeerName" style="color: #ffffff !important; max-width: 88px; font-size: 12px !important; display: inline-block; text-shadow: 0 1px 4px rgba(0,0,0,0.9);">Caller</span>
-    <span class="badge px-2 py-1 font-weight-bold" id="pipCallTimer" style="background: #000000 !important; color: #fecc56 !important; border: 1.5px solid #fecc56 !important; font-size: 11.5px !important; font-weight: 800 !important; font-family: monospace; letter-spacing: 0.5px; flex-shrink: 0;">00:00</span>
+    <span class="text-truncate font-weight-bold" id="pipCallPeerName" style="color: #ffffff !important; max-width: 80px; font-size: 11.5px !important; display: inline-block;">Caller</span>
+    <span class="badge px-2 py-1 font-weight-bold" id="pipCallTimer" style="background: #000000 !important; color: #fecc56 !important; border: 1.5px solid #fecc56 !important; font-size: 11px !important; font-weight: 800 !important; font-family: monospace; letter-spacing: 0.5px; flex-shrink: 0;">00:00</span>
   </div>
   <div class="d-flex align-items-center flex-shrink-0" style="gap: 4px;">
-    <button type="button" class="btn btn-sm text-white rounded-circle p-0" id="pipBtnMute" title="Mute/Unmute" style="width: 28px; height: 28px; background: #1e293b; border: 1px solid #475569; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
-      <i class="fas fa-microphone" style="font-size: 11px;"></i>
+    <button type="button" class="btn btn-sm text-white rounded-circle p-0" id="pipBtnMute" title="Mute/Unmute" style="width: 28px; height: 28px; background: #1e293b !important; color: #ffffff !important; border: 1px solid #475569 !important; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
+      <i class="fas fa-microphone" style="font-size: 11px; color: #ffffff !important;"></i>
     </button>
-    <button type="button" class="btn btn-sm btn-danger rounded-circle p-0" id="pipBtnHangup" title="End Call" style="width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,0.5); flex-shrink: 0;">
-      <i class="fas fa-phone-slash" style="font-size: 11px;"></i>
+    <button type="button" class="btn btn-sm btn-danger rounded-circle p-0" id="pipBtnHangup" title="End Call" style="width: 28px; height: 28px; background: #dc2626 !important; color: #ffffff !important; border: 1.5px solid #ffffff !important; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,0.5); flex-shrink: 0;">
+      <i class="fas fa-phone-slash" style="font-size: 11px; color: #ffffff !important;"></i>
     </button>
-    <button type="button" class="btn btn-sm font-weight-bold text-dark px-2 py-1" onclick="toggleCallMinimize(false)" title="Expand Call Window" style="background: linear-gradient(135deg, #fecc56, #f0a500); border: 1.5px solid #ffffff; border-radius: 20px; font-size: 11px; display: inline-flex; align-items: center; gap: 3px; box-shadow: 0 2px 8px rgba(254,204,86,0.4); flex-shrink: 0;">
-      <i class="fas fa-expand-alt" style="font-size: 10px;"></i>
-      <span class="d-none d-md-inline" style="font-size: 10.5px;"> Expand</span>
+    <button type="button" class="btn btn-sm font-weight-bold text-dark px-2 py-1" onclick="toggleCallMinimize(false)" title="Expand Call Window" style="background: linear-gradient(135deg, #fecc56, #f0a500) !important; color: #000000 !important; border: 1.5px solid #ffffff !important; border-radius: 20px; font-size: 11px; display: inline-flex; align-items: center; gap: 3px; box-shadow: 0 2px 8px rgba(254,204,86,0.4); flex-shrink: 0;">
+      <i class="fas fa-expand-alt" style="font-size: 10px; color: #000000 !important;"></i>
+      <span class="d-none d-sm-inline" style="font-size: 10.5px; font-weight: 700; color: #000000 !important;"> Expand</span>
     </button>
   </div>
 </div>
@@ -745,7 +772,13 @@
         tag: isCall ? 'incoming-call' : ('chat-msg-' + Date.now()),
         renotify: true,
         requireInteraction: isCall,
-        data: { url: targetUrl }
+        data: { url: targetUrl },
+        actions: isCall ? [
+          { action: 'answer', title: 'Answer Call' },
+          { action: 'decline', title: 'Decline' }
+        ] : [
+          { action: 'open', title: 'Open Workspace' }
+        ]
       };
 
       if ('vibrate' in navigator) {
@@ -2135,7 +2168,10 @@
 
   async function navigateSeamlesslyDuringCall(targetUrl) {
     try {
-      let contentContainer = document.querySelector('.client-content-container') ||
+      saveCallPersistence(isCallMinimized);
+
+      let contentContainer = document.querySelector('#wrapper-content') ||
+                             document.querySelector('.client-content-container') ||
                              document.querySelector('.client-content-col') ||
                              document.querySelector('.staff-content-container') ||
                              document.querySelector('.staff-content-col') ||
@@ -2163,7 +2199,8 @@
       const parser = new DOMParser();
       const doc = parser.parseFromString(html, 'text/html');
 
-      let newContent = doc.querySelector('.client-content-container') ||
+      let newContent = doc.querySelector('#wrapper-content') ||
+                        doc.querySelector('.client-content-container') ||
                         doc.querySelector('.client-content-col') ||
                         doc.querySelector('.staff-content-container') ||
                         doc.querySelector('.staff-content-col') ||

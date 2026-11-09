@@ -24,7 +24,7 @@ class EnsureSecuritySetupCompleted
                 if (!$request->routeIs('client.security.wizard*') && !$request->routeIs('*stop-impersonation*') && !$request->routeIs('logout')) {
                     return redirect()->route('client.security.wizard');
                 }
-            } elseif ($user->two_factor_enabled && !session('two_factor_verified')) {
+            } elseif (($user->two_factor_enabled || $user->hasRole('staff')) && !session('two_factor_verified')) {
                 // Allow the verify-otp routes and biometric passkey endpoints through without redirect loop
                 $allow = [
                     'client.security.verify-otp',
@@ -42,12 +42,14 @@ class EnsureSecuritySetupCompleted
                     'client.security.check-session',
                     'client.stop-impersonation',
                     '*stop-impersonation*',
+                    'staff.login',
+                    'login',
                     'logout'
                 ];
                 $passes = false;
                 foreach ($allow as $r) { if ($request->routeIs($r)) { $passes = true; break; } }
                 if (!$passes) {
-                    return redirect()->route('client.security.verify-otp');
+                    return redirect()->route('client.security.2fa-gate');
                 }
             }
         }

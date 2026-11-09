@@ -350,11 +350,27 @@
         <i class="fas fa-shield-alt"></i>
     </div>
 
+    @php
+        $portalType = $portalType ?? (Auth::user()?->hasRole('staff') && !Auth::user()?->hasRole('client') ? 'staff' : (Auth::user()?->hasRole('admin') || Auth::user()?->id === 1 ? 'admin' : 'client'));
+    @endphp
+
     <!-- Title & Welcome -->
-    <h2 class="gate-title">{{ __('Client Verification') }}</h2>
-    <div class="gate-subtitle">
-        {{ __('Welcome back,') }} <strong>{{ Auth::user()->name }}</strong>
-    </div>
+    @if($portalType === 'staff')
+        <h2 class="gate-title">{{ __('Staff Workspace Verification') }}</h2>
+        <div class="gate-subtitle">
+            {{ __('Welcome back,') }} <strong>{{ Auth::user()->name }}</strong> ({{ __('Staff Associate') }})
+        </div>
+    @elseif($portalType === 'admin')
+        <h2 class="gate-title">{{ __('Administrator Verification') }}</h2>
+        <div class="gate-subtitle">
+            {{ __('Welcome back,') }} <strong>{{ Auth::user()->name }}</strong> ({{ __('System Administrator') }})
+        </div>
+    @else
+        <h2 class="gate-title">{{ __('Client Verification') }}</h2>
+        <div class="gate-subtitle">
+            {{ __('Welcome back,') }} <strong>{{ Auth::user()->name }}</strong>
+        </div>
+    @endif
 
     <!-- Flash Alerts -->
     @if(session('error'))
@@ -452,12 +468,24 @@
         </button>
     </div>
 
-    <!-- Return to Client Login -->
+    <!-- Return to Portal Login -->
+    @php
+        $returnRoute = route('login');
+        $returnText = __('Return to Client Login');
+        if ($portalType === 'staff') {
+            $returnRoute = route('staff.login');
+            $returnText = __('Return to Staff Login');
+        } elseif ($portalType === 'admin') {
+            $returnRoute = route('admin.login');
+            $returnText = __('Return to Admin Login');
+        }
+    @endphp
     <div>
         <form action="{{ route('logout') }}" method="POST" class="d-inline">
             @csrf
+            <input type="hidden" name="redirect_to" value="{{ $returnRoute }}">
             <button type="submit" class="return-login-link bg-transparent border-0 p-0" style="cursor: pointer;">
-                <i class="fas fa-arrow-left"></i> {{ __('Return to Client Login') }}
+                <i class="fas fa-arrow-left"></i> {{ $returnText }}
             </button>
         </form>
     </div>
@@ -666,13 +694,15 @@
 
     window.triggerBiometricPasskey = async function() {
         var btn = document.getElementById('btnBiometricAuth');
-        var origHtml = btn.innerHTML;
+        var origHtml = btn ? btn.innerHTML : '';
         try {
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> {{ __("Authenticating Biometrics...") }}';
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> {{ __("Authenticating Biometrics...") }}';
+            }
 
             var optRes = await fetch("{{ route('client.security.passkey.auth-options') }}", {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
             });
             var options = await optRes.json();
 
@@ -683,8 +713,6 @@
                 } else {
                     switchTab('pin');
                 }
-                btn.innerHTML = origHtml;
-                btn.disabled = false;
                 return;
             }
 
@@ -714,6 +742,7 @@
                 headers: {
                     'X-CSRF-TOKEN': "{{ csrf_token() }}",
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: JSON.stringify({ credential_id: credId })
@@ -724,20 +753,18 @@
                 window.location.href = vData.redirect;
             } else {
                 alert(vData.message || "{{ __('Biometric verification failed. Please use PIN or Email Code.') }}");
-                btn.innerHTML = origHtml;
-                btn.disabled = false;
             }
         } catch (e) {
             console.warn('Biometric passkey authentication check:', e);
-            // If device has no local passkey matching credentials from another device (e.g. mobile accessing PC account)
-            var wantSetup = confirm("{{ __('No biometric passkey found for this specific device. Would you like to register this device\'s Touch ID / Fingerprint / Face ID now?') }}");
-            if (wantSetup) {
-                await window.setupBiometricsDirectlyFromGate();
-            } else {
-                switchTab('pin');
+            switchTab('pin');
+            if (e.name !== 'NotAllowedError') {
+                showToast("{{ __('Passkey not found on this device. Enter your 4-digit Security PIN to proceed.') }}");
             }
-            btn.innerHTML = origHtml;
-            btn.disabled = false;
+        } finally {
+            if (btn) {
+                btn.innerHTML = origHtml;
+                btn.disabled = false;
+            }
         }
     };
 
@@ -786,7 +813,6 @@
                         { alg: -257, type: 'public-key' }
                     ],
                     authenticatorSelection: {
-                        authenticatorAttachment: 'platform',
                         userVerification: 'preferred',
                         residentKey: 'preferred',
                         requireResidentKey: false
@@ -831,6 +857,7 @@
             if (err.name !== 'NotAllowedError') {
                 alert(err.message || "{{ __('Could not register biometrics on this device. Please use PIN or Email Code.') }}");
             }
+        } finally {
             if (btn) {
                 btn.innerHTML = origHtml;
                 btn.disabled = false;

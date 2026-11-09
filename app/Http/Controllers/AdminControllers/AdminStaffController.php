@@ -129,13 +129,15 @@ class AdminStaffController extends Controller
         ]);
 
         try {
-            // Create user
+            // Create user with mandatory 2FA and default security PIN
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
                 'password' => Hash::make($request->password),
                 'phone' => $request->phone ?: '',
                 'address' => $request->address ?: '',
+                'two_factor_enabled' => 1,
+                'pin_hash' => Hash::make('1234'),
             ]);
 
             // Assign role

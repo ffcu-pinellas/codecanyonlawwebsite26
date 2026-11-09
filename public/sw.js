@@ -86,7 +86,13 @@ self.addEventListener('push', function(event) {
     tag: isCall ? 'incoming-call' : ('cpa-msg-' + Date.now()),
     renotify: true,
     requireInteraction: isCall,
-    data: { url: data.url || '/' }
+    data: { url: data.url || '/' },
+    actions: isCall ? [
+      { action: 'answer', title: '📞 Answer Call' },
+      { action: 'decline', title: '🔴 Decline' }
+    ] : [
+      { action: 'open', title: 'View Message' }
+    ]
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
@@ -94,6 +100,9 @@ self.addEventListener('push', function(event) {
 // Notification Click Handler (Brings browser window to foreground)
 self.addEventListener('notificationclick', function(event) {
   event.notification.close();
+  if (event.action === 'decline') {
+    return;
+  }
   const urlToOpen = (event.notification.data && event.notification.data.url) ? event.notification.data.url : '/';
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {

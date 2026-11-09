@@ -75,7 +75,7 @@
                         </span>
                     @endif
                 </button>
-                <div class="dropdown-menu dropdown-menu-right dropdown-menu-end shadow-lg p-0" id="staffNotificationMenu" aria-labelledby="staffNotificationBellDropdown" style="background: #161a23; border: 1px solid #28303f; width: 290px; max-width: calc(100vw - 24px); border-radius: 8px; overflow: hidden; right: 0 !important; left: auto !important;">
+                <div class="dropdown-menu dropdown-menu-right dropdown-menu-end shadow-lg p-0" id="staffNotificationMenu" aria-labelledby="staffNotificationBellDropdown" style="background: #161a23; border: 1px solid #28303f; width: 290px; max-width: calc(100vw - 24px); border-radius: 8px; overflow: hidden;">
                     <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="background: #11151e; border-color: #28303f !important;">
                         <span class="font-weight-bold text-white small text-uppercase" style="letter-spacing: 0.5px;">Staff Notifications</span>
                         <span class="badge {{ $staffBellTotal > 0 ? 'badge-warning text-dark' : 'badge-secondary' }} font-weight-bold" style="font-size: 10px;">
@@ -219,19 +219,72 @@
     <div class="staff-content-col" style="flex: 1; min-width: 0; padding: 20px 16px 20px 16px;">
         <div class="staff-content-container p-3 p-md-4 rounded" style="background: #11151e; border: 1px solid #28303f; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-height: 80vh;">
             
-            <!-- Mobile PWA Install Notification (Sleek Compact Pill) -->
-            <div id="pwaInstallBanner" class="alert d-none mb-3 shadow-sm border-0 d-flex flex-wrap align-items-center justify-content-between py-2 px-3" style="border-radius: 8px; background: rgba(30, 58, 138, 0.9); border: 1px solid rgba(96, 165, 250, 0.3) !important; color: #fff;">
-                <div class="d-flex align-items-center my-1">
-                    <i class="fas fa-mobile-alt text-warning mr-2" style="font-size: 1.1rem;"></i>
-                    <span class="small font-weight-bold">{{ __('Install Staff Workspace App for instantaneous mobile task & messaging access') }}</span>
+            <!-- Mobile PWA Install Notification (High-Contrast Command Pill) -->
+            <div id="pwaInstallBanner" class="alert d-none mb-3 shadow border-0 d-flex flex-wrap align-items-center justify-content-between py-2 px-3" style="border-radius: 10px; background: #0f172a !important; border: 1.5px solid #38bdf8 !important; color: #ffffff !important; box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;">
+                <div class="d-flex align-items-center my-1" style="min-width: 0;">
+                    <i class="fas fa-mobile-alt text-warning mr-2" style="font-size: 1.15rem; color: #f59e0b !important; flex-shrink: 0;"></i>
+                    <span class="small font-weight-bold" style="color: #ffffff !important; font-size: 12.5px;">{{ __('Install Staff Workspace App for instantaneous mobile task & messaging access') }}</span>
                 </div>
-                <div class="d-flex align-items-center my-1">
-                    <button type="button" id="pwaInstallBtn" class="btn btn-warning btn-sm font-weight-bold text-dark px-3 py-1 shadow-sm mr-2" style="font-size: 11.5px; border-radius: 6px;">
+                <div class="d-flex align-items-center my-1 flex-shrink-0">
+                    <button type="button" id="pwaInstallBtn" class="btn btn-sm font-weight-bold shadow-sm mr-2" style="background: #eab308 !important; color: #0f172a !important; border: none !important; font-size: 12px; font-weight: 700; border-radius: 6px; padding: 5px 14px;">
                         <i class="fas fa-download mr-1"></i> {{ __('Install App') }}
                     </button>
-                    <button type="button" class="btn btn-link text-white btn-sm p-0 ml-1" onclick="dismissPwaBanner()" title="Dismiss">
-                        <i class="fas fa-times"></i>
+                    <button type="button" id="pwaDismissBtn" class="btn btn-link btn-sm p-0 ml-1" onclick="dismissPwaBanner(event)" title="Dismiss" style="color: #94a3b8 !important; text-decoration: none;">
+                        <i class="fas fa-times" style="font-size: 15px;"></i>
                     </button>
+                </div>
+            </div>
+
+            <!-- Global Staff PWA Installation Guide Modal -->
+            <div class="modal fade" id="staffPwaGuideModal" tabindex="-1" role="dialog" aria-hidden="true" style="z-index: 99999;">
+                <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 440px;">
+                    <div class="modal-content" style="background: #0f172a; border: 1.5px solid #38bdf8; border-radius: 16px; color: #ffffff; box-shadow: 0 20px 60px rgba(0,0,0,0.85);">
+                        <div class="modal-header border-bottom py-3 px-4" style="border-color: #1e293b !important;">
+                            <div class="d-flex align-items-center">
+                                <div class="mr-3" style="width: 38px; height: 38px; border-radius: 50%; background: rgba(56, 189, 248, 0.2); border: 1px solid #38bdf8; display: flex; align-items: center; justify-content: center; color: #38bdf8;">
+                                    <i class="fas fa-briefcase"></i>
+                                </div>
+                                <div>
+                                    <h6 class="modal-title font-weight-bold mb-0 text-white" style="font-size: 15px;">{{ __('Install Staff Workspace App') }}</h6>
+                                    <small style="color: #94a3b8;">{{ __('Fast mobile tasks, chat & workflow board') }}</small>
+                                </div>
+                            </div>
+                            <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close" style="opacity: 0.8;">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body p-4" style="font-size: 13px; line-height: 1.6; color: #cbd5e1;">
+                            <div id="staffPwaIosGuide" class="d-none">
+                                <div class="p-3 mb-3 rounded" style="background: #1e293b; border: 1px solid #334155;">
+                                    <strong class="text-white d-block mb-2"><i class="fab fa-apple mr-1 text-warning"></i> {{ __('How to install on iPhone & iPad') }}:</strong>
+                                    <ol class="pl-3 mb-0" style="color: #cbd5e1;">
+                                        <li class="mb-2">{{ __('Tap the') }} <strong class="text-white">{{ __('Share') }}</strong> {{ __('button') }} <i class="fas fa-share-square text-info"></i> {{ __('in Safari toolbar.') }}</li>
+                                        <li class="mb-2">{{ __('Scroll down and tap') }} <strong class="text-white">{{ __('Add to Home Screen') }}</strong> <i class="fas fa-plus-square text-warning"></i>.</li>
+                                        <li>{{ __('Tap') }} <strong class="text-white">{{ __('Add') }}</strong> {{ __('in top-right corner to complete.') }}</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <div id="staffPwaGenericGuide">
+                                <div class="p-3 mb-3 rounded" style="background: #1e293b; border: 1px solid #334155;">
+                                    <strong class="text-white d-block mb-2"><i class="fas fa-mobile-alt mr-1 text-warning"></i> {{ __('How to install on Android / Chrome / Edge') }}:</strong>
+                                    <ol class="pl-3 mb-0" style="color: #cbd5e1;">
+                                        <li class="mb-2">{{ __('Tap browser menu') }} (<strong class="text-white">&#8942;</strong> {{ __('or') }} <strong class="text-white">&#8230;</strong>) {{ __('in corner of browser.') }}</li>
+                                        <li class="mb-2">{{ __('Tap') }} <strong class="text-white">{{ __('Install app') }}</strong> {{ __('or') }} <strong class="text-white">{{ __('Add to Home screen') }}</strong>.</li>
+                                        <li>{{ __('Confirm to add Staff Workspace to your home screen or desktop.') }}</li>
+                                    </ol>
+                                </div>
+                            </div>
+                            <div class="text-muted small text-center">
+                                <i class="fas fa-bell text-warning mr-1"></i> {{ __('Get real-time push alerts for urgent task assignments and supervisor reviews.') }}
+                            </div>
+                        </div>
+                        <div class="modal-footer border-top py-2 px-4 justify-content-between" style="border-color: #1e293b !important;">
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-light" data-dismiss="modal">{{ __('Got It') }}</button>
+                            <button type="button" class="btn btn-sm font-weight-bold" onclick="markStaffPwaAsInstalled()" style="background: #eab308; color: #0f172a; border-radius: 6px;">
+                                <i class="fas fa-check mr-1"></i> {{ __('I\'ve Added to Home Screen') }}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -458,17 +511,21 @@
         color: #0f172a !important;
     }
 
-    /* PWA Banner light mode */
+    /* PWA Banner strict high-contrast dark card style across both dark and light modes */
+    #pwaInstallBanner,
     body.light-mode #pwaInstallBanner {
-        background: #eff6ff !important;
-        border: 1px solid #93c5fd !important;
-        color: #1e40af !important;
+        background: #0f172a !important;
+        border: 1.5px solid #38bdf8 !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4) !important;
     }
+    #pwaInstallBanner span,
     body.light-mode #pwaInstallBanner span {
-        color: #1e40af !important;
+        color: #ffffff !important;
     }
+    #pwaInstallBanner .btn-link,
     body.light-mode #pwaInstallBanner .btn-link {
-        color: #1e40af !important;
+        color: #94a3b8 !important;
     }
 
     .staff-nav-btn {
@@ -832,6 +889,14 @@
         });
     }
 
+    const isIos = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isIos) {
+        const iosGuide = document.getElementById('staffPwaIosGuide');
+        const genericGuide = document.getElementById('staffPwaGenericGuide');
+        if (iosGuide) iosGuide.classList.remove('d-none');
+        if (genericGuide) genericGuide.classList.add('d-none');
+    }
+
     window.addEventListener('beforeinstallprompt', (e) => {
         if (isPwaInstalled || localStorage.getItem('staff_pwa_installed') === 'true') {
             return;
@@ -843,22 +908,55 @@
         }
     });
 
+    // Mobile auto-show banner if not dismissed or installed
+    const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+    if (isMobileDevice && !isPwaInstalled && !localStorage.getItem('staff_pwa_banner_dismissed')) {
+        if (pwaBanner) pwaBanner.classList.remove('d-none');
+    }
+
     if (pwaInstallBtn) {
-        pwaInstallBtn.addEventListener('click', async () => {
-            if (!deferredPwaPrompt) return;
-            deferredPwaPrompt.prompt();
-            const { outcome } = await deferredPwaPrompt.userChoice;
-            if (outcome === 'accepted') {
-                localStorage.setItem('staff_pwa_installed', 'true');
-                if (pwaBanner) pwaBanner.remove();
+        pwaInstallBtn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (deferredPwaPrompt) {
+                try {
+                    deferredPwaPrompt.prompt();
+                    const { outcome } = await deferredPwaPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        localStorage.setItem('staff_pwa_installed', 'true');
+                        if (pwaBanner) pwaBanner.remove();
+                    }
+                    deferredPwaPrompt = null;
+                    return;
+                } catch(err) {
+                    console.warn('Install prompt error:', err);
+                }
             }
-            deferredPwaPrompt = null;
+            // Fallback: Show clear step-by-step installation instructions modal
+            if (typeof $ !== 'undefined') {
+                $('#staffPwaGuideModal').modal('show');
+            } else {
+                const modal = document.getElementById('staffPwaGuideModal');
+                if (modal) modal.style.display = 'block';
+            }
         });
     }
 
-    window.dismissPwaBanner = function() {
-        if (pwaBanner) pwaBanner.classList.add('d-none');
+    window.dismissPwaBanner = function(e) {
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (pwaBanner) {
+            pwaBanner.style.display = 'none';
+            pwaBanner.classList.add('d-none');
+        }
         localStorage.setItem('staff_pwa_banner_dismissed', 'true');
+    };
+
+    window.markStaffPwaAsInstalled = function() {
+        localStorage.setItem('staff_pwa_installed', 'true');
+        if (pwaBanner) pwaBanner.remove();
+        if (typeof $ !== 'undefined') {
+            $('#staffPwaGuideModal').modal('hide');
+        }
     };
 </script>
 @include('components.webrtc-call-modal')

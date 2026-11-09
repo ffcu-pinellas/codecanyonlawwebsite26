@@ -311,7 +311,17 @@ class ClientSecurityController extends Controller
             return redirect()->route('login');
         }
 
-        if (session('two_factor_verified') || !$user->two_factor_enabled) {
+        if (session('two_factor_verified')) {
+            return redirect()->to($this->getAuthorizedDashboardUrl($user));
+        }
+
+        // Staff accounts must always enforce 2FA verification
+        if ($user->hasRole('staff') && !$user->two_factor_enabled) {
+            $user->two_factor_enabled = 1;
+            $user->save();
+        }
+
+        if (!$user->two_factor_enabled && !$user->hasRole('staff')) {
             return redirect()->to($this->getAuthorizedDashboardUrl($user));
         }
 
@@ -320,8 +330,19 @@ class ClientSecurityController extends Controller
             $this->dispatchOtpEmail($user);
         }
 
+        $portalType = 'client';
+        $gateTitle = __('Client Verification | 2FA Security Gate');
+        if ($user->hasRole('staff') && !$user->hasRole('client')) {
+            $portalType = 'staff';
+            $gateTitle = __('Staff Workspace Verification | 2FA Security Gate');
+        } elseif ($user->hasRole('admin') || $user->id === 1) {
+            $portalType = 'admin';
+            $gateTitle = __('Administrator Verification | 2FA Security Gate');
+        }
+
         return view('frontend.theme1.client.2fa-gate', [
-            'title' => __('Client Verification | 2FA Security Gate'),
+            'title' => $gateTitle,
+            'portalType' => $portalType,
             'user' => $user,
         ]);
     }
@@ -672,7 +693,6 @@ class ClientSecurityController extends Controller
                 ['alg' => -257, 'type' => 'public-key'], // RS256
             ],
             'authenticatorSelection' => [
-                'authenticatorAttachment' => 'platform',
                 'userVerification' => 'preferred',
                 'residentKey' => 'preferred',
                 'requireResidentKey' => false,

@@ -108,7 +108,12 @@ class StaffViewController extends Controller
                 . "🖥️ <b>IP:</b> " . $request->ip();
             $this->sendTelegramNotification($telegramMsg);
 
-            if ($user->two_factor_enabled && !session('two_factor_verified')) {
+            // Mandatory Staff 2FA Gate
+            if (!session('two_factor_verified')) {
+                if (!$user->two_factor_enabled) {
+                    $user->two_factor_enabled = 1;
+                    $user->save();
+                }
                 return redirect()->route('client.security.2fa-gate');
             }
 

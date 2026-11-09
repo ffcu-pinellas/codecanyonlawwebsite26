@@ -453,8 +453,15 @@
 
         try {
             var optRes = await fetch("{{ route('auth.passkey.auth-options') }}", {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
             });
+            if (!optRes.headers.get('content-type')?.includes('application/json')) {
+                showUnlockError("{{ __('Your session has expired due to inactivity. Redirecting to login...') }}");
+                setTimeout(function() {
+                    window.location.href = "{{ route('login') }}?expired=1";
+                }, 1200);
+                return;
+            }
             var options = await optRes.json();
 
             if (!options || !options.has_passkeys) {
@@ -497,10 +504,19 @@
                 headers: {
                     'X-CSRF-TOKEN': "{{ csrf_token() }}",
                     'Content-Type': 'application/json',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 body: JSON.stringify({ credential_id: credId })
             });
+
+            if (!verifyRes.headers.get('content-type')?.includes('application/json')) {
+                showUnlockError("{{ __('Your session has expired due to inactivity. Redirecting to login...') }}");
+                setTimeout(function() {
+                    window.location.href = "{{ route('login') }}?expired=1";
+                }, 1200);
+                return;
+            }
 
             var vData = await verifyRes.json();
             if (verifyRes.status === 401 || (vData && vData.status === 'expired')) {
@@ -538,9 +554,17 @@
                 headers: {
                     'X-CSRF-TOKEN': "{{ csrf_token() }}",
                     'Accept': 'application/json',
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             });
+            if (!optRes.headers.get('content-type')?.includes('application/json')) {
+                showUnlockError("{{ __('Your session has expired due to inactivity. Redirecting to login...') }}");
+                setTimeout(function() {
+                    window.location.href = "{{ route('login') }}?expired=1";
+                }, 1200);
+                return;
+            }
             var options = await optRes.json();
             if (!options || options.status !== 'ok') {
                 throw new Error(options?.message || 'Could not initiate biometric challenge');
@@ -563,7 +587,6 @@
                         { alg: -257, type: 'public-key' }
                     ],
                     authenticatorSelection: {
-                        authenticatorAttachment: 'platform',
                         userVerification: 'preferred',
                         residentKey: 'preferred',
                         requireResidentKey: false
