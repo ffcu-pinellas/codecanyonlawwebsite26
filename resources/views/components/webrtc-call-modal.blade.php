@@ -430,22 +430,23 @@
 
 <!-- Dedicated Top-Level WebRTC Audio Element (Never affected by modal display toggles or minimize mode) -->
 <audio id="webrtcRemoteAudio" autoplay playsinline style="position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; z-index: -1;"></audio>
+<audio id="webrtcRingtoneAudio" loop playsinline preload="auto" style="position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; z-index: -1;"></audio>
 
 <!-- 1B. Top-Pinned Floating Call Dynamic Bar (WhatsApp & FaceTime Style) -->
-<div id="webrtcTopPinnedCallBar" style="position: fixed; top: 10px; left: 50%; transform: translateX(-50%); z-index: 2147483647 !important; display: none; background: #0b0f17 !important; border: 2px solid #fecc56 !important; border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.95), 0 0 25px rgba(254,204,86,0.4); padding: 5px 10px; align-items: center; justify-content: space-between; gap: 6px; width: auto; max-width: calc(100vw - 20px); box-sizing: border-box; backdrop-filter: blur(16px);">
-  <div class="d-flex align-items-center" style="gap: 5px; cursor: pointer; min-width: 0;" onclick="toggleCallMinimize(false)" title="Click to Return to Full Call Window">
-    <span style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e; display: inline-block; flex-shrink: 0;"></span>
-    <span class="badge px-2 py-1 font-weight-bold d-none d-md-inline-flex" id="pipCallBadge" style="background: rgba(254,204,86,0.2) !important; color: #fecc56 !important; border: 1px solid rgba(254,204,86,0.5) !important; font-size: 10.5px !important; flex-shrink: 0;">
-      <i class="fas fa-phone-alt mr-1"></i> Live
+<div id="webrtcTopPinnedCallBar" style="position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 2147483647 !important; display: none; background: #0b1120 !important; border: 2px solid #fecc56 !important; border-radius: 40px; box-shadow: 0 10px 40px rgba(0,0,0,0.95), 0 0 25px rgba(254,204,86,0.4); padding: 6px 12px; align-items: center; justify-content: space-between; gap: 8px; width: 94%; max-width: 440px; box-sizing: border-box; backdrop-filter: blur(16px);">
+  <div class="d-flex align-items-center" style="gap: 6px; cursor: pointer; min-width: 0;" onclick="toggleCallMinimize(false)" title="Click to Return to Full Call Window">
+    <span style="width: 9px; height: 9px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px #22c55e; display: inline-block; flex-shrink: 0;"></span>
+    <span class="badge px-2 py-1 font-weight-bold d-none d-sm-inline-flex" id="pipCallBadge" style="background: rgba(254,204,86,0.25) !important; color: #fef08a !important; border: 1px solid rgba(254,204,86,0.6) !important; font-size: 10.5px !important; flex-shrink: 0;">
+      <i class="fas fa-phone-alt mr-1 text-warning"></i> Live
     </span>
-    <span class="text-truncate font-weight-bold" id="pipCallPeerName" style="color: #ffffff !important; max-width: 80px; font-size: 11.5px !important; display: inline-block;">Caller</span>
+    <span class="text-truncate font-weight-bold" id="pipCallPeerName" style="color: #ffffff !important; max-width: 90px; font-size: 12px !important; display: inline-block; text-shadow: 0 1px 3px rgba(0,0,0,0.8);">Caller</span>
     <span class="badge px-2 py-1 font-weight-bold" id="pipCallTimer" style="background: #000000 !important; color: #fecc56 !important; border: 1.5px solid #fecc56 !important; font-size: 11px !important; font-weight: 800 !important; font-family: monospace; letter-spacing: 0.5px; flex-shrink: 0;">00:00</span>
   </div>
-  <div class="d-flex align-items-center flex-shrink-0" style="gap: 4px;">
-    <button type="button" class="btn btn-sm text-white rounded-circle p-0" id="pipBtnMute" title="Mute/Unmute" style="width: 28px; height: 28px; background: #1e293b !important; color: #ffffff !important; border: 1px solid #475569 !important; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
+  <div class="d-flex align-items-center flex-shrink-0" style="gap: 5px;">
+    <button type="button" class="btn btn-sm text-white rounded-circle p-0" id="pipBtnMute" title="Mute/Unmute" style="width: 30px; height: 30px; background: #1e293b !important; color: #ffffff !important; border: 1px solid #64748b !important; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0;">
       <i class="fas fa-microphone" style="font-size: 11px; color: #ffffff !important;"></i>
     </button>
-    <button type="button" class="btn btn-sm btn-danger rounded-circle p-0" id="pipBtnHangup" title="End Call" style="width: 28px; height: 28px; background: #dc2626 !important; color: #ffffff !important; border: 1.5px solid #ffffff !important; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,0.5); flex-shrink: 0;">
+    <button type="button" class="btn btn-sm btn-danger rounded-circle p-0" id="pipBtnHangup" title="End Call" style="width: 30px; height: 30px; background: #dc2626 !important; color: #ffffff !important; border: 1.5px solid #ffffff !important; display: inline-flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(239,68,68,0.6); flex-shrink: 0;">
       <i class="fas fa-phone-slash" style="font-size: 11px; color: #ffffff !important;"></i>
     </button>
     <button type="button" class="btn btn-sm font-weight-bold text-dark px-2 py-1" onclick="toggleCallMinimize(false)" title="Expand Call Window" style="background: linear-gradient(135deg, #fecc56, #f0a500) !important; color: #000000 !important; border: 1.5px solid #ffffff !important; border-radius: 20px; font-size: 11px; display: inline-flex; align-items: center; gap: 3px; box-shadow: 0 2px 8px rgba(254,204,86,0.4); flex-shrink: 0;">
@@ -633,6 +634,7 @@
   var isScreenSharing = false;
   var screenStream = null;
   var originalCameraTrack = null;
+  var consecutiveEmptyCallPolls = 0;
 
   // Universal SDP Sanitizer (RFC 8830 Unified Plan compliance & line ending normalization)
   function sanitizeSdp(sdp) {
@@ -673,55 +675,67 @@
   let isTelephoneRinging = false;
   function playTelephoneRing() {
     try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return;
-      if (!audioContext || audioContext.state === 'closed') {
-        audioContext = new AudioCtx();
-      }
-      if (audioContext.state === 'suspended') {
-        audioContext.resume().catch(() => {});
+      isTelephoneRinging = true;
+
+      // Play audio element for persistent background playback
+      const rAudio = document.getElementById('webrtcRingtoneAudio');
+      if (rAudio) {
+        try {
+          rAudio.volume = 1.0;
+          rAudio.play().catch(() => {});
+        } catch(e) {}
       }
 
-      isTelephoneRinging = true;
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (AudioCtx) {
+        if (!audioContext || audioContext.state === 'closed') {
+          audioContext = new AudioCtx();
+        }
+        if (audioContext.state === 'suspended') {
+          audioContext.resume().catch(() => {});
+        }
+      }
 
       function ringBurst() {
         if (!isTelephoneRinging) return;
         try {
-          if (audioContext.state === 'suspended') {
+          if (audioContext && audioContext.state === 'suspended') {
             audioContext.resume().catch(() => {});
           }
-          const now = audioContext.currentTime;
-          const osc1 = audioContext.createOscillator();
-          const osc2 = audioContext.createOscillator();
-          const gain = audioContext.createGain();
+          if (audioContext) {
+            const now = audioContext.currentTime;
+            const osc1 = audioContext.createOscillator();
+            const osc2 = audioContext.createOscillator();
+            const gain = audioContext.createGain();
 
-          osc1.type = 'sine';
-          osc1.frequency.setValueAtTime(440, now);
-          osc2.type = 'sine';
-          osc2.frequency.setValueAtTime(480, now);
+            osc1.type = 'sine';
+            osc1.frequency.setValueAtTime(440, now);
+            osc2.type = 'sine';
+            osc2.frequency.setValueAtTime(480, now);
 
-          gain.gain.setValueAtTime(0.85, now);
-          gain.gain.setValueAtTime(0.85, now + 1.8);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.95);
+            gain.gain.setValueAtTime(0.9, now);
+            gain.gain.setValueAtTime(0.9, now + 1.8);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 1.95);
 
-          osc1.connect(gain);
-          osc2.connect(gain);
-          gain.connect(audioContext.destination);
+            osc1.connect(gain);
+            osc2.connect(gain);
+            gain.connect(audioContext.destination);
 
-          osc1.start(now);
-          osc2.start(now);
-          osc1.stop(now + 2.0);
-          osc2.stop(now + 2.0);
+            osc1.start(now);
+            osc2.start(now);
+            osc1.stop(now + 2.0);
+            osc2.stop(now + 2.0);
+          }
         } catch(e) {}
 
         if ('vibrate' in navigator) {
-          try { navigator.vibrate([500, 250, 500, 250, 1000]); } catch(e) {}
+          try { navigator.vibrate([600, 250, 600, 250, 1000]); } catch(e) {}
         }
       }
 
       ringBurst();
       clearInterval(ringtoneInterval);
-      ringtoneInterval = setInterval(ringBurst, 3600);
+      ringtoneInterval = setInterval(ringBurst, 3200);
     } catch (e) {
       console.warn('Ringtone generator error:', e);
     }
@@ -729,6 +743,13 @@
 
   function stopTelephoneRing() {
     isTelephoneRinging = false;
+    const rAudio = document.getElementById('webrtcRingtoneAudio');
+    if (rAudio) {
+      try {
+        rAudio.pause();
+        rAudio.currentTime = 0;
+      } catch(e) {}
+    }
     if (ringtoneInterval) {
       clearInterval(ringtoneInterval);
       ringtoneInterval = null;
@@ -1094,6 +1115,23 @@
             document.addEventListener('click', unlockAudio, { once: true });
             document.addEventListener('touchstart', unlockAudio, { once: true });
           });
+        }
+
+        // Web Audio API destination bridge to ensure audio flows into mobile speaker/earpiece
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (AudioCtx) {
+            if (!audioContext || audioContext.state === 'closed') {
+              audioContext = new AudioCtx();
+            }
+            if (audioContext.state === 'suspended') {
+              audioContext.resume().catch(() => {});
+            }
+            const source = audioContext.createMediaStreamSource(incomingAudioStream);
+            source.connect(audioContext.destination);
+          }
+        } catch(audioBridgeErr) {
+          console.warn('Audio destination bridge notice:', audioBridgeErr);
         }
       }
       markCallConnected(activeCallSession ? activeCallSession.connected_at : null);
@@ -1638,7 +1676,10 @@
         }
       }
 
-      // 4. Send Answer to server immediately without artificial delay
+      // 4. Wait up to 450ms for initial STUN/host candidates to be collected into answer SDP
+      await waitForIceGathering(peerConnection, 450);
+
+      // 5. Send Answer to server
       const cleanLocalAnswerSdp = sanitizeSdp(peerConnection.localDescription.sdp);
       const fullAnswer = {
         type: peerConnection.localDescription.type || 'answer',
@@ -2053,8 +2094,27 @@
       return;
     }
 
-    // B. If call was ended or cancelled on server, dismiss all active call views
-    if (!call || inArray(['ended', 'declined', 'missed', 'cancelled'], call.status)) {
+    // B. Handle transient empty poll responses vs explicit call termination
+    if (!call) {
+      consecutiveEmptyCallPolls++;
+      // If currently engaged in a connected live call, tolerate up to 4 consecutive empty polls before hanging up
+      if (activeCallSession && activeCallSession.status === 'connected' && consecutiveEmptyCallPolls <= 4) {
+        return;
+      }
+      if ($('#incomingCallModal').hasClass('show')) {
+        stopTelephoneRing();
+        stopTitleFlash();
+        $('#incomingCallModal').modal('hide');
+      }
+      if (activeCallSession && activeCallSession.status === 'connected') {
+        hangUpCall(false);
+      }
+      return;
+    }
+    consecutiveEmptyCallPolls = 0;
+
+    // Call was explicitly ended, declined, missed, or cancelled on server
+    if (inArray(['ended', 'declined', 'missed', 'cancelled'], call.status)) {
       if ($('#incomingCallModal').hasClass('show')) {
         stopTelephoneRing();
         stopTitleFlash();

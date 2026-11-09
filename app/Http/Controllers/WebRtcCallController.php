@@ -303,19 +303,22 @@ class WebRtcCallController extends Controller
 
         $callId = Cache::get("user_active_call_{$user->id}");
 
-        // If cache has no active call key, query MySQL directly for ringing calls targeted at this user
+        // If cache has no active call key, query MySQL directly for ringing or connected calls involving this user
         if (!$callId) {
             try {
-                $dbRinging = DB::table('call_sessions')
-                    ->where('recipient_id', $user->id)
-                    ->where('status', 'ringing')
-                    ->where('created_at', '>=', now()->subSeconds(60))
+                $dbCall = DB::table('call_sessions')
+                    ->where(function($q) use ($user) {
+                        $q->where('recipient_id', $user->id)
+                          ->orWhere('caller_id', $user->id);
+                    })
+                    ->whereIn('status', ['ringing', 'connected'])
+                    ->where('created_at', '>=', now()->subHours(4))
                     ->latest()
                     ->first();
 
-                if ($dbRinging) {
-                    $callId = $dbRinging->call_id;
-                    Cache::put("user_active_call_{$user->id}", $callId, 60);
+                if ($dbCall) {
+                    $callId = $dbCall->call_id;
+                    Cache::put("user_active_call_{$user->id}", $callId, 180);
                 }
             } catch (\Throwable $e) {}
         }
@@ -351,6 +354,10 @@ class WebRtcCallController extends Controller
             Cache::forget("user_active_call_{$callData['caller_id']}");
             $latestUnread = $this->getLatestUnreadMessageForUser($user);
             return response()->json(['active_call' => null, 'latest_unread' => $latestUnread]);
+        }
+
+        if ($callData['status'] === 'connected') {
+            Cache::put("user_active_call_{$user->id}", $callId, 7200);
         }
 
         $latestUnread = $this->getLatestUnreadMessageForUser($user);

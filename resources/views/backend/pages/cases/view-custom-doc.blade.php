@@ -204,18 +204,20 @@
                             {{ __('Authorized Legal / CPA Counsel & Corporate Seal') }}
                         </div>
                         
-                        <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 15px; margin-top: 10px;">
-                            <div style="flex-grow: 1;">
-                                <div class="signature-line" style="width: 100%; margin-top: 25px;">
-                                    <strong style="color: #1e3c72;">{{ $attorneyDisplayName }}</strong><br>
-                                    <span style="font-size: 12px; color: #64748b;">{{ $attorneyDisplayTitle }}</span><br>
-                                    <span style="font-size: 12px; color: #64748b;">{{ $companyName }} &bull; Date: {{ date('F d, Y') }}</span>
-                                </div>
-                            </div>
-                            <div>
-                                @include('backend.layouts.official-stamp', ['caseNumber' => (isset($case) && $case->case_number) ? $case->case_number : 'YCE-'.date('Y')])
-                            </div>
-                        </div>
+                        <table style="width: 100%; border-collapse: collapse; border: none; margin-top: 10px;">
+                            <tr>
+                                <td style="vertical-align: bottom; text-align: left; border: none; padding: 0;">
+                                    <div class="signature-line" style="width: 100%; margin-top: 25px;">
+                                        <strong style="color: #1e3c72;">{{ $attorneyDisplayName }}</strong><br>
+                                        <span style="font-size: 12px; color: #64748b;">{{ $attorneyDisplayTitle }}</span><br>
+                                        <span style="font-size: 12px; color: #64748b;">{{ $companyName }} &bull; Date: {{ date('F d, Y') }}</span>
+                                    </div>
+                                </td>
+                                <td style="vertical-align: bottom; text-align: right; border: none; padding: 0 0 0 10px; width: 160px;">
+                                    @include('backend.layouts.official-stamp', ['caseNumber' => (isset($case) && $case->case_number) ? $case->case_number : 'YCE-'.date('Y')])
+                                </td>
+                            </tr>
+                        </table>
                     </div>
                 </td>
             </tr>

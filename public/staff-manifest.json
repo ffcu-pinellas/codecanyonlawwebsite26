@@ -1,7 +1,9 @@
 {
+  "id": "/staff-workspace",
   "name": "Your CPA Expert - Staff Workspace",
   "short_name": "Staff Workspace",
   "start_url": "/staff/dashboard",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a0c10",
   "theme_color": "#11151e",

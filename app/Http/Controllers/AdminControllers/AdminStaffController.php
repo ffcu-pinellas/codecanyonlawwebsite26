@@ -273,7 +273,9 @@ class AdminStaffController extends Controller
                            ($detail->routing_number !== $request->routing_number);
 
             $paymentVerified = $detail->payment_verified;
-            if ($infoChanged) {
+            if ($request->has('payment_verified')) {
+                $paymentVerified = (bool)$request->payment_verified;
+            } elseif ($infoChanged) {
                 $paymentVerified = false;
             }
 
@@ -519,20 +521,44 @@ class AdminStaffController extends Controller
                 abort(404, 'Staff details not found.');
             }
 
-            $filePath = '';
+            $rawPath = null;
             if ($type === 'void_check') {
-                $filePath = public_path($detail->void_check_path);
-            } elseif ($type === 'direct_deposit') {
-                $filePath = public_path($detail->direct_deposit_form_path);
-            } else {
-                abort(404, 'Invalid document type.');
+                $rawPath = $detail->void_check_path;
+            } elseif ($type === 'direct_deposit' || $type === 'payout_form') {
+                $rawPath = $detail->direct_deposit_form_path;
             }
 
-            if (empty($filePath) || !file_exists($filePath)) {
-                return $this->backWithError(__('The requested document was not found or has not been uploaded.'));
+            if (!empty($rawPath)) {
+                $cleanPath = ltrim(str_replace(['\\', '/'], DIRECTORY_SEPARATOR, $rawPath), DIRECTORY_SEPARATOR);
+                $fullPath = public_path($cleanPath);
+                if (file_exists($fullPath)) {
+                    return response()->download($fullPath);
+                }
             }
 
-            return response()->download($filePath);
+            // Check if signed DD / Payout form exists in DocumentLog
+            $docLog = \App\Models\DocumentLog::where('staff_id', $staff->id)
+                ->where(function($q) {
+                    $q->where('template_key', 'direct_deposit')
+                      ->orWhere('template_title', 'like', '%Deposit%')
+                      ->orWhere('template_title', 'like', '%Payout%')
+                      ->orWhere('template_title', 'like', '%Compensation%');
+                })
+                ->latest()
+                ->first();
+
+            if ($docLog && !empty($docLog->content)) {
+                return redirect()->route('staff.documents.print', $docLog->id);
+            }
+
+            // Fallback: Dynamically generate official compensation & payout PDF form
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('frontend.theme1.auth-staff.direct-deposit-pdf', [
+                'title' => 'Compensation & Payout Authorization - ' . $staff->name,
+                'staff' => $staff,
+                'detail' => $detail,
+            ]);
+
+            return $pdf->download('Compensation_Payout_Authorization_' . preg_replace('/[^A-Za-z0-9_\-]/', '_', $staff->name) . '.pdf');
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

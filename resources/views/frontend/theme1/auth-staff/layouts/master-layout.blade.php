@@ -858,12 +858,11 @@
     const pwaBanner = document.getElementById('pwaInstallBanner');
     const pwaInstallBtn = document.getElementById('pwaInstallBtn');
 
-    const isPwaInstalled = window.matchMedia('(display-mode: standalone)').matches
+    const isRunningInStandalone = window.matchMedia('(display-mode: standalone)').matches
         || window.navigator.standalone === true
-        || (document.referrer && document.referrer.includes('android-app://'))
-        || localStorage.getItem('staff_pwa_installed') === 'true';
+        || (document.referrer && document.referrer.includes('android-app://'));
 
-    if (isPwaInstalled && pwaBanner) {
+    if (isRunningInStandalone && pwaBanner) {
         pwaBanner.remove();
     }
 
@@ -872,6 +871,15 @@
             if (apps && apps.length > 0) {
                 localStorage.setItem('staff_pwa_installed', 'true');
                 if (pwaBanner) pwaBanner.remove();
+            } else {
+                // Confirmed app is not currently installed or was uninstalled
+                if (!isRunningInStandalone) {
+                    localStorage.removeItem('staff_pwa_installed');
+                    if (pwaBanner) {
+                        pwaBanner.classList.remove('d-none');
+                        pwaBanner.style.display = 'flex';
+                    }
+                }
             }
         }).catch(() => {});
     }
@@ -898,20 +906,23 @@
     }
 
     window.addEventListener('beforeinstallprompt', (e) => {
-        if (isPwaInstalled || localStorage.getItem('staff_pwa_installed') === 'true') {
-            return;
-        }
         e.preventDefault();
         deferredPwaPrompt = e;
-        if (!localStorage.getItem('staff_pwa_banner_dismissed')) {
-            if (pwaBanner) pwaBanner.classList.remove('d-none');
+        // Native event confirms app is not currently installed (or was uninstalled)
+        localStorage.removeItem('staff_pwa_installed');
+        if (pwaBanner && !isRunningInStandalone) {
+            pwaBanner.classList.remove('d-none');
+            pwaBanner.style.display = 'flex';
         }
     });
 
-    // Mobile auto-show banner if not dismissed or installed
+    // Mobile auto-show banner if not running in standalone and not installed
     const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    if (isMobileDevice && !isPwaInstalled && !localStorage.getItem('staff_pwa_banner_dismissed')) {
-        if (pwaBanner) pwaBanner.classList.remove('d-none');
+    if (isMobileDevice && !isRunningInStandalone && !localStorage.getItem('staff_pwa_installed')) {
+        if (pwaBanner) {
+            pwaBanner.classList.remove('d-none');
+            pwaBanner.style.display = 'flex';
+        }
     }
 
     if (pwaInstallBtn) {
@@ -939,6 +950,19 @@
                 const modal = document.getElementById('staffPwaGuideModal');
                 if (modal) modal.style.display = 'block';
             }
+        });
+    }
+
+    const pwaDismissBtn = document.getElementById('pwaDismissBtn');
+    if (pwaDismissBtn) {
+        pwaDismissBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (pwaBanner) {
+                pwaBanner.style.display = 'none';
+                pwaBanner.classList.add('d-none');
+            }
+            localStorage.setItem('staff_pwa_banner_dismissed', 'true');
         });
     }
 

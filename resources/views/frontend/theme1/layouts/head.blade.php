@@ -13,8 +13,14 @@
 
     <!--[if IE]><meta http-equiv='X-UA-Compatible' content='IE=edge,chrome=1'><![endif]-->
 
-    <!-- Favicon -->
+    <!-- Favicon & PWA Application Manifest -->
     <link href="{{ $logoFavicon?$logoFavicon->favicon:'' }}" rel="shortcut icon" type="image/png">
+    <link rel="manifest" href="{{ asset('client-manifest.json') }}">
+    <meta name="theme-color" content="#fecc56">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Client Portal">
+    <link rel="apple-touch-icon" href="{{ asset('upload/settings/logo.png') }}">
 
     <!-- High-Performance Font Preconnect & DNS Prefetch -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

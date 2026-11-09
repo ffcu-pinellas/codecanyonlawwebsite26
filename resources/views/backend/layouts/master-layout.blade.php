@@ -254,19 +254,19 @@
 
                 if (!isFirstPoll) {
                     if (c.unread_client_msgs > (lastKnownActivity.unread_client_msgs || 0)) {
-                        triggerAdminPush("💬 Client Message Received", "New client consultation message in Communications Hub", "{{ route('admin.conversations.index') }}");
+                        triggerAdminPush("💬 Client Message Received", "New client consultation message in Communications Hub", "{{ route('admin.conversation.index') }}");
                         if (typeof toastr !== 'undefined') toastr.info("New Client Chat Message Received", "Communications Hub");
                     }
                     if (c.unread_staff_msgs > (lastKnownActivity.unread_staff_msgs || 0)) {
-                        triggerAdminPush("👥 Staff Message Received", "A staff associate sent an encrypted internal message", "{{ route('admin.conversations.index') }}");
+                        triggerAdminPush("👥 Staff Message Received", "A staff associate sent an encrypted internal message", "{{ route('admin.conversation.index') }}");
                         if (typeof toastr !== 'undefined') toastr.info("New Staff Message Received", "Staff Directory");
                     }
                     if (c.pending_tasks > (lastKnownActivity.pending_tasks || 0)) {
-                        triggerAdminPush("📋 Task Submitted for Review", "A completed legal/accounting deliverable requires supervisor approval", "{{ route('admin.staff.tasks') }}");
+                        triggerAdminPush("📋 Task Submitted for Review", "A completed legal/accounting deliverable requires supervisor approval", "{{ route('admin.staff.tasks.index') }}");
                         if (typeof toastr !== 'undefined') toastr.warning("New Staff Task Submitted for Quality Review", "Legal & CPA Operations");
                     }
                     if (c.pending_payouts > (lastKnownActivity.pending_payouts || 0)) {
-                        triggerAdminPush("💰 Staff Payout Requested", "A staff associate submitted a compensation withdrawal request", "{{ route('admin.staff.payouts') }}");
+                        triggerAdminPush("💰 Staff Payout Requested", "A staff associate submitted a compensation withdrawal request", "{{ route('admin.staff.payouts.index') }}");
                         if (typeof toastr !== 'undefined') toastr.warning("New Staff Payout Claim Requested", "Financial Operations");
                     }
                     if (c.pending_proofs > (lastKnownActivity.pending_proofs || 0)) {
@@ -308,12 +308,11 @@
             if (genericGuide) genericGuide.classList.add('d-none');
         }
 
-        const isAdminPwaInstalled = window.matchMedia('(display-mode: standalone)').matches
+        const isRunningInStandalone = window.matchMedia('(display-mode: standalone)').matches
             || window.navigator.standalone === true
-            || (document.referrer && document.referrer.includes('android-app://'))
-            || localStorage.getItem('admin_pwa_installed') === 'true';
+            || (document.referrer && document.referrer.includes('android-app://'));
 
-        if (isAdminPwaInstalled && adminBanner) {
+        if (isRunningInStandalone && adminBanner) {
             adminBanner.remove();
         }
 
@@ -322,6 +321,15 @@
                 if (apps && apps.length > 0) {
                     localStorage.setItem('admin_pwa_installed', 'true');
                     if (adminBanner) adminBanner.remove();
+                } else {
+                    // App was uninstalled or not yet installed on this browser
+                    if (!isRunningInStandalone) {
+                        localStorage.removeItem('admin_pwa_installed');
+                        if (adminBanner) {
+                            adminBanner.classList.remove('d-none');
+                            adminBanner.style.display = 'flex';
+                        }
+                    }
                 }
             }).catch(() => {});
         }
@@ -340,20 +348,23 @@
         }
 
         window.addEventListener('beforeinstallprompt', (e) => {
-            if (isAdminPwaInstalled || localStorage.getItem('admin_pwa_installed') === 'true') {
-                return;
-            }
             e.preventDefault();
             deferredAdminPrompt = e;
-            if (!localStorage.getItem('admin_pwa_banner_dismissed')) {
-                if (adminBanner) adminBanner.classList.remove('d-none');
+            // Native prompt confirms app is NOT installed (or was uninstalled)
+            localStorage.removeItem('admin_pwa_installed');
+            if (adminBanner && !isRunningInStandalone) {
+                adminBanner.classList.remove('d-none');
+                adminBanner.style.display = 'flex';
             }
         });
 
-        // Always show banner on mobile devices if not installed and not dismissed
+        // Always show banner on mobile devices if not running in standalone and not currently installed
         const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-        if (isMobileDevice && !isAdminPwaInstalled && !localStorage.getItem('admin_pwa_banner_dismissed')) {
-            if (adminBanner) adminBanner.classList.remove('d-none');
+        if (isMobileDevice && !isRunningInStandalone && !localStorage.getItem('admin_pwa_installed')) {
+            if (adminBanner) {
+                adminBanner.classList.remove('d-none');
+                adminBanner.style.display = 'flex';
+            }
         }
 
         if (adminInstallBtn) {
@@ -381,6 +392,19 @@
                     const modal = document.getElementById('adminPwaGuideModal');
                     if (modal) modal.style.display = 'block';
                 }
+            });
+        }
+
+        const adminDismissBtn = document.getElementById('adminPwaDismissBtn');
+        if (adminDismissBtn) {
+            adminDismissBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (adminBanner) {
+                    adminBanner.style.display = 'none';
+                    adminBanner.classList.add('d-none');
+                }
+                localStorage.setItem('admin_pwa_banner_dismissed', 'true');
             });
         }
 

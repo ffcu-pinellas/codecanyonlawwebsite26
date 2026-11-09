@@ -91,6 +91,29 @@
     body.light-mode .kanban-card:hover, html.light-mode .kanban-card:hover {
         border-color: #3b82f6 !important;
     }
+    .task-modal-due-date {
+        color: #fbbf24;
+        font-size: 13px;
+    }
+    body.light-mode .task-modal-due-date, html.light-mode .task-modal-due-date {
+        color: #b45309 !important;
+        font-weight: 800 !important;
+    }
+    body.light-mode .modal-content, html.light-mode .modal-content {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .modal-header, html.light-mode .modal-header {
+        border-bottom-color: #e2e8f0 !important;
+    }
+    body.light-mode .modal-title, html.light-mode .modal-title {
+        color: #0f172a !important;
+    }
+    body.light-mode .modal-body .task-meta-box, html.light-mode .modal-body .task-meta-box {
+        background: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+    }
 </style>
 @endsection
 
@@ -205,10 +228,10 @@
                         </div>
                     @endif
 
-                    <div class="row small p-3 rounded mb-2" style="background: #0a0d14; border: 1px solid #28303f;">
+                    <div class="row small p-3 rounded mb-2 task-meta-box" style="background: #0a0d14; border: 1px solid #28303f;">
                         <div class="col-6">
                             <span class="text-muted d-block small mb-1">{{ __('Due Date:') }}</span>
-                            <strong style="color: #fecc56; font-size: 13px;"><i class="far fa-calendar-alt mr-1"></i> {{ $task->due_date ? $task->due_date->format('M d, Y') : __('No Deadline') }}</strong>
+                            <strong class="task-modal-due-date"><i class="far fa-calendar-alt mr-1"></i> {{ $task->due_date ? $task->due_date->format('M d, Y') : __('No Deadline') }}</strong>
                         </div>
                         <div class="col-6 text-right">
                             <span class="text-muted d-block small mb-1">{{ __('Workflow Status:') }}</span>

@@ -188,11 +188,45 @@
         color: #0f172a !important;
     }
     body.light-mode .action-tile .font-weight-bold,
-    body.light-mode .action-tile .text-white {
+    html.light-mode .action-tile .font-weight-bold,
+    body.light-mode .action-tile .text-white,
+    html.light-mode .action-tile .text-white {
         color: #0f172a !important;
     }
-    body.light-mode .action-tile .text-muted {
-        color: #64748b !important;
+    body.light-mode .action-tile .text-muted,
+    html.light-mode .action-tile .text-muted {
+        color: #475569 !important;
+    }
+    body.light-mode .metric-card,
+    html.light-mode .metric-card {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .metric-card .text-white,
+    html.light-mode .metric-card .text-white,
+    body.light-mode .metric-val,
+    html.light-mode .metric-val {
+        color: #0f172a !important;
+    }
+    body.light-mode .staff-profile-card,
+    html.light-mode .staff-profile-card {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode .staff-profile-card .text-white,
+    html.light-mode .staff-profile-card .text-white {
+        color: #0f172a !important;
+    }
+    body.light-mode .quick-action-btn,
+    html.light-mode .quick-action-btn {
+        background: #f8fafc !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .quick-action-btn:hover,
+    html.light-mode .quick-action-btn:hover {
+        background: #e2e8f0 !important;
+        color: #0f172a !important;
     }
 </style>
 @endsection
@@ -511,8 +545,8 @@
                         <i class="fas fa-university"></i>
                     </div>
                     <div>
-                        <div class="font-weight-bold text-white">{{ __('Direct Deposit Routing') }}</div>
-                        <div class="text-muted small">{{ __('Checking / savings account distribution') }}</div>
+                        <div class="font-weight-bold text-white">{{ __('Compensation & Payout Preferences') }}</div>
+                        <div class="text-muted small">{{ __('Direct deposit, paper check & compensation routing') }}</div>
                     </div>
                 </a>
             </div>
@@ -523,8 +557,8 @@
                         <i class="fas fa-file-pdf"></i>
                     </div>
                     <div>
-                        <div class="font-weight-bold text-white">{{ __('Banking & Payout Authorization Form') }}</div>
-                        <div class="text-muted small">{{ __('Pre-filled banking authorization & direct deposit form') }}</div>
+                        <div class="font-weight-bold text-white">{{ __('Official Payout Authorization PDF') }}</div>
+                        <div class="text-muted small">{{ __('Pre-filled banking & compensation authorization agreement') }}</div>
                     </div>
                 </a>
             </div>

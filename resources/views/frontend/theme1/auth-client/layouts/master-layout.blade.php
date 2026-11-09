@@ -109,7 +109,7 @@
                         </span>
                     @endif
                 </button>
-                <div class="dropdown-menu shadow-lg p-0" id="clientNotificationMenu" aria-labelledby="clientNotificationBellDropdown" style="background: #161a23; border: 1px solid #28303f; width: 310px; max-width: calc(100vw - 24px); border-radius: 8px; overflow: hidden; margin-top: 8px !important;">
+                <div class="dropdown-menu dropdown-menu-right dropdown-menu-end shadow-lg p-0" id="clientNotificationMenu" aria-labelledby="clientNotificationBellDropdown" style="background: #161a23; border: 1px solid #28303f; width: 310px; max-width: calc(100vw - 24px); border-radius: 8px; overflow: hidden; margin-top: 8px !important;">
                     <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom" style="background: #11151e; border-color: #28303f !important;">
                         <span class="font-weight-bold text-white small text-uppercase" style="letter-spacing: 0.5px;">Notifications</span>
                         <span class="badge {{ $headerTotalAlerts > 0 ? 'badge-warning text-dark' : 'badge-secondary' }} font-weight-bold" style="font-size: 10px;">
@@ -169,7 +169,7 @@
                     'AUD' => ['sym' => '$', 'name' => 'AUD ($)'],
                 ];
             @endphp
-            <div class="dropdown d-none d-lg-block">
+            <div class="dropdown d-none d-xl-block">
                 <button class="btn btn-sm btn-dark dropdown-toggle font-weight-bold text-light px-2 py-1" type="button" id="currencyDropdown" data-toggle="dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false" style="background: #161a23; border: 1px solid #28303f; border-radius: 6px; font-size: 11.5px;">
                     <i class="fas fa-dollar-sign text-warning mr-1"></i> <span id="currentCurrencyLabel">{{ $userCurrency }}</span>
                 </button>
@@ -757,12 +757,11 @@
     const clientBanner = document.getElementById('clientPwaInstallBanner');
     const clientInstallBtn = document.getElementById('clientPwaInstallBtn');
 
-    const isClientPwaInstalled = window.matchMedia('(display-mode: standalone)').matches
+    const isRunningInStandalone = window.matchMedia('(display-mode: standalone)').matches
         || window.navigator.standalone === true
-        || (document.referrer && document.referrer.includes('android-app://'))
-        || localStorage.getItem('client_pwa_installed') === 'true';
+        || (document.referrer && document.referrer.includes('android-app://'));
 
-    if (isClientPwaInstalled && clientBanner) {
+    if (isRunningInStandalone && clientBanner) {
         clientBanner.remove();
     }
 
@@ -771,6 +770,15 @@
             if (apps && apps.length > 0) {
                 localStorage.setItem('client_pwa_installed', 'true');
                 if (clientBanner) clientBanner.remove();
+            } else {
+                // Confirmed app is not currently installed or was uninstalled
+                if (!isRunningInStandalone) {
+                    localStorage.removeItem('client_pwa_installed');
+                    if (clientBanner) {
+                        clientBanner.classList.remove('d-none');
+                        clientBanner.style.display = 'flex';
+                    }
+                }
             }
         }).catch(() => {});
     }
@@ -797,20 +805,23 @@
     }
 
     window.addEventListener('beforeinstallprompt', (e) => {
-        if (isClientPwaInstalled || localStorage.getItem('client_pwa_installed') === 'true') {
-            return;
-        }
         e.preventDefault();
         deferredClientPrompt = e;
-        if (!localStorage.getItem('client_pwa_banner_dismissed')) {
-            if (clientBanner) clientBanner.classList.remove('d-none');
+        // Native event confirms app is not currently installed (or was uninstalled)
+        localStorage.removeItem('client_pwa_installed');
+        if (clientBanner && !isRunningInStandalone) {
+            clientBanner.classList.remove('d-none');
+            clientBanner.style.display = 'flex';
         }
     });
 
-    // Auto-show banner on mobile if not dismissed or installed
+    // Mobile auto-show banner if not running in standalone and not installed
     const isMobileDevice = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
-    if (isMobileDevice && !isClientPwaInstalled && !localStorage.getItem('client_pwa_banner_dismissed')) {
-        if (clientBanner) clientBanner.classList.remove('d-none');
+    if (isMobileDevice && !isRunningInStandalone && !localStorage.getItem('client_pwa_installed')) {
+        if (clientBanner) {
+            clientBanner.classList.remove('d-none');
+            clientBanner.style.display = 'flex';
+        }
     }
 
     if (clientInstallBtn) {
@@ -838,6 +849,19 @@
                 const modal = document.getElementById('clientPwaGuideModal');
                 if (modal) modal.style.display = 'block';
             }
+        });
+    }
+
+    const clientDismissBtn = document.getElementById('clientPwaDismissBtn');
+    if (clientDismissBtn) {
+        clientDismissBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (clientBanner) {
+                clientBanner.style.display = 'none';
+                clientBanner.classList.add('d-none');
+            }
+            localStorage.setItem('client_pwa_banner_dismissed', 'true');
         });
     }
 

@@ -175,17 +175,12 @@
                                     </select>
                                     @error('payment_method') <span class="text-danger small">{{ $message }}</span> @enderror
                                 </div>
-                                <div class="col-md-6 form-group d-flex align-items-end">
-                                    @if($detail)
-                                        <div class="mb-2">
-                                            <strong>{{ __('Verification Status: ') }}</strong>
-                                            @if($detail->payment_verified)
-                                                <span class="badge badge-success"><i class="fas fa-check-circle"></i> {{ __('Verified & Approved') }}</span>
-                                            @else
-                                                <span class="badge badge-warning"><i class="fas fa-clock"></i> {{ __('Pending Verification / Unverified') }}</span>
-                                            @endif
-                                        </div>
-                                    @endif
+                                <div class="col-md-6 form-group">
+                                    <label for="payment_verified">{{ __('Verification Status') }}</label>
+                                    <select name="payment_verified" id="payment_verified" class="form-control bg-dark text-white border-secondary">
+                                        <option value="1" @if(old('payment_verified', $detail ? $detail->payment_verified : 0) == 1) selected @endif class="text-success font-weight-bold">✔ {{ __('Verified & Approved') }}</option>
+                                        <option value="0" @if(old('payment_verified', $detail ? $detail->payment_verified : 0) == 0) selected @endif class="text-warning font-weight-bold">⏳ {{ __('Pending Verification / Unverified') }}</option>
+                                    </select>
                                 </div>
                             </div>
 

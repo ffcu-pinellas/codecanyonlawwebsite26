@@ -13,8 +13,14 @@
     <!-- RESPONSIVE BROWSER TO SCREEN WIDTH -->
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, minimal-ui" />
     <!------------------------------------------------------------------------------------------------>
-    <!-- FAVICON  -->
+    <!-- FAVICON & PWA Application Manifest -->
     <link rel="icon" type="image/png" sizes="16x16" href="{{ asset($logoFavicon?$logoFavicon->favicon:'') }}" />
+    <link rel="manifest" href="{{ asset('client-manifest.json') }}">
+    <meta name="theme-color" content="#fecc56">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Client Portal">
+    <link rel="apple-touch-icon" href="{{ asset('upload/settings/logo.png') }}">
     <!-- BOOTSTRAP - V 4.0.0 -->
     <link rel="stylesheet" href="{{ asset('backend/assets/dist/css/bootstrap.min.css') }}" />
     <!-- MATERIAL ICONS -->

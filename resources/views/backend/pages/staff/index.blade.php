@@ -153,6 +153,9 @@
                                                          @endif
                                                      </form>
 
+                                                     <button type="button" class="btn btn-xs btn-outline-warning m-1 text-warning" data-toggle="modal" data-target="#uploadStaffDocModal{{ $staff->id }}" title="{{ __('Upload to Staff Document Center') }}">
+                                                         <i class="fas fa-file-upload"></i>
+                                                     </button>
                                                      <a href="{{ route('admin.staff.edit', $staff->id) }}" class="btn btn-xs btn-light m-1" title="{{ __('Edit Settings') }}"><i class="fas fa-edit"></i></a>
                                                      <a href="{{ route('admin.staff.ledger.index', $staff->id) }}" class="btn btn-xs btn-primary m-1 text-white" title="{{ __('Financial Ledger') }}"><i class="fas fa-wallet"></i></a>
                                                      <a href="{{ route('admin.staff.time-logs', $staff->id) }}" class="btn btn-xs btn-success m-1" title="{{ __('Time & Wage Logs') }}"><i class="fas fa-history"></i></a>
@@ -281,5 +284,45 @@
                 </div>
             </div>
         @endif
+
+        <!-- Upload Document to Staff Document Center Modal -->
+        <div class="modal fade" id="uploadStaffDocModal{{ $staff->id }}" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content text-left">
+                    <form action="{{ route('admin.staff.upload-document', $staff->id) }}" method="POST" enctype="multipart/form-data">
+                        @csrf
+                        <div class="modal-header bg-dark text-white">
+                            <h5 class="modal-title font-weight-bold text-white">
+                                <i class="fas fa-file-upload text-warning mr-2"></i>{{ __('Upload to Staff Document Center') }}
+                            </h5>
+                            <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="small text-muted mb-3">
+                                {{ __('Attach employment contracts, tax forms, or official directives directly to :name\'s personalized Document Center.', ['name' => $staff->name]) }}
+                            </p>
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-dark">{{ __('Document Title') }} <span class="text-danger">*</span></label>
+                                <input type="text" name="document_title" class="form-control form-control-sm" required placeholder="e.g. 2026 Associate Engagement Contract">
+                            </div>
+                            <div class="form-group">
+                                <label class="font-weight-bold small text-dark">{{ __('Select File (PDF, DOCX, JPG, PNG, ZIP)') }} <span class="text-danger">*</span></label>
+                                <input type="file" name="document_file" class="form-control-file border p-1 rounded" required accept=".pdf,.docx,.doc,.jpg,.jpeg,.png,.zip">
+                            </div>
+                            <div class="form-group mb-0">
+                                <label class="font-weight-bold small text-dark">{{ __('Notes / Instructions for Staff (Optional)') }}</label>
+                                <textarea name="admin_notes" class="form-control form-control-sm" rows="3" placeholder="{{ __('Optional instructions or review requirements...') }}"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer bg-light">
+                            <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">{{ __('Cancel') }}</button>
+                            <button type="submit" class="btn btn-primary btn-sm font-weight-bold">
+                                <i class="fas fa-upload mr-1"></i> {{ __('Upload & Deliver') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     @endforeach
 @endsection

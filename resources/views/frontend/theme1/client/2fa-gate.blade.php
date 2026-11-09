@@ -4,8 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ config('app.name', 'Your CPA Expert') }} | {{ __('Client Verification') }}</title>
-    <!-- Favicon -->
+    <!-- Favicon & PWA Application Manifest -->
     <link rel="icon" href="{{ asset('assets/images/favicon.ico') }}" type="image/x-icon">
+    <link rel="manifest" href="{{ asset('client-manifest.json') }}">
+    <meta name="theme-color" content="#fecc56">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Client Portal">
+    <link rel="apple-touch-icon" href="{{ asset('upload/settings/logo.png') }}">
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->

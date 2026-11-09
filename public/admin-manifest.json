@@ -1,11 +1,13 @@
 {
+  "id": "/admin-command",
   "name": "Your CPA Expert - Admin Command Center",
   "short_name": "Admin Portal",
   "start_url": "/admin/dashboard",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#11151e",
   "theme_color": "#1e3c72",
-    "orientation": "any",
+  "orientation": "any",
   "icons": [
     {
       "src": "/upload/settings/logo.png",
