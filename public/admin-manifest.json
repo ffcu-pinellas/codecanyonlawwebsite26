@@ -2,6 +2,7 @@
   "id": "/admin-command",
   "name": "Your CPA Expert - Admin Command Center",
   "short_name": "Admin Portal",
+  "description": "Executive Command Center for firm administration, attorney oversight, case lifecycle and financial operations.",
   "start_url": "/admin/dashboard",
   "scope": "/",
   "display": "standalone",
@@ -10,16 +11,22 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "/upload/settings/logo.png",
+      "src": "/assets/images/icons/admin-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/upload/settings/logo.png",
+      "src": "/assets/images/icons/admin-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/images/icons/admin-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

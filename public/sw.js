@@ -1,10 +1,16 @@
 // Service Worker for Your CPA Expert Universal PWA (Admin, Client & Staff)
-const CACHE_NAME = 'cpa-portal-v3';
+const CACHE_NAME = 'cpa-portal-v4';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/admin-manifest.json',
   '/client-manifest.json',
   '/staff-manifest.json',
+  '/assets/images/icons/icon-192.png',
+  '/assets/images/icons/icon-512.png',
+  '/assets/images/icons/staff-icon-192.png',
+  '/assets/images/icons/staff-icon-512.png',
+  '/assets/images/icons/admin-icon-192.png',
+  '/assets/images/icons/admin-icon-512.png',
   '/upload/settings/logo.png',
   '/frontend/theme1/css/bootstrap.min.css',
   '/frontend/theme1/css/style.css',

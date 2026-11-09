@@ -321,12 +321,13 @@
                             </div>
                             <div id="clientPwaGenericGuide">
                                 <div class="p-3 mb-3 rounded" style="background: #1e293b; border: 1px solid #334155;">
-                                    <strong class="text-white d-block mb-2"><i class="fas fa-mobile-alt mr-1 text-warning"></i> {{ __('How to install on Android / Chrome / Edge') }}:</strong>
-                                    <ol class="pl-3 mb-0" style="color: #cbd5e1;">
-                                        <li class="mb-2">{{ __('Tap browser menu') }} (<strong class="text-white">&#8942;</strong> {{ __('or') }} <strong class="text-white">&#8230;</strong>) {{ __('in corner of browser.') }}</li>
-                                        <li class="mb-2">{{ __('Tap') }} <strong class="text-white">{{ __('Install app') }}</strong> {{ __('or') }} <strong class="text-white">{{ __('Add to Home screen') }}</strong>.</li>
-                                        <li>{{ __('Confirm to add Client Portal to your home screen or desktop.') }}</li>
-                                    </ol>
+                                    <strong class="text-white d-block mb-2"><i class="fas fa-laptop mr-1 text-warning"></i> {{ __('Android & Desktop Installation') }}:</strong>
+                                    <p class="mb-2 text-light" style="font-size: 12.5px;">
+                                        {{ __('Install the official standalone app to your device for instant launch, call ringing alerts, and hardware-secured biometric authentication.') }}
+                                    </p>
+                                    <div class="p-2 rounded mb-2 text-warning" style="background: rgba(254, 204, 86, 0.1); border: 1px dashed rgba(254, 204, 86, 0.4); font-size: 12px;">
+                                        <i class="fas fa-info-circle mr-1"></i> {{ __('Click "Install Application" below. If prompted by your browser, confirm "Install". You can also click the Install icon in the browser address bar.') }}
+                                    </div>
                                 </div>
                             </div>
                             <div class="text-muted small text-center">
@@ -334,9 +335,9 @@
                             </div>
                         </div>
                         <div class="modal-footer border-top py-2 px-4 justify-content-between" style="border-color: #1e293b !important;">
-                            <button type="button" class="btn btn-sm btn-outline-secondary text-light" data-dismiss="modal">{{ __('Got It') }}</button>
-                            <button type="button" class="btn btn-sm font-weight-bold" onclick="markClientPwaAsInstalled()" style="background: #fecc56; color: #0f172a; border-radius: 6px;">
-                                <i class="fas fa-check mr-1"></i> {{ __('I\'ve Added to Home Screen') }}
+                            <button type="button" class="btn btn-sm btn-outline-secondary text-light" data-dismiss="modal">{{ __('Close') }}</button>
+                            <button type="button" class="btn btn-sm font-weight-bold" id="btnModalDirectInstall" onclick="triggerDirectClientInstall()" style="background: #fecc56; color: #0f172a; border-radius: 6px;">
+                                <i class="fas fa-download mr-1"></i> {{ __('Install Application') }}
                             </button>
                         </div>
                     </div>
@@ -824,25 +825,52 @@
         }
     }
 
+    window.triggerDirectClientInstall = async function() {
+        const prompt = window.__appInstallPrompt || deferredClientPrompt;
+        if (prompt) {
+            try {
+                prompt.prompt();
+                const { outcome } = await prompt.userChoice;
+                if (outcome === 'accepted') {
+                    localStorage.setItem('client_pwa_installed', 'true');
+                    if (clientBanner) clientBanner.remove();
+                    if (typeof $ !== 'undefined') $('#clientPwaGuideModal').modal('hide');
+                }
+                window.__appInstallPrompt = null;
+                deferredClientPrompt = null;
+                return;
+            } catch(err) {
+                console.warn('Install prompt execution error:', err);
+            }
+        }
+        if (isIos) {
+            if (typeof $ !== 'undefined') $('#clientPwaGuideModal').modal('show');
+        } else {
+            alert("{{ __('Please click the Install icon in your browser address bar or menu (⋮) to install this app.') }}");
+        }
+    };
+
     if (clientInstallBtn) {
         clientInstallBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (deferredClientPrompt) {
+            const prompt = window.__appInstallPrompt || deferredClientPrompt;
+            if (prompt) {
                 try {
-                    deferredClientPrompt.prompt();
-                    const { outcome } = await deferredClientPrompt.userChoice;
+                    prompt.prompt();
+                    const { outcome } = await prompt.userChoice;
                     if (outcome === 'accepted') {
                         localStorage.setItem('client_pwa_installed', 'true');
                         if (clientBanner) clientBanner.remove();
                     }
+                    window.__appInstallPrompt = null;
                     deferredClientPrompt = null;
                     return;
                 } catch(err) {
                     console.warn('Install prompt error:', err);
                 }
             }
-            // Fallback: Show clear step-by-step installation instructions modal
+            // If iOS or prompt pending, open guide modal
             if (typeof $ !== 'undefined') {
                 $('#clientPwaGuideModal').modal('show');
             } else {

@@ -15,8 +15,8 @@
         @include('backend.menus.left-menu')
         <!------------------------------------------------------------------------------------------------>
         <div class="container-fluid" style="overflow-x: hidden;">
-            <!-- Mobile Admin PWA Install Notification (High-Contrast Command Pill with Header Clearance) -->
-            <div id="adminPwaInstallBanner" class="alert d-none my-3 shadow border-0 d-flex flex-wrap align-items-center justify-content-between py-2 px-3" style="border-radius: 10px; background: #0f172a !important; border: 1.5px solid #6366f1 !important; color: #ffffff !important; margin-top: 85px !important; margin-bottom: 16px !important; position: relative; z-index: 990; box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;">
+            <!-- Mobile & Desktop Admin PWA Install Notification (Correct Header & Sidebar Clearance) -->
+            <div id="adminPwaInstallBanner" class="alert d-none shadow border-0 d-flex flex-wrap align-items-center justify-content-between py-2 px-3" style="border-radius: 10px; background: #0f172a !important; border: 1.5px solid #6366f1 !important; color: #ffffff !important; position: relative; z-index: 1025; box-shadow: 0 4px 20px rgba(0,0,0,0.5) !important;">
                 <div class="d-flex align-items-center my-1" style="min-width: 0;">
                     <i class="fas fa-shield-alt text-warning mr-2" style="font-size: 1.15rem; color: #f59e0b !important; flex-shrink: 0;"></i>
                     <span class="small font-weight-bold" style="color: #ffffff !important; font-size: 12.5px;">{{ __('Install Admin Command App for instant mobile firm oversight, staff supervision & live client chat') }}</span>
@@ -62,12 +62,11 @@
                             </div>
                             <div id="adminPwaGenericGuide">
                                 <div class="p-3 mb-3 rounded" style="background: #1e293b; border: 1px solid #334155;">
-                                    <strong class="text-white d-block mb-2"><i class="fas fa-mobile-alt mr-1 text-warning"></i> {{ __('How to install on Android / Chrome / Edge') }}:</strong>
-                                    <ol class="pl-3 mb-0" style="color: #cbd5e1;">
-                                        <li class="mb-2">{{ __('Tap the browser menu') }} (<strong class="text-white">&#8942;</strong> {{ __('or') }} <strong class="text-white">&#8230;</strong>) {{ __('in the corner of your browser.') }}</li>
-                                        <li class="mb-2">{{ __('Tap') }} <strong class="text-white">{{ __('Install app') }}</strong> {{ __('or') }} <strong class="text-white">{{ __('Add to Home screen') }}</strong>.</li>
-                                        <li>{{ __('Confirm when prompted to place the app icon directly on your device.') }}</li>
-                                    </ol>
+                                    <strong class="text-white d-block mb-2"><i class="fas fa-desktop mr-1 text-warning"></i> {{ __('Android & Desktop Installation') }}:</strong>
+                                    <p class="mb-2" style="color: #cbd5e1;">{{ __('Install the Admin Command App directly on your Android, Windows, or Mac device. Operates in standalone window mode with real-time push alerts, ringing incoming call alerts, and staff oversight.') }}</p>
+                                    <button type="button" class="btn btn-warning btn-block font-weight-bold text-dark my-2 py-2" onclick="triggerDirectAdminInstall()" style="border-radius: 8px;">
+                                        <i class="fas fa-download mr-1"></i> {{ __('Install Application Now') }}
+                                    </button>
                                 </div>
                             </div>
                             <div class="text-muted small text-center">
@@ -101,7 +100,47 @@
 
     <!-- Admin Portal Global Mobile Responsiveness Overhaul -->
     <style>
+    /* PWA Banner Position & Layout Alignment across all screen widths */
+    #adminPwaInstallBanner {
+        margin-top: 85px !important;
+        margin-bottom: 16px !important;
+        margin-left: 18.5% !important;
+        width: calc(81.5% - 24px) !important;
+    }
+    #wrapper.toggled #adminPwaInstallBanner {
+        margin-left: 80px !important;
+        width: calc(100% - 96px) !important;
+    }
+
+    /* Mobile-first Toastr Notifications */
+    #toast-container {
+        z-index: 999999 !important;
+    }
+    @media (max-width: 768px) {
+        #toast-container {
+            top: 75px !important;
+            right: 12px !important;
+            left: 12px !important;
+            width: auto !important;
+            max-width: calc(100vw - 24px) !important;
+        }
+        #toast-container > div {
+            width: 100% !important;
+            margin-bottom: 8px !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.5) !important;
+        }
+    }
+
     @media (max-width: 991.98px) {
+        #adminPwaInstallBanner {
+            margin-left: 80px !important;
+            width: calc(100% - 96px) !important;
+        }
+        #wrapper.toggled #adminPwaInstallBanner {
+            margin-left: 8px !important;
+            width: calc(100% - 16px) !important;
+        }
         #wrapper-header .navbar {
             padding-left: 8px !important;
             padding-right: 8px !important;
@@ -121,6 +160,12 @@
     @media (max-width: 767.98px) {
         body {
             overflow-x: hidden !important;
+        }
+        #adminPwaInstallBanner {
+            margin-left: 6px !important;
+            margin-right: 6px !important;
+            width: calc(100% - 12px) !important;
+            margin-top: 80px !important;
         }
         .container-fluid {
             padding-left: 6px !important;
@@ -189,9 +234,11 @@
             z-index: 1070 !important;
             transform: none !important;
         }
-        /* Button groups flex wrap */
+        /* Button groups and action toolbars flex wrap */
+        .btn-toolbar,
         .btn-group,
-        .d-flex.align-items-center {
+        .action-buttons-wrap,
+        .filter-bar-wrap {
             flex-wrap: wrap !important;
             gap: 6px !important;
         }
@@ -367,18 +414,45 @@
             }
         }
 
+        window.triggerDirectAdminInstall = async function() {
+            const prompt = window.__appInstallPrompt || deferredAdminPrompt;
+            if (prompt) {
+                try {
+                    prompt.prompt();
+                    const { outcome } = await prompt.userChoice;
+                    if (outcome === 'accepted') {
+                        localStorage.setItem('admin_pwa_installed', 'true');
+                        if (adminBanner) adminBanner.remove();
+                        if (typeof $ !== 'undefined') $('#adminPwaGuideModal').modal('hide');
+                    }
+                    window.__appInstallPrompt = null;
+                    deferredAdminPrompt = null;
+                    return;
+                } catch(err) {
+                    console.warn('Install prompt execution error:', err);
+                }
+            }
+            if (isIos) {
+                if (typeof $ !== 'undefined') $('#adminPwaGuideModal').modal('show');
+            } else {
+                alert("{{ __('Please click the Install icon in your browser address bar or menu (⋮) to install the Admin app.') }}");
+            }
+        };
+
         if (adminInstallBtn) {
             adminInstallBtn.addEventListener('click', async (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                if (deferredAdminPrompt) {
+                const prompt = window.__appInstallPrompt || deferredAdminPrompt;
+                if (prompt) {
                     try {
-                        deferredAdminPrompt.prompt();
-                        const { outcome } = await deferredAdminPrompt.userChoice;
+                        prompt.prompt();
+                        const { outcome } = await prompt.userChoice;
                         if (outcome === 'accepted') {
                             localStorage.setItem('admin_pwa_installed', 'true');
                             if (adminBanner) adminBanner.remove();
                         }
+                        window.__appInstallPrompt = null;
                         deferredAdminPrompt = null;
                         return;
                     } catch(err) {

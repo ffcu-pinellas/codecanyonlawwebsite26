@@ -2,6 +2,7 @@
   "id": "/staff-workspace",
   "name": "Your CPA Expert - Staff Workspace",
   "short_name": "Staff Workspace",
+  "description": "Secure Staff Workspace for case processing, task tracking, compensation ledger and secure internal communications.",
   "start_url": "/staff/dashboard",
   "scope": "/",
   "display": "standalone",
@@ -10,16 +11,22 @@
   "orientation": "any",
   "icons": [
     {
-      "src": "/upload/settings/logo.png",
+      "src": "/assets/images/icons/staff-icon-192.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
-      "src": "/upload/settings/logo.png",
+      "src": "/assets/images/icons/staff-icon-512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/images/icons/staff-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

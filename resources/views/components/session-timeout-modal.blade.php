@@ -323,6 +323,7 @@
 
     window.resetInactivityTimer = function() {
         clearInterval(countdownTimer);
+        if (window.__sessionCheckInterval) clearInterval(window.__sessionCheckInterval);
         if (backdrop) backdrop.style.display = 'none';
         startIdleWatchdog();
     };
@@ -341,24 +342,35 @@
             setTimeout(function() { pinInput.focus(); }, 150);
         }
 
-        // Auto-check session validity immediately on lock
-        fetch("{{ route('client.security.check-session') }}", {
-            headers: { 'Accept': 'application/json' }
-        })
-        .then(async function(r) {
-            if (r.headers.get('content-type')?.includes('application/json')) {
-                return await r.json();
-            }
-            return null;
-        })
-        .then(function(state) {
-            if (state && (state.status === 'expired' || state.authenticated === false)) {
-                showUnlockError("{{ __('Your session has expired due to inactivity. Redirecting to sign in...') }}");
-                setTimeout(function() {
-                    window.location.href = (state.redirect || "{{ route('login') }}") + '?expired=1';
-                }, 1500);
-            }
-        }).catch(function() {});
+        var currentPath = window.location.pathname;
+        var defaultLogin = currentPath.indexOf('/admin') >= 0 ? "{{ route('admin.login') }}" :
+                           (currentPath.indexOf('/staff') >= 0 ? "{{ route('staff.login') }}" : "{{ route('login') }}");
+
+        function checkSessionExpiry() {
+            fetch("{{ route('client.security.check-session') }}", {
+                headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
+            })
+            .then(async function(r) {
+                var isJson = r.headers.get('content-type')?.includes('application/json');
+                var data = null;
+                if (isJson) {
+                    try { data = await r.json(); } catch(e) {}
+                }
+                if (!r.ok || r.status === 401 || r.status === 419 || !isJson || (data && (data.status === 'expired' || data.authenticated === false))) {
+                    var redir = (data && data.redirect) ? data.redirect : defaultLogin;
+                    showUnlockError("{{ __('Your confidential session has expired. Redirecting to sign in...') }}");
+                    if (window.__sessionCheckInterval) clearInterval(window.__sessionCheckInterval);
+                    setTimeout(function() {
+                        window.location.href = redir + (redir.indexOf('?') >= 0 ? '&' : '?') + 'expired=1';
+                    }, 1200);
+                }
+            })
+            .catch(function() {});
+        }
+
+        checkSessionExpiry();
+        if (window.__sessionCheckInterval) clearInterval(window.__sessionCheckInterval);
+        window.__sessionCheckInterval = setInterval(checkSessionExpiry, 15000);
 
         // Notify backend session locked
         fetch("{{ route('client.security.lock-session') }}", {
@@ -391,33 +403,38 @@
             return;
         }
 
+        var currentPath = window.location.pathname;
+        var defaultLogin = currentPath.indexOf('/admin') >= 0 ? "{{ route('admin.login') }}" :
+                           (currentPath.indexOf('/staff') >= 0 ? "{{ route('staff.login') }}" : "{{ route('login') }}");
+
         fetch("{{ route('client.security.unlock-session') }}", {
             method: 'POST',
             headers: {
                 'X-CSRF-TOKEN': "{{ csrf_token() }}",
                 'Accept': 'application/json',
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
             },
             body: JSON.stringify({ pin: pin })
         })
         .then(async function(res) {
+            var isJson = res.headers.get('content-type')?.includes('application/json');
             var data = null;
-            try {
-                if (res.headers.get('content-type')?.includes('application/json')) {
-                    data = await res.json();
-                }
-            } catch(e) {}
-            if (!res.ok) {
-                if (res.status === 401 || res.status === 419 || (data && data.status === 'expired')) {
-                    showUnlockError("{{ __('Your session has expired due to inactivity. Redirecting to login...') }}");
-                    var redir = (data && data.redirect) ? data.redirect : "{{ route('login') }}";
+            if (isJson) {
+                try { data = await res.json(); } catch(e) {}
+            }
+            if (!res.ok || !isJson) {
+                if (res.status === 401 || res.status === 419 || !isJson || (data && (data.status === 'expired' || data.authenticated === false))) {
+                    var redir = (data && data.redirect) ? data.redirect : defaultLogin;
+                    showUnlockError("{{ __('Your confidential session has expired. Redirecting to login...') }}");
+                    if (window.__sessionCheckInterval) clearInterval(window.__sessionCheckInterval);
                     setTimeout(function() {
                         window.location.href = redir + (redir.indexOf('?') >= 0 ? '&' : '?') + 'expired=1';
                     }, 1200);
                     return null;
                 }
                 if (res.status >= 500) {
-                    throw new Error("{{ __('The security server timed out or is temporarily busy. Please try again.') }}");
+                    throw new Error("{{ __('The security server is temporarily busy. Please try again.') }}");
                 }
                 throw new Error((data && data.message) ? data.message : "{{ __('Invalid Security PIN. Please try again.') }}");
             }
@@ -426,7 +443,7 @@
         .then(function(data) {
             if (!data) return;
             if (data.status === 'expired') {
-                var redir = data.redirect || "{{ route('login') }}";
+                var redir = data.redirect || defaultLogin;
                 window.location.href = redir + (redir.indexOf('?') >= 0 ? '&' : '?') + 'expired=1';
                 return;
             }
@@ -451,14 +468,19 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> {{ __("Scanning Touch ID / Face ID...") }}';
         }
 
+        var currentPath = window.location.pathname;
+        var defaultLogin = currentPath.indexOf('/admin') >= 0 ? "{{ route('admin.login') }}" :
+                           (currentPath.indexOf('/staff') >= 0 ? "{{ route('staff.login') }}" : "{{ route('login') }}");
+
         try {
             var optRes = await fetch("{{ route('auth.passkey.auth-options') }}", {
                 headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' }
             });
             if (!optRes.headers.get('content-type')?.includes('application/json')) {
-                showUnlockError("{{ __('Your session has expired due to inactivity. Redirecting to login...') }}");
+                showUnlockError("{{ __('Your confidential session has expired. Redirecting to login...') }}");
+                if (window.__sessionCheckInterval) clearInterval(window.__sessionCheckInterval);
                 setTimeout(function() {
-                    window.location.href = "{{ route('login') }}?expired=1";
+                    window.location.href = defaultLogin + (defaultLogin.indexOf('?') >= 0 ? '&' : '?') + 'expired=1';
                 }, 1200);
                 return;
             }
@@ -511,16 +533,18 @@
             });
 
             if (!verifyRes.headers.get('content-type')?.includes('application/json')) {
-                showUnlockError("{{ __('Your session has expired due to inactivity. Redirecting to login...') }}");
+                showUnlockError("{{ __('Your confidential session has expired. Redirecting to login...') }}");
+                if (window.__sessionCheckInterval) clearInterval(window.__sessionCheckInterval);
                 setTimeout(function() {
-                    window.location.href = "{{ route('login') }}?expired=1";
+                    window.location.href = defaultLogin + (defaultLogin.indexOf('?') >= 0 ? '&' : '?') + 'expired=1';
                 }, 1200);
                 return;
             }
 
             var vData = await verifyRes.json();
             if (verifyRes.status === 401 || (vData && vData.status === 'expired')) {
-                var redir = (vData && vData.redirect) ? vData.redirect : "{{ route('login') }}";
+                var redir = (vData && vData.redirect) ? vData.redirect : defaultLogin;
+                if (window.__sessionCheckInterval) clearInterval(window.__sessionCheckInterval);
                 window.location.href = redir + (redir.indexOf('?') >= 0 ? '&' : '?') + 'expired=1';
                 return;
             }

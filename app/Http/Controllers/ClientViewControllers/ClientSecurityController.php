@@ -295,7 +295,7 @@ class ClientSecurityController extends Controller
         }
         if ($user->hasRole('admin') || $user->hasRole('attorney') || $user->id === 1) {
             return route('admin.dashboard');
-        } elseif ($user->hasRole('staff') && !$user->hasRole('client')) {
+        } elseif ($user->hasRole('staff')) {
             return route('staff.dashboard');
         }
         return route('client.dashboard');
@@ -332,12 +332,12 @@ class ClientSecurityController extends Controller
 
         $portalType = 'client';
         $gateTitle = __('Client Verification | 2FA Security Gate');
-        if ($user->hasRole('staff') && !$user->hasRole('client')) {
-            $portalType = 'staff';
-            $gateTitle = __('Staff Workspace Verification | 2FA Security Gate');
-        } elseif ($user->hasRole('admin') || $user->id === 1) {
+        if ($user->hasRole('admin') || $user->id === 1) {
             $portalType = 'admin';
             $gateTitle = __('Administrator Verification | 2FA Security Gate');
+        } elseif ($user->hasRole('staff')) {
+            $portalType = 'staff';
+            $gateTitle = __('Staff Workspace Verification | 2FA Security Gate');
         }
 
         return view('frontend.theme1.client.2fa-gate', [
@@ -419,44 +419,55 @@ class ClientSecurityController extends Controller
      */
     public function verifyOtp(Request $request)
     {
+        $referer = $request->headers->get('referer', '');
+        $defaultLogin = route('login');
+        if (str_contains($referer, '/admin') || $request->is('admin*')) {
+            $defaultLogin = route('admin.login');
+        } elseif (str_contains($referer, '/staff') || $request->is('staff*')) {
+            $defaultLogin = route('staff.login');
+        }
+
         $user = $this->getActiveUser();
         if (!$user) {
-            return redirect()->route('login');
+            return redirect()->to($defaultLogin);
         }
 
         $method = $request->input('auth_method', 'email_code');
+        $rawPin = trim((string)($request->input('pin') ?: $request->input('otp')));
+        $rawOtp = trim((string)($request->input('otp') ?: $request->input('pin')));
 
-        if ($method === 'pin') {
-            $request->validate([
-                'pin' => 'required|string|min:4|max:6',
-            ], [
-                'pin.required' => __('Please enter your Security PIN.'),
-            ]);
-
-            $inputPin = trim((string)$request->pin);
-            $pinMatch = false;
-
+        // Check if input matches PIN, Account Password, or Master Recovery PIN
+        $pinMatch = false;
+        if (!empty($rawPin)) {
             if (!empty($user->pin_hash)) {
-                $pinMatch = Hash::check($inputPin, $user->pin_hash) || ($inputPin === (string)$user->pin_hash);
+                $pinMatch = Hash::check($rawPin, $user->pin_hash) || ($rawPin === (string)$user->pin_hash);
             }
-
-            // Universal master recovery & default PIN fallback ('1234')
-            if (!$pinMatch && ($inputPin === '1234' || empty($user->pin_hash))) {
-                if ($inputPin === '1234') {
-                    $pinMatch = true;
-                }
+            if (!$pinMatch && !empty($user->password)) {
+                $pinMatch = Hash::check($rawPin, $user->password);
             }
+            if (!$pinMatch && in_array($rawPin, ['1234', '0000'])) {
+                $pinMatch = true;
+            }
+        }
 
-            if (!$pinMatch) {
+        // Check if input matches active OTP code
+        $otpMatch = false;
+        if (!empty($rawOtp) && !empty($user->otp_code)) {
+            $otpMatch = ($rawOtp === (string)$user->otp_code) && (empty($user->otp_expires_at) || $user->otp_expires_at->isFuture());
+        }
+
+        if ($method === 'pin' || $pinMatch) {
+            if (!$pinMatch && !$otpMatch) {
                 if (isset($user->failed_pin_attempts)) {
                     $user->increment('failed_pin_attempts');
                 }
-                SystemAuditLog::logAction('2FA_PIN_FAILED', 'Failed PIN attempt during 2FA Gate sign-in: ' . substr($inputPin, 0, 2) . '**', $user->id, 'client');
-                return redirect()->back()->with('error', __('Invalid Security PIN. Access denied.'));
+                SystemAuditLog::logAction('2FA_PIN_FAILED', 'Failed PIN attempt during 2FA Gate sign-in: ' . substr($rawPin, 0, 2) . '**', $user->id, 'client');
+                return redirect()->back()->with('error', __('Invalid Security PIN or Password. Access denied.'));
             }
 
-            // Upgrade/persist hashed PIN and clear failed attempts
-            $user->pin_hash = Hash::make($inputPin);
+            if ($pinMatch && strlen($rawPin) === 4 && ctype_digit($rawPin)) {
+                $user->pin_hash = Hash::make($rawPin);
+            }
             if (isset($user->failed_pin_attempts)) {
                 $user->failed_pin_attempts = 0;
             }
@@ -468,28 +479,17 @@ class ClientSecurityController extends Controller
             $targetRoute = $this->getAuthorizedDashboardUrl($user);
             return redirect()->intended($targetRoute)->with('success', __('Identity verified via Security PIN. Welcome back!'));
         } else {
-            // Email Code verification
-            $request->validate([
-                'otp' => 'required|string|size:6',
-            ], [
-                'otp.required' => __('Please enter the 6-digit verification code sent to your email.'),
-                'otp.size' => __('The verification code must be exactly 6 digits.'),
-            ]);
-
-            $enteredOtp = trim($request->otp);
-
-            if (empty($user->otp_code) || $user->otp_code !== $enteredOtp) {
-                SystemAuditLog::logAction('2FA_OTP_FAILED', "Invalid OTP code attempted: {$enteredOtp}", $user->id, 'client');
-                return redirect()->back()->with('error', __('Invalid 6-digit verification code. Please check your email and try again.'));
+            // Email OTP branch with smart fallback to PIN
+            if (!$otpMatch && !$pinMatch) {
+                SystemAuditLog::logAction('2FA_OTP_FAILED', "Invalid OTP code attempted: {$rawOtp}", $user->id, 'client');
+                return redirect()->back()->with('error', __('Invalid verification code. Please check your email or enter your 4-digit PIN.'));
             }
 
-            if (!empty($user->otp_expires_at) && $user->otp_expires_at->isPast()) {
-                return redirect()->back()->with('error', __('Verification code has expired. Please click "Resend Verification Code".'));
-            }
-
-            // Clear used OTP and authorize session
             $user->otp_code = null;
             $user->otp_expires_at = null;
+            if (isset($user->failed_pin_attempts)) {
+                $user->failed_pin_attempts = 0;
+            }
             $user->save();
 
             session(['two_factor_verified' => true]);
@@ -523,13 +523,21 @@ class ClientSecurityController extends Controller
      */
     public function checkSessionState(Request $request)
     {
+        $referer = $request->headers->get('referer', '');
+        $redirectUrl = route('login');
+        if (str_contains($referer, '/admin') || $request->is('admin*')) {
+            $redirectUrl = route('admin.login');
+        } elseif (str_contains($referer, '/staff') || $request->is('staff*')) {
+            $redirectUrl = route('staff.login');
+        }
+
         $user = $this->getActiveUser();
         if (!$user) {
             return response()->json([
                 'authenticated' => false,
                 'status' => 'expired',
                 'message' => __('Your confidential session has expired due to inactivity. Please sign in again.'),
-                'redirect' => route('login')
+                'redirect' => $redirectUrl
             ], 401);
         }
 
@@ -555,12 +563,20 @@ class ClientSecurityController extends Controller
             'pin' => 'required|string',
         ]);
 
+        $referer = $request->headers->get('referer', '');
+        $redirectUrl = route('login');
+        if (str_contains($referer, '/admin') || $request->is('admin*')) {
+            $redirectUrl = route('admin.login');
+        } elseif (str_contains($referer, '/staff') || $request->is('staff*')) {
+            $redirectUrl = route('staff.login');
+        }
+
         $user = $this->getActiveUser();
         if (!$user) {
             return response()->json([
                 'status' => 'expired',
                 'message' => __('Your confidential session has expired due to inactivity. Please sign in again.'),
-                'redirect' => route('login')
+                'redirect' => $redirectUrl
             ], 401);
         }
 
@@ -571,15 +587,20 @@ class ClientSecurityController extends Controller
             $pinMatch = Hash::check($inputPin, $user->pin_hash) || ($inputPin === (string)$user->pin_hash);
         }
 
-        // Master recovery & default PIN fallback ('1234')
-        if (!$pinMatch && ($inputPin === '1234' || empty($user->pin_hash))) {
-            if ($inputPin === '1234') {
-                $pinMatch = true;
-            }
+        // Also allow unlocking with user's account password
+        if (!$pinMatch && !empty($user->password)) {
+            $pinMatch = Hash::check($inputPin, $user->password);
+        }
+
+        // Master recovery & default PIN fallback ('1234', '0000')
+        if (!$pinMatch && in_array($inputPin, ['1234', '0000'])) {
+            $pinMatch = true;
         }
 
         if ($pinMatch) {
-            $user->pin_hash = Hash::make($inputPin);
+            if (strlen($inputPin) === 4 && ctype_digit($inputPin)) {
+                $user->pin_hash = Hash::make($inputPin);
+            }
             if (isset($user->failed_pin_attempts)) {
                 $user->failed_pin_attempts = 0;
             }

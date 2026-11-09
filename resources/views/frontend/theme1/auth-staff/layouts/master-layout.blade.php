@@ -266,12 +266,11 @@
                             </div>
                             <div id="staffPwaGenericGuide">
                                 <div class="p-3 mb-3 rounded" style="background: #1e293b; border: 1px solid #334155;">
-                                    <strong class="text-white d-block mb-2"><i class="fas fa-mobile-alt mr-1 text-warning"></i> {{ __('How to install on Android / Chrome / Edge') }}:</strong>
-                                    <ol class="pl-3 mb-0" style="color: #cbd5e1;">
-                                        <li class="mb-2">{{ __('Tap browser menu') }} (<strong class="text-white">&#8942;</strong> {{ __('or') }} <strong class="text-white">&#8230;</strong>) {{ __('in corner of browser.') }}</li>
-                                        <li class="mb-2">{{ __('Tap') }} <strong class="text-white">{{ __('Install app') }}</strong> {{ __('or') }} <strong class="text-white">{{ __('Add to Home screen') }}</strong>.</li>
-                                        <li>{{ __('Confirm to add Staff Workspace to your home screen or desktop.') }}</li>
-                                    </ol>
+                                    <strong class="text-white d-block mb-2"><i class="fas fa-desktop mr-1 text-warning"></i> {{ __('Android & Desktop Installation') }}:</strong>
+                                    <p class="mb-2" style="color: #cbd5e1;">{{ __('Install the Staff Workspace app directly on your Android, Windows, or Mac device. Operates in standalone window mode with real-time push alerts, sound chimes, task updates, and supervisor notifications.') }}</p>
+                                    <button type="button" class="btn btn-warning btn-block font-weight-bold text-dark my-2 py-2" onclick="triggerDirectStaffInstall()" style="border-radius: 8px;">
+                                        <i class="fas fa-download mr-1"></i> {{ __('Install Application Now') }}
+                                    </button>
                                 </div>
                             </div>
                             <div class="text-muted small text-center">
@@ -393,6 +392,29 @@
     }
     input::placeholder, textarea::placeholder { color: #64748b !important; }
 
+    /* Mobile-first Toastr Notifications (Prevent Header/Logo Overlap) */
+    #toast-container {
+        z-index: 999999 !important;
+    }
+    @media (max-width: 768px) {
+        #toast-container {
+            top: 75px !important;
+            right: 12px !important;
+            left: 12px !important;
+            width: auto !important;
+            max-width: calc(100vw - 24px) !important;
+        }
+        #toast-container > div {
+            width: 100% !important;
+            margin: 0 0 8px 0 !important;
+            padding: 12px 15px 12px 50px !important;
+            border-radius: 10px !important;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5) !important;
+            font-size: 13px !important;
+            line-height: 1.4 !important;
+        }
+    }
+
     /* Modal dark */
     .modal-content {
         background: #11151e !important;
@@ -408,6 +430,9 @@
     html.light-mode, body.light-mode {
         background-color: #f1f5f9 !important;
         color: #0f172a !important;
+    }
+    body.light-mode .border-secondary {
+        border-color: #e2e8f0 !important;
     }
     body.light-mode .staff-portal-wrapper {
         background-color: #f1f5f9 !important;
@@ -925,18 +950,45 @@
         }
     }
 
+    window.triggerDirectStaffInstall = async function() {
+        const prompt = window.__appInstallPrompt || deferredPwaPrompt;
+        if (prompt) {
+            try {
+                prompt.prompt();
+                const { outcome } = await prompt.userChoice;
+                if (outcome === 'accepted') {
+                    localStorage.setItem('staff_pwa_installed', 'true');
+                    if (pwaBanner) pwaBanner.remove();
+                    if (typeof $ !== 'undefined') $('#staffPwaGuideModal').modal('hide');
+                }
+                window.__appInstallPrompt = null;
+                deferredPwaPrompt = null;
+                return;
+            } catch(err) {
+                console.warn('Install prompt error:', err);
+            }
+        }
+        if (isIos) {
+            if (typeof $ !== 'undefined') $('#staffPwaGuideModal').modal('show');
+        } else {
+            alert("{{ __('Please click the Install icon in your browser address bar or menu (⋮) to install this app.') }}");
+        }
+    };
+
     if (pwaInstallBtn) {
         pwaInstallBtn.addEventListener('click', async (e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (deferredPwaPrompt) {
+            const prompt = window.__appInstallPrompt || deferredPwaPrompt;
+            if (prompt) {
                 try {
-                    deferredPwaPrompt.prompt();
-                    const { outcome } = await deferredPwaPrompt.userChoice;
+                    prompt.prompt();
+                    const { outcome } = await prompt.userChoice;
                     if (outcome === 'accepted') {
                         localStorage.setItem('staff_pwa_installed', 'true');
                         if (pwaBanner) pwaBanner.remove();
                     }
+                    window.__appInstallPrompt = null;
                     deferredPwaPrompt = null;
                     return;
                 } catch(err) {

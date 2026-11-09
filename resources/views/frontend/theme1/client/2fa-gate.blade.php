@@ -518,6 +518,21 @@
     var rawOtpInput = document.getElementById('rawOtpValue');
     var rawPinInput = document.getElementById('rawPinValue');
     var hiddenCatcher = document.getElementById('hiddenKeyboardCatcher');
+    var verifyForm = document.getElementById('verifyOtpForm');
+
+    if (verifyForm) {
+        verifyForm.addEventListener('submit', function() {
+            if (currentTab === 'pin') {
+                authMethodInput.value = 'pin';
+                rawPinInput.value = enteredDigits;
+                rawOtpInput.value = enteredDigits;
+            } else {
+                authMethodInput.value = 'email_code';
+                rawOtpInput.value = enteredDigits;
+                rawPinInput.value = enteredDigits;
+            }
+        });
+    }
 
     function renderBoxes() {
         boxesContainer.innerHTML = '';

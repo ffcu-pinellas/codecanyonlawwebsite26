@@ -20,6 +20,19 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="CPA Admin">
+
+    <!-- Early PWA Install Prompt & ServiceWorker Auto-Init -->
+    <script>
+        window.__appInstallPrompt = null;
+        window.addEventListener('beforeinstallprompt', function(e) {
+            e.preventDefault();
+            window.__appInstallPrompt = e;
+            window.dispatchEvent(new CustomEvent('appinstallready', { detail: e }));
+        });
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(function() {});
+        }
+    </script>
     <!-- BOOTSTRAP - V 4.0.0 -->
     <link rel="stylesheet" href="{{asset('/backend/assets/dist/css/bootstrap.min.css')}}" />
     <!-- MATERIAL ICONS -->

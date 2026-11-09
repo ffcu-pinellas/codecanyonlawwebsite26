@@ -89,7 +89,8 @@ class GeneralSettings extends Model
             curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query($payload));
             curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
             curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-            curl_setopt($ch, CURLOPT_TIMEOUT, 8);
+            curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 4);
             $response = curl_exec($ch);
             curl_close($ch);
 
@@ -114,7 +115,8 @@ class GeneralSettings extends Model
                 curl_setopt($ch2, CURLOPT_POSTFIELDS, http_build_query($plainPayload));
                 curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
                 curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER, false);
-                curl_setopt($ch2, CURLOPT_TIMEOUT, 8);
+                curl_setopt($ch2, CURLOPT_CONNECTTIMEOUT, 3);
+                curl_setopt($ch2, CURLOPT_TIMEOUT, 4);
                 $response2 = curl_exec($ch2);
                 curl_close($ch2);
 
