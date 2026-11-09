@@ -371,8 +371,9 @@ Route::prefix('/client')->middleware(['auth', 'security.setup'])->as('client.')-
     Route::get('/security/verify-otp', [ClientSecurityController::class, 'show2faGate'])->withoutMiddleware(['security.setup'])->name('security.verify-otp');
     Route::post('/security/verify-otp/check', [ClientSecurityController::class, 'verifyOtp'])->withoutMiddleware(['security.setup'])->name('security.verify-otp.check');
     Route::post('/security/verify-otp/resend', [ClientSecurityController::class, 'resendOtp'])->withoutMiddleware(['security.setup'])->name('security.verify-otp.resend');
-    Route::post('/security/lock-session', [ClientSecurityController::class, 'lockSession'])->name('security.lock-session');
-    Route::post('/security/unlock-session', [ClientSecurityController::class, 'unlockSession'])->name('security.unlock-session');
+    Route::post('/security/lock-session', [ClientSecurityController::class, 'lockSession'])->withoutMiddleware(['security.setup'])->name('security.lock-session');
+    Route::post('/security/unlock-session', [ClientSecurityController::class, 'unlockSession'])->withoutMiddleware(['security.setup'])->name('security.unlock-session');
+    Route::get('/security/check-session', [ClientSecurityController::class, 'checkSessionState'])->withoutMiddleware(['security.setup'])->name('security.check-session');
     Route::post('/security/biometric-unlock-session', [ClientSecurityController::class, 'biometricUnlockSession'])->withoutMiddleware(['security.setup'])->name('security.biometric-unlock-session');
     Route::post('/security/quick-register-passkey', [ClientSecurityController::class, 'quickRegisterPasskey'])->withoutMiddleware(['security.setup'])->name('security.quick-register-passkey');
 
@@ -477,6 +478,7 @@ Route::group(['prefix' => 'admin', 'as'=>'admin.', 'middleware' => ['auth', 'adm
     Route::post('/profile-info', [AdminController::class, 'profileInfoUpdate'])->name('profile-info');
     Route::post('/password-update', [UpdateUserPassword::class, 'updateAdminPassword'])->name('password-update');
     Route::post('/security/set-pin', [AdminController::class, 'updateSecurityPin'])->name('security.set-pin');
+    Route::get('/activity-poll', [AdminController::class, 'pollGlobalAdminActivity'])->name('activity-poll');
     Route::post('/delete-account', [AdminController::class, 'adminDelete'])->name('delete-account');
 
     // Contact us

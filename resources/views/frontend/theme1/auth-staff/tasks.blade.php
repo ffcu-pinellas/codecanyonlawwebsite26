@@ -13,8 +13,8 @@
     }
     .kanban-column {
         flex: 1;
-        min-width: 280px;
-        max-width: 340px;
+        min-width: 290px;
+        max-width: 440px;
         background: #11151e;
         border: 1px solid #28303f;
         border-radius: 12px;
@@ -108,35 +108,22 @@
         </div>
     </div>
 
-    <!-- Kanban Board -->
+    <!-- Operations Workflow Kanban Board (Intake -> Review -> Completed) -->
     <div class="kanban-board-container" id="kanbanBoard">
-        <!-- COLUMN 1: PENDING / BACKLOG -->
+        <!-- COLUMN 1: ASSIGNED / INTAKE -->
         <div class="kanban-column" data-status="pending">
             <div class="kanban-col-header" style="border-color: #f59e0b;">
                 <h6 class="kanban-col-title text-warning"><i class="fas fa-inbox mr-1"></i> {{ __('Assigned / Intake') }}</h6>
-                <span class="badge badge-warning text-dark font-weight-bold">{{ $tasks->where('status', 'pending')->count() }}</span>
+                <span class="badge badge-warning text-dark font-weight-bold">{{ $tasks->whereIn('status', ['pending', 'in_progress', 'todo'])->count() }}</span>
             </div>
             <div class="kanban-cards-wrapper" id="col-pending">
-                @foreach($tasks->where('status', 'pending') as $task)
+                @foreach($tasks->whereIn('status', ['pending', 'in_progress', 'todo']) as $task)
                     @include('frontend.theme1.auth-staff.partials.__kanban_card', ['task' => $task])
                 @endforeach
             </div>
         </div>
 
-        <!-- COLUMN 2: IN PROGRESS -->
-        <div class="kanban-column" data-status="in_progress">
-            <div class="kanban-col-header" style="border-color: #3b82f6;">
-                <h6 class="kanban-col-title text-primary"><i class="fas fa-spinner fa-spin mr-1"></i> {{ __('In Progress') }}</h6>
-                <span class="badge badge-primary font-weight-bold">{{ $tasks->where('status', 'in_progress')->count() }}</span>
-            </div>
-            <div class="kanban-cards-wrapper" id="col-in_progress">
-                @foreach($tasks->where('status', 'in_progress') as $task)
-                    @include('frontend.theme1.auth-staff.partials.__kanban_card', ['task' => $task])
-                @endforeach
-            </div>
-        </div>
-
-        <!-- COLUMN 3: REVIEW -->
+        <!-- COLUMN 2: SUPERVISOR & QUALITY REVIEW -->
         <div class="kanban-column" data-status="review">
             <div class="kanban-col-header" style="border-color: #8b5cf6;">
                 <h6 class="kanban-col-title" style="color: #8b5cf6;"><i class="fas fa-search mr-1"></i> {{ __('Supervisor & Quality Review') }}</h6>
@@ -149,7 +136,7 @@
             </div>
         </div>
 
-        <!-- COLUMN 4: COMPLETED / VERIFIED -->
+        <!-- COLUMN 3: COMPLETED & VERIFIED -->
         <div class="kanban-column" data-status="completed">
             <div class="kanban-col-header" style="border-color: #10b981;">
                 <h6 class="kanban-col-title text-success"><i class="fas fa-check-circle mr-1"></i> {{ __('Completed & Verified') }}</h6>

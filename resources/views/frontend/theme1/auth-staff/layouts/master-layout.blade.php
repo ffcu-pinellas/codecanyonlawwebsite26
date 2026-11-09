@@ -2,6 +2,7 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark-mode">
 
 @include('frontend.theme1.auth-client.layouts.head')
+<link rel="manifest" href="{{ asset('staff-manifest.json') }}">
 
 <body id="body" class="dark-mode" style="background-color: #0a0c10 !important; color: #f1f5f9; min-height: 100vh; overflow-x: hidden;">
 @include('components.impersonation-bar')
@@ -398,6 +399,66 @@
         color: #0f172a !important;
     }
 
+    /* Staff Operations & Quick Action Tiles light mode */
+    body.light-mode .action-tile {
+        background: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #0f172a !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+    }
+    body.light-mode .action-tile:hover {
+        background: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .action-tile .font-weight-bold,
+    body.light-mode .action-tile .text-white {
+        color: #0f172a !important;
+    }
+    body.light-mode .action-tile .text-muted {
+        color: #64748b !important;
+    }
+    body.light-mode .icon-blue { background: #eff6ff !important; color: #2563eb !important; }
+    body.light-mode .icon-green { background: #f0fdf4 !important; color: #16a34a !important; }
+    body.light-mode .icon-gold { background: #fefce8 !important; color: #d97706 !important; }
+    body.light-mode .icon-purple { background: #faf5ff !important; color: #9333ea !important; }
+
+    /* Staff Notification Menu Mobile & Light Mode Styling */
+    @media (max-width: 767.98px) {
+        #staffNotificationMenu {
+            position: fixed !important;
+            top: 56px !important;
+            left: 12px !important;
+            right: 12px !important;
+            width: auto !important;
+            max-width: calc(100vw - 24px) !important;
+            transform: none !important;
+            margin: 0 !important;
+            z-index: 1060 !important;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.85) !important;
+        }
+    }
+    @media (min-width: 768px) {
+        #staffNotificationMenu {
+            right: 0 !important;
+            left: auto !important;
+        }
+    }
+    body.light-mode #staffNotificationMenu {
+        background: #ffffff !important;
+        border-color: #e2e8f0 !important;
+        color: #0f172a !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.12) !important;
+    }
+    body.light-mode #staffNotificationMenu .border-bottom,
+    body.light-mode #staffNotificationMenu .border-top {
+        background: #f8fafc !important;
+        border-color: #e2e8f0 !important;
+    }
+    body.light-mode #staffNotificationMenu .text-white {
+        color: #0f172a !important;
+    }
+
     /* PWA Banner light mode */
     body.light-mode #pwaInstallBanner {
         background: #eff6ff !important;
@@ -748,6 +809,15 @@
 
     if (isPwaInstalled && pwaBanner) {
         pwaBanner.remove();
+    }
+
+    if ('getInstalledRelatedApps' in navigator) {
+        navigator.getInstalledRelatedApps().then(apps => {
+            if (apps && apps.length > 0) {
+                localStorage.setItem('staff_pwa_installed', 'true');
+                if (pwaBanner) pwaBanner.remove();
+            }
+        }).catch(() => {});
     }
 
     window.addEventListener('appinstalled', () => {

@@ -692,4 +692,131 @@ class AdminController extends Controller
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
+
+    /**
+     * Real-time practice notifications and activity polling for Admin
+     */
+    public function pollGlobalAdminActivity(Request $request)
+    {
+        try {
+            $lastCheckTime = $request->input('last_check', now()->subSeconds(10)->timestamp);
+            $lastCheck = \Carbon\Carbon::createFromTimestamp($lastCheckTime);
+
+            $unreadClientMsgs = \App\Models\Message::where('user_id', '!=', Auth::id())
+                ->where('read', false)
+                ->count();
+
+            $unreadStaffMsgs = \App\Models\StaffMessage::where('sender_id', '!=', Auth::id())
+                ->where('read', false)
+                ->count();
+
+            $pendingTasksReview = \App\Models\StaffTask::where('status', 'review')->count();
+            $pendingPayouts = \App\Models\StaffPayoutRequest::where('status', 'pending')->count();
+            $pendingInvoiceProofs = \App\Models\Invoice::where('status', 'pending_proof')->count();
+
+            // Detect any new item created or updated since last check
+            $newEvent = null;
+
+            // 1. New client message
+            $latestMsg = \App\Models\Message::where('user_id', '!=', Auth::id())
+                ->where('created_at', '>', $lastCheck)
+                ->latest()
+                ->first();
+            if ($latestMsg) {
+                $senderName = $latestMsg->user ? $latestMsg->user->name : 'Client';
+                $convoSlug = $latestMsg->conversation ? $latestMsg->conversation->slug : '';
+                $newEvent = [
+                    'type' => 'client_message',
+                    'title' => 'New Message from ' . $senderName,
+                    'body' => \Illuminate\Support\Str::limit($latestMsg->text ?: 'Sent an attachment', 100),
+                    'url' => $convoSlug ? url('admin/conversation/get-conversation/' . $convoSlug) : url('admin/conversation'),
+                ];
+            }
+
+            // 2. New staff message
+            if (!$newEvent) {
+                $latestStaffMsg = \App\Models\StaffMessage::where('sender_id', '!=', Auth::id())
+                    ->where('created_at', '>', $lastCheck)
+                    ->latest()
+                    ->first();
+                if ($latestStaffMsg) {
+                    $staffSender = $latestStaffMsg->sender ? $latestStaffMsg->sender->name : 'Staff Member';
+                    $newEvent = [
+                        'type' => 'staff_message',
+                        'title' => 'Staff Message from ' . $staffSender,
+                        'body' => \Illuminate\Support\Str::limit($latestStaffMsg->message, 100),
+                        'url' => url('admin/staff/messages/' . $latestStaffMsg->staff_user_id),
+                    ];
+                }
+            }
+
+            // 3. New task submitted for review
+            if (!$newEvent) {
+                $latestReviewTask = \App\Models\StaffTask::where('status', 'review')
+                    ->where('updated_at', '>', $lastCheck)
+                    ->latest('updated_at')
+                    ->first();
+                if ($latestReviewTask) {
+                    $staffUser = $latestReviewTask->user ? $latestReviewTask->user->name : 'Staff';
+                    $newEvent = [
+                        'type' => 'task_review',
+                        'title' => 'Task Submitted for Review',
+                        'body' => $staffUser . ' submitted deliverables for: ' . $latestReviewTask->title,
+                        'url' => url('admin/staff/tasks'),
+                    ];
+                }
+            }
+
+            // 4. New payout request
+            if (!$newEvent) {
+                $latestPayout = \App\Models\StaffPayoutRequest::where('status', 'pending')
+                    ->where('created_at', '>', $lastCheck)
+                    ->latest()
+                    ->first();
+                if ($latestPayout) {
+                    $staffUser = $latestPayout->user ? $latestPayout->user->name : 'Staff';
+                    $newEvent = [
+                        'type' => 'payout_request',
+                        'title' => 'New Staff Payout Request ($' . number_format($latestPayout->amount, 2) . ')',
+                        'body' => $staffUser . ' requested payout: $' . number_format($latestPayout->amount, 2),
+                        'url' => url('admin/staff/payouts'),
+                    ];
+                }
+            }
+
+            // 5. New payment proof submitted
+            if (!$newEvent) {
+                $latestProof = \App\Models\Invoice::where('status', 'pending_proof')
+                    ->where('updated_at', '>', $lastCheck)
+                    ->latest('updated_at')
+                    ->first();
+                if ($latestProof) {
+                    $clientName = $latestProof->client ? $latestProof->client->name : 'Client';
+                    $newEvent = [
+                        'type' => 'payment_proof',
+                        'title' => 'Payment Proof Uploaded',
+                        'body' => $clientName . ' uploaded proof for Invoice #' . $latestProof->invoice_number,
+                        'url' => url('admin/invoices/' . $latestProof->id),
+                    ];
+                }
+            }
+
+            return response()->json([
+                'status' => 'ok',
+                'now' => now()->timestamp,
+                'counts' => [
+                    'unread_client_messages' => $unreadClientMsgs,
+                    'unread_staff_messages' => $unreadStaffMsgs,
+                    'total_unread_messages' => $unreadClientMsgs + $unreadStaffMsgs,
+                    'pending_tasks_review' => $pendingTasksReview,
+                    'pending_payouts' => $pendingPayouts,
+                    'pending_invoice_proofs' => $pendingInvoiceProofs,
+                    'total_attention_required' => $unreadClientMsgs + $unreadStaffMsgs + $pendingTasksReview + $pendingPayouts + $pendingInvoiceProofs,
+                ],
+                'new_event' => $newEvent,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 200);
+        }
+    }
 }

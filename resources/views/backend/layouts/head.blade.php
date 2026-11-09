@@ -14,6 +14,12 @@
     <!------------------------------------------------------------------------------------------------>
     <!-- Favicon -->
     <link href="{{ $logoFavicon?$logoFavicon->favicon:'' }}" rel="shortcut icon" type="image/png">
+    <!-- PWA Application Manifest -->
+    <link rel="manifest" href="{{ asset('admin-manifest.json') }}">
+    <meta name="theme-color" content="#1e3c72">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CPA Admin">
     <!-- BOOTSTRAP - V 4.0.0 -->
     <link rel="stylesheet" href="{{asset('/backend/assets/dist/css/bootstrap.min.css')}}" />
     <!-- MATERIAL ICONS -->

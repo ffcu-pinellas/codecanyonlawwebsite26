@@ -770,10 +770,28 @@ class AdminStaffController extends Controller
     {
         try {
             $staff = User::role('staff')->findOrFail($id);
+            $staffDetail = $staff->staffDetail;
             $entries = $staff->staffLedgerEntries()->orderBy('entry_date', 'desc')->orderBy('id', 'desc')->get();
             $title = __('Financial Ledger for ') . $staff->name;
 
-            return view('backend.pages.staff.ledger', compact('staff', 'entries', 'title'));
+            // Synchronized wage & payout metrics matching staff portal
+            $timeLogs = $staff->staffTimeLogs()->whereNotNull('clocked_out_at')->get();
+            $totalEarned = $timeLogs->sum('earned_amount');
+            $totalHoursWorked = round($timeLogs->sum('duration_seconds') / 3600, 2);
+
+            $netOwed = ($staffDetail->reimbursement ?? 0) + ($staffDetail->bonus ?? 0) - ($staffDetail->debt ?? 0);
+            $totalGross = $totalEarned + $netOwed;
+
+            $totalPaidOut = $staff->staffPayoutRequests()->whereIn('status', ['approved', 'paid'])->sum('amount');
+            $pendingPayouts = $staff->staffPayoutRequests()->where('status', 'pending')->sum('amount');
+            $availableBalance = max(0, $totalGross - $totalPaidOut - $pendingPayouts);
+            $payoutRequests = $staff->staffPayoutRequests()->orderBy('created_at', 'desc')->get();
+
+            return view('backend.pages.staff.ledger', compact(
+                'staff', 'staffDetail', 'entries', 'title',
+                'totalEarned', 'totalHoursWorked', 'netOwed', 'totalGross',
+                'totalPaidOut', 'pendingPayouts', 'availableBalance', 'payoutRequests'
+            ));
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }

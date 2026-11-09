@@ -80,6 +80,46 @@
             $netRemaining = $remReim + $remBonus - $remDebt;
         @endphp
 
+        <!-- Master Synchronized Balance Strip (In Sync with Staff Portal) -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card bg-dark border-warning" style="box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+                    <div class="card-body py-3">
+                        <div class="row text-center text-md-left align-items-center">
+                            <div class="col-md-3 mb-2 mb-md-0 border-right border-secondary">
+                                <small class="text-muted text-uppercase font-weight-bold d-block" style="font-size: 11px;">{{ __('Accumulated Wages (Shifts)') }}</small>
+                                <span class="font-weight-bold text-success" style="font-size: 1.6rem; font-family: 'Montserrat', sans-serif;">${{ number_format($totalEarned ?? 0, 2) }}</span>
+                                <small class="text-muted d-block">{{ $totalHoursWorked ?? 0 }} hrs logged &bull; ${{ number_format($staffDetail->hourly_rate ?? 0, 2) }}/hr</small>
+                            </div>
+                            <div class="col-md-3 mb-2 mb-md-0 border-right border-secondary">
+                                <small class="text-muted text-uppercase font-weight-bold d-block" style="font-size: 11px;">{{ __('Net Ledger Adjustments') }}</small>
+                                <span class="font-weight-bold @if(($netOwed ?? 0) >= 0) text-info @else text-danger @endif" style="font-size: 1.6rem; font-family: 'Montserrat', sans-serif;">
+                                    {{ ($netOwed ?? 0) >= 0 ? '+' : '' }}${{ number_format($netOwed ?? 0, 2) }}
+                                </span>
+                                <small class="text-muted d-block">{{ __('Reimbursements & Bonuses - Debts') }}</small>
+                            </div>
+                            <div class="col-md-3 mb-2 mb-md-0 border-right border-secondary">
+                                <small class="text-muted text-uppercase font-weight-bold d-block" style="font-size: 11px;">{{ __('Disbursed / Payout Holds') }}</small>
+                                <span class="font-weight-bold text-light" style="font-size: 1.4rem; font-family: 'Montserrat', sans-serif;">${{ number_format($totalPaidOut ?? 0, 2) }}</span>
+                                <small class="text-warning d-block">
+                                    @if(($pendingPayouts ?? 0) > 0)
+                                        <i class="fas fa-clock mr-1"></i>${{ number_format($pendingPayouts ?? 0, 2) }} Pending Hold
+                                    @else
+                                        {{ __('No pending holds') }}
+                                    @endif
+                                </small>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-warning text-uppercase font-weight-bold d-block" style="font-size: 11.5px; letter-spacing: 0.5px;">{{ __('Available Claimable Balance') }}</small>
+                                <span class="font-weight-bold text-warning" style="font-size: 1.8rem; font-family: 'Montserrat', sans-serif; text-shadow: 0 0 10px rgba(254,204,86,0.3);">${{ number_format($availableBalance ?? 0, 2) }}</span>
+                                <small class="text-muted d-block">{{ __('Live synchronized claimable amount') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Summary Statistics Row -->
         <div class="row mb-4">
             <div class="col-md-3">

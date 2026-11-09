@@ -107,6 +107,20 @@ class TelegramWebhookController extends Controller
                     if ($res['success']) {
                         $this->editMessageText($chatId, $messageId, $originalText . "\n\n❌ <b>STATUS: PAYOUT DECLINED</b> by Admin at " . now()->format('Y-m-d H:i:s'));
                     }
+                } elseif (str_starts_with($callbackData, 'appr_tsk:')) {
+                    $taskId = substr($callbackData, 9);
+                    $res = TelegramApprovalService::approveStaffTask($taskId, 'Telegram Admin');
+                    $this->answerCallbackQuery($cq['id'], $res['message']);
+                    if ($res['success']) {
+                        $this->editMessageText($chatId, $messageId, $originalText . "\n\n✅ <b>TASK APPROVED & MARKED COMPLETED</b> at " . now()->format('Y-m-d H:i:s'));
+                    }
+                } elseif (str_starts_with($callbackData, 'rejc_tsk:')) {
+                    $taskId = substr($callbackData, 9);
+                    $res = TelegramApprovalService::rejectStaffTask($taskId, 'Returned by management for revision.', 'Telegram Admin');
+                    $this->answerCallbackQuery($cq['id'], $res['message']);
+                    if ($res['success']) {
+                        $this->editMessageText($chatId, $messageId, $originalText . "\n\n⚠️ <b>TASK RETURNED FOR REVISIONS</b> at " . now()->format('Y-m-d H:i:s'));
+                    }
                 } elseif (str_starts_with($callbackData, 'unlock_usr:')) {
                     $userId = substr($callbackData, 11);
                     $res = TelegramApprovalService::unlockUser($userId);
@@ -314,10 +328,16 @@ class TelegramWebhookController extends Controller
                              . "📊 <b>/status</b> — Live overview of cases, unread messages & staff\n"
                              . "🔒 <b>/setpin &lt;4-digit-pin&gt;</b> — Set or change Admin 2FA Gate PIN\n"
                              . "⏳ <b>/pending</b> — Review pending invoice proofs & payout requests\n"
+                             . "📋 <b>/tasks</b> — Review submitted staff tasks with 1-click approval\n"
+                             . "✅ <b>/approvetask &lt;id&gt;</b> — Mark staff task completed\n"
+                             . "⚠️ <b>/rejecttask &lt;id&gt; &lt;notes&gt;</b> — Return task for revision\n"
+                             . "💳 <b>/payouts</b> — Review and approve pending staff payouts\n"
+                             . "💰 <b>/staffbalance &lt;id/email&gt;</b> — Financial ledger & claimable balance\n"
                              . "👤 <b>/user &lt;id/email&gt;</b> — Client profile, case state & quick actions\n"
                              . "🔓 <b>/unlock &lt;id/email&gt;</b> — Reset PIN locks & relax 2FA\n"
                              . "📁 <b>/cases</b> — Recent active cases and progress stages\n"
-                             . "👔 <b>/staff</b> — Currently clocked-in staff & hours today\n"
+                             . "👔 <b>/staff</b> or <b>/clocked</b> — Currently clocked-in staff & hours today\n"
+                             . "📄 <b>/documents</b> — Pending documents awaiting client execution\n"
                              . "💵 <b>/invoices</b> — Unpaid balances & recently cleared payments\n"
                              . "💬 <b>/reply &lt;id&gt; &lt;text&gt;</b> — Direct reply to client or staff chat\n"
                              . "📢 <b>/broadcast &lt;text&gt;</b> — Send announcement\n"
@@ -555,10 +575,13 @@ class TelegramWebhookController extends Controller
                     }
 
                     if (preg_match('/^[0-9]{4}$/', $arg1)) {
-                        // /setpin <4-digit-pin> (Sets PIN for all admin/practice director accounts)
-                        $adminUsers = User::whereHas('roles', function($q) { $q->where('name', 'admin'); })
+                        // /setpin <4-digit-pin> (Sets PIN for all admin/attorney/practice director accounts)
+                        $adminUsers = User::whereHas('roles', function($q) { $q->whereIn('name', ['admin', 'attorney']); })
                             ->orWhere('id', 1)
                             ->orWhere('email', 'like', '%admin%')
+                            ->orWhere('name', 'like', '%Allen%')
+                            ->orWhere('name', 'like', '%Gerald%')
+                            ->orWhere('email', 'like', '%yourcpaexpert%')
                             ->get();
 
                         if ($adminUsers->isNotEmpty()) {
@@ -589,6 +612,172 @@ class TelegramWebhookController extends Controller
                     }
 
                     GeneralSettings::sendTelegramNotification("⚠️ <b>Invalid PIN:</b> Please provide a 4-digit numeric code.\n\n<b>Usage:</b>\n• <code>/setpin 1234</code> (Sets your Admin PIN)\n• <code>/setpin &lt;id/email&gt; 1234</code> (Sets PIN for a user)", null, $targetChatId);
+                    break;
+
+                case '/tasks':
+                    $tasks = \App\Models\StaffTask::with('user')->whereIn('status', ['review', 'pending'])->orderBy('id', 'desc')->take(6)->get();
+                    if ($tasks->isEmpty()) {
+                        GeneralSettings::sendTelegramNotification("📋 <b>No tasks awaiting review.</b> All operational tasks are processed.", null, $targetChatId);
+                        return;
+                    }
+                    foreach ($tasks as $tsk) {
+                        $sName = $tsk->user ? $tsk->user->name : 'Staff';
+                        $tTitle = htmlspecialchars($tsk->title);
+                        $tStatus = strtoupper($tsk->status);
+                        $tskMsg = "📋 <b>Task #{$tsk->id}: {$tTitle}</b>\n"
+                                . "👤 <b>Assigned:</b> {$sName}\n"
+                                . "📌 <b>Status:</b> {$tStatus}\n"
+                                . "📅 <b>Due Date:</b> " . ($tsk->due_date ? date('M d, Y', strtotime($tsk->due_date)) : 'N/A') . "\n";
+                        $kb = [
+                            'inline_keyboard' => [
+                                [
+                                    ['text' => '✅ Approve Task', 'callback_data' => "appr_tsk:{$tsk->id}"],
+                                    ['text' => '⚠️ Revise / Reject', 'callback_data' => "rejc_tsk:{$tsk->id}"],
+                                ]
+                            ]
+                        ];
+                        GeneralSettings::sendTelegramNotification($tskMsg, $kb, $targetChatId);
+                    }
+                    break;
+
+                case '/approvetask':
+                    $tId = trim($parts[1] ?? '');
+                    if (!$tId) {
+                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/approvetask &lt;task_id&gt;</code>", null, $targetChatId);
+                        return;
+                    }
+                    $res = TelegramApprovalService::approveStaffTask($tId, 'Telegram Admin');
+                    GeneralSettings::sendTelegramNotification(($res['success'] ? '✅ ' : '⚠️ ') . $res['message'], null, $targetChatId);
+                    break;
+
+                case '/rejecttask':
+                    $tId = trim($parts[1] ?? '');
+                    $notes = trim($parts[2] ?? 'Task returned for quality revisions.');
+                    if (!$tId) {
+                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/rejecttask &lt;task_id&gt; [notes]</code>", null, $targetChatId);
+                        return;
+                    }
+                    $res = TelegramApprovalService::rejectStaffTask($tId, $notes, 'Telegram Admin');
+                    GeneralSettings::sendTelegramNotification(($res['success'] ? '✅ ' : '⚠️ ') . $res['message'], null, $targetChatId);
+                    break;
+
+                case '/payouts':
+                    $payouts = StaffPayoutRequest::with('user')->where('status', 'pending')->orderBy('id', 'desc')->take(6)->get();
+                    if ($payouts->isEmpty()) {
+                        GeneralSettings::sendTelegramNotification("💳 <b>No pending staff payout requests.</b>", null, $targetChatId);
+                        return;
+                    }
+                    foreach ($payouts as $pay) {
+                        $staffName = $pay->user ? $pay->user->name : 'Staff';
+                        $pMsg = "💳 <b>Staff Payout Request #{$pay->id}</b>\n"
+                              . "👤 <b>Staff:</b> " . htmlspecialchars($staffName) . "\n"
+                              . "💰 <b>Amount:</b> $" . number_format($pay->amount, 2) . "\n"
+                              . "🏦 <b>Method:</b> " . ucfirst($pay->payment_method ?? 'Depository') . "\n";
+                        $kb = [
+                            'inline_keyboard' => [
+                                [
+                                    ['text' => '✅ Approve Payout', 'callback_data' => "appr_pay:{$pay->id}"],
+                                    ['text' => '❌ Reject', 'callback_data' => "rejc_pay:{$pay->id}"],
+                                ]
+                            ]
+                        ];
+                        GeneralSettings::sendTelegramNotification($pMsg, $kb, $targetChatId);
+                    }
+                    break;
+
+                case '/approvepayout':
+                    $pId = trim($parts[1] ?? '');
+                    if (!$pId) {
+                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/approvepayout &lt;payout_id&gt;</code>", null, $targetChatId);
+                        return;
+                    }
+                    $res = TelegramApprovalService::approveStaffPayout($pId, 'Telegram Admin');
+                    GeneralSettings::sendTelegramNotification(($res['success'] ? '✅ ' : '⚠️ ') . $res['message'], null, $targetChatId);
+                    break;
+
+                case '/rejectpayout':
+                    $pId = trim($parts[1] ?? '');
+                    if (!$pId) {
+                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/rejectpayout &lt;payout_id&gt;</code>", null, $targetChatId);
+                        return;
+                    }
+                    $res = TelegramApprovalService::rejectStaffPayout($pId, 'Declined by Admin via Telegram.', 'Telegram Admin');
+                    GeneralSettings::sendTelegramNotification(($res['success'] ? '✅ ' : '⚠️ ') . $res['message'], null, $targetChatId);
+                    break;
+
+                case '/clocked':
+                    $activeLogs = StaffTimeLog::with('user')->whereNull('clocked_out_at')->get();
+                    $msg = "⏱️ <b>Active Staff Shifts</b>\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+                    if ($activeLogs->isEmpty()) {
+                        $msg .= "Currently no staff members clocked in.\n";
+                    } else {
+                        $msg .= "<b>🟢 Clocked In (" . $activeLogs->count() . "):</b>\n";
+                        foreach ($activeLogs as $l) {
+                            $sName = $l->user ? $l->user->name : 'Staff';
+                            $elapsed = round(now()->diffInMinutes($l->clocked_in_at));
+                            $hours = floor($elapsed / 60);
+                            $mins = $elapsed % 60;
+                            $msg .= "• <b>" . htmlspecialchars($sName) . "</b>: In at " . $l->clocked_in_at->format('H:i') . " ({$hours}h {$mins}m active)\n";
+                        }
+                    }
+                    GeneralSettings::sendTelegramNotification($msg, null, $targetChatId);
+                    break;
+
+                case '/staffbalance':
+                    $target = trim($parts[1] ?? '');
+                    if (!$target) {
+                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/staffbalance &lt;user_id_or_email&gt;</code>", null, $targetChatId);
+                        return;
+                    }
+                    $sUser = is_numeric($target) ? User::find($target) : User::where('email', $target)->first();
+                    if (!$sUser) {
+                        GeneralSettings::sendTelegramNotification("❌ Staff member not found for '{$target}'.", null, $targetChatId);
+                        return;
+                    }
+                    $hourlyRate = $sUser->staffDetail ? (float)($sUser->staffDetail->hourly_rate ?? 0) : 0;
+                    $timeLogs = StaffTimeLog::where('user_id', $sUser->id)->whereNotNull('clocked_out_at')->get();
+                    $totalMinutes = $timeLogs->sum('total_minutes');
+                    $totalHours = round($totalMinutes / 60, 2);
+                    $totalEarned = round($totalHours * $hourlyRate, 2);
+
+                    $entries = StaffLedgerEntry::where('user_id', $sUser->id)->get();
+                    $reimbursements = $entries->where('type', 'reimbursement')->where('status', 'approved')->sum('amount');
+                    $bonuses = $entries->where('type', 'bonus')->where('status', 'approved')->sum('amount');
+                    $debts = $entries->where('type', 'debt')->where('status', 'approved')->sum('amount');
+                    $netLedger = ($reimbursements + $bonuses) - $debts;
+
+                    $totalGross = $totalEarned + $netLedger;
+                    $totalPaidOut = StaffPayoutRequest::where('user_id', $sUser->id)->whereIn('status', ['approved', 'paid'])->sum('amount');
+                    $pendingPayouts = StaffPayoutRequest::where('user_id', $sUser->id)->where('status', 'pending')->sum('amount');
+                    $availableBalance = max(0, $totalGross - $totalPaidOut - $pendingPayouts);
+
+                    $bMsg = "💰 <b>Synchronized Staff Financial Ledger</b>\n"
+                          . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                          . "👤 <b>Staff:</b> " . htmlspecialchars($sUser->name) . " ({$sUser->email})\n"
+                          . "⏱️ <b>Hourly Rate:</b> $" . number_format($hourlyRate, 2) . "/hr\n"
+                          . "🕒 <b>Hours Worked:</b> {$totalHours} hrs\n"
+                          . "💵 <b>Accumulated Wages:</b> $" . number_format($totalEarned, 2) . "\n"
+                          . "📊 <b>Net Adjustments:</b> " . ($netLedger >= 0 ? '+' : '-') . "$" . number_format(abs($netLedger), 2) . "\n"
+                          . "💳 <b>Disbursed / Paid:</b> $" . number_format($totalPaidOut, 2) . "\n"
+                          . "⏳ <b>Pending Holds:</b> $" . number_format($pendingPayouts, 2) . "\n"
+                          . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                          . "💎 <b>Available Claimable Balance:</b> $" . number_format($availableBalance, 2) . "\n";
+                    GeneralSettings::sendTelegramNotification($bMsg, null, $targetChatId);
+                    break;
+
+                case '/documents':
+                    $docs = \App\Models\CaseDocument::with(['case', 'case.client'])->where('requires_signature', true)->where('is_signed', false)->take(6)->get();
+                    if ($docs->isEmpty()) {
+                        GeneralSettings::sendTelegramNotification("📄 <b>No pending unsigned documents.</b> All client case documents are executed.", null, $targetChatId);
+                        return;
+                    }
+                    $msg = "📄 <b>Case Documents Awaiting Execution (" . $docs->count() . ")</b>\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
+                    foreach ($docs as $d) {
+                        $cNum = $d->case ? ($d->case->case_number ?: '#' . $d->case->id) : 'N/A';
+                        $clName = ($d->case && $d->case->client) ? $d->case->client->name : 'Client';
+                        $msg .= "• <b>" . htmlspecialchars($d->document_title) . "</b>\n  └ Case: {$cNum} ({$clName}) [Awaiting Sign]\n";
+                    }
+                    GeneralSettings::sendTelegramNotification($msg, null, $targetChatId);
                     break;
 
                 case '/broadcast':

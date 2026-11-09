@@ -232,7 +232,7 @@
                 <!-- Biometric WebAuthn Unlock (Touch ID / Face ID / Windows Hello) -->
                 @php
                     $activeUserObj = Auth::guard('admin')->user() ?: Auth::user();
-                    $hasRegisteredBiometrics = $activeUserObj && !empty($activeUserObj->passkey_credentials) && is_array($activeUserObj->passkey_credentials) && count($activeUserObj->passkey_credentials) > 0;
+                    $hasRegisteredBiometrics = $activeUserObj && !empty($activeUserObj->passkey_credentials) && (is_array($activeUserObj->passkey_credentials) ? count($activeUserObj->passkey_credentials) > 0 : !empty(json_decode($activeUserObj->passkey_credentials, true)));
                 @endphp
                 <div class="mb-3">
                     <button type="button" class="btn btn-block py-2 font-weight-bold" id="btnTimeoutBiometricUnlock" onclick="unlockSessionWithBiometrics()" style="background: rgba(37, 99, 235, 0.15); color: #60a5fa; border: 1.5px solid rgba(96, 165, 250, 0.4); border-radius: 10px; font-size: 13px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;">
@@ -332,10 +332,28 @@
         if (warningView) warningView.style.display = 'none';
         if (lockedView) lockedView.style.display = 'block';
         if (backdrop) backdrop.style.display = 'flex';
+        if (localStorage.getItem('biometric_device_registered') === 'true') {
+            var setupRow = document.getElementById('sessionBiometricSetupRow');
+            if (setupRow) setupRow.style.display = 'none';
+        }
         if (pinInput) {
             pinInput.value = '';
             setTimeout(function() { pinInput.focus(); }, 150);
         }
+
+        // Auto-check session validity immediately on lock
+        fetch("{{ route('client.security.check-session') }}", {
+            headers: { 'Accept': 'application/json' }
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(state) {
+            if (state && (state.status === 'expired' || state.authenticated === false)) {
+                showUnlockError("{{ __('Your session has expired due to inactivity. Redirecting to sign in...') }}");
+                setTimeout(function() {
+                    window.location.href = (state.redirect || "{{ route('login') }}") + '?expired=1';
+                }, 1500);
+            }
+        }).catch(function() {});
 
         // Notify backend session locked
         fetch("{{ route('client.security.lock-session') }}", {
@@ -346,6 +364,20 @@
             }
         }).catch(function(){});
     };
+
+    function base64UrlToBytes(str) {
+        if (!str) return new Uint8Array(0);
+        var s = str.replace(/-/g, '+').replace(/_/g, '/');
+        while (s.length % 4 !== 0) {
+            s += '=';
+        }
+        var binary = atob(s);
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+    }
 
     window.submitSessionUnlockPin = function() {
         var pin = pinInput ? pinInput.value.trim() : '';
@@ -367,12 +399,15 @@
             var data = null;
             try { data = await res.json(); } catch(e) {}
             if (!res.ok) {
-                if (res.status === 401 || (data && data.status === 'expired')) {
+                if (res.status === 401 || res.status === 419 || (data && data.status === 'expired')) {
+                    showUnlockError("{{ __('Your session has expired due to inactivity. Redirecting to login...') }}");
                     var redir = (data && data.redirect) ? data.redirect : "{{ route('login') }}";
-                    window.location.href = redir + (redir.indexOf('?') >= 0 ? '&' : '?') + 'expired=1';
-                    return;
+                    setTimeout(function() {
+                        window.location.href = redir + (redir.indexOf('?') >= 0 ? '&' : '?') + 'expired=1';
+                    }, 1200);
+                    return null;
                 }
-                throw new Error((data && data.message) ? data.message : "{{ __('Invalid Security PIN. Access denied.') }}");
+                throw new Error((data && data.message) ? data.message : "{{ __('Invalid Security PIN. Please try again.') }}");
             }
             return data;
         })
@@ -387,7 +422,7 @@
             resetInactivityTimer();
         })
         .catch(function(err) {
-            showUnlockError(err.message || "{{ __('Invalid Security PIN. Access denied.') }}");
+            showUnlockError(err.message || "{{ __('Invalid Security PIN. Please try again.') }}");
         });
     };
 
@@ -424,11 +459,11 @@
                 return;
             }
 
-            var challengeBuffer = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
+            var challengeBuffer = base64UrlToBytes(options.challenge);
             var allowList = (options.allowCredentials || []).map(function(c) {
                 return {
                     type: 'public-key',
-                    id: Uint8Array.from(atob(c.id.replace(/-/g, '+').replace(/_/g, '/')), function(ch) { return ch.charCodeAt(0); })
+                    id: base64UrlToBytes(c.id)
                 };
             });
 
@@ -499,8 +534,8 @@
                 throw new Error(options?.message || 'Could not initiate biometric challenge');
             }
 
-            var challengeBytes = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
-            var userIdBytes = Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
+            var challengeBytes = base64UrlToBytes(options.challenge);
+            var userIdBytes = base64UrlToBytes(options.user.id);
 
             var credential = await navigator.credentials.create({
                 publicKey: {

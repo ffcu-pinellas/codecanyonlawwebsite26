@@ -37,6 +37,9 @@ class EnsureSecuritySetupCompleted
                     'auth.passkey.*',
                     'client.security.quick-register-passkey',
                     'client.security.biometric-unlock-session',
+                    'client.security.unlock-session',
+                    'client.security.lock-session',
+                    'client.security.check-session',
                     'client.stop-impersonation',
                     '*stop-impersonation*',
                     'logout'

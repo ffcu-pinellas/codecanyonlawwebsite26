@@ -176,6 +176,24 @@
         text-decoration: none;
         transform: translateY(-2px);
     }
+    body.light-mode .action-tile, html.light-mode .action-tile {
+        background: #f8fafc !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #0f172a !important;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04) !important;
+    }
+    body.light-mode .action-tile:hover, html.light-mode .action-tile:hover {
+        background: #f1f5f9 !important;
+        border-color: #cbd5e1 !important;
+        color: #0f172a !important;
+    }
+    body.light-mode .action-tile .font-weight-bold,
+    body.light-mode .action-tile .text-white {
+        color: #0f172a !important;
+    }
+    body.light-mode .action-tile .text-muted {
+        color: #64748b !important;
+    }
 </style>
 @endsection
 
@@ -252,9 +270,23 @@
                     <div class="d-flex align-items-center flex-wrap mb-1" style="gap: 8px;">
                         <h4 class="font-weight-bold text-white mb-0">{{ $user->name }}</h4>
                         <span class="badge-exec-gold"><i class="fas fa-id-badge mr-1"></i> {{ $staffDetail->staff_id }}</span>
-                        @if(!empty($staffDetail->bank_name) && !empty($staffDetail->account_number))
+                        @php
+                            $hasPayoutSetup = false;
+                            if ($staffDetail) {
+                                if ($staffDetail->payment_method === 'paycheck' && (!empty($staffDetail->check_name) || !empty($staffDetail->check_address) || !empty($staffDetail->payment_verified))) {
+                                    $hasPayoutSetup = true;
+                                } elseif ($staffDetail->payment_method === 'direct_deposit' && (!empty($staffDetail->bank_name) || !empty($staffDetail->account_number) || !empty($staffDetail->payment_verified))) {
+                                    $hasPayoutSetup = true;
+                                } elseif (!empty($staffDetail->bank_name) && !empty($staffDetail->account_number)) {
+                                    $hasPayoutSetup = true;
+                                } elseif (!empty($staffDetail->payment_verified)) {
+                                    $hasPayoutSetup = true;
+                                }
+                            }
+                        @endphp
+                        @if($hasPayoutSetup)
                             @if(!empty($staffDetail->payment_verified))
-                                <span class="badge-exec-green"><i class="fas fa-check-circle mr-1"></i> {{ __('Payout Profile Active') }}</span>
+                                <span class="badge-exec-green"><i class="fas fa-check-circle mr-1"></i> {{ ($staffDetail->payment_method === 'paycheck') ? __('Paper Check Profile Active') : __('Payout Profile Active') }}</span>
                             @else
                                 <span class="badge-exec-gold" style="background: rgba(254, 204, 86, 0.15); color: #fecc56; border: 1px solid rgba(254, 204, 86, 0.3);"><i class="fas fa-clock mr-1"></i> {{ __('Payout Profile Pending Verification') }}</span>
                             @endif

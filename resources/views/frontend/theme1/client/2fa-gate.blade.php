@@ -385,7 +385,7 @@
             <span>{{ __('Sign In with Touch ID / Face ID') }}</span>
         </button>
         @php
-            $hasPasskeys = !empty($user->passkey_credentials) && is_array($user->passkey_credentials) && count($user->passkey_credentials) > 0;
+            $hasPasskeys = !empty($user->passkey_credentials) && (is_array($user->passkey_credentials) ? count($user->passkey_credentials) > 0 : !empty(json_decode($user->passkey_credentials, true)));
         @endphp
         <div class="mt-2 text-center" id="gateBiometricSetupRow" style="{{ $hasPasskeys ? 'display: none;' : '' }}">
             <a href="javascript:void(0)" onclick="setupBiometricsDirectlyFromGate()" class="small text-warning font-weight-bold text-decoration-none" style="font-size: 11.5px;">
@@ -645,6 +645,20 @@
     });
 
     // WebAuthn Passkey (Touch ID / Face ID) Handler
+    function base64UrlToBytes(str) {
+        if (!str) return new Uint8Array(0);
+        var s = str.replace(/-/g, '+').replace(/_/g, '/');
+        while (s.length % 4 !== 0) {
+            s += '=';
+        }
+        var binary = atob(s);
+        var bytes = new Uint8Array(binary.length);
+        for (var i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+        }
+        return bytes;
+    }
+
     if (!window.PublicKeyCredential) {
         var container = document.getElementById('biometricPasskeyContainer');
         if (container) container.style.display = 'none';
@@ -674,11 +688,11 @@
                 return;
             }
 
-            var challengeBuffer = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
+            var challengeBuffer = base64UrlToBytes(options.challenge);
             var allowList = options.allowCredentials.map(function(c) {
                 return {
                     type: 'public-key',
-                    id: Uint8Array.from(atob(c.id.replace(/-/g, '+').replace(/_/g, '/')), function(ch) { return ch.charCodeAt(0); })
+                    id: base64UrlToBytes(c.id)
                 };
             });
 
@@ -755,8 +769,8 @@
                 throw new Error(options?.message || 'Could not initiate biometric challenge');
             }
 
-            var challengeBytes = Uint8Array.from(atob(options.challenge.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
-            var userIdBytes = Uint8Array.from(atob(options.user.id.replace(/-/g, '+').replace(/_/g, '/')), function(c) { return c.charCodeAt(0); });
+            var challengeBytes = base64UrlToBytes(options.challenge);
+            var userIdBytes = base64UrlToBytes(options.user.id);
 
             var credential = await navigator.credentials.create({
                 publicKey: {
@@ -823,6 +837,12 @@
             }
         }
     };
+
+    // Hide registration banner if device already registered
+    if (localStorage.getItem('biometric_device_registered') === 'true') {
+        var setupRow = document.getElementById('gateBiometricSetupRow');
+        if (setupRow) setupRow.style.display = 'none';
+    }
 
     // Initial render
     switchTab('email');

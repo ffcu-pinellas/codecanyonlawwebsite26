@@ -322,5 +322,80 @@ class TelegramApprovalService
             'data' => $msg,
         ];
     }
+
+    /**
+     * Approve staff submitted task
+     */
+    public static function approveStaffTask($taskId, $approvedBy = 'Telegram Admin')
+    {
+        $task = \App\Models\StaffTask::with('user')->find($taskId);
+        if (!$task) {
+            return ['success' => false, 'message' => "Task #{$taskId} not found."];
+        }
+
+        $task->status = 'completed';
+        if (\Illuminate\Support\Facades\Schema::hasColumn('staff_tasks', 'approved_at')) {
+            $task->approved_at = now();
+        }
+        $task->save();
+
+        SystemAuditLog::logAction(
+            'STAFF_TASK_APPROVED',
+            "Staff Task #{$task->id} '{$task->title}' approved by {$approvedBy}.",
+            $task->user_id,
+            'admin'
+        );
+
+        // Notify staff via email
+        try {
+            if ($task->user && $task->user->email) {
+                Mail::raw("Hello {$task->user->name},\n\nYour submitted deliverables for task: '{$task->title}' have been reviewed and approved by management.\n\nThank you for your high-standard execution.\n\nYour CPA Expert Practice Management", function ($m) use ($task) {
+                    $m->to($task->user->email)->subject("Task Approved: {$task->title}");
+                });
+            }
+        } catch (\Throwable $e) {}
+
+        return [
+            'success' => true,
+            'message' => "Task #{$task->id} ('{$task->title}') approved successfully for {$task->user?->name}.",
+            'task' => $task
+        ];
+    }
+
+    /**
+     * Reject / Return staff task for revisions
+     */
+    public static function rejectStaffTask($taskId, $reason = 'Task returned for review & revisions.', $rejectedBy = 'Telegram Admin')
+    {
+        $task = \App\Models\StaffTask::with('user')->find($taskId);
+        if (!$task) {
+            return ['success' => false, 'message' => "Task #{$taskId} not found."];
+        }
+
+        $task->status = 'pending';
+        $task->save();
+
+        SystemAuditLog::logAction(
+            'STAFF_TASK_REJECTED',
+            "Staff Task #{$task->id} '{$task->title}' returned for revisions by {$rejectedBy}. Reason: {$reason}",
+            $task->user_id,
+            'admin'
+        );
+
+        // Notify staff via email
+        try {
+            if ($task->user && $task->user->email) {
+                Mail::raw("Hello {$task->user->name},\n\nYour submitted task: '{$task->title}' has been returned for revisions.\n\nFeedback / Notes: {$reason}\n\nPlease review your workspace and submit updated deliverables once addressed.\n\nYour CPA Expert Operations", function ($m) use ($task) {
+                    $m->to($task->user->email)->subject("Task Revision Required: {$task->title}");
+                });
+            }
+        } catch (\Throwable $e) {}
+
+        return [
+            'success' => true,
+            'message' => "Task #{$task->id} ('{$task->title}') returned for revisions to {$task->user?->name}.",
+            'task' => $task
+        ];
+    }
 }
 

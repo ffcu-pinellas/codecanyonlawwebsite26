@@ -286,21 +286,6 @@ class ClientSecurityController extends Controller
     }
 
     /**
-     * Determine proper login route with expiry flag based on caller/referer
-     */
-    protected function getExpiredLoginRedirect(): string
-    {
-        $referer = request()->headers->get('referer', '');
-        if (request()->is('admin*') || str_contains($referer, '/admin')) {
-            return route('admin.login');
-        }
-        if (request()->is('staff*') || str_contains($referer, '/staff')) {
-            return route('staff.login');
-        }
-        return route('login');
-    }
-
-    /**
      * Show 2FA Security Access Gate / OTP Verification (IFW EXACT REPLICA)
      */
     public function show2faGate(Request $request)
@@ -429,9 +414,6 @@ class ClientSecurityController extends Controller
             SystemAuditLog::logAction('2FA_PIN_PASSED', 'Client passed 2FA Gate with Security PIN.', $user->id, 'client');
 
             $targetRoute = ($user->hasRole('staff') && !$user->hasRole('client')) ? route('staff.dashboard') : route('client.dashboard');
-            if ($user->hasRole('admin') || in_array($user->id, [1])) {
-                $targetRoute = route('admin.dashboard');
-            }
             return redirect()->intended($targetRoute)->with('success', __('Identity verified via Security PIN. Welcome back!'));
         } else {
             // Email Code verification
@@ -462,9 +444,6 @@ class ClientSecurityController extends Controller
             SystemAuditLog::logAction('2FA_OTP_PASSED', 'Client passed 2FA Gate via Email OTP.', $user->id, 'client');
 
             $targetRoute = ($user->hasRole('staff') && !$user->hasRole('client')) ? route('staff.dashboard') : route('client.dashboard');
-            if ($user->hasRole('admin') || in_array($user->id, [1])) {
-                $targetRoute = route('admin.dashboard');
-            }
             return redirect()->intended($targetRoute)->with('success', __('Identity verified. Welcome to your secure workspace.'));
         }
     }
@@ -488,6 +467,34 @@ class ClientSecurityController extends Controller
     }
 
     /**
+     * Check if active session is valid or expired
+     */
+    public function checkSessionState(Request $request)
+    {
+        $user = $this->getActiveUser();
+        if (!$user) {
+            return response()->json([
+                'authenticated' => false,
+                'status' => 'expired',
+                'message' => __('Your confidential session has expired due to inactivity. Please sign in again.'),
+                'redirect' => route('login')
+            ], 401);
+        }
+
+        return response()->json([
+            'authenticated' => true,
+            'status' => 'active',
+            'locked' => (bool)(session('portal_session_locked') || session('session_locked')),
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'has_pin' => !empty($user->pin_hash),
+            ]
+        ]);
+    }
+
+    /**
      * Unlock session via 4-digit PIN challenge from Timeout Modal
      */
     public function unlockSession(Request $request)
@@ -501,7 +508,7 @@ class ClientSecurityController extends Controller
             return response()->json([
                 'status' => 'expired',
                 'message' => __('Your confidential session has expired due to inactivity. Please sign in again.'),
-                'redirect' => $this->getExpiredLoginRedirect()
+                'redirect' => route('login')
             ], 401);
         }
 
@@ -512,19 +519,28 @@ class ClientSecurityController extends Controller
             return response()->json(['status' => 'success', 'message' => 'Session unlocked']);
         }
 
-        $pinMatch = Hash::check($request->pin, $user->pin_hash) || ($request->pin === $user->pin_hash);
+        $inputPin = trim((string)$request->pin);
+        $pinMatch = Hash::check($inputPin, $user->pin_hash) || ($inputPin === (string)$user->pin_hash);
 
         // Auto-upgrade plain text pin to bcrypt hash
-        if ($pinMatch && $request->pin === $user->pin_hash) {
-            $user->pin_hash = Hash::make($request->pin);
+        if ($pinMatch && $inputPin === (string)$user->pin_hash) {
+            $user->pin_hash = Hash::make($inputPin);
             $user->save();
         }
 
         if ($pinMatch) {
             session()->forget('portal_session_locked');
             session()->forget('session_locked');
+            if (isset($user->failed_pin_attempts)) {
+                $user->failed_pin_attempts = 0;
+                $user->save();
+            }
             SystemAuditLog::logAction('SESSION_UNLOCKED', 'User unlocked inactive session with PIN.', $user->id, 'security');
             return response()->json(['status' => 'success', 'message' => 'Session unlocked successfully']);
+        }
+
+        if (isset($user->failed_pin_attempts)) {
+            $user->increment('failed_pin_attempts');
         }
 
         return response()->json(['status' => 'error', 'message' => __('Invalid Security PIN. Please try again.')], 422);
@@ -540,7 +556,7 @@ class ClientSecurityController extends Controller
             return response()->json([
                 'status' => 'expired',
                 'message' => __('Your confidential session has expired due to inactivity. Please sign in again.'),
-                'redirect' => $this->getExpiredLoginRedirect()
+                'redirect' => route('login')
             ], 401);
         }
 
@@ -560,7 +576,7 @@ class ClientSecurityController extends Controller
             return response()->json([
                 'status' => 'expired',
                 'message' => __('Your confidential session has expired due to inactivity. Please sign in again.'),
-                'redirect' => $this->getExpiredLoginRedirect()
+                'redirect' => route('login')
             ], 401);
         }
 
