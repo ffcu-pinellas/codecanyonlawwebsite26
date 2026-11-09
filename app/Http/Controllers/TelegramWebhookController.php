@@ -335,6 +335,7 @@ class TelegramWebhookController extends Controller
                              . "💰 <b>/staffbalance &lt;id/email&gt;</b> — Financial ledger & claimable balance\n"
                              . "👤 <b>/user &lt;id/email&gt;</b> — Client profile, case state & quick actions\n"
                              . "🔓 <b>/unlock &lt;id/email&gt;</b> — Reset PIN locks & relax 2FA\n"
+                             . "🔑 <b>/setpin &lt;id/email&gt; &lt;pin&gt;</b> — Set or change 4-digit Security PIN\n"
                              . "📁 <b>/cases</b> — Recent active cases and progress stages\n"
                              . "👔 <b>/staff</b> or <b>/clocked</b> — Currently clocked-in staff & hours today\n"
                              . "📄 <b>/documents</b> — Pending documents awaiting client execution\n"
@@ -465,6 +466,17 @@ class TelegramWebhookController extends Controller
                         return;
                     }
                     $res = TelegramApprovalService::unlockUser($target);
+                    GeneralSettings::sendTelegramNotification($res['message'], null, $targetChatId);
+                    break;
+
+                case '/setpin':
+                    $target = trim($parts[1] ?? '');
+                    $newPin = trim($parts[2] ?? '');
+                    if (empty($target) || empty($newPin)) {
+                        GeneralSettings::sendTelegramNotification("⚠️ Usage: <code>/setpin &lt;id_or_email&gt; &lt;4-digit-pin&gt;</code>", null, $targetChatId);
+                        return;
+                    }
+                    $res = TelegramApprovalService::setUserPin($target, $newPin);
                     GeneralSettings::sendTelegramNotification($res['message'], null, $targetChatId);
                     break;
 

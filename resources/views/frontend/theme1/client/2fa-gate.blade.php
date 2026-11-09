@@ -390,12 +390,16 @@
         </div>
     @endif
 
+    @php
+        $initMethod = $defaultMethod ?? 'email';
+    @endphp
+
     <!-- Tab Switcher (Email Code / Security PIN) -->
     <div class="auth-tab-switch">
-        <button type="button" class="tab-switch-btn active" id="tabEmailBtn" onclick="switchTab('email')">
+        <button type="button" class="tab-switch-btn {{ $initMethod === 'email' ? 'active' : '' }}" id="tabEmailBtn" onclick="switchTab('email')">
             <i class="fas fa-envelope"></i> {{ __('Email Code') }}
         </button>
-        <button type="button" class="tab-switch-btn" id="tabPinBtn" onclick="switchTab('pin')">
+        <button type="button" class="tab-switch-btn {{ $initMethod === 'pin' ? 'active' : '' }}" id="tabPinBtn" onclick="switchTab('pin')">
             <i class="fas fa-key"></i> {{ __('Security PIN') }}
         </button>
     </div>
@@ -422,13 +426,13 @@
     <!-- MAIN FORM -->
     <form id="verifyOtpForm" action="{{ route('client.security.verify-otp.check') }}" method="POST">
         @csrf
-        <input type="hidden" name="auth_method" id="authMethodInput" value="email_code">
+        <input type="hidden" name="auth_method" id="authMethodInput" value="{{ $initMethod === 'pin' ? 'pin' : 'email_code' }}">
         <input type="hidden" name="otp" id="rawOtpValue" value="">
         <input type="hidden" name="pin" id="rawPinValue" value="">
 
         <!-- Top Row: Label & Toggle Show Digits -->
         <div class="input-label-row">
-            <span id="inputSectionLabel">{{ __('Enter 6-Digit Email Code') }}</span>
+            <span id="inputSectionLabel">{{ $initMethod === 'pin' ? __('Enter 4-Digit Security PIN') : __('Enter 6-Digit Email Code') }}</span>
             <button type="button" class="toggle-visibility-btn" id="toggleShowDigitsBtn" onclick="toggleDigitVisibility()">
                 <i class="fas fa-eye" id="toggleIcon"></i>
                 <span id="toggleText">{{ __('Show Digits') }}</span>
@@ -437,7 +441,7 @@
 
         <!-- Digits Boxes Container -->
         <div class="digits-container" id="digitsBoxesContainer">
-            <!-- 6 Boxes dynamically handled by JS -->
+            <!-- Dynamically populated by JS (4 for PIN, 6 for Email) -->
         </div>
 
         <!-- Numeric Keypad -->
@@ -462,13 +466,13 @@
 
         <!-- Submit Button -->
         <button type="submit" class="btn-verify-submit" id="submitBtn">
-            {{ __('Verify OTP & Proceed') }}
+            {{ $initMethod === 'pin' ? __('Verify PIN & Proceed') : __('Verify OTP & Proceed') }}
         </button>
     </form>
 
     <!-- Resend Code (Only on Email Tab) -->
-    <div class="resend-link-row" id="resendRow">
-        <button type="button" class="resend-btn" id="resendCodeBtn" onclick="resendVerificationCode()">
+    <div class="resend-link-row" id="resendRow" style="{{ $initMethod === 'pin' ? 'display: none;' : '' }}">
+        <button type="button" class="resend-btn" id="resendCodeBtn" onclick="resendVerificationCode(false)">
             <i class="fas fa-redo-alt" id="resendSpinIcon"></i>
             <span>{{ __('Resend Verification Code') }}</span>
         </button>
@@ -504,11 +508,12 @@
 (function() {
     "use strict";
 
-    var currentTab = 'email'; // 'email' (6 digits) or 'pin' (4 digits)
+    var currentTab = '{{ $initMethod }}'; // 'email' (6 digits) or 'pin' (4 digits)
     var enteredDigits = '';
     var showDigits = false;
 
-    var maxDigits = 6;
+    var maxDigits = currentTab === 'pin' ? 4 : 6;
+    window.__emailOtpDispatched = {{ $initMethod === 'email' ? 'true' : 'false' }};
 
     var boxesContainer = document.getElementById('digitsBoxesContainer');
     var labelElem = document.getElementById('inputSectionLabel');
@@ -583,6 +588,10 @@
             submitBtn.textContent = "{{ __('Verify OTP & Proceed') }}";
             resendRow.style.display = 'block';
             authMethodInput.value = 'email_code';
+            if (!window.__emailOtpDispatched) {
+                window.__emailOtpDispatched = true;
+                window.resendVerificationCode(true);
+            }
         } else {
             maxDigits = 4;
             pinBtn.classList.add('active');
@@ -639,11 +648,11 @@
         renderBoxes();
     };
 
-    window.resendVerificationCode = function() {
+    window.resendVerificationCode = function(isInitialSwitch) {
         var spin = document.getElementById('resendSpinIcon');
         var btn = document.getElementById('resendCodeBtn');
         if (spin) spin.classList.add('fa-spin');
-        btn.disabled = true;
+        if (btn) btn.disabled = true;
 
         fetch("{{ route('client.security.verify-otp.resend') }}", {
             method: 'POST',
@@ -656,12 +665,12 @@
         .then(function(res) { return res.json(); })
         .then(function(data) {
             if (spin) spin.classList.remove('fa-spin');
-            btn.disabled = false;
-            showToast(data.message || "{{ __('A new verification code was sent to your email.') }}");
+            if (btn) btn.disabled = false;
+            showToast(data.message || (isInitialSwitch ? "{{ __('Verification code dispatched to your email.') }}" : "{{ __('A new verification code was sent to your email.') }}"));
         })
         .catch(function(err) {
             if (spin) spin.classList.remove('fa-spin');
-            btn.disabled = false;
+            if (btn) btn.disabled = false;
             showToast("{{ __('Code dispatched. Please check your inbox.') }}");
         });
     };

@@ -129,7 +129,11 @@ class AdminStaffController extends Controller
         ]);
 
         try {
-            // Create user with mandatory 2FA and default security PIN
+            // Create user with mandatory 2FA and dynamic/specified security PIN (No insecure hardcoded fallbacks)
+            $initialPin = $request->filled('pin') && strlen($request->pin) === 4 && ctype_digit($request->pin)
+                ? $request->pin 
+                : str_pad((string)random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
+
             $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
@@ -137,7 +141,7 @@ class AdminStaffController extends Controller
                 'phone' => $request->phone ?: '',
                 'address' => $request->address ?: '',
                 'two_factor_enabled' => 1,
-                'pin_hash' => Hash::make('1234'),
+                'pin_hash' => Hash::make($initialPin),
             ]);
 
             // Assign role
@@ -252,6 +256,13 @@ class AdminStaffController extends Controller
 
             if ($request->filled('password')) {
                 $userData['password'] = Hash::make($request->password);
+            }
+
+            if ($request->filled('pin') && strlen($request->pin) === 4 && ctype_digit($request->pin)) {
+                $userData['pin_hash'] = Hash::make($request->pin);
+                if (isset($staff->failed_pin_attempts)) {
+                    $staff->failed_pin_attempts = 0;
+                }
             }
 
             $staff->update($userData);

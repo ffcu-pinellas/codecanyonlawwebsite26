@@ -379,7 +379,7 @@ class UserController extends Controller
 
         try {
             $rawPassword = bin2hex(random_bytes(4));
-            $defaultPin = '1234';
+            $defaultPin = str_pad((string)random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
 
             $user = User::create([
                 'name' => $request->name,
@@ -434,7 +434,7 @@ class UserController extends Controller
         try {
             $client = User::findOrFail($id);
             $rawPassword = bin2hex(random_bytes(4));
-            $defaultPin = '1234';
+            $defaultPin = str_pad((string)random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
 
             $client->password = \Illuminate\Support\Facades\Hash::make($rawPassword);
             $client->pin_hash = \Illuminate\Support\Facades\Hash::make($defaultPin);
@@ -554,7 +554,7 @@ class UserController extends Controller
             $client = User::findOrFail($request->client_id);
             $includeCredentials = $request->boolean('include_credentials', true);
             $rawPassword = '';
-            $defaultPin = '1234';
+            $defaultPin = str_pad((string)random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
 
             if ($includeCredentials) {
                 $rawPassword = bin2hex(random_bytes(4));
@@ -843,8 +843,9 @@ class UserController extends Controller
                 $count++;
             } elseif ($action === 'reset_temp_password') {
                 $rawPassword = bin2hex(random_bytes(4));
+                $tempPin = str_pad((string)random_int(1000, 9999), 4, '0', STR_PAD_LEFT);
                 $client->password = \Illuminate\Support\Facades\Hash::make($rawPassword);
-                $client->pin_hash = \Illuminate\Support\Facades\Hash::make('1234');
+                $client->pin_hash = \Illuminate\Support\Facades\Hash::make($tempPin);
                 $client->is_temp_password = true;
                 $client->is_first_login = true;
                 $client->failed_pin_attempts = 0;

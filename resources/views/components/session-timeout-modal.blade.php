@@ -639,7 +639,11 @@
                 })
             });
 
-            var sData = await saveRes.json();
+            var isSaveJson = saveRes.headers.get('content-type')?.includes('application/json');
+            var sData = null;
+            if (isSaveJson) {
+                try { sData = await saveRes.json(); } catch(e) {}
+            }
             if (sData && (sData.status === 'ok' || sData.status === 'success')) {
                 localStorage.setItem('biometric_device_registered', 'true');
                 var setupRow = document.getElementById('sessionBiometricSetupRow');
@@ -648,7 +652,7 @@
                 if (errorMsg) errorMsg.style.display = 'none';
                 resetInactivityTimer();
             } else {
-                throw new Error(sData?.message || 'Registration failed');
+                throw new Error(sData?.message || "{{ __('Could not register biometrics on this device.') }}");
             }
         } catch(err) {
             if (err.name !== 'NotAllowedError') {
@@ -658,8 +662,20 @@
     };
 
     function showUnlockError(msg) {
+        if (!msg) return;
+        var cleanMsg = (typeof msg === 'string') ? msg : (msg.message || '');
+        if (cleanMsg.includes('JSON') || cleanMsg.includes('Unexpected token') || cleanMsg.includes('<html>') || cleanMsg.includes('504') || cleanMsg.includes('Gateway Time-out')) {
+            cleanMsg = "{{ __('Your confidential session has expired or timed out. Redirecting to sign in...') }}";
+            var currentPath = window.location.pathname;
+            var defaultLogin = currentPath.indexOf('/admin') >= 0 ? "{{ route('admin.login') }}" :
+                               (currentPath.indexOf('/staff') >= 0 ? "{{ route('staff.login') }}" : "{{ route('login') }}");
+            if (window.__sessionCheckInterval) clearInterval(window.__sessionCheckInterval);
+            setTimeout(function() {
+                window.location.href = defaultLogin + (defaultLogin.indexOf('?') >= 0 ? '&' : '?') + 'expired=1';
+            }, 1200);
+        }
         if (errorMsg) {
-            errorMsg.textContent = msg;
+            errorMsg.textContent = cleanMsg;
             errorMsg.style.display = 'block';
         }
     }

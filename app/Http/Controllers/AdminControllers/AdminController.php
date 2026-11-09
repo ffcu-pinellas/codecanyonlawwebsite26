@@ -699,14 +699,20 @@ class AdminController extends Controller
     public function pollGlobalAdminActivity(Request $request)
     {
         try {
+            $currentUserId = Auth::id();
+            // Release session lock immediately to prevent blocking other concurrent requests
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                @session_write_close();
+            }
+
             $lastCheckTime = $request->input('last_check', now()->subSeconds(10)->timestamp);
             $lastCheck = \Carbon\Carbon::createFromTimestamp($lastCheckTime);
 
-            $unreadClientMsgs = \App\Models\Message::where('user_id', '!=', Auth::id())
+            $unreadClientMsgs = \App\Models\Message::where('user_id', '!=', $currentUserId)
                 ->where('read', false)
                 ->count();
 
-            $unreadStaffMsgs = \App\Models\StaffMessage::where('sender_id', '!=', Auth::id())
+            $unreadStaffMsgs = \App\Models\StaffMessage::where('sender_id', '!=', $currentUserId)
                 ->where('read', false)
                 ->count();
 

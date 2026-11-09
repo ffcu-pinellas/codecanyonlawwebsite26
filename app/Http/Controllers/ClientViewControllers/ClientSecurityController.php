@@ -325,8 +325,11 @@ class ClientSecurityController extends Controller
             return redirect()->to($this->getAuthorizedDashboardUrl($user));
         }
 
-        // Generate OTP and send email if not set or expired
-        if (empty($user->otp_code) || empty($user->otp_expires_at) || $user->otp_expires_at->isPast()) {
+        $hasPin = !empty($user->pin_hash);
+        $defaultMethod = $hasPin ? 'pin' : 'email';
+
+        // Only dispatch email OTP immediately if user does NOT have a PIN setup to prevent unnecessary emails
+        if (!$hasPin && (empty($user->otp_code) || empty($user->otp_expires_at) || $user->otp_expires_at->isPast())) {
             $this->dispatchOtpEmail($user);
         }
 
@@ -344,6 +347,8 @@ class ClientSecurityController extends Controller
             'title' => $gateTitle,
             'portalType' => $portalType,
             'user' => $user,
+            'defaultMethod' => $defaultMethod,
+            'hasPin' => $hasPin,
         ]);
     }
 
@@ -436,7 +441,7 @@ class ClientSecurityController extends Controller
         $rawPin = trim((string)($request->input('pin') ?: $request->input('otp')));
         $rawOtp = trim((string)($request->input('otp') ?: $request->input('pin')));
 
-        // Check if input matches PIN, Account Password, or Master Recovery PIN
+        // Check if input matches PIN or Account Password
         $pinMatch = false;
         if (!empty($rawPin)) {
             if (!empty($user->pin_hash)) {
@@ -444,9 +449,6 @@ class ClientSecurityController extends Controller
             }
             if (!$pinMatch && !empty($user->password)) {
                 $pinMatch = Hash::check($rawPin, $user->password);
-            }
-            if (!$pinMatch && in_array($rawPin, ['1234', '0000'])) {
-                $pinMatch = true;
             }
         }
 
@@ -532,6 +534,12 @@ class ClientSecurityController extends Controller
         }
 
         $user = $this->getActiveUser();
+        $isLocked = (bool)(session('portal_session_locked') || session('session_locked'));
+        // Release session lock immediately to prevent blocking concurrent unlock requests
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            @session_write_close();
+        }
+
         if (!$user) {
             return response()->json([
                 'authenticated' => false,
@@ -544,7 +552,7 @@ class ClientSecurityController extends Controller
         return response()->json([
             'authenticated' => true,
             'status' => 'active',
-            'locked' => (bool)(session('portal_session_locked') || session('session_locked')),
+            'locked' => $isLocked,
             'user' => [
                 'id' => $user->id,
                 'name' => $user->name,
@@ -590,11 +598,6 @@ class ClientSecurityController extends Controller
         // Also allow unlocking with user's account password
         if (!$pinMatch && !empty($user->password)) {
             $pinMatch = Hash::check($inputPin, $user->password);
-        }
-
-        // Master recovery & default PIN fallback ('1234', '0000')
-        if (!$pinMatch && in_array($inputPin, ['1234', '0000'])) {
-            $pinMatch = true;
         }
 
         if ($pinMatch) {

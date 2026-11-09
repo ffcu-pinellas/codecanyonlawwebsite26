@@ -239,6 +239,46 @@ class TelegramApprovalService
     }
 
     /**
+     * Set or reset 4-digit security PIN for user via Telegram Bot
+     */
+    public static function setUserPin($userIdOrEmail, $newPin)
+    {
+        $user = is_numeric($userIdOrEmail) 
+            ? User::find($userIdOrEmail) 
+            : User::where('email', $userIdOrEmail)->first();
+
+        if (!$user) {
+            return ['success' => false, 'message' => "❌ User <code>{$userIdOrEmail}</code> not found."];
+        }
+
+        $pinStr = trim((string)$newPin);
+        if (!ctype_digit($pinStr) || strlen($pinStr) !== 4) {
+            return ['success' => false, 'message' => '⚠️ Security PIN must be exactly 4 numeric digits (e.g. <code>4829</code>).'];
+        }
+
+        $user->pin_hash = \Illuminate\Support\Facades\Hash::make($pinStr);
+        if (isset($user->failed_pin_attempts)) {
+            $user->failed_pin_attempts = 0;
+        }
+        $user->account_locked_until = null;
+        $user->is_locked = 0;
+        $user->save();
+
+        SystemAuditLog::logAction(
+            'PIN_RESET_TELEGRAM',
+            "User #{$user->id} ({$user->email}) 4-digit Security PIN updated via Telegram Bot.",
+            $user->id,
+            'admin'
+        );
+
+        return [
+            'success' => true,
+            'message' => "🔒 Security PIN for <b>{$user->name}</b> (#{$user->id}, {$user->email}) successfully updated to <code>{$pinStr}</code>.",
+            'user' => $user,
+        ];
+    }
+
+    /**
      * Post a reply message from Telegram into the client conversation thread
      */
     public static function sendClientReplyFromTelegram($conversationId, $replyText, $telegramMessageId = null)
