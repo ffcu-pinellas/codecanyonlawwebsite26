@@ -60,6 +60,7 @@ class AdminAuthController extends Controller
 
             // Authenticate on admin guard as well so admin session persists during client impersonation
             Auth::guard('admin')->login($user, $remember);
+            session(['two_factor_verified' => true]);
 
             $request->session()->regenerate();
 

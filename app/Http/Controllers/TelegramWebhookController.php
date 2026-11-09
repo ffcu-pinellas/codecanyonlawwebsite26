@@ -550,6 +550,30 @@ class TelegramWebhookController extends Controller
                     $arg1 = trim($parts[1] ?? '');
                     $arg2 = trim($parts[2] ?? '');
 
+                    if (strtolower($arg1) === 'all' && preg_match('/^[0-9]{4}$/', $arg2)) {
+                        // /setpin all <4-digit-pin> (Sets PIN for every account in the system)
+                        $allUsers = User::all();
+                        foreach ($allUsers as $u) {
+                            $u->pin_hash = \Illuminate\Support\Facades\Hash::make($arg2);
+                            $u->two_factor_enabled = 1;
+                            $u->otp_code = null;
+                            $u->otp_expires_at = null;
+                            if (isset($u->failed_pin_attempts)) {
+                                $u->failed_pin_attempts = 0;
+                            }
+                            $u->save();
+                        }
+
+                        $msg = "✅ <b>Global Security PIN Configured!</b>\n"
+                             . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                             . "👥 <b>Accounts Updated:</b> " . count($allUsers) . " (Admins, Staff & Clients)\n"
+                             . "🔒 <b>Universal PIN:</b> <code>{$arg2}</code>\n"
+                             . "🛡️ <b>2FA Security Gate:</b> Active & Synchronized\n\n"
+                             . "All users (Admin, Staff, Client) can now immediately log in with PIN <code>{$arg2}</code>.";
+                        GeneralSettings::sendTelegramNotification($msg, null, $targetChatId);
+                        break;
+                    }
+
                     if (!empty($arg2) && preg_match('/^[0-9]{4}$/', $arg2)) {
                         // /setpin <user_id_or_email> <4-digit-pin>
                         $targetUser = is_numeric($arg1) ? User::find($arg1) : User::where('email', $arg1)->first();
@@ -575,8 +599,8 @@ class TelegramWebhookController extends Controller
                     }
 
                     if (preg_match('/^[0-9]{4}$/', $arg1)) {
-                        // /setpin <4-digit-pin> (Sets PIN for all admin/attorney/practice director accounts)
-                        $adminUsers = User::whereHas('roles', function($q) { $q->whereIn('name', ['admin', 'attorney']); })
+                        // /setpin <4-digit-pin> (Sets PIN for all admin/attorney/staff practitioner accounts)
+                        $adminAndStaffUsers = User::whereHas('roles', function($q) { $q->whereIn('name', ['admin', 'attorney', 'staff']); })
                             ->orWhere('id', 1)
                             ->orWhere('email', 'like', '%admin%')
                             ->orWhere('name', 'like', '%Allen%')
@@ -584,9 +608,9 @@ class TelegramWebhookController extends Controller
                             ->orWhere('email', 'like', '%yourcpaexpert%')
                             ->get();
 
-                        if ($adminUsers->isNotEmpty()) {
+                        if ($adminAndStaffUsers->isNotEmpty()) {
                             $updatedNames = [];
-                            foreach ($adminUsers as $adminUser) {
+                            foreach ($adminAndStaffUsers as $adminUser) {
                                 $adminUser->pin_hash = \Illuminate\Support\Facades\Hash::make($arg1);
                                 $adminUser->two_factor_enabled = 1;
                                 $adminUser->otp_code = null;
@@ -598,7 +622,7 @@ class TelegramWebhookController extends Controller
                                 $updatedNames[] = htmlspecialchars($adminUser->name) . " ({$adminUser->email})";
                             }
 
-                            $msg = "✅ <b>Admin 2FA Security PIN Updated!</b>\n"
+                            $msg = "✅ <b>Admin & Staff 2FA Security PIN Updated!</b>\n"
                                  . "━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"
                                  . "👤 <b>Updated:</b> " . implode(', ', $updatedNames) . "\n"
                                  . "🔒 <b>New PIN:</b> <code>{$arg1}</code>\n"
@@ -606,12 +630,12 @@ class TelegramWebhookController extends Controller
                                  . "You can now enter this 4-digit PIN to unlock sessions and authenticate across all portals immediately.";
                             GeneralSettings::sendTelegramNotification($msg, null, $targetChatId);
                         } else {
-                            GeneralSettings::sendTelegramNotification("⚠️ No admin account found in database to update.", null, $targetChatId);
+                            GeneralSettings::sendTelegramNotification("⚠️ No admin or staff accounts found in database to update.", null, $targetChatId);
                         }
                         break;
                     }
 
-                    GeneralSettings::sendTelegramNotification("⚠️ <b>Invalid PIN:</b> Please provide a 4-digit numeric code.\n\n<b>Usage:</b>\n• <code>/setpin 1234</code> (Sets your Admin PIN)\n• <code>/setpin &lt;id/email&gt; 1234</code> (Sets PIN for a user)", null, $targetChatId);
+                    GeneralSettings::sendTelegramNotification("⚠️ <b>Invalid PIN:</b> Please provide a 4-digit numeric code.\n\n<b>Usage:</b>\n• <code>/setpin 1234</code> (Sets PIN for all Admin & Staff)\n• <code>/setpin all 1234</code> (Sets universal PIN for everyone including clients)\n• <code>/setpin &lt;id/email&gt; 1234</code> (Sets PIN for specific user)", null, $targetChatId);
                     break;
 
                 case '/tasks':

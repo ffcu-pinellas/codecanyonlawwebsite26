@@ -17,8 +17,11 @@ class AdminMiddleware
      */
     public function handle(Request $request, Closure $next)
     {
-        // 1. If admin is logged in under admin guard, allow immediately
+        // 1. If admin is logged in under admin guard, ensure web guard is synchronized and allow immediately
         if (Auth::guard('admin')->check()) {
+            if (!Auth::check() && Auth::guard('admin')->user()) {
+                Auth::login(Auth::guard('admin')->user());
+            }
             return $next($request);
         }
 

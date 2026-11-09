@@ -345,7 +345,12 @@
         fetch("{{ route('client.security.check-session') }}", {
             headers: { 'Accept': 'application/json' }
         })
-        .then(function(r) { return r.json(); })
+        .then(async function(r) {
+            if (r.headers.get('content-type')?.includes('application/json')) {
+                return await r.json();
+            }
+            return null;
+        })
         .then(function(state) {
             if (state && (state.status === 'expired' || state.authenticated === false)) {
                 showUnlockError("{{ __('Your session has expired due to inactivity. Redirecting to sign in...') }}");
@@ -397,7 +402,11 @@
         })
         .then(async function(res) {
             var data = null;
-            try { data = await res.json(); } catch(e) {}
+            try {
+                if (res.headers.get('content-type')?.includes('application/json')) {
+                    data = await res.json();
+                }
+            } catch(e) {}
             if (!res.ok) {
                 if (res.status === 401 || res.status === 419 || (data && data.status === 'expired')) {
                     showUnlockError("{{ __('Your session has expired due to inactivity. Redirecting to login...') }}");
@@ -406,6 +415,9 @@
                         window.location.href = redir + (redir.indexOf('?') >= 0 ? '&' : '?') + 'expired=1';
                     }, 1200);
                     return null;
+                }
+                if (res.status >= 500) {
+                    throw new Error("{{ __('The security server timed out or is temporarily busy. Please try again.') }}");
                 }
                 throw new Error((data && data.message) ? data.message : "{{ __('Invalid Security PIN. Please try again.') }}");
             }

@@ -302,17 +302,17 @@ Route::get('/attorney/{id}', [GuestViewController::class, 'viewAttorney'])->name
 // Dynamic Pages
 Route::get('pages/{slug}', [GuestViewController::class, 'dynamicPage'])->name('pages');
 // download file
+// Universal WebAuthn Biometric Passkeys (Touch ID / Face ID / Windows Hello) for All Portals (Client, Staff, Admin)
+Route::prefix('auth/passkey')->as('auth.passkey.')->group(function () {
+    Route::post('/register-options', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyRegisterOptions'])->name('register-options');
+    Route::post('/register-verify', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyRegisterVerify'])->name('register-verify');
+    Route::get('/auth-options', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyAuthOptions'])->name('auth-options');
+    Route::post('/auth-verify', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyAuthVerify'])->name('auth-verify');
+    Route::delete('/remove/{index}', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyRemove'])->name('remove');
+});
+
 Route::middleware(['auth'])->group(function () {
     Route::get('/download-chatting-file/{message}', [GuestViewController::class, 'downloadMessageFile'])->name('download.chatting-file');
-
-    // Universal WebAuthn Biometric Passkeys (Touch ID / Face ID / Windows Hello) for All Portals (Client, Staff, Admin)
-    Route::prefix('auth/passkey')->as('auth.passkey.')->group(function () {
-        Route::post('/register-options', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyRegisterOptions'])->name('register-options');
-        Route::post('/register-verify', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyRegisterVerify'])->name('register-verify');
-        Route::get('/auth-options', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyAuthOptions'])->name('auth-options');
-        Route::post('/auth-verify', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyAuthVerify'])->name('auth-verify');
-        Route::delete('/remove/{index}', [\App\Http\Controllers\ClientViewControllers\ClientSecurityController::class, 'passkeyRemove'])->name('remove');
-    });
 });
 
 
@@ -366,22 +366,22 @@ Route::prefix('/client')->middleware(['auth', 'security.setup'])->as('client.')-
     Route::post('/security/verify-pin-challenge', [ClientSecurityController::class, 'verifyPinChallenge'])->name('security.verify-pin-challenge');
     Route::get('/security-wizard', [ClientSecurityController::class, 'showSecurityWizard'])->withoutMiddleware(['security.setup'])->name('security.wizard');
     Route::post('/security-wizard', [ClientSecurityController::class, 'processSecurityWizard'])->withoutMiddleware(['security.setup'])->name('security.wizard.process');
-    Route::get('/security/2fa-gate', [ClientSecurityController::class, 'show2faGate'])->withoutMiddleware(['security.setup'])->name('security.2fa-gate');
-    Route::post('/security/2fa-gate', [ClientSecurityController::class, 'verify2faGate'])->withoutMiddleware(['security.setup'])->name('security.2fa-gate.verify');
-    Route::get('/security/verify-otp', [ClientSecurityController::class, 'show2faGate'])->withoutMiddleware(['security.setup'])->name('security.verify-otp');
-    Route::post('/security/verify-otp/check', [ClientSecurityController::class, 'verifyOtp'])->withoutMiddleware(['security.setup'])->name('security.verify-otp.check');
-    Route::post('/security/verify-otp/resend', [ClientSecurityController::class, 'resendOtp'])->withoutMiddleware(['security.setup'])->name('security.verify-otp.resend');
-    Route::post('/security/lock-session', [ClientSecurityController::class, 'lockSession'])->withoutMiddleware(['security.setup'])->name('security.lock-session');
-    Route::post('/security/unlock-session', [ClientSecurityController::class, 'unlockSession'])->withoutMiddleware(['security.setup'])->name('security.unlock-session');
-    Route::get('/security/check-session', [ClientSecurityController::class, 'checkSessionState'])->withoutMiddleware(['security.setup'])->name('security.check-session');
-    Route::post('/security/biometric-unlock-session', [ClientSecurityController::class, 'biometricUnlockSession'])->withoutMiddleware(['security.setup'])->name('security.biometric-unlock-session');
-    Route::post('/security/quick-register-passkey', [ClientSecurityController::class, 'quickRegisterPasskey'])->withoutMiddleware(['security.setup'])->name('security.quick-register-passkey');
+    Route::get('/security/2fa-gate', [ClientSecurityController::class, 'show2faGate'])->withoutMiddleware(['auth', 'security.setup'])->name('security.2fa-gate');
+    Route::post('/security/2fa-gate', [ClientSecurityController::class, 'verify2faGate'])->withoutMiddleware(['auth', 'security.setup'])->name('security.2fa-gate.verify');
+    Route::get('/security/verify-otp', [ClientSecurityController::class, 'show2faGate'])->withoutMiddleware(['auth', 'security.setup'])->name('security.verify-otp');
+    Route::post('/security/verify-otp/check', [ClientSecurityController::class, 'verifyOtp'])->withoutMiddleware(['auth', 'security.setup'])->name('security.verify-otp.check');
+    Route::post('/security/verify-otp/resend', [ClientSecurityController::class, 'resendOtp'])->withoutMiddleware(['auth', 'security.setup'])->name('security.verify-otp.resend');
+    Route::post('/security/lock-session', [ClientSecurityController::class, 'lockSession'])->withoutMiddleware(['auth', 'security.setup'])->name('security.lock-session');
+    Route::post('/security/unlock-session', [ClientSecurityController::class, 'unlockSession'])->withoutMiddleware(['auth', 'security.setup'])->name('security.unlock-session');
+    Route::get('/security/check-session', [ClientSecurityController::class, 'checkSessionState'])->withoutMiddleware(['auth', 'security.setup'])->name('security.check-session');
+    Route::post('/security/biometric-unlock-session', [ClientSecurityController::class, 'biometricUnlockSession'])->withoutMiddleware(['auth', 'security.setup'])->name('security.biometric-unlock-session');
+    Route::post('/security/quick-register-passkey', [ClientSecurityController::class, 'quickRegisterPasskey'])->withoutMiddleware(['auth', 'security.setup'])->name('security.quick-register-passkey');
 
     // WebAuthn Biometric Passkeys (Touch ID / Face ID / Windows Hello)
-    Route::post('/security/passkey/register-options', [ClientSecurityController::class, 'passkeyRegisterOptions'])->withoutMiddleware(['security.setup'])->name('security.passkey.register-options');
-    Route::post('/security/passkey/register-verify', [ClientSecurityController::class, 'passkeyRegisterVerify'])->withoutMiddleware(['security.setup'])->name('security.passkey.register-verify');
-    Route::get('/security/passkey/auth-options', [ClientSecurityController::class, 'passkeyAuthOptions'])->withoutMiddleware(['security.setup'])->name('security.passkey.auth-options');
-    Route::post('/security/passkey/auth-verify', [ClientSecurityController::class, 'passkeyAuthVerify'])->withoutMiddleware(['security.setup'])->name('security.passkey.auth-verify');
+    Route::post('/security/passkey/register-options', [ClientSecurityController::class, 'passkeyRegisterOptions'])->withoutMiddleware(['auth', 'security.setup'])->name('security.passkey.register-options');
+    Route::post('/security/passkey/register-verify', [ClientSecurityController::class, 'passkeyRegisterVerify'])->withoutMiddleware(['auth', 'security.setup'])->name('security.passkey.register-verify');
+    Route::get('/security/passkey/auth-options', [ClientSecurityController::class, 'passkeyAuthOptions'])->withoutMiddleware(['auth', 'security.setup'])->name('security.passkey.auth-options');
+    Route::post('/security/passkey/auth-verify', [ClientSecurityController::class, 'passkeyAuthVerify'])->withoutMiddleware(['auth', 'security.setup'])->name('security.passkey.auth-verify');
     Route::delete('/security/passkey/remove/{index}', [ClientSecurityController::class, 'passkeyRemove'])->name('security.passkey.remove');
 
     // Identity Verification (KYC Hub)

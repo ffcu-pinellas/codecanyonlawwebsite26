@@ -546,12 +546,15 @@
   </div>
 </div>
 
+@php
+  $webrtcActiveUser = Auth::guard('admin')->user() ?: Auth::user();
+@endphp
 <!-- WebRTC Core Engine Script -->
 <script>
 (function() {
-  const currentUserId = {{ Auth::id() ?: 0 }};
-  const currentUserName = @json(Auth::user()?->name ?: 'User');
-  const currentUserRole = @json(Auth::user()?->getRoleNames()->first() ?: 'client');
+  const currentUserId = {{ $webrtcActiveUser ? $webrtcActiveUser->id : 0 }};
+  const currentUserName = @json($webrtcActiveUser?->name ?: 'User');
+  const currentUserRole = @json($webrtcActiveUser?->getRoleNames()->first() ?: 'client');
   const csrfToken = '{{ csrf_token() }}';
 
   const rtcConfig = {
