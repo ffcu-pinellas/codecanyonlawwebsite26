@@ -2,7 +2,6 @@
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark-mode">
 
 @include('frontend.theme1.auth-client.layouts.head')
-<link rel="manifest" href="{{ asset('staff-manifest.json') }}">
 
 <body id="body" class="dark-mode" style="background-color: #0a0c10 !important; color: #f1f5f9; min-height: 100vh; overflow-x: hidden;">
 @include('components.impersonation-bar')
@@ -623,7 +622,7 @@
         border-top-color: #e2e8f0 !important;
     }
 
-    /* Kanban Light Mode */
+    /* Operations Workflow Board Light Mode */
     body.light-mode .kanban-column {
         background: #f8fafc !important;
         border-color: #e2e8f0 !important;
@@ -857,10 +856,10 @@
         });
     }
 
-    function dismissPwaBanner() {
+    window.dismissPwaBanner = function() {
         if (pwaBanner) pwaBanner.classList.add('d-none');
         localStorage.setItem('staff_pwa_banner_dismissed', 'true');
-    }
+    };
 </script>
 @include('components.webrtc-call-modal')
 </body>

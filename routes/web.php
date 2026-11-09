@@ -802,7 +802,7 @@ Route::prefix('/staff')->middleware(['auth:sanctum', 'verified', 'role:staff', '
     Route::post('/messages', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'sendMessage']);
     Route::get('/messages/poll', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'pollMessages'])->name('messages.poll');
 
-    // Tasks & Interactive Kanban
+    // Tasks & Operations Workflow Board
     Route::get('/tasks', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'tasksIndex'])->name('tasks.index');
     Route::post('/tasks/{task}/complete', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'tasksComplete'])->name('tasks.complete');
     Route::post('/tasks/{task}/update-stage', [App\Http\Controllers\StaffControllers\StaffViewController::class, 'tasksUpdateStage'])->name('tasks.update-stage');

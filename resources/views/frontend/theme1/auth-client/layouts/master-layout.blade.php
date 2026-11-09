@@ -273,6 +273,23 @@
     <!-- Content Column -->
     <div class="client-content-col" style="flex: 1; min-width: 0; padding: 20px 16px 20px 16px;">
         <div class="client-content-container p-3 p-md-4 rounded" style="background: #11151e; border: 1px solid #28303f; box-shadow: 0 4px 20px rgba(0,0,0,0.3); min-height: 80vh;">
+            
+            <!-- Mobile PWA Install Notification (Sleek Compact Gold Pill) -->
+            <div id="clientPwaInstallBanner" class="alert d-none mb-3 shadow-sm border-0 d-flex flex-wrap align-items-center justify-content-between py-2 px-3" style="border-radius: 8px; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(254, 204, 86, 0.35) !important; color: #fff;">
+                <div class="d-flex align-items-center my-1">
+                    <i class="fas fa-mobile-alt text-warning mr-2" style="font-size: 1.1rem;"></i>
+                    <span class="small font-weight-bold">{{ __('Install Client Portal App for instant mobile case tracking, document uploads & direct counsel access') }}</span>
+                </div>
+                <div class="d-flex align-items-center my-1">
+                    <button type="button" id="clientPwaInstallBtn" class="btn btn-warning btn-sm font-weight-bold text-dark px-3 py-1 shadow-sm mr-2" style="font-size: 11.5px; border-radius: 6px;">
+                        <i class="fas fa-download mr-1"></i> {{ __('Install App') }}
+                    </button>
+                    <button type="button" class="btn btn-link text-white btn-sm p-0 ml-1" onclick="dismissClientPwaBanner()" title="Dismiss">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
             @yield('content')
         </div>
     </div>
@@ -679,6 +696,75 @@
 @yield('modal')
 @yield('page-script')
 @yield('scripts')
+
+<!-- Client PWA Service Worker Registration & Smart Install Banner -->
+<script>
+(function() {
+    let deferredClientPrompt = null;
+    const clientBanner = document.getElementById('clientPwaInstallBanner');
+    const clientInstallBtn = document.getElementById('clientPwaInstallBtn');
+
+    const isClientPwaInstalled = window.matchMedia('(display-mode: standalone)').matches
+        || window.navigator.standalone === true
+        || (document.referrer && document.referrer.includes('android-app://'))
+        || localStorage.getItem('client_pwa_installed') === 'true';
+
+    if (isClientPwaInstalled && clientBanner) {
+        clientBanner.remove();
+    }
+
+    if ('getInstalledRelatedApps' in navigator) {
+        navigator.getInstalledRelatedApps().then(apps => {
+            if (apps && apps.length > 0) {
+                localStorage.setItem('client_pwa_installed', 'true');
+                if (clientBanner) clientBanner.remove();
+            }
+        }).catch(() => {});
+    }
+
+    window.addEventListener('appinstalled', () => {
+        localStorage.setItem('client_pwa_installed', 'true');
+        if (clientBanner) clientBanner.remove();
+    });
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(reg => console.log('Client PWA SW registered:', reg.scope))
+                .catch(err => console.warn('Client PWA SW error:', err));
+        });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        if (isClientPwaInstalled || localStorage.getItem('client_pwa_installed') === 'true') {
+            return;
+        }
+        e.preventDefault();
+        deferredClientPrompt = e;
+        if (!localStorage.getItem('client_pwa_banner_dismissed')) {
+            if (clientBanner) clientBanner.classList.remove('d-none');
+        }
+    });
+
+    if (clientInstallBtn) {
+        clientInstallBtn.addEventListener('click', async () => {
+            if (!deferredClientPrompt) return;
+            deferredClientPrompt.prompt();
+            const { outcome } = await deferredClientPrompt.userChoice;
+            if (outcome === 'accepted') {
+                localStorage.setItem('client_pwa_installed', 'true');
+                if (clientBanner) clientBanner.remove();
+            }
+            deferredClientPrompt = null;
+        });
+    }
+
+    window.dismissClientPwaBanner = function() {
+        if (clientBanner) clientBanner.classList.add('d-none');
+        localStorage.setItem('client_pwa_banner_dismissed', 'true');
+    };
+})();
+</script>
 
 </body>
 </html>

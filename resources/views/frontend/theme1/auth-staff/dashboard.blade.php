@@ -361,7 +361,7 @@
                 </div>
                 <div class="text-muted small border-top border-secondary pt-2 mt-2 d-flex justify-content-between align-items-center">
                     <span>Pending review</span>
-                    <a href="{{ route('staff.tasks.index') }}" class="text-warning font-weight-bold text-decoration-none">{{ __('Kanban Board') }} &rarr;</a>
+                    <a href="{{ route('staff.tasks.index') }}" class="text-warning font-weight-bold text-decoration-none">{{ __('Task Workflow Board') }} &rarr;</a>
                 </div>
             </div>
         </div>

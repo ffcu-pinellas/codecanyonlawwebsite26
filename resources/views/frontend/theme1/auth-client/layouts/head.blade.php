@@ -15,11 +15,25 @@
 
     <!-- Favicon & PWA Application Manifest -->
     <link href="{{ $logoFavicon?$logoFavicon->favicon:'' }}" rel="shortcut icon" type="image/png">
-    <link rel="manifest" href="{{ asset('client-manifest.json') }}">
-    <meta name="theme-color" content="#fecc56">
+    @php
+        $portalManifest = 'client-manifest.json';
+        $portalAppTitle = 'Client Portal';
+        $portalThemeColor = '#fecc56';
+        if (request()->is('staff*')) {
+            $portalManifest = 'staff-manifest.json';
+            $portalAppTitle = 'Staff Workspace';
+            $portalThemeColor = '#11151e';
+        } elseif (request()->is('admin*')) {
+            $portalManifest = 'admin-manifest.json';
+            $portalAppTitle = 'Admin Portal';
+            $portalThemeColor = '#1e3c72';
+        }
+    @endphp
+    <link rel="manifest" href="{{ asset($portalManifest) }}">
+    <meta name="theme-color" content="{{ $portalThemeColor }}">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="CPA Client">
+    <meta name="apple-mobile-web-app-title" content="{{ $portalAppTitle }}">
 
     <!------------------------------------------
       Main CSS File

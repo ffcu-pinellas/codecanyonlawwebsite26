@@ -98,7 +98,7 @@
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap" style="gap: 12px;">
         <div>
-            <h4 class="font-weight-bold text-dark mb-1"><i class="fas fa-columns mr-2 text-primary"></i>{{ __('Practice Task Board') }}</h4>
+            <h4 class="font-weight-bold text-dark mb-1"><i class="fas fa-tasks mr-2 text-primary"></i>{{ __('Staff Operations Task Board') }}</h4>
             <p class="text-muted small mb-0">{{ __('Manage audit discovery, tax return filing milestones, and administrative deadlines.') }}</p>
         </div>
         <div class="d-flex align-items-center" style="gap: 10px;">
@@ -108,7 +108,7 @@
         </div>
     </div>
 
-    <!-- Operations Workflow Kanban Board (Intake -> Review -> Completed) -->
+    <!-- Operations Workflow Board (Intake -> Review -> Completed) -->
     <div class="kanban-board-container" id="kanbanBoard">
         <!-- COLUMN 1: ASSIGNED / INTAKE -->
         <div class="kanban-column" data-status="pending">

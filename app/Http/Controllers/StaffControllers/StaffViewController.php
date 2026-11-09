@@ -627,7 +627,7 @@ class StaffViewController extends Controller
     }
 
     /**
-     * Update task stage on Kanban board
+     * Update task stage on Operations Workflow Board
      */
     public function tasksUpdateStage(Request $request, $id)
     {
